@@ -122,12 +122,22 @@ export class MemStorage implements IStorage {
     this.dealRedemptions = new Map();
     this.userNotificationPreferences = new Map();
     
+    // Initialize new vendor-side collections
+    this.dealApprovals = new Map();
+    this.businessHours = new Map();
+    this.businessSocial = new Map();
+    this.businessDocuments = new Map();
+    
     this.currentUserId = 1;
     this.currentBusinessId = 1;
     this.currentDealId = 1;
     this.currentUserFavoriteId = 1;
     this.currentDealRedemptionId = 1;
     this.currentUserNotificationPreferencesId = 1;
+    this.currentDealApprovalId = 1;
+    this.currentBusinessHoursId = 1;
+    this.currentBusinessSocialId = 1;
+    this.currentBusinessDocumentId = 1;
     
     // Populate with sample data
     this.initializeSampleData();
@@ -475,6 +485,182 @@ export class MemStorage implements IStorage {
     this.users.set(userId, updatedUser);
     return true;
   }
+  
+  // Business methods
+  async getBusiness(id: number): Promise<Business | undefined> {
+    return this.businesses.get(id);
+  }
+  
+  async getBusinessByUserId(userId: number): Promise<Business | undefined> {
+    return Array.from(this.businesses.values()).find(
+      (business) => business.userId === userId
+    );
+  }
+  
+  async updateBusiness(id: number, businessData: Partial<Omit<InsertBusiness, "id" | "userId">>): Promise<Business> {
+    const business = await this.getBusiness(id);
+    if (!business) {
+      throw new Error("Business not found");
+    }
+    
+    const updatedBusiness: Business = {
+      ...business,
+      ...businessData,
+    };
+    
+    this.businesses.set(id, updatedBusiness);
+    return updatedBusiness;
+  }
+  
+  async updateBusinessVerificationStatus(id: number, status: string, feedback?: string): Promise<Business> {
+    const business = await this.getBusiness(id);
+    if (!business) {
+      throw new Error("Business not found");
+    }
+    
+    const updatedBusiness: Business = {
+      ...business,
+      verificationStatus: status,
+      verificationFeedback: feedback || business.verificationFeedback,
+    };
+    
+    this.businesses.set(id, updatedBusiness);
+    return updatedBusiness;
+  }
+  
+  // Business Hours methods
+  async getBusinessHours(businessId: number): Promise<BusinessHours[]> {
+    return Array.from(this.businessHours.values()).filter(
+      (hours) => hours.businessId === businessId
+    );
+  }
+  
+  async addBusinessHours(businessHoursData: Omit<InsertBusinessHours, "id">): Promise<BusinessHours> {
+    const business = await this.getBusiness(businessHoursData.businessId);
+    if (!business) {
+      throw new Error("Business not found");
+    }
+    
+    const id = this.currentBusinessHoursId++;
+    const businessHours: BusinessHours = {
+      ...businessHoursData,
+      id,
+    };
+    
+    this.businessHours.set(id, businessHours);
+    return businessHours;
+  }
+  
+  async updateBusinessHours(id: number, businessHoursData: Partial<Omit<InsertBusinessHours, "id" | "businessId">>): Promise<BusinessHours> {
+    const businessHours = this.businessHours.get(id);
+    if (!businessHours) {
+      throw new Error("Business hours not found");
+    }
+    
+    const updatedBusinessHours: BusinessHours = {
+      ...businessHours,
+      ...businessHoursData,
+    };
+    
+    this.businessHours.set(id, updatedBusinessHours);
+    return updatedBusinessHours;
+  }
+  
+  async deleteBusinessHours(id: number): Promise<void> {
+    if (!this.businessHours.has(id)) {
+      throw new Error("Business hours not found");
+    }
+    
+    this.businessHours.delete(id);
+  }
+  
+  // Business Social Media methods
+  async getBusinessSocialLinks(businessId: number): Promise<BusinessSocial[]> {
+    return Array.from(this.businessSocial.values()).filter(
+      (social) => social.businessId === businessId
+    );
+  }
+  
+  async addBusinessSocialLink(socialLinkData: Omit<InsertBusinessSocial, "id">): Promise<BusinessSocial> {
+    const business = await this.getBusiness(socialLinkData.businessId);
+    if (!business) {
+      throw new Error("Business not found");
+    }
+    
+    const id = this.currentBusinessSocialId++;
+    const socialLink: BusinessSocial = {
+      ...socialLinkData,
+      id,
+    };
+    
+    this.businessSocial.set(id, socialLink);
+    return socialLink;
+  }
+  
+  async updateBusinessSocialLink(id: number, socialLinkData: Partial<Omit<InsertBusinessSocial, "id" | "businessId">>): Promise<BusinessSocial> {
+    const socialLink = this.businessSocial.get(id);
+    if (!socialLink) {
+      throw new Error("Social link not found");
+    }
+    
+    const updatedSocialLink: BusinessSocial = {
+      ...socialLink,
+      ...socialLinkData,
+    };
+    
+    this.businessSocial.set(id, updatedSocialLink);
+    return updatedSocialLink;
+  }
+  
+  async deleteBusinessSocialLink(id: number): Promise<void> {
+    if (!this.businessSocial.has(id)) {
+      throw new Error("Social link not found");
+    }
+    
+    this.businessSocial.delete(id);
+  }
+  
+  // Business Document methods
+  async getBusinessDocuments(businessId: number): Promise<BusinessDocument[]> {
+    return Array.from(this.businessDocuments.values()).filter(
+      (document) => document.businessId === businessId
+    );
+  }
+  
+  async addBusinessDocument(documentData: Omit<InsertBusinessDocument, "id" | "submittedAt">): Promise<BusinessDocument> {
+    const business = await this.getBusiness(documentData.businessId);
+    if (!business) {
+      throw new Error("Business not found");
+    }
+    
+    const id = this.currentBusinessDocumentId++;
+    const document: BusinessDocument = {
+      ...documentData,
+      id,
+      submittedAt: new Date(),
+      status: documentData.status || "pending",
+    };
+    
+    this.businessDocuments.set(id, document);
+    return document;
+  }
+  
+  async updateBusinessDocumentStatus(id: number, status: string, feedback?: string): Promise<BusinessDocument> {
+    const document = this.businessDocuments.get(id);
+    if (!document) {
+      throw new Error("Document not found");
+    }
+    
+    const updatedDocument: BusinessDocument = {
+      ...document,
+      status,
+      reviewedAt: new Date(),
+      feedback: feedback || document.feedback,
+    };
+    
+    this.businessDocuments.set(id, updatedDocument);
+    return updatedDocument;
+  }
 
   // Deal methods
   async getDeals(): Promise<(Deal & { business: Business })[]> {
@@ -568,6 +754,180 @@ export class MemStorage implements IStorage {
     redemptions.forEach(redemption => {
       this.dealRedemptions.delete(redemption.id);
     });
+    
+    // Clean up any approvals
+    const approvals = Array.from(this.dealApprovals.values())
+      .filter(approval => approval.dealId === id);
+      
+    approvals.forEach(approval => {
+      this.dealApprovals.delete(approval.id);
+    });
+  }
+  
+  async updateDealStatus(id: number, status: string): Promise<Deal> {
+    const deal = this.deals.get(id);
+    if (!deal) {
+      throw new Error("Deal not found");
+    }
+    
+    const updatedDeal: Deal = {
+      ...deal,
+      status,
+      updatedAt: new Date(),
+    };
+    
+    this.deals.set(id, updatedDeal);
+    return updatedDeal;
+  }
+  
+  async duplicateDeal(dealId: number): Promise<Deal> {
+    const deal = this.deals.get(dealId);
+    if (!deal) {
+      throw new Error("Deal not found");
+    }
+    
+    const id = this.currentDealId++;
+    const newDeal: Deal = {
+      ...deal,
+      id,
+      title: `${deal.title} (Copy)`,
+      createdAt: new Date(),
+      status: 'draft',
+      views: 0,
+      saves: 0,
+      redemptionCount: 0,
+    };
+    
+    this.deals.set(id, newDeal);
+    return newDeal;
+  }
+  
+  async incrementDealViews(dealId: number): Promise<Deal> {
+    const deal = this.deals.get(dealId);
+    if (!deal) {
+      throw new Error("Deal not found");
+    }
+    
+    const updatedDeal: Deal = {
+      ...deal,
+      views: (deal.views || 0) + 1,
+    };
+    
+    this.deals.set(dealId, updatedDeal);
+    return updatedDeal;
+  }
+  
+  async incrementDealSaves(dealId: number): Promise<Deal> {
+    const deal = this.deals.get(dealId);
+    if (!deal) {
+      throw new Error("Deal not found");
+    }
+    
+    const updatedDeal: Deal = {
+      ...deal,
+      saves: (deal.saves || 0) + 1,
+    };
+    
+    this.deals.set(dealId, updatedDeal);
+    return updatedDeal;
+  }
+  
+  async incrementDealRedemptions(dealId: number): Promise<Deal> {
+    const deal = this.deals.get(dealId);
+    if (!deal) {
+      throw new Error("Deal not found");
+    }
+    
+    const updatedDeal: Deal = {
+      ...deal,
+      redemptionCount: (deal.redemptionCount || 0) + 1,
+    };
+    
+    this.deals.set(dealId, updatedDeal);
+    return updatedDeal;
+  }
+  
+  async getDealsByStatus(status: string): Promise<(Deal & { business: Business })[]> {
+    const deals = Array.from(this.deals.values())
+      .filter(deal => deal.status === status);
+    
+    return Promise.all(deals.map(async (deal) => {
+      const business = this.businesses.get(deal.businessId);
+      if (!business) {
+        throw new Error(`Business with ID ${deal.businessId} not found`);
+      }
+      return { ...deal, business };
+    }));
+  }
+  
+  // Deal Approval methods
+  async createDealApproval(approvalData: Omit<InsertDealApproval, "id" | "submittedAt">): Promise<DealApproval> {
+    const deal = this.deals.get(approvalData.dealId);
+    if (!deal) {
+      throw new Error("Deal not found");
+    }
+    
+    const id = this.currentDealApprovalId++;
+    const approval: DealApproval = {
+      ...approvalData,
+      id,
+      submittedAt: new Date(),
+      status: approvalData.status || "pending",
+    };
+    
+    this.dealApprovals.set(id, approval);
+    return approval;
+  }
+  
+  async getDealApproval(dealId: number): Promise<DealApproval | undefined> {
+    return Array.from(this.dealApprovals.values())
+      .find(approval => approval.dealId === dealId && approval.status === "pending");
+  }
+  
+  async getDealApprovalHistory(dealId: number): Promise<DealApproval[]> {
+    return Array.from(this.dealApprovals.values())
+      .filter(approval => approval.dealId === dealId)
+      .sort((a, b) => b.submittedAt.getTime() - a.submittedAt.getTime());
+  }
+  
+  async updateDealApproval(id: number, status: string, reviewerId?: number, feedback?: string): Promise<DealApproval> {
+    const approval = this.dealApprovals.get(id);
+    if (!approval) {
+      throw new Error("Deal approval not found");
+    }
+    
+    const updatedApproval: DealApproval = {
+      ...approval,
+      status,
+      reviewerId,
+      reviewedAt: new Date(),
+      feedback: feedback || approval.feedback,
+    };
+    
+    this.dealApprovals.set(id, updatedApproval);
+    
+    // Update the deal status if approval is accepted or rejected
+    if (status === "approved" || status === "rejected") {
+      const dealStatus = status === "approved" ? "active" : "rejected";
+      await this.updateDealStatus(approval.dealId, dealStatus);
+    }
+    
+    return updatedApproval;
+  }
+  
+  // Additional deal redemption methods
+  async getDealRedemptions(dealId: number): Promise<DealRedemption[]> {
+    return Array.from(this.dealRedemptions.values())
+      .filter(redemption => redemption.dealId === dealId);
+  }
+  
+  async verifyRedemptionCode(dealId: number, code: string): Promise<boolean> {
+    const deal = this.deals.get(dealId);
+    if (!deal) {
+      throw new Error("Deal not found");
+    }
+    
+    return deal.redemptionCode === code;
   }
   
   // User favorites methods

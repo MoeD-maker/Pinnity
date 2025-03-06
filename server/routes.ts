@@ -441,6 +441,365 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // -------------------------------------------------------------------------
+  // Vendor-side API routes
+  // -------------------------------------------------------------------------
+  
+  // Business management
+  app.get("/api/business/:id", async (req: Request, res: Response) => {
+    try {
+      const businessId = parseInt(req.params.id);
+      if (isNaN(businessId)) {
+        return res.status(400).json({ message: "Invalid business ID" });
+      }
+      
+      const business = await storage.getBusiness(businessId);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+      
+      return res.status(200).json(business);
+    } catch (error) {
+      console.error("Get business error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  app.put("/api/business/:id", async (req: Request, res: Response) => {
+    try {
+      const businessId = parseInt(req.params.id);
+      if (isNaN(businessId)) {
+        return res.status(400).json({ message: "Invalid business ID" });
+      }
+      
+      const businessData = req.body;
+      const updatedBusiness = await storage.updateBusiness(businessId, businessData);
+      
+      return res.status(200).json(updatedBusiness);
+    } catch (error) {
+      console.error("Update business error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Business verification
+  app.put("/api/business/:id/verification", async (req: Request, res: Response) => {
+    try {
+      const businessId = parseInt(req.params.id);
+      if (isNaN(businessId)) {
+        return res.status(400).json({ message: "Invalid business ID" });
+      }
+      
+      const { status, feedback } = req.body;
+      if (!status) {
+        return res.status(400).json({ message: "Status is required" });
+      }
+      
+      const updatedBusiness = await storage.updateBusinessVerificationStatus(businessId, status, feedback);
+      
+      return res.status(200).json(updatedBusiness);
+    } catch (error) {
+      console.error("Update business verification error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Business hours
+  app.get("/api/business/:businessId/hours", async (req: Request, res: Response) => {
+    try {
+      const businessId = parseInt(req.params.businessId);
+      if (isNaN(businessId)) {
+        return res.status(400).json({ message: "Invalid business ID" });
+      }
+      
+      const hours = await storage.getBusinessHours(businessId);
+      
+      return res.status(200).json(hours);
+    } catch (error) {
+      console.error("Get business hours error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  app.post("/api/business/hours", async (req: Request, res: Response) => {
+    try {
+      const hoursData = req.body;
+      const newHours = await storage.addBusinessHours(hoursData);
+      
+      return res.status(201).json(newHours);
+    } catch (error) {
+      console.error("Add business hours error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  app.put("/api/business/hours/:id", async (req: Request, res: Response) => {
+    try {
+      const hoursId = parseInt(req.params.id);
+      if (isNaN(hoursId)) {
+        return res.status(400).json({ message: "Invalid hours ID" });
+      }
+      
+      const hoursData = req.body;
+      const updatedHours = await storage.updateBusinessHours(hoursId, hoursData);
+      
+      return res.status(200).json(updatedHours);
+    } catch (error) {
+      console.error("Update business hours error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  app.delete("/api/business/hours/:id", async (req: Request, res: Response) => {
+    try {
+      const hoursId = parseInt(req.params.id);
+      if (isNaN(hoursId)) {
+        return res.status(400).json({ message: "Invalid hours ID" });
+      }
+      
+      await storage.deleteBusinessHours(hoursId);
+      
+      return res.status(204).end();
+    } catch (error) {
+      console.error("Delete business hours error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Deal approval API routes
+  app.post("/api/deals/:dealId/approval", async (req: Request, res: Response) => {
+    try {
+      const dealId = parseInt(req.params.dealId);
+      if (isNaN(dealId)) {
+        return res.status(400).json({ message: "Invalid deal ID" });
+      }
+      
+      const approvalData = {
+        ...req.body,
+        dealId
+      };
+      
+      const approval = await storage.createDealApproval(approvalData);
+      
+      return res.status(201).json(approval);
+    } catch (error) {
+      console.error("Create deal approval error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  app.get("/api/deals/:dealId/approval", async (req: Request, res: Response) => {
+    try {
+      const dealId = parseInt(req.params.dealId);
+      if (isNaN(dealId)) {
+        return res.status(400).json({ message: "Invalid deal ID" });
+      }
+      
+      const approval = await storage.getDealApproval(dealId);
+      if (!approval) {
+        return res.status(404).json({ message: "Deal approval not found" });
+      }
+      
+      return res.status(200).json(approval);
+    } catch (error) {
+      console.error("Get deal approval error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  app.get("/api/deals/:dealId/approval/history", async (req: Request, res: Response) => {
+    try {
+      const dealId = parseInt(req.params.dealId);
+      if (isNaN(dealId)) {
+        return res.status(400).json({ message: "Invalid deal ID" });
+      }
+      
+      const approvals = await storage.getDealApprovalHistory(dealId);
+      
+      return res.status(200).json(approvals);
+    } catch (error) {
+      console.error("Get deal approval history error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  app.put("/api/deal-approvals/:id", async (req: Request, res: Response) => {
+    try {
+      const approvalId = parseInt(req.params.id);
+      if (isNaN(approvalId)) {
+        return res.status(400).json({ message: "Invalid approval ID" });
+      }
+      
+      const { status, reviewerId, feedback } = req.body;
+      if (!status) {
+        return res.status(400).json({ message: "Status is required" });
+      }
+      
+      const updatedApproval = await storage.updateDealApproval(approvalId, status, reviewerId, feedback);
+      
+      return res.status(200).json(updatedApproval);
+    } catch (error) {
+      console.error("Update deal approval error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Additional deal management routes
+  app.get("/api/deals/status/:status", async (req: Request, res: Response) => {
+    try {
+      const status = req.params.status;
+      
+      const deals = await storage.getDealsByStatus(status);
+      
+      return res.status(200).json(deals);
+    } catch (error) {
+      console.error("Get deals by status error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  app.put("/api/deals/:id/status", async (req: Request, res: Response) => {
+    try {
+      const dealId = parseInt(req.params.id);
+      if (isNaN(dealId)) {
+        return res.status(400).json({ message: "Invalid deal ID" });
+      }
+      
+      const { status } = req.body;
+      if (!status) {
+        return res.status(400).json({ message: "Status is required" });
+      }
+      
+      const updatedDeal = await storage.updateDealStatus(dealId, status);
+      
+      return res.status(200).json(updatedDeal);
+    } catch (error) {
+      console.error("Update deal status error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  app.post("/api/deals/:id/duplicate", async (req: Request, res: Response) => {
+    try {
+      const dealId = parseInt(req.params.id);
+      if (isNaN(dealId)) {
+        return res.status(400).json({ message: "Invalid deal ID" });
+      }
+      
+      const duplicatedDeal = await storage.duplicateDeal(dealId);
+      
+      return res.status(201).json(duplicatedDeal);
+    } catch (error) {
+      console.error("Duplicate deal error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Deal analytics tracking
+  app.post("/api/deals/:id/views", async (req: Request, res: Response) => {
+    try {
+      const dealId = parseInt(req.params.id);
+      if (isNaN(dealId)) {
+        return res.status(400).json({ message: "Invalid deal ID" });
+      }
+      
+      const updatedDeal = await storage.incrementDealViews(dealId);
+      
+      return res.status(200).json({ views: updatedDeal.views });
+    } catch (error) {
+      console.error("Increment deal views error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  app.get("/api/deals/:dealId/redemptions", async (req: Request, res: Response) => {
+    try {
+      const dealId = parseInt(req.params.dealId);
+      if (isNaN(dealId)) {
+        return res.status(400).json({ message: "Invalid deal ID" });
+      }
+      
+      const redemptions = await storage.getDealRedemptions(dealId);
+      
+      return res.status(200).json(redemptions);
+    } catch (error) {
+      console.error("Get deal redemptions error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  app.post("/api/deals/:dealId/verify-code", async (req: Request, res: Response) => {
+    try {
+      const dealId = parseInt(req.params.dealId);
+      if (isNaN(dealId)) {
+        return res.status(400).json({ message: "Invalid deal ID" });
+      }
+      
+      const { code } = req.body;
+      if (!code) {
+        return res.status(400).json({ message: "Redemption code is required" });
+      }
+      
+      const isValid = await storage.verifyRedemptionCode(dealId, code);
+      
+      return res.status(200).json({ valid: isValid });
+    } catch (error) {
+      console.error("Verify redemption code error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
