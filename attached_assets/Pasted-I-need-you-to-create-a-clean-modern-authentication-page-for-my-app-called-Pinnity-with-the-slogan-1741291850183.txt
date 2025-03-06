@@ -1,0 +1,76 @@
+I need you to create a clean, modern authentication page for my app called "Pinnity" with the slogan "Discover Local". The auth page should allow users to log in or sign up as either individuals or businesses. Here's what I need:
+
+## Brand Guidelines
+- Primary Color: #00796B (teal)
+- Secondary/Accent Color: #FF9800 (orange)
+- Logo: Same as previous Roamly logo but with "Pinnity" text instead
+- Design: Clean, minimal, modern without animations (for performance)
+- Font: System fonts or a clean sans-serif like Inter
+
+## Auth Page Structure
+Create a responsive authentication page with:
+1. A left panel containing the form (login/signup)
+2. A right panel with brand imagery (on desktop only)
+3. Tabs to switch between "Log In" and "Sign Up"
+4. When "Sign Up" is selected, radio buttons to choose between "Individual" and "Business"
+
+## Form Requirements
+
+### Login Form
+- Email field with validation
+- Password field with show/hide toggle
+- "Remember me" checkbox
+- "Forgot password" link
+- Submit button
+- Optional social login buttons (Google, etc.)
+
+### Individual Signup Form
+Fields required:
+- First name
+- Last name
+- Email address with validation
+- Password with strength indicator
+- Confirm password
+- Phone number with validation
+- Address (can be a single field or broken into components)
+- Terms and conditions checkbox
+
+### Business Signup Form
+All individual fields plus:
+- Business name
+- File upload for Government ID
+- File upload for Proof of Address
+- File upload for Proof of Business Ownership
+- Business category dropdown (Restaurant, Retail, Services, etc.)
+
+## Technical Requirements
+- Use React with TypeScript for type safety
+- Implement proper form validation with error messages
+- Store form state using a form library like React Hook Form
+- Create reusable form components
+- Implement responsive design (mobile-first)
+- Add loading states and error handling
+- Make sure all forms preserve state between tab switches (no losing data)
+- DO NOT use sticky position on tabs (causes state reset issues)
+- Keep file upload components simple and performant
+
+## Styling
+- Use Tailwind CSS for styling
+- Create a clean, modern interface with proper spacing
+- Ensure good contrast for accessibility
+- Use subtle shadows and rounded corners for depth
+- Make sure error states are clearly visible
+- Keep the UI lightweight (no heavy animations or effects)
+
+## Component Structure
+Create these separate components:
+1. AuthLayout - main layout with two panels
+2. LoginForm - for existing users
+3. SignupForm - container with radio toggle
+4. IndividualSignupForm - for individual users
+5. BusinessSignupForm - for business users
+6. FormInput - reusable input component
+7. FileUpload - reusable file upload component
+8. PasswordInput - password field with visibility toggle
+
+Please implement this auth page with clean code structure and ensure form state persists when switching between tabs. Avoid any performance-heavy animations or effects.
