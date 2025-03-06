@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { loginUserSchema, insertUserSchema } from "@shared/schema";
+import { loginUserSchema, insertUserSchema, insertDealSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -94,9 +94,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check for file uploads (would normally process files here)
-      const governmentIdFile = req.body.governmentId || req.files?.governmentId;
-      const proofOfAddressFile = req.body.proofOfAddress || req.files?.proofOfAddress;
-      const proofOfBusinessFile = req.body.proofOfBusiness || req.files?.proofOfBusiness;
+      const governmentIdFile = req.body.governmentId || (req.files ? req.files['governmentId'] : null);
+      const proofOfAddressFile = req.body.proofOfAddress || (req.files ? req.files['proofOfAddress'] : null);
+      const proofOfBusinessFile = req.body.proofOfBusiness || (req.files ? req.files['proofOfBusiness'] : null);
       
       if (!governmentIdFile || !proofOfAddressFile || !proofOfBusinessFile) {
         return res.status(400).json({ message: "Missing required document uploads" });
@@ -132,6 +132,269 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: error.message });
       }
       console.error("Business registration error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // User Profile routes
+  app.get("/api/user/:id", async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.id);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Don't return the password
+      const { password, ...userData } = user;
+      
+      return res.status(200).json(userData);
+    } catch (error) {
+      console.error("Get user error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.put("/api/user/:id", async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.id);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      // In a real app, verify that the authenticated user is updating their own profile
+      
+      const userData = req.body;
+      // Prevent updating sensitive fields
+      delete userData.password;
+      delete userData.userType;
+      
+      const updatedUser = await storage.updateUser(userId, userData);
+      
+      // Don't return the password
+      const { password, ...sanitizedUser } = updatedUser;
+      
+      return res.status(200).json(sanitizedUser);
+    } catch (error) {
+      console.error("Update user error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Deal routes
+  app.get("/api/deals", async (req: Request, res: Response) => {
+    try {
+      const deals = await storage.getDeals();
+      return res.status(200).json(deals);
+    } catch (error) {
+      console.error("Get deals error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get("/api/deals/featured", async (req: Request, res: Response) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const featuredDeals = await storage.getFeaturedDeals(limit);
+      return res.status(200).json(featuredDeals);
+    } catch (error) {
+      console.error("Get featured deals error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get("/api/deals/:id", async (req: Request, res: Response) => {
+    try {
+      const dealId = parseInt(req.params.id);
+      if (isNaN(dealId)) {
+        return res.status(400).json({ message: "Invalid deal ID" });
+      }
+      
+      const deal = await storage.getDeal(dealId);
+      if (!deal) {
+        return res.status(404).json({ message: "Deal not found" });
+      }
+      
+      return res.status(200).json(deal);
+    } catch (error) {
+      console.error("Get deal error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get("/api/business/:businessId/deals", async (req: Request, res: Response) => {
+    try {
+      const businessId = parseInt(req.params.businessId);
+      if (isNaN(businessId)) {
+        return res.status(400).json({ message: "Invalid business ID" });
+      }
+      
+      const deals = await storage.getDealsByBusiness(businessId);
+      return res.status(200).json(deals);
+    } catch (error) {
+      console.error("Get business deals error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/deals", async (req: Request, res: Response) => {
+    try {
+      // In a real app, verify that the authenticated user is a business owner
+      
+      const dealData = req.body;
+      const deal = await storage.createDeal(dealData);
+      
+      return res.status(201).json(deal);
+    } catch (error) {
+      console.error("Create deal error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // User favorites routes
+  app.get("/api/user/:userId/favorites", async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const favorites = await storage.getUserFavorites(userId);
+      return res.status(200).json(favorites);
+    } catch (error) {
+      console.error("Get user favorites error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/user/:userId/favorites", async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const { dealId } = req.body;
+      if (!dealId) {
+        return res.status(400).json({ message: "Deal ID is required" });
+      }
+      
+      const favorite = await storage.addUserFavorite(userId, dealId);
+      return res.status(201).json(favorite);
+    } catch (error) {
+      console.error("Add user favorite error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/user/:userId/favorites/:dealId", async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const dealId = parseInt(req.params.dealId);
+      
+      if (isNaN(userId) || isNaN(dealId)) {
+        return res.status(400).json({ message: "Invalid user ID or deal ID" });
+      }
+      
+      await storage.removeUserFavorite(userId, dealId);
+      return res.status(204).send();
+    } catch (error) {
+      console.error("Remove user favorite error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Deal redemption routes
+  app.get("/api/user/:userId/redemptions", async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const redemptions = await storage.getUserRedemptions(userId);
+      return res.status(200).json(redemptions);
+    } catch (error) {
+      console.error("Get user redemptions error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/user/:userId/redemptions", async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const { dealId } = req.body;
+      if (!dealId) {
+        return res.status(400).json({ message: "Deal ID is required" });
+      }
+      
+      const redemption = await storage.createRedemption(userId, dealId);
+      return res.status(201).json(redemption);
+    } catch (error) {
+      console.error("Create redemption error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // User notification preferences routes
+  app.get("/api/user/:userId/notification-preferences", async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const preferences = await storage.getUserNotificationPreferences(userId);
+      if (!preferences) {
+        return res.status(404).json({ message: "Notification preferences not found" });
+      }
+      
+      return res.status(200).json(preferences);
+    } catch (error) {
+      console.error("Get notification preferences error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.put("/api/user/:userId/notification-preferences", async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const preferences = req.body;
+      const updatedPreferences = await storage.updateUserNotificationPreferences(userId, preferences);
+      
+      return res.status(200).json(updatedPreferences);
+    } catch (error) {
+      console.error("Update notification preferences error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
       return res.status(500).json({ message: "Internal server error" });
     }
   });
