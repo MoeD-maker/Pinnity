@@ -74,8 +74,7 @@ export default function Dashboard() {
   const { data: deals, isLoading: isLoadingDeals } = useQuery({
     queryKey: ['/api/deals'],
     queryFn: async () => {
-      const response = await apiRequest('/api/deals');
-      return response || [];
+      return apiRequest('/api/deals');
     },
   });
 
@@ -83,8 +82,7 @@ export default function Dashboard() {
   const { data: featuredDeals, isLoading: isLoadingFeatured } = useQuery({
     queryKey: ['/api/deals/featured'],
     queryFn: async () => {
-      const response = await apiRequest('/api/deals/featured?limit=5');
-      return response || [];
+      return apiRequest('/api/deals/featured?limit=5');
     },
   });
 

@@ -51,8 +51,7 @@ export default function ExplorePage() {
   const { data: deals = [], isLoading } = useQuery({
     queryKey: ['/api/deals'],
     queryFn: async () => {
-      const response = await apiRequest('/api/deals');
-      return response || [];
+      return apiRequest('/api/deals');
     },
   });
   

@@ -24,7 +24,9 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
   // Fetch the deal details
   const { data: deal, isLoading } = useQuery({
     queryKey: ['/api/deals', dealId],
-    queryFn: { endpoint: `/api/deals/${dealId}` },
+    queryFn: async () => {
+      return apiRequest(`/api/deals/${dealId}`);
+    }
   });
 
   // Add to favorites mutation
@@ -35,7 +37,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
       
       return apiRequest(`/api/user/${userId}/favorites`, {
         method: 'POST',
-        body: JSON.stringify({ dealId }),
+        data: { dealId }
       });
     },
     onSuccess: () => {
@@ -64,7 +66,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
       
       return apiRequest(`/api/user/${userId}/redemptions`, {
         method: 'POST',
-        body: JSON.stringify({ dealId }),
+        data: { dealId }
       });
     },
     onSuccess: () => {
