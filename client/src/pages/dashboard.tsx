@@ -1,11 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Filter as ListFilterIcon, Map as MapIcon, Grid as GridIcon } from 'lucide-react';
+import { 
+  Search, 
+  Filter as ListFilterIcon, 
+  Map as MapIcon, 
+  Grid as GridIcon,
+  ChevronUp,
+  ChevronDown
+} from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 
@@ -15,20 +22,53 @@ import {
   DealGrid, 
   FeaturedDeals, 
   CategoryFilter, 
-  DealDetail 
+  DealDetail,
+  CATEGORIES
 } from '@/components/dashboard';
 import { Deal } from '@shared/schema';
 
 type ViewMode = 'grid' | 'map';
 
+// Map API categories to our internal category IDs
+const mapCategoryToId = (category: string): string => {
+  const lowerCategory = category.toLowerCase();
+  
+  if (lowerCategory.includes('restaurant')) return 'restaurants';
+  if (lowerCategory.includes('café') || lowerCategory.includes('cafe') || lowerCategory.includes('coffee')) return 'cafes';
+  if (lowerCategory.includes('retail') || lowerCategory.includes('shop')) return 'retail';
+  if (lowerCategory.includes('beauty') || lowerCategory.includes('spa') || lowerCategory.includes('salon')) return 'beauty';
+  if (lowerCategory.includes('health') || lowerCategory.includes('fitness') || lowerCategory.includes('gym')) return 'health';
+  if (lowerCategory.includes('entertainment') || lowerCategory.includes('movie') || lowerCategory.includes('theater')) return 'entertainment';
+  if (lowerCategory.includes('service')) return 'services';
+  if (lowerCategory.includes('travel') || lowerCategory.includes('hotel') || lowerCategory.includes('accommodation')) return 'travel';
+  if (lowerCategory.includes('bar') || lowerCategory.includes('club') || lowerCategory.includes('nightlife')) return 'nightlife';
+  
+  return 'other';
+};
+
 export default function Dashboard() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true); // Default to true to show filters
   const [selectedDeal, setSelectedDeal] = useState<number | null>(null);
   const isMobile = useIsMobile();
   const { toast } = useToast();
+
+  // Load saved filters on initial render
+  useEffect(() => {
+    const savedCategories = localStorage.getItem('pinnity-category-filters');
+    if (savedCategories) {
+      try {
+        const parsed = JSON.parse(savedCategories);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSelectedCategories(parsed);
+        }
+      } catch (e) {
+        console.error('Error parsing saved categories:', e);
+      }
+    }
+  }, []);
 
   // Fetch all deals
   const { data: deals, isLoading: isLoadingDeals } = useQuery({
@@ -50,11 +90,30 @@ export default function Dashboard() {
 
   // Handle category filter changes
   const handleCategoryChange = (category: string) => {
-    setSelectedCategories(prev => 
-      prev.includes(category)
-        ? prev.filter(c => c !== category)
-        : [...prev, category]
-    );
+    setSelectedCategories(prev => {
+      // If 'all' is selected, clear all other selections
+      if (category === 'all') {
+        return [];
+      }
+      
+      // If any other category is selected, remove 'all' if it's there
+      let newCategories = prev.filter(c => c !== 'all');
+      
+      // Toggle the selected category
+      if (newCategories.includes(category)) {
+        newCategories = newCategories.filter(c => c !== category);
+      } else {
+        newCategories = [...newCategories, category];
+      }
+      
+      return newCategories;
+    });
+  };
+
+  // Clear all filters
+  const handleClearFilters = () => {
+    setSelectedCategories([]);
+    setSearchQuery('');
   };
 
   // Handle search input change
@@ -62,18 +121,41 @@ export default function Dashboard() {
     setSearchQuery(e.target.value);
   };
 
+  // Calculate category counts
+  const categoryCounter: Record<string, number> = {};
+  if (deals && Array.isArray(deals)) {
+    // Initialize all categories with 0
+    CATEGORIES.forEach(cat => {
+      categoryCounter[cat.id] = 0;
+    });
+    
+    // Count deals per category
+    deals.forEach((deal: Deal & { business: any }) => {
+      const categoryId = mapCategoryToId(deal.category);
+      categoryCounter[categoryId] = (categoryCounter[categoryId] || 0) + 1;
+    });
+    
+    // Set "all" category count to total number of deals
+    categoryCounter['all'] = deals.length;
+  }
+
   // Filter deals based on search query and selected categories
-  const filteredDeals = deals?.filter((deal: Deal & { business: any }) => {
-    const matchesSearch = searchQuery === '' || 
-      deal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      deal.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      deal.business.businessName.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesCategory = selectedCategories.length === 0 || 
-      selectedCategories.includes(deal.category);
-    
-    return matchesSearch && matchesCategory;
-  }) || [];
+  const filteredDeals = deals && Array.isArray(deals) 
+    ? deals.filter((deal: Deal & { business: any }) => {
+        // Map API category to our category system
+        const dealCategoryId = mapCategoryToId(deal.category);
+        
+        const matchesSearch = searchQuery === '' || 
+          deal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          deal.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          deal.business.businessName.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        const matchesCategory = selectedCategories.length === 0 || 
+          selectedCategories.includes(dealCategoryId);
+        
+        return matchesSearch && matchesCategory;
+      })
+    : [];
 
   // Handle deal selection for detail view
   const handleDealSelect = (dealId: number) => {
@@ -84,11 +166,6 @@ export default function Dashboard() {
   const handleDetailClose = () => {
     setSelectedDeal(null);
   };
-
-  // Get all unique categories from deals
-  const categories = deals ? 
-    [...new Set(deals.map((deal: Deal) => deal.category))] : 
-    [];
 
   return (
     <div className="container max-w-7xl mx-auto p-4">
@@ -119,6 +196,11 @@ export default function Dashboard() {
           >
             <ListFilterIcon className="h-4 w-4" />
             Filters
+            {showFilters ? (
+              <ChevronUp className="h-3 w-3 ml-0.5" />
+            ) : (
+              <ChevronDown className="h-3 w-3 ml-0.5" />
+            )}
           </Button>
           
           <div className="hidden md:flex border rounded-md overflow-hidden">
@@ -145,16 +227,17 @@ export default function Dashboard() {
         <Card className="mb-6">
           <CardContent className="pt-6">
             <CategoryFilter 
-              categories={categories} 
               selectedCategories={selectedCategories}
               onChange={handleCategoryChange}
+              dealCounts={categoryCounter}
+              onClearFilters={handleClearFilters}
             />
           </CardContent>
         </Card>
       )}
 
       {/* Featured deals section */}
-      {viewMode === 'grid' && !isMobile && (
+      {viewMode === 'grid' && !isMobile && filteredDeals.length > 0 && (
         <div className="mb-8">
           <h2 className="text-2xl font-semibold mb-4">Featured Deals</h2>
           <FeaturedDeals 
@@ -175,19 +258,32 @@ export default function Dashboard() {
         </Tabs>
       )}
 
+      {/* No results message */}
+      {filteredDeals.length === 0 && !isLoadingDeals && (
+        <div className="text-center py-12">
+          <h3 className="text-xl font-medium mb-2">No deals found</h3>
+          <p className="text-muted-foreground mb-4">
+            Try adjusting your search or filters
+          </p>
+          <Button onClick={handleClearFilters}>Clear all filters</Button>
+        </div>
+      )}
+
       {/* Main content based on view mode */}
-      {viewMode === 'grid' ? (
-        <DealGrid 
-          deals={filteredDeals} 
-          isLoading={isLoadingDeals}
-          onSelect={handleDealSelect}
-        />
-      ) : (
-        <DealMap 
-          deals={filteredDeals} 
-          isLoading={isLoadingDeals}
-          onSelect={handleDealSelect}
-        />
+      {filteredDeals.length > 0 && (
+        viewMode === 'grid' ? (
+          <DealGrid 
+            deals={filteredDeals} 
+            isLoading={isLoadingDeals}
+            onSelect={handleDealSelect}
+          />
+        ) : (
+          <DealMap 
+            deals={filteredDeals} 
+            isLoading={isLoadingDeals}
+            onSelect={handleDealSelect}
+          />
+        )
       )}
 
       {/* Deal detail modal */}
