@@ -1,4 +1,5 @@
-import { cn } from "@/lib/utils";
+import React from 'react';
+import { Progress } from '@/components/ui/progress';
 
 interface PasswordStrengthIndicatorProps {
   score: number;
@@ -7,33 +8,53 @@ interface PasswordStrengthIndicatorProps {
 
 export default function PasswordStrengthIndicator({
   score,
-  feedback
+  feedback,
 }: PasswordStrengthIndicatorProps) {
-  const getColorForSegment = (segmentIndex: number) => {
-    if (segmentIndex >= score) return "bg-gray-200";
-    
-    if (score === 1) return "bg-red-500";
-    if (score === 2) return "bg-yellow-500";
-    if (score === 3) return "bg-orange-500";
-    if (score === 4) return "bg-green-500";
-    
-    return "bg-gray-200";
+  // Get color based on password strength score
+  const getColor = () => {
+    switch (score) {
+      case 0:
+      case 1:
+        return 'bg-red-500';
+      case 2:
+        return 'bg-orange-500';
+      case 3:
+        return 'bg-yellow-500';
+      case 4:
+        return 'bg-green-500';
+      default:
+        return 'bg-gray-300';
+    }
   };
 
+  // Get label based on password strength score
+  const getLabel = () => {
+    switch (score) {
+      case 0:
+      case 1:
+        return 'Weak';
+      case 2:
+        return 'Fair';
+      case 3:
+        return 'Good';
+      case 4:
+        return 'Strong';
+      default:
+        return '';
+    }
+  };
+
+  // Calculate progress value (out of 100)
+  const progressValue = score * 25; // 0, 25, 50, 75, 100
+
   return (
-    <div className="space-y-1">
-      <div className="flex space-x-1">
-        {[...Array(4)].map((_, index) => (
-          <div
-            key={index}
-            className={cn(
-              "h-1 flex-1 rounded-sm transition-all duration-200",
-              getColorForSegment(index)
-            )}
-          />
-        ))}
+    <div className="mt-2 space-y-1">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">{getLabel()}</p>
+        <p className="text-xs text-muted-foreground">{progressValue}%</p>
       </div>
-      <p className="text-xs text-gray-500">{feedback}</p>
+      <Progress value={progressValue} className={getColor()} />
+      {feedback && <p className="mt-1 text-xs text-muted-foreground">{feedback}</p>}
     </div>
   );
 }

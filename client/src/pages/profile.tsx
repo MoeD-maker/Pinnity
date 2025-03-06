@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { apiRequest } from '@/lib/queryClient';
-import { User } from '@/components/icons/user';
+import { User as UserIcon } from 'lucide-react';
+import PasswordChangeForm from '@/components/profile/PasswordChangeForm';
 
 export default function ProfilePage() {
   // For demo purposes, hardcoded user ID

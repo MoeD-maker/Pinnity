@@ -187,6 +187,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: "Internal server error" });
     }
   });
+  
+  // Change password endpoint
+  app.post("/api/user/:id/change-password", async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.id);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const { currentPassword, newPassword, confirmPassword } = req.body;
+      
+      // Basic validation
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        return res.status(400).json({ message: "All password fields are required" });
+      }
+      
+      if (newPassword !== confirmPassword) {
+        return res.status(400).json({ message: "New password and confirm password do not match" });
+      }
+      
+      // Password strength validation (like length, contains special chars, etc.) should be added here
+      if (newPassword.length < 8) {
+        return res.status(400).json({ message: "New password must be at least 8 characters long" });
+      }
+      
+      // In a real app, add more complex password validation rules
+      
+      const success = await storage.changePassword(userId, currentPassword, newPassword);
+      
+      if (!success) {
+        return res.status(400).json({ message: "Current password is incorrect" });
+      }
+      
+      return res.status(200).json({ message: "Password changed successfully" });
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      console.error("Change password error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
 
   // Deal routes
   app.get("/api/deals", async (req: Request, res: Response) => {
