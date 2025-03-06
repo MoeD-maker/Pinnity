@@ -16,6 +16,7 @@ export interface IStorage {
   createBusinessUser(user: Omit<InsertUser, "userType" | "username">, business: Omit<InsertBusiness, "userId">): Promise<User & { business: Business }>;
   verifyLogin(email: string, password: string): Promise<User | null>;
   updateUser(userId: number, userData: Partial<Omit<InsertUser, "id" | "password">>): Promise<User>;
+  changePassword(userId: number, currentPassword: string, newPassword: string): Promise<boolean>;
 
   // Deal methods
   getDeals(): Promise<(Deal & { business: Business })[]>;
@@ -398,6 +399,29 @@ export class MemStorage implements IStorage {
     
     this.users.set(userId, updatedUser);
     return updatedUser;
+  }
+  
+  async changePassword(userId: number, currentPassword: string, newPassword: string): Promise<boolean> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Verify current password
+    const hashedCurrentPassword = hashPassword(currentPassword);
+    if (user.password !== hashedCurrentPassword) {
+      return false;
+    }
+    
+    // Set new password
+    const hashedNewPassword = hashPassword(newPassword);
+    const updatedUser: User = {
+      ...user,
+      password: hashedNewPassword,
+    };
+    
+    this.users.set(userId, updatedUser);
+    return true;
   }
 
   // Deal methods
