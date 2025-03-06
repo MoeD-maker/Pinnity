@@ -202,6 +202,9 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
         
+        {/* Password Change Form */}
+        <PasswordChangeForm userId={userId} />
+        
         <Card>
           <CardHeader>
             <CardTitle>Deal History</CardTitle>
