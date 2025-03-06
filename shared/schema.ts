@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, json, timestamp, doublePrecision } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, json, timestamp, doublePrecision, varchar, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -51,6 +51,14 @@ export const deals = pgTable("deals", {
   featured: boolean("featured").default(false),
   redemptionCode: text("redemption_code"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  status: text("status").notNull().default("pending"), // "pending", "approved", "active", "expired", "rejected"
+  approvalDate: timestamp("approval_date"),
+  maxRedemptionsPerUser: integer("max_redemptions_per_user").default(1),
+  totalRedemptionsLimit: integer("total_redemptions_limit"),
+  redemptionInstructions: text("redemption_instructions"),
+  viewCount: integer("view_count").default(0),
+  saveCount: integer("save_count").default(0),
+  redemptionCount: integer("redemption_count").default(0),
 });
 
 // User favorites - saved deals by users
@@ -80,6 +88,49 @@ export const userNotificationPreferences = pgTable("user_notification_preference
   weeklyNewsletter: boolean("weekly_newsletter").default(true),
 });
 
+// Deal approval workflow
+export const dealApprovals = pgTable("deal_approvals", {
+  id: serial("id").primaryKey(),
+  dealId: integer("deal_id").notNull().references(() => deals.id),
+  status: text("status").notNull().default("pending"), // "pending", "approved", "rejected"
+  reviewerId: integer("reviewer_id"), // Optional: admin/reviewer user ID 
+  feedback: text("feedback"), // Feedback from reviewer, especially for rejections
+  submittedAt: timestamp("submitted_at").notNull().defaultNow(),
+  reviewedAt: timestamp("reviewed_at"),
+  revisionCount: integer("revision_count").default(0), // Count of times the deal was revised and resubmitted
+});
+
+// Business hours
+export const businessHours = pgTable("business_hours", {
+  id: serial("id").primaryKey(),
+  businessId: integer("business_id").notNull().references(() => businesses.id),
+  dayOfWeek: integer("day_of_week").notNull(), // 0 = Sunday, 6 = Saturday
+  openTime: text("open_time"), // Format: "HH:MM"
+  closeTime: text("close_time"), // Format: "HH:MM"
+  isClosed: boolean("is_closed").default(false),
+});
+
+// Business social media links
+export const businessSocial = pgTable("business_social", {
+  id: serial("id").primaryKey(),
+  businessId: integer("business_id").notNull().references(() => businesses.id), 
+  platform: text("platform").notNull(), // e.g., "facebook", "instagram", "twitter", etc.
+  url: text("url").notNull(),
+  username: text("username"),
+});
+
+// Document submission history for businesses
+export const businessDocuments = pgTable("business_documents", {
+  id: serial("id").primaryKey(),
+  businessId: integer("business_id").notNull().references(() => businesses.id),
+  documentType: text("document_type").notNull(), // e.g., "governmentId", "proofOfAddress", "proofOfBusiness", etc.
+  filePath: text("file_path").notNull(),
+  status: text("status").notNull().default("pending"), // "pending", "approved", "rejected"
+  feedback: text("feedback"),
+  submittedAt: timestamp("submitted_at").notNull().defaultNow(),
+  reviewedAt: timestamp("reviewed_at"),
+});
+
 // Create Zod schemas for insertion
 export const insertUserSchema = createInsertSchema(users);
 export const insertBusinessSchema = createInsertSchema(businesses);
@@ -87,6 +138,10 @@ export const insertDealSchema = createInsertSchema(deals);
 export const insertUserFavoriteSchema = createInsertSchema(userFavorites);
 export const insertDealRedemptionSchema = createInsertSchema(dealRedemptions);
 export const insertUserNotificationPreferencesSchema = createInsertSchema(userNotificationPreferences);
+export const insertDealApprovalSchema = createInsertSchema(dealApprovals);
+export const insertBusinessHoursSchema = createInsertSchema(businessHours);
+export const insertBusinessSocialSchema = createInsertSchema(businessSocial);
+export const insertBusinessDocumentSchema = createInsertSchema(businessDocuments);
 
 // Login schema
 export const loginUserSchema = z.object({
@@ -108,4 +163,15 @@ export type DealRedemption = typeof dealRedemptions.$inferSelect;
 export type InsertDealRedemption = typeof dealRedemptions.$inferInsert;
 export type UserNotificationPreferences = typeof userNotificationPreferences.$inferSelect;
 export type InsertUserNotificationPreferences = typeof userNotificationPreferences.$inferInsert;
+
+// New vendor-side types
+export type DealApproval = typeof dealApprovals.$inferSelect;
+export type InsertDealApproval = typeof dealApprovals.$inferInsert;
+export type BusinessHours = typeof businessHours.$inferSelect;
+export type InsertBusinessHours = typeof businessHours.$inferInsert;
+export type BusinessSocial = typeof businessSocial.$inferSelect;
+export type InsertBusinessSocial = typeof businessSocial.$inferInsert;
+export type BusinessDocument = typeof businessDocuments.$inferSelect;
+export type InsertBusinessDocument = typeof businessDocuments.$inferInsert;
+
 export type LoginUser = z.infer<typeof loginUserSchema>;

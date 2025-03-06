@@ -1,9 +1,14 @@
 import { 
   users, businesses, deals, userFavorites, dealRedemptions, userNotificationPreferences,
+  dealApprovals, businessHours, businessSocial, businessDocuments,
   type User, type InsertUser, type Business, type InsertBusiness, 
   type Deal, type InsertDeal, type UserFavorite, type InsertUserFavorite,
   type DealRedemption, type InsertDealRedemption, 
-  type UserNotificationPreferences, type InsertUserNotificationPreferences
+  type UserNotificationPreferences, type InsertUserNotificationPreferences,
+  type DealApproval, type InsertDealApproval,
+  type BusinessHours, type InsertBusinessHours,
+  type BusinessSocial, type InsertBusinessSocial,
+  type BusinessDocument, type InsertBusinessDocument
 } from "@shared/schema";
 import crypto from "crypto";
 
@@ -18,14 +23,49 @@ export interface IStorage {
   updateUser(userId: number, userData: Partial<Omit<InsertUser, "id" | "password">>): Promise<User>;
   changePassword(userId: number, currentPassword: string, newPassword: string): Promise<boolean>;
 
+  // Business methods
+  getBusiness(id: number): Promise<Business | undefined>;
+  getBusinessByUserId(userId: number): Promise<Business | undefined>;
+  updateBusiness(id: number, businessData: Partial<Omit<InsertBusiness, "id" | "userId">>): Promise<Business>;
+  updateBusinessVerificationStatus(id: number, status: string, feedback?: string): Promise<Business>;
+  
+  // Business Hours methods
+  getBusinessHours(businessId: number): Promise<BusinessHours[]>;
+  addBusinessHours(businessHours: Omit<InsertBusinessHours, "id">): Promise<BusinessHours>;
+  updateBusinessHours(id: number, businessHoursData: Partial<Omit<InsertBusinessHours, "id" | "businessId">>): Promise<BusinessHours>;
+  deleteBusinessHours(id: number): Promise<void>;
+  
+  // Business Social Media methods
+  getBusinessSocialLinks(businessId: number): Promise<BusinessSocial[]>;
+  addBusinessSocialLink(socialLink: Omit<InsertBusinessSocial, "id">): Promise<BusinessSocial>;
+  updateBusinessSocialLink(id: number, socialLinkData: Partial<Omit<InsertBusinessSocial, "id" | "businessId">>): Promise<BusinessSocial>;
+  deleteBusinessSocialLink(id: number): Promise<void>;
+  
+  // Business Document methods
+  getBusinessDocuments(businessId: number): Promise<BusinessDocument[]>;
+  addBusinessDocument(document: Omit<InsertBusinessDocument, "id" | "submittedAt">): Promise<BusinessDocument>;
+  updateBusinessDocumentStatus(id: number, status: string, feedback?: string): Promise<BusinessDocument>;
+
   // Deal methods
   getDeals(): Promise<(Deal & { business: Business })[]>;
   getDeal(id: number): Promise<(Deal & { business: Business }) | undefined>;
   getDealsByBusiness(businessId: number): Promise<Deal[]>;
+  getDealsByStatus(status: string): Promise<(Deal & { business: Business })[]>;
   getFeaturedDeals(limit?: number): Promise<(Deal & { business: Business })[]>;
   createDeal(deal: Omit<InsertDeal, "id" | "createdAt">): Promise<Deal>;
   updateDeal(id: number, dealData: Partial<Omit<InsertDeal, "id" | "businessId">>): Promise<Deal>;
   deleteDeal(id: number): Promise<void>;
+  updateDealStatus(id: number, status: string): Promise<Deal>;
+  duplicateDeal(dealId: number): Promise<Deal>;
+  incrementDealViews(dealId: number): Promise<Deal>;
+  incrementDealSaves(dealId: number): Promise<Deal>;
+  incrementDealRedemptions(dealId: number): Promise<Deal>;
+  
+  // Deal Approval methods
+  createDealApproval(approval: Omit<InsertDealApproval, "id" | "submittedAt">): Promise<DealApproval>;
+  getDealApproval(dealId: number): Promise<DealApproval | undefined>;
+  getDealApprovalHistory(dealId: number): Promise<DealApproval[]>;
+  updateDealApproval(id: number, status: string, reviewerId?: number, feedback?: string): Promise<DealApproval>;
   
   // User favorites methods
   getUserFavorites(userId: number): Promise<(UserFavorite & { deal: Deal & { business: Business } })[]>;
@@ -34,8 +74,10 @@ export interface IStorage {
   
   // Deal redemption methods
   getUserRedemptions(userId: number): Promise<(DealRedemption & { deal: Deal & { business: Business } })[]>;
+  getDealRedemptions(dealId: number): Promise<DealRedemption[]>;
   createRedemption(userId: number, dealId: number): Promise<DealRedemption>;
   updateRedemptionStatus(id: number, status: string): Promise<DealRedemption>;
+  verifyRedemptionCode(dealId: number, code: string): Promise<boolean>;
   
   // Notification preferences methods
   getUserNotificationPreferences(userId: number): Promise<UserNotificationPreferences | undefined>;
@@ -55,12 +97,22 @@ export class MemStorage implements IStorage {
   private dealRedemptions: Map<number, DealRedemption>;
   private userNotificationPreferences: Map<number, UserNotificationPreferences>;
   
+  // New vendor-side collections
+  private dealApprovals: Map<number, DealApproval>;
+  private businessHours: Map<number, BusinessHours>;
+  private businessSocial: Map<number, BusinessSocial>;
+  private businessDocuments: Map<number, BusinessDocument>;
+  
   private currentUserId: number;
   private currentBusinessId: number;
   private currentDealId: number;
   private currentUserFavoriteId: number;
   private currentDealRedemptionId: number;
   private currentUserNotificationPreferencesId: number;
+  private currentDealApprovalId: number;
+  private currentBusinessHoursId: number;
+  private currentBusinessSocialId: number;
+  private currentBusinessDocumentId: number;
 
   constructor() {
     this.users = new Map();
