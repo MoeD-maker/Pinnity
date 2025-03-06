@@ -205,7 +205,7 @@ export class MemStorage implements IStorage {
         title: "50% Off Your First Coffee",
         description: "New customers get 50% off any coffee drink!",
         category: "Food & Drink",
-        imageUrl: "https://images.unsplash.com/photo-1509042239860-f190347d6893?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8Y29mZmVlfGVufDB8fDB8fA%3D%3D&w=1000&q=80",
+        imageUrl: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
         startDate: new Date("2023-01-01"),
         endDate: new Date("2023-12-31"),
         terms: "Valid for first-time customers only. Cannot be combined with other offers.",
