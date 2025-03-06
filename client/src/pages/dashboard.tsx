@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MagnifyingGlassIcon, ListFilterIcon, MapIcon, GridIcon } from 'lucide-react';
+import { Search, Filter as ListFilterIcon, Map as MapIcon, Grid as GridIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 
-import DealMap from '@/components/dashboard/DealMap';
-import DealGrid from '@/components/dashboard/DealGrid';
-import FeaturedDeals from '@/components/dashboard/FeaturedDeals';
-import CategoryFilter from '@/components/dashboard/CategoryFilter';
-import DealDetail from '@/components/dashboard/DealDetail';
+// Use the barrel export for dashboard components
+import { 
+  DealMap, 
+  DealGrid, 
+  FeaturedDeals, 
+  CategoryFilter, 
+  DealDetail 
+} from '@/components/dashboard';
 import { Deal } from '@shared/schema';
 
 type ViewMode = 'grid' | 'map';
@@ -29,13 +33,19 @@ export default function Dashboard() {
   // Fetch all deals
   const { data: deals, isLoading: isLoadingDeals } = useQuery({
     queryKey: ['/api/deals'],
-    queryFn: { endpoint: '/api/deals' },
+    queryFn: async () => {
+      const response = await apiRequest('/api/deals');
+      return response || [];
+    },
   });
 
   // Fetch featured deals
   const { data: featuredDeals, isLoading: isLoadingFeatured } = useQuery({
     queryKey: ['/api/deals/featured'],
-    queryFn: { endpoint: '/api/deals/featured', params: { limit: 5 } },
+    queryFn: async () => {
+      const response = await apiRequest('/api/deals/featured?limit=5');
+      return response || [];
+    },
   });
 
   // Handle category filter changes
@@ -98,7 +108,7 @@ export default function Dashboard() {
             onChange={handleSearchChange}
             className="pl-10 w-full"
           />
-          <MagnifyingGlassIcon className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+          <Search className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
         </div>
         
         <div className="flex gap-2">
