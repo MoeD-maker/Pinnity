@@ -210,7 +210,8 @@ export default function DocumentVerification({ businessId, documents, onDocument
                         size="sm"
                         onClick={() => {
                           setSelectedDocument(document);
-                          setReviewStatus("pending");
+                          // Reset to verified as default for the form
+                          setReviewStatus("verified");
                           setDocumentFeedback("");
                           setReviewDialogOpen(true);
                         }}
