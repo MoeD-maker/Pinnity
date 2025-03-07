@@ -2,21 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { DealGrid } from '@/components/dashboard';
 import { Card, CardContent } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Clock } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { 
   getExpiringSoonDeals, 
   checkAndNotifyExpiringSoonDeals, 
   requestNotificationPermission,
-  DealLike
+  DealLike,
+  isExpired
 } from '@/utils/dealReminders';
+import { useAuth } from '@/contexts/AuthContext';
 import ExpiringDealsNotification from '@/components/deals/ExpiringDealsNotification';
 
 export default function FavoritesPage() {
   // For demonstration purposes, hardcoded user ID
   const userId = 1;
+  const { user } = useAuth();
   
-  // State for notification banner
+  // State for notification banner and toggles
   const [showExpiringNotification, setShowExpiringNotification] = useState(true);
+  const [showExpired, setShowExpired] = useState(false);
   const [expiringDeals, setExpiringDeals] = useState<DealLike[]>([]);
   
   // Fetch user favorites
@@ -75,6 +82,25 @@ export default function FavoritesPage() {
         </div>
       )}
 
+      {/* Expired deals toggle */}
+      {(user?.userType === 'business' || user?.userType === 'admin') && (
+        <Card className="mb-6">
+          <CardContent className="py-4">
+            <div className="flex items-center space-x-2">
+              <Switch 
+                id="show-expired-favorites" 
+                checked={showExpired}
+                onCheckedChange={setShowExpired}
+              />
+              <Label htmlFor="show-expired-favorites" className="flex items-center gap-2 cursor-pointer">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                Show expired deals
+              </Label>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -94,7 +120,19 @@ export default function FavoritesPage() {
         </div>
       ) : (
         <DealGrid
-          deals={favorites?.map((fav: { deal: DealLike }) => fav.deal) || []}
+          deals={(favorites?.map((fav: { deal: DealLike }) => fav.deal) || []).filter(deal => {
+            // For individual users, filter out expired deals
+            if (user?.userType === 'individual' && isExpired(deal)) {
+              return false;
+            }
+            
+            // For business and admin users, show expired deals based on toggle
+            if ((user?.userType === 'business' || user?.userType === 'admin') && isExpired(deal)) {
+              return showExpired;
+            }
+            
+            return true;
+          })}
           isLoading={isLoading}
           onSelect={handleSelectDeal}
         />

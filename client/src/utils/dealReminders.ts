@@ -249,6 +249,13 @@ export function getExpirationNotificationText(deal: DealLike): string {
       
   const now = new Date();
   
+  // Check if the deal is already expired
+  if (endDate < now) {
+    // Format the business name
+    const businessName = deal.business?.businessName || 'a business';
+    return `"${deal.title}" from ${businessName} has expired.`;
+  }
+  
   // Calculate the difference in hours
   const diffTime = endDate.getTime() - now.getTime();
   const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
