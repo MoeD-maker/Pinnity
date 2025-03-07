@@ -1,16 +1,34 @@
 import { useState, useEffect } from 'react';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { applyUpdates, checkForUpdates } from '@/serviceWorkerRegistration';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { applyUpdates } from '../../serviceWorkerRegistration';
+import { Toast, ToastDescription, ToastAction, ToastTitle } from '@/components/ui/toast';
+import { useToast } from '@/hooks/use-toast';
 
 export default function UpdateNotification() {
-  const [showUpdateAlert, setShowUpdateAlert] = useState(false);
+  const [showUpdatePrompt, setShowUpdatePrompt] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Listen for update events from the service worker
+    // Check for service worker updates
+    checkForUpdates(() => {
+      setShowUpdatePrompt(true);
+
+      // Show a toast notification for the update
+      toast({
+        title: 'Update Available',
+        description: 'A new version of Pinnity is available',
+        action: (
+          <ToastAction altText="Update now" onClick={() => applyUpdates()}>
+            Update now
+          </ToastAction>
+        ),
+        duration: 10000, // 10 seconds
+      });
+    });
+
+    // Listen for the custom event triggered when the service worker finds an update
     const handleUpdateFound = () => {
-      setShowUpdateAlert(true);
+      setShowUpdatePrompt(true);
     };
 
     window.addEventListener('serviceWorkerUpdateFound', handleUpdateFound);
@@ -18,32 +36,44 @@ export default function UpdateNotification() {
     return () => {
       window.removeEventListener('serviceWorkerUpdateFound', handleUpdateFound);
     };
-  }, []);
+  }, [toast]);
 
-  const handleUpdate = () => {
-    // Apply the update
-    applyUpdates();
-    // Hide the notification
-    setShowUpdateAlert(false);
-  };
-
-  if (!showUpdateAlert) {
+  // If no update is available, don't render anything
+  if (!showUpdatePrompt) {
     return null;
   }
 
+  const handleUpdate = () => {
+    applyUpdates();
+  };
+
+  const handleDismiss = () => {
+    setShowUpdatePrompt(false);
+  };
+
   return (
-    <Alert variant="default" className="border-primary/50 bg-primary/10 fixed bottom-4 right-4 max-w-md z-50">
-      <AlertCircle className="h-4 w-4 text-primary" />
-      <div className="ml-3 flex-1">
-        <AlertTitle className="text-primary">Update Available</AlertTitle>
-        <AlertDescription className="text-sm text-muted-foreground">
-          A new version of Pinnity is available. Update now to get the latest features and improvements.
-        </AlertDescription>
+    <Toast open={showUpdatePrompt} onOpenChange={setShowUpdatePrompt}>
+      <ToastTitle>Update Available</ToastTitle>
+      <ToastDescription>
+        A new version of Pinnity is available. Update now for the latest features and improvements.
+      </ToastDescription>
+      <div className="mt-4 flex gap-2">
+        <Button 
+          size="sm" 
+          variant="default" 
+          onClick={handleUpdate}
+          className="bg-green-600 hover:bg-green-700"
+        >
+          Update Now
+        </Button>
+        <Button 
+          size="sm" 
+          variant="outline" 
+          onClick={handleDismiss}
+        >
+          Later
+        </Button>
       </div>
-      <Button variant="outline" size="sm" className="ml-3 flex items-center" onClick={handleUpdate}>
-        <RefreshCw className="h-3 w-3 mr-1" />
-        Update
-      </Button>
-    </Alert>
+    </Toast>
   );
 }

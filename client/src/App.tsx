@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, Suspense, lazy } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -7,11 +7,13 @@ import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth";
 import Dashboard from "@/pages/dashboard";
 import MainLayout from "@/components/layout/MainLayout";
-import { Suspense, lazy } from "react";
 import TestLogin from "./test-login";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
 import UpdateNotification from "@/components/pwa/UpdateNotification";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { WifiOff, Wifi, X } from "lucide-react";
+import * as localforage from 'localforage';
 
 // Lazy-loaded pages for better performance
 const Favorites = lazy(() => import("@/pages/favorites"));
@@ -28,6 +30,139 @@ const AdminVendorDetail = lazy(() => import("@/pages/admin/vendors/[id]"));
 const VendorDashboard = lazy(() => import("@/pages/vendor/index"));
 const CreateDeal = lazy(() => import("@/pages/vendor/deals/create"));
 const VendorProfile = lazy(() => import("@/pages/vendor/profile"));
+
+// Fallback loading component with better styling
+const LoadingFallback = () => (
+  <div className="flex flex-col items-center justify-center min-h-[200px] p-4">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+    <p className="text-sm text-muted-foreground">Loading content...</p>
+  </div>
+);
+
+// Network status alert component
+function NetworkStatusAlert() {
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOffline(false);
+      setVisible(true);
+      // Auto-hide after 5 seconds
+      setTimeout(() => setVisible(false), 5000);
+    };
+
+    const handleOffline = () => {
+      setIsOffline(true);
+      setVisible(true);
+    };
+
+    const handleOfflineStatusChanged = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) {
+        setIsOffline(customEvent.detail.isOffline);
+        setVisible(true);
+        if (!customEvent.detail.isOffline) {
+          // Auto-hide after 5 seconds if it's an online notification
+          setTimeout(() => setVisible(false), 5000);
+        }
+      }
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('offlineStatusChanged', handleOfflineStatusChanged);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('offlineStatusChanged', handleOfflineStatusChanged);
+    };
+  }, []);
+
+  // Don't render if not visible
+  if (!visible) return null;
+
+  return (
+    <Alert 
+      className={`fixed top-4 right-4 z-50 max-w-md shadow-lg transition-all duration-300 ${isOffline ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}
+      variant={isOffline ? "destructive" : "default"}
+    >
+      <div className="absolute right-2 top-2">
+        <button onClick={() => setVisible(false)} className="p-1 rounded-full hover:bg-gray-200">
+          <X className="h-3 w-3" />
+        </button>
+      </div>
+      {isOffline ? (
+        <>
+          <WifiOff className="h-4 w-4 text-red-500" />
+          <AlertTitle>You're offline</AlertTitle>
+          <AlertDescription>
+            Some features may be limited. We'll save your changes and sync when you're back online.
+          </AlertDescription>
+        </>
+      ) : (
+        <>
+          <Wifi className="h-4 w-4 text-green-500" />
+          <AlertTitle>You're back online</AlertTitle>
+          <AlertDescription>
+            Your data is being synchronized now.
+          </AlertDescription>
+        </>
+      )}
+    </Alert>
+  );
+}
+
+// Offline data handler hook
+function useOfflineData() {
+  useEffect(() => {
+    // Initialize offline data caching
+    const setupOfflineData = async () => {
+      try {
+        // Create required stores if they don't exist
+        const stores = ['app-state', 'user-data', 'favorites', 'redemptions'];
+        for (const store of stores) {
+          const data = await localforage.getItem(store);
+          if (data === null) {
+            await localforage.setItem(store, {});
+          }
+        }
+      } catch (error) {
+        console.error('Error setting up offline data:', error);
+      }
+    };
+
+    setupOfflineData();
+
+    // Listen for sync events from service worker
+    const handleFavoritesSynced = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail && customEvent.detail.success > 0) {
+        // Update UI or show notification about synced favorites
+        console.log(`${customEvent.detail.success} favorites synced`);
+      }
+    };
+
+    const handleRedemptionsSynced = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail && customEvent.detail.success > 0) {
+        // Update UI or show notification about synced redemptions
+        console.log(`${customEvent.detail.success} redemptions synced`);
+      }
+    };
+
+    window.addEventListener('favoritesSynced', handleFavoritesSynced);
+    window.addEventListener('redemptionsSynced', handleRedemptionsSynced);
+
+    return () => {
+      window.removeEventListener('favoritesSynced', handleFavoritesSynced);
+      window.removeEventListener('redemptionsSynced', handleRedemptionsSynced);
+    };
+  }, []);
+
+  return null; // This hook doesn't return anything, it just sets up listeners
+}
 
 // Authenticated route wrapper
 function AuthenticatedRoute({ component: Component, ...rest }: any) {
@@ -72,7 +207,7 @@ function AuthenticatedRoute({ component: Component, ...rest }: any) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00796B]"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -104,7 +239,7 @@ function Router() {
       
       <Route path="/favorites">
         {(params) => (
-          <Suspense fallback={<div>Loading...</div>}>
+          <Suspense fallback={<LoadingFallback />}>
             <AuthenticatedRoute component={Favorites} params={params} />
           </Suspense>
         )}
@@ -112,7 +247,7 @@ function Router() {
       
       <Route path="/profile">
         {(params) => (
-          <Suspense fallback={<div>Loading...</div>}>
+          <Suspense fallback={<LoadingFallback />}>
             <AuthenticatedRoute component={Profile} params={params} />
           </Suspense>
         )}
@@ -120,7 +255,7 @@ function Router() {
       
       <Route path="/explore">
         {(params) => (
-          <Suspense fallback={<div>Loading...</div>}>
+          <Suspense fallback={<LoadingFallback />}>
             <AuthenticatedRoute component={Explore} params={params} />
           </Suspense>
         )}
@@ -128,7 +263,7 @@ function Router() {
       
       <Route path="/map">
         {(params) => (
-          <Suspense fallback={<div>Loading...</div>}>
+          <Suspense fallback={<LoadingFallback />}>
             <AuthenticatedRoute component={Map} params={params} />
           </Suspense>
         )}
@@ -137,7 +272,7 @@ function Router() {
       {/* Admin routes */}
       <Route path="/admin">
         {(params) => (
-          <Suspense fallback={<div>Loading...</div>}>
+          <Suspense fallback={<LoadingFallback />}>
             <AuthenticatedRoute component={AdminDashboard} params={params} />
           </Suspense>
         )}
@@ -145,7 +280,7 @@ function Router() {
       
       <Route path="/admin/vendors">
         {(params) => (
-          <Suspense fallback={<div>Loading...</div>}>
+          <Suspense fallback={<LoadingFallback />}>
             <AuthenticatedRoute component={AdminVendors} params={params} />
           </Suspense>
         )}
@@ -153,7 +288,7 @@ function Router() {
       
       <Route path="/admin/vendors/:id">
         {(params) => (
-          <Suspense fallback={<div>Loading...</div>}>
+          <Suspense fallback={<LoadingFallback />}>
             <AuthenticatedRoute component={AdminVendorDetail} params={params} />
           </Suspense>
         )}
@@ -162,7 +297,7 @@ function Router() {
       {/* Vendor routes */}
       <Route path="/vendor">
         {(params) => (
-          <Suspense fallback={<div>Loading...</div>}>
+          <Suspense fallback={<LoadingFallback />}>
             <AuthenticatedRoute component={VendorDashboard} params={params} />
           </Suspense>
         )}
@@ -170,7 +305,7 @@ function Router() {
       
       <Route path="/vendor/deals/create">
         {(params) => (
-          <Suspense fallback={<div>Loading...</div>}>
+          <Suspense fallback={<LoadingFallback />}>
             <AuthenticatedRoute component={CreateDeal} params={params} />
           </Suspense>
         )}
@@ -178,7 +313,7 @@ function Router() {
       
       <Route path="/vendor/profile">
         {(params) => (
-          <Suspense fallback={<div>Loading...</div>}>
+          <Suspense fallback={<LoadingFallback />}>
             <AuthenticatedRoute component={VendorProfile} params={params} />
           </Suspense>
         )}
@@ -190,6 +325,9 @@ function Router() {
 }
 
 function App() {
+  // Set up offline data handling
+  useOfflineData();
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -197,6 +335,7 @@ function App() {
         <Toaster />
         <InstallPrompt className="fixed bottom-4 left-4 z-50 max-w-md" />
         <UpdateNotification />
+        <NetworkStatusAlert />
       </AuthProvider>
     </QueryClientProvider>
   );

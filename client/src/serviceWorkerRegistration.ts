@@ -1,33 +1,73 @@
 
-// This optional code is used to register a service worker.
-// register() is not called by default.
+/**
+ * Service Worker Registration & Management
+ * This file handles the registration, updates, background sync,
+ * and cache management for the Pinnity PWA.
+ */
 
-// This lets the app load faster on subsequent visits in production, and gives
-// it offline capabilities. However, it also means that developers (and users)
-// will only see deployed updates on subsequent visits to a page, after all the
-// existing tabs open on the page have been closed, since previously cached
-// resources are updated in the background.
-
-type Config = {
+interface PinnityServiceWorkerConfig {
   onSuccess?: (registration: ServiceWorkerRegistration) => void;
   onUpdate?: (registration: ServiceWorkerRegistration) => void;
-};
+  onOffline?: () => void;
+  onOnline?: () => void;
+  onMessage?: (event: MessageEvent) => void;
+}
 
-export function register(config?: Config) {
+/**
+ * Register the service worker for the application
+ */
+export function register(config?: PinnityServiceWorkerConfig) {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       const swUrl = '/service-worker.js';
+      
+      // Listen for online/offline events
+      if (config?.onOffline || config?.onOnline) {
+        setupNetworkListeners(config);
+      }
       
       registerValidSW(swUrl, config);
     });
   }
 }
 
-function registerValidSW(swUrl: string, config?: Config) {
+/**
+ * Setup network status listeners
+ */
+function setupNetworkListeners(config: PinnityServiceWorkerConfig) {
+  // Set initial state
+  if (!navigator.onLine && config.onOffline) {
+    config.onOffline();
+  }
+  
+  // Add event listeners
+  window.addEventListener('online', () => {
+    console.log('App is online. Syncing data...');
+    syncOfflineActions();
+    if (config.onOnline) config.onOnline();
+  });
+  
+  window.addEventListener('offline', () => {
+    console.log('App is offline. Some features may be unavailable.');
+    if (config.onOffline) config.onOffline();
+  });
+}
+
+/**
+ * Register and setup the service worker
+ */
+function registerValidSW(swUrl: string, config?: PinnityServiceWorkerConfig) {
   navigator.serviceWorker
     .register(swUrl)
     .then(registration => {
       console.log('ServiceWorker registration successful');
+      
+      // Set up message listener
+      if (config?.onMessage) {
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          config.onMessage?.(event);
+        });
+      }
       
       registration.onupdatefound = () => {
         const installingWorker = registration.installing;
@@ -66,7 +106,9 @@ function registerValidSW(swUrl: string, config?: Config) {
     });
 }
 
-// Check if a new service worker is waiting and show update notification
+/**
+ * Check if a new service worker is waiting and trigger update notification
+ */
 export function checkForUpdates(callback: () => void) {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.ready.then(registration => {
@@ -86,7 +128,9 @@ export function checkForUpdates(callback: () => void) {
   }
 }
 
-// Apply updates from a waiting service worker
+/**
+ * Apply updates from a waiting service worker
+ */
 export function applyUpdates() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.ready.then(registration => {
@@ -98,7 +142,9 @@ export function applyUpdates() {
   }
 }
 
-// Request permission for push notifications
+/**
+ * Request permission for push notifications
+ */
 export function requestNotificationPermission(): Promise<NotificationPermission> {
   if (!('Notification' in window)) {
     console.log('This browser does not support notifications');
@@ -108,6 +154,67 @@ export function requestNotificationPermission(): Promise<NotificationPermission>
   return Notification.requestPermission();
 }
 
+/**
+ * Perform a background sync operation if supported
+ */
+export function performBackgroundSync(syncTag: string): Promise<boolean> {
+  if ('serviceWorker' in navigator && 'SyncManager' in window) {
+    return navigator.serviceWorker.ready
+      .then(registration => {
+        return registration.sync.register(syncTag)
+          .then(() => {
+            console.log(`Background sync registered: ${syncTag}`);
+            return true;
+          })
+          .catch(err => {
+            console.error(`Background sync failed: ${err}`);
+            return false;
+          });
+      });
+  }
+  
+  console.log('Background sync not supported on this browser');
+  return Promise.resolve(false);
+}
+
+/**
+ * Sync offline actions when back online
+ */
+export function syncOfflineActions() {
+  if ('serviceWorker' in navigator) {
+    // Attempt to sync favorites
+    performBackgroundSync('sync-favorites')
+      .then(() => console.log('Favorites sync initiated'))
+      .catch(err => console.error('Favorites sync error:', err));
+    
+    // Attempt to sync redemptions
+    performBackgroundSync('sync-redemptions')
+      .then(() => console.log('Redemptions sync initiated'))
+      .catch(err => console.error('Redemptions sync error:', err));
+  }
+}
+
+/**
+ * Cache a dynamic URL for offline use
+ */
+export function cacheUrl(url: string): Promise<boolean> {
+  if ('caches' in window) {
+    return caches.open('pinnity-dynamic-cache')
+      .then(cache => {
+        return fetch(url)
+          .then(response => {
+            cache.put(url, response.clone());
+            return true;
+          })
+          .catch(() => false);
+      });
+  }
+  return Promise.resolve(false);
+}
+
+/**
+ * Unregister the service worker
+ */
 export function unregister() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.ready
