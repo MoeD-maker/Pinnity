@@ -1216,6 +1216,92 @@ export class MemStorage implements IStorage {
     this.userNotificationPreferences.set(preferences.id, updatedPreferences);
     return updatedPreferences;
   }
+
+  // Redemption rating methods
+  async createRedemptionRating(redemptionId: number, userId: number, dealId: number, businessId: number, ratingData: RatingData): Promise<RedemptionRating> {
+    // Check if a rating already exists for this redemption
+    const existingRating = await this.getRedemptionRating(redemptionId);
+    if (existingRating) {
+      throw new Error("Rating already exists for this redemption");
+    }
+    
+    // Create a new rating
+    const id = this.currentRedemptionRatingId++;
+    const rating: RedemptionRating = {
+      id,
+      redemptionId,
+      userId,
+      dealId,
+      businessId,
+      rating: ratingData.rating,
+      comment: ratingData.comment || null,
+      createdAt: new Date(),
+      anonymous: ratingData.anonymous || false
+    };
+    
+    this.redemptionRatings.set(id, rating);
+    return rating;
+  }
+  
+  async getRedemptionRating(redemptionId: number): Promise<RedemptionRating | undefined> {
+    return Array.from(this.redemptionRatings.values()).find(
+      (rating) => rating.redemptionId === redemptionId
+    );
+  }
+  
+  async getUserRatings(userId: number): Promise<(RedemptionRating & { deal: Deal, business: Business })[]> {
+    const ratings = Array.from(this.redemptionRatings.values()).filter(
+      (rating) => rating.userId === userId
+    );
+    
+    return ratings.map(rating => {
+      const deal = this.deals.get(rating.dealId)!;
+      const business = this.businesses.get(rating.businessId)!;
+      return {
+        ...rating,
+        deal,
+        business
+      };
+    });
+  }
+  
+  async getBusinessRatings(businessId: number): Promise<RedemptionRating[]> {
+    return Array.from(this.redemptionRatings.values()).filter(
+      (rating) => rating.businessId === businessId
+    );
+  }
+  
+  async getBusinessRatingSummary(businessId: number): Promise<{ averageRating: number, totalRatings: number, ratingCounts: Record<number, number> }> {
+    const ratings = await this.getBusinessRatings(businessId);
+    
+    // Initialize the rating counts object
+    const ratingCounts: Record<number, number> = {
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0
+    };
+    
+    // Calculate the total ratings and the sum of all ratings
+    let totalRatings = 0;
+    let sumRatings = 0;
+    
+    ratings.forEach(rating => {
+      totalRatings++;
+      sumRatings += rating.rating;
+      ratingCounts[rating.rating]++;
+    });
+    
+    // Calculate the average rating
+    const averageRating = totalRatings > 0 ? sumRatings / totalRatings : 0;
+    
+    return {
+      averageRating,
+      totalRatings,
+      ratingCounts
+    };
+  }
 }
 
 export const storage = new MemStorage();
