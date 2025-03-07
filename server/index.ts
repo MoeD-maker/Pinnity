@@ -65,5 +65,14 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    const replitSlug = process.env.REPL_SLUG || '';
+    const replitOwner = process.env.REPL_OWNER || '';
+    const replitId = process.env.REPL_ID || '';
+    
+    if (app.get('env') === 'development' && replitId) {
+      log(`Dev server running! Access via:`);
+      log(`→ Replit webview: https://${replitSlug}.${replitOwner}.repl.co`);
+      log(`→ This terminal's port forwarding: http://localhost:${port}`);
+    }
   });
 })();

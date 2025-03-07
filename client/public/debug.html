@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pinnity Development Debug</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f5f5f5;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    header {
+      background-color: #00796b;
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .card h2 {
+      margin-top: 0;
+      color: #00796b;
+      font-size: 18px;
+    }
+    code {
+      background-color: #f0f0f0;
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+    pre {
+      background-color: #f0f0f0;
+      padding: 15px;
+      border-radius: 5px;
+      overflow-x: auto;
+      font-size: 14px;
+    }
+    .button {
+      display: inline-block;
+      background-color: #00796b;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 4px;
+      text-decoration: none;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    .button.secondary {
+      background-color: #f0f0f0;
+      color: #333;
+      border: 1px solid #ddd;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .route-card {
+      background-color: white;
+      border-radius: 8px;
+      padding: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .route-card a {
+      color: #00796b;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .route-card p {
+      margin: 5px 0 0;
+      font-size: 12px;
+      color: #666;
+    }
+    #logs {
+      height: 300px;
+      overflow-y: auto;
+      margin-top: 15px;
+    }
+    .log-entry {
+      margin-bottom: 5px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 5px;
+    }
+    .log-time {
+      color: #999;
+      font-size: 12px;
+    }
+    @media (max-width: 600px) {
+      .grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Pinnity Development Debug Console</h1>
+  </header>
+
+  <div class="card">
+    <h2>Application Access</h2>
+    <p>The Replit WebView may not be rendering the app correctly in development mode. Try one of these methods:</p>
+    <div>
+      <a href="/" class="button">Root Path</a>
+      <a href="/test-page" class="button">Test Page</a>
+      <a href="/auth" class="button">Auth Page</a>
+      <a href="https://pinnity.replit.app" class="button secondary" target="_blank">Production App</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Available Routes</h2>
+    <div class="grid">
+      <div class="route-card">
+        <a href="/">/</a>
+        <p>Home Page</p>
+      </div>
+      <div class="route-card">
+        <a href="/auth">/auth</a>
+        <p>Authentication</p>
+      </div>
+      <div class="route-card">
+        <a href="/dashboard">/dashboard</a>
+        <p>User Dashboard</p>
+      </div>
+      <div class="route-card">
+        <a href="/explore">/explore</a>
+        <p>Explore Deals</p>
+      </div>
+      <div class="route-card">
+        <a href="/favorites">/favorites</a>
+        <p>User Favorites</p>
+      </div>
+      <div class="route-card">
+        <a href="/map">/map</a>
+        <p>Deal Map</p>
+      </div>
+      <div class="route-card">
+        <a href="/profile">/profile</a>
+        <p>User Profile</p>
+      </div>
+      <div class="route-card">
+        <a href="/test-page">/test-page</a>
+        <p>Test Page</p>
+      </div>
+      <div class="route-card">
+        <a href="/vendor">/vendor</a>
+        <p>Vendor Dashboard</p>
+      </div>
+      <div class="route-card">
+        <a href="/admin">/admin</a>
+        <p>Admin Dashboard</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Browser Information</h2>
+    <pre id="browser-info">Loading browser information...</pre>
+  </div>
+
+  <div class="card">
+    <h2>Console Logs</h2>
+    <button id="clear-logs" class="button secondary">Clear Logs</button>
+    <div id="logs"></div>
+  </div>
+
+  <script>
+    // Display browser information
+    function displayBrowserInfo() {
+      const browserInfo = {
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        appName: navigator.appName,
+        appVersion: navigator.appVersion,
+        language: navigator.language,
+        cookiesEnabled: navigator.cookieEnabled,
+        online: navigator.onLine,
+        screenWidth: window.screen.width,
+        screenHeight: window.screen.height,
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight
+      };
+      
+      document.getElementById('browser-info').textContent = JSON.stringify(browserInfo, null, 2);
+    }
+    
+    displayBrowserInfo();
+    
+    // Intercept console logs
+    const originalConsole = {
+      log: console.log,
+      error: console.error,
+      warn: console.warn,
+      info: console.info
+    };
+    
+    const logsContainer = document.getElementById('logs');
+    
+    function addLogEntry(type, args) {
+      const logEntry = document.createElement('div');
+      logEntry.className = 'log-entry';
+      
+      const time = new Date().toLocaleTimeString();
+      const logTime = document.createElement('span');
+      logTime.className = 'log-time';
+      logTime.textContent = `[${time}] `;
+      
+      const logContent = document.createElement('span');
+      logContent.className = `log-${type}`;
+      logContent.textContent = args.map(arg => {
+        if (typeof arg === 'object') {
+          try {
+            return JSON.stringify(arg);
+          } catch (e) {
+            return String(arg);
+          }
+        }
+        return String(arg);
+      }).join(' ');
+      
+      logEntry.appendChild(logTime);
+      logEntry.appendChild(logContent);
+      logsContainer.appendChild(logEntry);
+      
+      // Auto-scroll to bottom
+      logsContainer.scrollTop = logsContainer.scrollHeight;
+    }
+    
+    // Override console methods
+    console.log = function() {
+      originalConsole.log.apply(console, arguments);
+      addLogEntry('log', Array.from(arguments));
+    };
+    
+    console.error = function() {
+      originalConsole.error.apply(console, arguments);
+      addLogEntry('error', Array.from(arguments));
+    };
+    
+    console.warn = function() {
+      originalConsole.warn.apply(console, arguments);
+      addLogEntry('warn', Array.from(arguments));
+    };
+    
+    console.info = function() {
+      originalConsole.info.apply(console, arguments);
+      addLogEntry('info', Array.from(arguments));
+    };
+    
+    // Clear logs button
+    document.getElementById('clear-logs').addEventListener('click', function() {
+      logsContainer.innerHTML = '';
+    });
+    
+    // Log some initial information
+    console.log('Debug page loaded at', new Date().toLocaleString());
+    console.log('Window location:', window.location.href);
+    
+    // Check if the main app is loading
+    console.log('Checking if main app is accessible...');
+    fetch('/')
+      .then(response => {
+        console.log('Root path response status:', response.status);
+        return response.text();
+      })
+      .then(html => {
+        console.log('Root path returned HTML (length):', html.length);
+        if (html.includes('<div id="root"></div>')) {
+          console.log('Root path contains main app container');
+        } else {
+          console.warn('Root path may not contain the main app container');
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching root path:', error);
+      });
+  </script>
+</body>
+</html>
