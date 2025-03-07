@@ -70,8 +70,9 @@ app.use((req, res, next) => {
     const replitId = process.env.REPL_ID || '';
     
     if (app.get('env') === 'development' && replitId) {
+      const replitDevDomain = process.env.REPLIT_DEV_DOMAIN || '';
       log(`Dev server running! Access via:`);
-      log(`→ Replit webview: https://${replitSlug}.${replitOwner}.repl.co`);
+      log(`→ Replit webview: https://${replitDevDomain}`);
       log(`→ This terminal's port forwarding: http://localhost:${port}`);
     }
   });

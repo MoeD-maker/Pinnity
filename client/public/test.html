@@ -3,208 +3,201 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pinnity Test Page</title>
+  <title>Pinnity Server Test</title>
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: #f5f5f5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       max-width: 800px;
       margin: 0 auto;
       padding: 20px;
-    }
-    header {
-      background-color: #00796b;
-      color: white;
-      padding: 20px;
-      border-radius: 8px;
-      margin-bottom: 20px;
+      line-height: 1.6;
     }
     h1 {
-      margin: 0;
-      font-size: 24px;
+      color: #00796B;
+      border-bottom: 2px solid #00796B;
+      padding-bottom: 10px;
     }
     .card {
-      background-color: white;
+      background: #f5f5f5;
       border-radius: 8px;
       padding: 20px;
-      margin-bottom: 20px;
+      margin: 20px 0;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    .card h2 {
-      margin-top: 0;
-      color: #00796b;
-      font-size: 18px;
+    .success {
+      background-color: #e8f5e9;
+      border-left: 4px solid #4caf50;
+    }
+    .info {
+      background-color: #e3f2fd;
+      border-left: 4px solid #2196f3;
     }
     button {
-      background-color: #00796b;
+      background-color: #00796B;
       color: white;
       border: none;
       padding: 10px 15px;
       border-radius: 4px;
       cursor: pointer;
-      margin-right: 10px;
-      font-size: 14px;
-    }
-    button.secondary {
-      background-color: #f0f0f0;
-      color: #333;
-      border: 1px solid #ddd;
-    }
-    #logs {
-      background-color: #f0f0f0;
-      padding: 15px;
-      border-radius: 5px;
-      height: 200px;
-      overflow-y: auto;
-      font-family: monospace;
-      font-size: 14px;
+      font-size: 16px;
       margin-top: 10px;
+    }
+    button:hover {
+      background-color: #00695C;
+    }
+    #env, #api-test {
+      font-family: monospace;
+      white-space: pre-wrap;
+      background-color: #f8f9fa;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    .loader {
+      border: 3px solid #f3f3f3;
+      border-radius: 50%;
+      border-top: 3px solid #00796B;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Pinnity Simple Test Page</h1>
-  </header>
+  <h1>Pinnity Server Test Page</h1>
+  
+  <div class="card success">
+    <h2>✅ Server is Running</h2>
+    <p>If you can see this page, the Express server is working correctly.</p>
+  </div>
 
+  <div class="card info">
+    <h2>Browser Information</h2>
+    <div id="browser-info"></div>
+  </div>
+  
   <div class="card">
-    <h2>React Mounting Test</h2>
-    <p>This simple test will check if React can mount in this environment:</p>
-    <div id="react-test"></div>
-    <button id="try-react">Test React Mounting</button>
-    <button id="check-vite" class="secondary">Check Vite Setup</button>
+    <h2>Environment Information</h2>
+    <button id="load-env">Show Environment Info</button>
+    <div id="env-container" style="display: none;">
+      <div id="env">Loading environment information...</div>
+    </div>
+  </div>
+  
+  <div class="card">
+    <h2>API Test</h2>
+    <button id="test-api">Test API Connection</button>
+    <div id="api-container" style="display: none;">
+      <div id="api-test">Running API test...</div>
+    </div>
   </div>
 
   <div class="card">
-    <h2>Environment Info</h2>
-    <div id="env-info"></div>
-  </div>
-
-  <div class="card">
-    <h2>Console</h2>
-    <div id="logs"></div>
-    <button id="clear-logs" class="secondary">Clear Logs</button>
+    <h2>React App Links</h2>
+    <p>Try accessing the React application through these links:</p>
+    <ul>
+      <li><a href="/" id="home-link">Home Page</a></li>
+      <li><a href="/auth" id="auth-link">Authentication Page</a></li>
+      <li><a href="/minimal" id="minimal-link">Minimal Test Page</a></li>
+    </ul>
   </div>
 
   <script>
-    // Utility to show logs in the UI
-    const logs = document.getElementById('logs');
-    const logToUI = (message, type = 'info') => {
-      const line = document.createElement('div');
-      line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-      line.className = `log-${type}`;
-      logs.appendChild(line);
-      logs.scrollTop = logs.scrollHeight;
-      console[type](message);
-    };
-
-    // Show environment info
-    const showEnvInfo = () => {
-      const envInfo = document.getElementById('env-info');
-      const info = {
-        userAgent: navigator.userAgent,
-        url: window.location.href,
-        protocol: window.location.protocol,
-        hostname: window.location.hostname,
-        port: window.location.port,
-        pathname: window.location.pathname
-      };
-      
-      envInfo.innerHTML = Object.entries(info)
-        .map(([key, value]) => `<div><strong>${key}:</strong> ${value}</div>`)
-        .join('');
-    };
+    // Display browser information
+    function showBrowserInfo() {
+      const browserInfoEl = document.getElementById('browser-info');
+      browserInfoEl.innerHTML = `
+        <p><strong>User Agent:</strong> ${navigator.userAgent}</p>
+        <p><strong>Window Size:</strong> ${window.innerWidth}x${window.innerHeight}</p>
+        <p><strong>Current URL:</strong> ${window.location.href}</p>
+        <p><strong>Online Status:</strong> ${navigator.onLine ? 'Online ✅' : 'Offline ❌'}</p>
+      `;
+    }
     
-    showEnvInfo();
-    
-    // Test React mounting
-    document.getElementById('try-react').addEventListener('click', async () => {
-      logToUI('Attempting to load React...', 'info');
+    // Get environment info
+    document.getElementById('load-env').addEventListener('click', function() {
+      const envContainer = document.getElementById('env-container');
+      const envEl = document.getElementById('env');
       
-      try {
-        // Try to load React from unpkg
-        const reactScript = document.createElement('script');
-        reactScript.src = 'https://unpkg.com/react@18/umd/react.development.js';
-        reactScript.onload = () => {
-          logToUI('React core loaded successfully', 'info');
-          
-          const reactDomScript = document.createElement('script');
-          reactDomScript.src = 'https://unpkg.com/react-dom@18/umd/react-dom.development.js';
-          reactDomScript.onload = () => {
-            logToUI('ReactDOM loaded successfully', 'info');
-            
-            // Try to render something
-            const targetDiv = document.getElementById('react-test');
-            targetDiv.innerHTML = '<div id="react-root"></div>';
-            
-            try {
-              const root = ReactDOM.createRoot(document.getElementById('react-root'));
-              root.render(React.createElement('div', null, 
-                React.createElement('h3', null, 'React Works!'),
-                React.createElement('p', null, 'This was rendered with React')
-              ));
-              logToUI('React rendering successful!', 'info');
-            } catch (renderError) {
-              logToUI(`React rendering failed: ${renderError.message}`, 'error');
+      if (envContainer.style.display === 'none') {
+        envContainer.style.display = 'block';
+        
+        // Add loader
+        envEl.innerHTML = '<div class="loader"></div> Loading...';
+        
+        fetch('/api/environment')
+          .then(response => response.json())
+          .then(data => {
+            envEl.textContent = JSON.stringify(data, null, 2);
+          })
+          .catch(error => {
+            envEl.textContent = `Error fetching environment info: ${error.message}`;
+          });
+      } else {
+        envContainer.style.display = 'none';
+      }
+    });
+    
+    // Test API connection
+    document.getElementById('test-api').addEventListener('click', function() {
+      const apiContainer = document.getElementById('api-container');
+      const apiEl = document.getElementById('api-test');
+      
+      if (apiContainer.style.display === 'none') {
+        apiContainer.style.display = 'block';
+        
+        // Add loader
+        apiEl.innerHTML = '<div class="loader"></div> Testing API connection...';
+        
+        fetch('/api/deals/featured')
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`Status: ${response.status}`);
             }
-          };
-          
-          reactDomScript.onerror = (err) => {
-            logToUI(`Failed to load ReactDOM: ${err}`, 'error');
-          };
-          
-          document.head.appendChild(reactDomScript);
-        };
-        
-        reactScript.onerror = (err) => {
-          logToUI(`Failed to load React: ${err}`, 'error');
-        };
-        
-        document.head.appendChild(reactScript);
-      } catch (error) {
-        logToUI(`Error: ${error.message}`, 'error');
+            return response.json();
+          })
+          .then(data => {
+            apiEl.textContent = 'API connection successful! Sample response:\n\n' + 
+              JSON.stringify(data, null, 2);
+          })
+          .catch(error => {
+            apiEl.textContent = `API connection failed: ${error.message}`;
+          });
+      } else {
+        apiContainer.style.display = 'none';
       }
     });
     
-    // Check Vite setup
-    document.getElementById('check-vite').addEventListener('click', async () => {
-      logToUI('Checking Vite setup...', 'info');
-      
-      try {
-        const response = await fetch('/src/main.tsx');
-        const status = response.status;
-        
-        if (status === 200) {
-          logToUI('Vite entry point accessible!', 'info');
-        } else {
-          logToUI(`Vite entry point returned status: ${status}`, 'error');
-        }
-        
-        const contentType = response.headers.get('content-type');
-        logToUI(`Content type: ${contentType}`, 'info');
-        
-      } catch (error) {
-        logToUI(`Vite check error: ${error.message}`, 'error');
-      }
-      
-      // Also check for the debug HTML
-      try {
-        const debugResponse = await fetch('/debug.html');
-        logToUI(`Debug page status: ${debugResponse.status}`, 'info');
-      } catch (error) {
-        logToUI(`Debug page check error: ${error.message}`, 'error');
-      }
-    });
+    // Update link URLs based on current hostname
+    function updateLinks() {
+      const currentHost = window.location.origin;
+      document.getElementById('home-link').href = currentHost + '/';
+      document.getElementById('auth-link').href = currentHost + '/auth';
+      document.getElementById('minimal-link').href = currentHost + '/minimal';
+    }
     
-    // Clear logs
-    document.getElementById('clear-logs').addEventListener('click', () => {
-      logs.innerHTML = '';
-      logToUI('Logs cleared', 'info');
-    });
+    // Initialize
+    showBrowserInfo();
+    updateLinks();
     
-    // Start with some basic logs
-    logToUI('Test page loaded', 'info');
-    logToUI(`Time: ${new Date().toString()}`, 'info');
+    // Check if we're in a Replit environment
+    if (window.location.hostname.includes('replit') || 
+        window.location.hostname.includes('repl.co')) {
+      document.body.insertAdjacentHTML('afterbegin', `
+        <div class="card" style="background-color: #fff3e0; border-left: 4px solid #ff9800;">
+          <h2>⚠️ Replit Environment Detected</h2>
+          <p>This application is running in a Replit environment. Some features may behave differently.</p>
+          <p><strong>Current Host:</strong> ${window.location.host}</p>
+        </div>
+      `);
+    }
   </script>
 </body>
 </html>
