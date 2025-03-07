@@ -153,7 +153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User Profile routes
-  app.get("/api/user/:id", async (req: Request, res: Response) => {
+  app.get("/api/user/:id", authenticate, checkOwnership('id'), async (req: Request, res: Response) => {
     try {
       const userId = parseInt(req.params.id);
       if (isNaN(userId)) {
@@ -175,7 +175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/user/:id", async (req: Request, res: Response) => {
+  app.put("/api/user/:id", authenticate, checkOwnership('id'), async (req: Request, res: Response) => {
     try {
       const userId = parseInt(req.params.id);
       if (isNaN(userId)) {
@@ -205,7 +205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Change password endpoint
-  app.post("/api/user/:id/change-password", async (req: Request, res: Response) => {
+  app.post("/api/user/:id/change-password", authenticate, checkOwnership('id'), async (req: Request, res: Response) => {
     try {
       const userId = parseInt(req.params.id);
       if (isNaN(userId)) {
