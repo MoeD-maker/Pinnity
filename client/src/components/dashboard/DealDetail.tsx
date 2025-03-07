@@ -134,17 +134,6 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
               </DialogDescription>
             </DialogHeader>
 
-            {/* Only show image in details view, not in redemption view */}
-            {step === 'details' && (
-              <div className="aspect-video rounded-lg overflow-hidden mb-4">
-                <img 
-                  src={deal.imageUrl || 'https://images.unsplash.com/photo-1556742111-a301076d9d18?ixlib=rb-4.0.3'} 
-                  alt={deal.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
-
             <Tabs defaultValue="details" value={step === 'redeem' ? 'redeem' : 'details'} className="mb-4">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger 
@@ -162,32 +151,45 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
               </TabsList>
               
               <TabsContent value="details" className="space-y-4 mt-4">
-                <div>
-                  <h3 className="font-medium mb-2">About This Deal</h3>
+                {/* Show image only in details tab with proper spacing */}
+                <div className="aspect-video rounded-lg overflow-hidden mb-6">
+                  <img 
+                    src={deal.imageUrl || 'https://images.unsplash.com/photo-1556742111-a301076d9d18?ixlib=rb-4.0.3'} 
+                    alt={deal.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                
+                <div className="bg-card rounded-lg p-5 border shadow-sm">
+                  <h3 className="font-medium mb-3">About This Deal</h3>
                   <p className="text-muted-foreground">{deal.description}</p>
                 </div>
 
-                <Separator />
-
-                <div>
-                  <h3 className="font-medium mb-2">Business Information</h3>
-                  <div className="space-y-2">
-                    <div className="flex items-start gap-2">
-                      <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                      <span>{deal.business.address || 'Address not available'}</span>
+                <div className="bg-card rounded-lg p-5 border shadow-sm">
+                  <h3 className="font-medium mb-3">Business Information</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="bg-muted p-2 rounded-md">
+                        <MapPin className="h-4 w-4 text-primary" />
+                      </div>
+                      <span className="mt-1">{deal.business.address || 'Address not available'}</span>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <Phone className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                      <span>{deal.business.phone || 'Phone not available'}</span>
+                    <div className="flex items-start gap-3">
+                      <div className="bg-muted p-2 rounded-md">
+                        <Phone className="h-4 w-4 text-primary" />
+                      </div>
+                      <span className="mt-1">{deal.business.phone || 'Phone not available'}</span>
                     </div>
                     {deal.business.website && (
-                      <div className="flex items-start gap-2">
-                        <Globe className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                      <div className="flex items-start gap-3">
+                        <div className="bg-muted p-2 rounded-md">
+                          <Globe className="h-4 w-4 text-primary" />
+                        </div>
                         <a 
                           href={deal.business.website.startsWith('http') ? deal.business.website : `https://${deal.business.website}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="text-primary hover:underline"
+                          className="text-primary hover:underline mt-1"
                         >
                           {deal.business.website}
                         </a>
@@ -196,33 +198,28 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                   </div>
                 </div>
 
-                <Separator />
-
-                <div>
-                  <h3 className="font-medium mb-2">Deal Validity</h3>
-                  <div className="space-y-2">
-                    <div className="flex items-start gap-2">
-                      <Calendar className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                      <div>
-                        <p>Valid until {format(new Date(deal.endDate), 'MMMM d, yyyy')}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Expires {formatDistanceToNow(new Date(deal.endDate), { addSuffix: true })}
-                        </p>
-                      </div>
+                <div className="bg-card rounded-lg p-5 border shadow-sm">
+                  <h3 className="font-medium mb-3">Deal Validity</h3>
+                  <div className="flex items-start gap-3">
+                    <div className="bg-muted p-2 rounded-md">
+                      <Calendar className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="mt-1">
+                      <p>Valid until {format(new Date(deal.endDate), 'MMMM d, yyyy')}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Expires {formatDistanceToNow(new Date(deal.endDate), { addSuffix: true })}
+                      </p>
                     </div>
                   </div>
                 </div>
 
                 {deal.terms && (
-                  <>
-                    <Separator />
-                    <div>
-                      <h3 className="font-medium mb-2">Terms & Conditions</h3>
-                      <p className="text-sm text-muted-foreground whitespace-pre-line">
-                        {deal.terms}
-                      </p>
-                    </div>
-                  </>
+                  <div className="bg-card rounded-lg p-5 border shadow-sm">
+                    <h3 className="font-medium mb-3">Terms & Conditions</h3>
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">
+                      {deal.terms}
+                    </p>
+                  </div>
                 )}
               </TabsContent>
               
