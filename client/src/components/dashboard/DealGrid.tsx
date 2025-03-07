@@ -4,11 +4,15 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Heart, MapPin, Calendar } from 'lucide-react';
+import { Heart, MapPin, Calendar, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { isExpiringSoon } from '@/utils/dealReminders';
+import ExpiringSoonBadge from '@/components/deals/ExpiringSoonBadge';
+
+import { Deal } from '@shared/schema';
 
 // Define a type that matches what we expect from the API
-interface DealWithBusiness {
+interface DealWithBusiness extends Partial<Deal> {
   id: number;
   title: string;
   description: string;
@@ -22,6 +26,7 @@ interface DealWithBusiness {
     address?: string;
     phone?: string;
     website?: string;
+    [key: string]: any;
   };
 }
 
@@ -120,9 +125,14 @@ function DealCard({ deal, onSelect }: DealCardProps) {
       <CardHeader className="p-4 pb-2">
         <div className="flex justify-between items-start">
           <div>
-            <Badge variant="outline" className="mb-2">
-              {deal.category}
-            </Badge>
+            <div className="flex flex-wrap gap-2 mb-2">
+              <Badge variant="outline">
+                {deal.category}
+              </Badge>
+              {isExpiringSoon(deal) && (
+                <ExpiringSoonBadge deal={deal} />
+              )}
+            </div>
             <h3 className="font-semibold text-lg line-clamp-1">{deal.title}</h3>
             <p className="text-sm text-muted-foreground line-clamp-1">
               {deal.business.businessName}

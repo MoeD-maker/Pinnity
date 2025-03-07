@@ -25,7 +25,13 @@ export interface DealWithBusiness extends Deal {
 export function isExpiringSoon(deal: Deal | DealWithBusiness): boolean {
   if (!deal.endDate) return false;
   
-  const endDate = new Date(deal.endDate);
+  // Handle different date formats
+  const endDate = typeof deal.endDate === 'string' 
+    ? new Date(deal.endDate) 
+    : deal.endDate instanceof Date 
+      ? deal.endDate 
+      : new Date();
+      
   const now = new Date();
   
   // Calculate the difference in hours
@@ -167,7 +173,13 @@ export function scheduleExpiringDealsCheck(intervalMinutes: number = 60): number
  * Generate text for an expiring deal notification
  */
 export function getExpirationNotificationText(deal: Deal | DealWithBusiness): string {
-  const endDate = new Date(deal.endDate as string);
+  // Handle different date formats
+  const endDate = typeof deal.endDate === 'string' 
+    ? new Date(deal.endDate) 
+    : deal.endDate instanceof Date 
+      ? deal.endDate 
+      : new Date();
+      
   const now = new Date();
   
   // Calculate the difference in hours

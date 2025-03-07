@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { DealGrid } from '@/components/dashboard';
 import { Card, CardContent } from '@/components/ui/card';
 import { apiRequest } from '@/lib/queryClient';
+import { getExpiringSoonDeals, checkAndNotifyExpiringSoonDeals, requestNotificationPermission } from '@/utils/dealReminders';
+import ExpiringDealsNotification from '@/components/deals/ExpiringDealsNotification';
 
 export default function FavoritesPage() {
   // For demonstration purposes, hardcoded user ID
