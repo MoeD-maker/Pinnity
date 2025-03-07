@@ -14,6 +14,11 @@ const Profile = lazy(() => import("@/pages/profile"));
 const Explore = lazy(() => import("@/pages/explore"));
 const Map = lazy(() => import("@/pages/map"));
 
+// Admin pages
+const AdminDashboard = lazy(() => import("@/pages/admin/index"));
+const AdminVendors = lazy(() => import("@/pages/admin/vendors/index"));
+const AdminVendorDetail = lazy(() => import("@/pages/admin/vendors/[id]"));
+
 // Authenticated route wrapper
 function AuthenticatedRoute({ component: Component, ...rest }: any) {
   const [location, setLocation] = useLocation();
@@ -74,6 +79,31 @@ function Router() {
         {(params) => (
           <Suspense fallback={<div>Loading...</div>}>
             <AuthenticatedRoute component={Map} params={params} />
+          </Suspense>
+        )}
+      </Route>
+      
+      {/* Admin routes */}
+      <Route path="/admin">
+        {(params) => (
+          <Suspense fallback={<div>Loading...</div>}>
+            <AuthenticatedRoute component={AdminDashboard} params={params} />
+          </Suspense>
+        )}
+      </Route>
+      
+      <Route path="/admin/vendors">
+        {(params) => (
+          <Suspense fallback={<div>Loading...</div>}>
+            <AuthenticatedRoute component={AdminVendors} params={params} />
+          </Suspense>
+        )}
+      </Route>
+      
+      <Route path="/admin/vendors/:id">
+        {(params) => (
+          <Suspense fallback={<div>Loading...</div>}>
+            <AuthenticatedRoute component={AdminVendorDetail} params={params} />
           </Suspense>
         )}
       </Route>
