@@ -70,16 +70,18 @@ export default function MainLayout({ children }: MainLayoutProps) {
                   </div>
                   <nav className="flex flex-col gap-1">
                     {navigationItems.map((item) => (
-                      <Link key={item.path} href={item.path}>
-                        <a className={`flex items-center gap-3 px-2 py-2 rounded-md text-sm ${
+                      <div
+                        key={item.path}
+                        className={`flex items-center gap-3 px-2 py-2 rounded-md text-sm cursor-pointer ${
                           isActive(item.path) 
                             ? 'bg-primary/10 text-primary font-medium' 
                             : 'text-muted-foreground hover:bg-muted'
-                        }`}>
-                          {item.icon}
-                          {item.label}
-                        </a>
-                      </Link>
+                        }`}
+                        onClick={() => navigate(item.path)}
+                      >
+                        {item.icon}
+                        {item.label}
+                      </div>
                     ))}
                     <button 
                       className="flex items-center gap-3 px-2 py-2 rounded-md text-sm text-muted-foreground hover:bg-muted mt-4"
@@ -92,9 +94,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 </div>
               </SheetContent>
             </Sheet>
-            <Link href="/">
-              <a className="font-bold text-xl text-primary ml-2">Pinnity</a>
-            </Link>
+            <div 
+              className="font-bold text-xl text-primary ml-2 cursor-pointer"
+              onClick={() => navigate('/')}
+            >
+              Pinnity
+            </div>
           </div>
           
           <div className="flex items-center gap-1">
@@ -129,22 +134,27 @@ export default function MainLayout({ children }: MainLayoutProps) {
       {/* Desktop layout */}
       <div className="flex-1 flex">
         <nav className="hidden md:flex flex-col fixed w-60 h-screen border-r p-4">
-          <Link href="/">
-            <a className="font-bold text-2xl text-primary mb-8">Pinnity</a>
-          </Link>
+          <div 
+            className="font-bold text-2xl text-primary mb-8 cursor-pointer"
+            onClick={() => navigate('/')}
+          >
+            Pinnity
+          </div>
           
           <div className="flex-1 flex flex-col gap-1">
             {navigationItems.map((item) => (
-              <Link key={item.path} href={item.path}>
-                <a className={`flex items-center gap-3 px-3 py-2 rounded-md ${
+              <div
+                key={item.path}
+                className={`flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer ${
                   isActive(item.path) 
                     ? 'bg-primary/10 text-primary font-medium' 
                     : 'text-muted-foreground hover:bg-muted'
-                }`}>
-                  {item.icon}
-                  {item.label}
-                </a>
-              </Link>
+                }`}
+                onClick={() => navigate(item.path)}
+              >
+                {item.icon}
+                {item.label}
+              </div>
             ))}
           </div>
           
@@ -191,16 +201,18 @@ export default function MainLayout({ children }: MainLayoutProps) {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-10">
         <div className="flex justify-around">
           {navigationItems.map((item) => (
-            <Link key={item.path} href={item.path}>
-              <a className={`flex flex-col items-center py-2 px-3 ${
+            <div
+              key={item.path}
+              className={`flex flex-col items-center py-2 px-3 cursor-pointer ${
                 isActive(item.path) 
                   ? 'text-primary' 
                   : 'text-muted-foreground'
-              }`}>
-                {item.icon}
-                <span className="text-xs mt-1">{item.label}</span>
-              </a>
-            </Link>
+              }`}
+              onClick={() => navigate(item.path)}
+            >
+              {item.icon}
+              <span className="text-xs mt-1">{item.label}</span>
+            </div>
           ))}
         </div>
       </nav>
