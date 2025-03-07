@@ -57,14 +57,34 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const navigationItems = getNavigationItems();
 
   const isActive = (path: string) => {
+    // Exact match for root path
     if (path === '/' && location === '/') return true;
+    
+    // Handle paths with query parameters
     if (path.includes('?')) {
-      // Handle paths with query parameters
       const basePath = path.split('?')[0];
-      return location.startsWith(basePath);
+      return location === basePath || location.startsWith(basePath + '?');
     }
-    if (path !== '/' && location.startsWith(path)) return true;
-    return false;
+    
+    // For vendor specific routes, require exact matches to prevent
+    // both Dashboard and Create Deal from highlighting
+    if (path.startsWith('/vendor/')) {
+      return location === path;
+    }
+    
+    // For admin specific sub-routes, require exact matches
+    if (path.startsWith('/admin/')) {
+      return location === path;
+    }
+    
+    // General case - path is active if location starts with path
+    // but only if path is not just a base section like /vendor or /admin
+    if (path !== '/' && path !== '/vendor' && path !== '/admin') {
+      return location.startsWith(path);
+    }
+    
+    // Exact match for base sections
+    return location === path;
   };
 
   const handleLogout = () => {
