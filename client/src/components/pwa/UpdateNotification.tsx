@@ -1,58 +1,46 @@
 import { useState, useEffect } from 'react';
-import { applyUpdates, checkForUpdates } from '@/serviceWorkerRegistration';
 import { Button } from '@/components/ui/button';
 import { Toast, ToastDescription, ToastAction, ToastTitle } from '@/components/ui/toast';
 import { useToast } from '@/hooks/use-toast';
 
 export default function UpdateNotification() {
-  const [showUpdatePrompt, setShowUpdatePrompt] = useState(false);
+  const [open, setOpen] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    // Check for service worker updates
-    checkForUpdates(() => {
-      setShowUpdatePrompt(true);
-
-      // Show a toast notification for the update
-      toast({
-        title: 'Update Available',
-        description: 'A new version of Pinnity is available',
-        action: (
-          <ToastAction altText="Update now" onClick={() => applyUpdates()}>
-            Update now
-          </ToastAction>
-        ),
-        duration: 10000, // 10 seconds
-      });
-    });
-
-    // Listen for the custom event triggered when the service worker finds an update
-    const handleUpdateFound = () => {
-      setShowUpdatePrompt(true);
-    };
-
-    window.addEventListener('serviceWorkerUpdateFound', handleUpdateFound);
-
-    return () => {
-      window.removeEventListener('serviceWorkerUpdateFound', handleUpdateFound);
-    };
-  }, [toast]);
-
-  // If no update is available, don't render anything
-  if (!showUpdatePrompt) {
-    return null;
-  }
-
   const handleUpdate = () => {
-    applyUpdates();
+    // If we can access the service worker, use it to apply updates
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(registration => {
+        if (registration.waiting) {
+          // Send message to service worker to skip waiting and activate new version
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+          
+          // Show toast while reloading
+          toast({
+            title: 'Updating...',
+            description: 'Applying new version of Pinnity',
+            duration: 3000,
+          });
+          
+          // Reload the page after a short delay to apply updates
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        }
+      });
+    }
   };
 
   const handleDismiss = () => {
-    setShowUpdatePrompt(false);
+    setOpen(false);
   };
 
+  // This component is only rendered when an update is available
+  // (controlled by the parent App component), so we don't need
+  // to check for update availability here
+  
   return (
-    <Toast open={showUpdatePrompt} onOpenChange={setShowUpdatePrompt}>
+    <Toast open={open} onOpenChange={setOpen}>
       <ToastTitle>Update Available</ToastTitle>
       <ToastDescription>
         A new version of Pinnity is available. Update now for the latest features and improvements.

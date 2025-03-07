@@ -39,66 +39,74 @@ const LoadingFallback = () => (
   </div>
 );
 
-// Network status alert component
+// Network status alert component with auto-dismiss for online status
 function NetworkStatusAlert() {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
-  const [visible, setVisible] = useState(true);
-
+  const [visible, setVisible] = useState(isOffline); // Only show initially if offline
+  
   useEffect(() => {
-    const handleOnline = () => {
-      setIsOffline(false);
+    // Handle online/offline status changes
+    const handleStatusChange = (status: boolean) => {
+      setIsOffline(status);
       setVisible(true);
-      // Auto-hide after 5 seconds
-      setTimeout(() => setVisible(false), 5000);
-    };
-
-    const handleOffline = () => {
-      setIsOffline(true);
-      setVisible(true);
-    };
-
-    const handleOfflineStatusChanged = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      if (customEvent.detail) {
-        setIsOffline(customEvent.detail.isOffline);
-        setVisible(true);
-        if (!customEvent.detail.isOffline) {
-          // Auto-hide after 5 seconds if it's an online notification
-          setTimeout(() => setVisible(false), 5000);
-        }
+      
+      // Auto-hide after 5 seconds if back online
+      if (!status) {
+        setTimeout(() => setVisible(false), 5000);
       }
     };
-
+    
+    // Browser online/offline event listeners
+    const handleOnline = () => handleStatusChange(false);
+    const handleOffline = () => handleStatusChange(true);
+    
+    // Custom event listener for programmatic status changes
+    const handleStatusEvent = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail && customEvent.detail.hasOwnProperty('isOffline')) {
+        handleStatusChange(customEvent.detail.isOffline);
+      }
+    };
+    
+    // Register all event listeners
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    window.addEventListener('offlineStatusChanged', handleOfflineStatusChanged);
-
+    window.addEventListener('offlineStatusChanged', handleStatusEvent);
+    
+    // Clean up listeners on component unmount
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      window.removeEventListener('offlineStatusChanged', handleOfflineStatusChanged);
+      window.removeEventListener('offlineStatusChanged', handleStatusEvent);
     };
   }, []);
-
-  // Don't render if not visible
+  
+  // Don't render anything if not visible
   if (!visible) return null;
-
+  
   return (
     <Alert 
-      className={`fixed top-4 right-4 z-50 max-w-md shadow-lg transition-all duration-300 ${isOffline ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}
+      className={`fixed top-4 right-4 z-50 max-w-md shadow-lg transition-all duration-300 ${
+        isOffline ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'
+      }`}
       variant={isOffline ? "destructive" : "default"}
     >
       <div className="absolute right-2 top-2">
-        <button onClick={() => setVisible(false)} className="p-1 rounded-full hover:bg-gray-200">
+        <button 
+          onClick={() => setVisible(false)} 
+          className="p-1 rounded-full hover:bg-gray-200"
+          aria-label="Close notification"
+        >
           <X className="h-3 w-3" />
         </button>
       </div>
+      
       {isOffline ? (
         <>
           <WifiOff className="h-4 w-4 text-red-500" />
           <AlertTitle>You're offline</AlertTitle>
           <AlertDescription>
-            Some features may be limited. We'll save your changes and sync when you're back online.
+            Limited functionality is available. Your changes will be saved locally and synchronized when you reconnect.
           </AlertDescription>
         </>
       ) : (
@@ -106,7 +114,7 @@ function NetworkStatusAlert() {
           <Wifi className="h-4 w-4 text-green-500" />
           <AlertTitle>You're back online</AlertTitle>
           <AlertDescription>
-            Your data is being synchronized now.
+            Connection restored. Your data is being synchronized now.
           </AlertDescription>
         </>
       )}
@@ -116,52 +124,36 @@ function NetworkStatusAlert() {
 
 // Offline data handler hook
 function useOfflineData() {
+  const [isOffline, setIsOffline] = useState(false);
+
   useEffect(() => {
-    // Initialize offline data caching
-    const setupOfflineData = async () => {
-      try {
-        // Create required stores if they don't exist
-        const stores = ['app-state', 'user-data', 'favorites', 'redemptions'];
-        for (const store of stores) {
-          const data = await localforage.getItem(store);
-          if (data === null) {
-            await localforage.setItem(store, {});
-          }
-        }
-      } catch (error) {
-        console.error('Error setting up offline data:', error);
-      }
+    // Check initial network status
+    setIsOffline(!navigator.onLine);
+
+    // Set up event listeners
+    const handleOnline = () => {
+      console.log('Connection restored - online');
+      setIsOffline(false);
     };
 
-    setupOfflineData();
-
-    // Listen for sync events from service worker
-    const handleFavoritesSynced = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      if (customEvent.detail && customEvent.detail.success > 0) {
-        // Update UI or show notification about synced favorites
-        console.log(`${customEvent.detail.success} favorites synced`);
-      }
+    const handleOffline = () => {
+      console.log('Connection lost - offline');
+      setIsOffline(true);
     };
 
-    const handleRedemptionsSynced = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      if (customEvent.detail && customEvent.detail.success > 0) {
-        // Update UI or show notification about synced redemptions
-        console.log(`${customEvent.detail.success} redemptions synced`);
-      }
-    };
+    // Listen for browser online/offline events
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 
-    window.addEventListener('favoritesSynced', handleFavoritesSynced);
-    window.addEventListener('redemptionsSynced', handleRedemptionsSynced);
-
+    // Clean up event listeners
     return () => {
-      window.removeEventListener('favoritesSynced', handleFavoritesSynced);
-      window.removeEventListener('redemptionsSynced', handleRedemptionsSynced);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
-  return null; // This hook doesn't return anything, it just sets up listeners
+  // We could return the offline status if needed by other components
+  return isOffline;
 }
 
 // Authenticated route wrapper
@@ -325,16 +317,41 @@ function Router() {
 }
 
 function App() {
-  // Set up offline data handling
-  useOfflineData();
+  // Set up offline data handling with useOfflineData hook
+  const isOffline = useOfflineData();
+
+  // Track whether PWA update is available
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  
+  // Setup PWA event listeners
+  useEffect(() => {
+    const handlePwaUpdate = () => {
+      setUpdateAvailable(true);
+    };
+    
+    // Listen for PWA update events
+    window.addEventListener('pwaUpdate', handlePwaUpdate);
+    
+    return () => {
+      window.removeEventListener('pwaUpdate', handlePwaUpdate);
+    };
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router />
         <Toaster />
-        <InstallPrompt className="fixed bottom-4 left-4 z-50 max-w-md" />
-        <UpdateNotification />
+        
+        {/* Show install prompt only in supported browsers */}
+        {'serviceWorker' in navigator && (
+          <InstallPrompt className="fixed bottom-4 left-4 z-50 max-w-md" />
+        )}
+        
+        {/* Show update notification only when an update is available */}
+        {updateAvailable && <UpdateNotification />}
+        
+        {/* Always include the network status notification component */}
         <NetworkStatusAlert />
       </AuthProvider>
     </QueryClientProvider>

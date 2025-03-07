@@ -1,21 +1,38 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
-import { register } from './serviceWorkerRegistration';
 
-// Register the service worker for PWA
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    register({
-      onSuccess: (registration) => {
-        console.log('PWA has been installed and cached for offline use.');
-      },
-      onUpdate: (registration) => {
-        console.log('New version of the app is available!');
-      }
-    });
-  });
-}
+// Function to initialize PWA functionality
+const initializePWA = async () => {
+  try {
+    // Dynamically import the service worker registration
+    const { register } = await import('./serviceWorkerRegistration');
+    
+    // Register the service worker for PWA capabilities
+    if ('serviceWorker' in navigator) {
+      register({
+        onSuccess: (registration) => {
+          console.log('PWA successfully registered and cached for offline use');
+          window.dispatchEvent(new CustomEvent('pwaReady'));
+        },
+        onUpdate: (registration) => {
+          console.log('New version of the app is available');
+          window.dispatchEvent(new CustomEvent('pwaUpdate', { 
+            detail: { registration } 
+          }));
+        }
+      });
+    } else {
+      console.log('Service workers are not supported in this browser');
+    }
+  } catch (error) {
+    // If service worker registration fails, the app will still work, just without PWA features
+    console.warn('PWA service worker registration failed:', error);
+  }
+};
+
+// Initialize PWA after the app has loaded
+window.addEventListener('load', initializePWA);
 
 // Set up online/offline event handling
 window.addEventListener('online', () => {
