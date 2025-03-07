@@ -3,26 +3,31 @@
  * Handles checking for expiring deals and sending notifications to users
  */
 
-import { Deal } from "@shared/schema";
-
 // Constants
 export const EXPIRING_SOON_HOURS = 48; // Define deals as "expiring soon" if they expire within 48 hours
 
 /**
- * Interface for deal with business information
+ * Generic interface for any deal object
  */
-export interface DealWithBusiness extends Deal {
-  business: {
-    businessName: string;
-    id: number;
+export interface DealLike {
+  id: number;
+  title: string;
+  endDate: string | Date;
+  business?: {
+    businessName?: string;
     [key: string]: any;
   };
+  [key: string]: any;
 }
+
+// Import Deal and DealWithBusiness types for backward compatibility
+type Deal = any;
+type DealWithBusiness = any;
 
 /**
  * Check if a deal is expiring soon (within the next 48 hours)
  */
-export function isExpiringSoon(deal: Deal | DealWithBusiness): boolean {
+export function isExpiringSoon(deal: DealLike): boolean {
   if (!deal.endDate) return false;
   
   // Handle different date formats
@@ -45,7 +50,7 @@ export function isExpiringSoon(deal: Deal | DealWithBusiness): boolean {
 /**
  * Find deals that are expiring soon from a list of deals
  */
-export function getExpiringSoonDeals(deals: (Deal | DealWithBusiness)[]): (Deal | DealWithBusiness)[] {
+export function getExpiringSoonDeals(deals: DealLike[]): DealLike[] {
   return deals.filter(deal => isExpiringSoon(deal));
 }
 

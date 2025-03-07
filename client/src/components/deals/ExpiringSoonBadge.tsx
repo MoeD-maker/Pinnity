@@ -1,20 +1,17 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Clock } from 'lucide-react';
-import { Deal } from '@shared/schema';
 
-interface DealWithBusiness extends Deal {
-  business: {
-    businessName: string;
-    address?: string;
-    phone?: string;
-    website?: string;
-    [key: string]: any;
-  };
+// Generic interface for any deal object
+interface DealLike {
+  id: number;
+  title: string;
+  endDate: string | Date;
+  [key: string]: any;
 }
 
 interface ExpiringSoonBadgeProps {
-  deal: Deal | DealWithBusiness;
+  deal: DealLike;
   className?: string;
 }
 

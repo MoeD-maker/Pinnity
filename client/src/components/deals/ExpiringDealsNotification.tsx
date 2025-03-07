@@ -3,18 +3,21 @@ import { X, AlertTriangle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { getExpirationNotificationText } from '@/utils/dealReminders';
-import { Deal } from '@shared/schema';
 
-interface DealWithBusiness extends Deal {
-  business: {
+// Generic interface for any deal object
+interface DealLike {
+  id: number;
+  title: string;
+  endDate: string | Date;
+  business?: {
     businessName: string;
-    id: number;
     [key: string]: any;
   };
+  [key: string]: any;
 }
 
 interface ExpiringDealsNotificationProps {
-  deals: (Deal | DealWithBusiness)[];
+  deals: DealLike[];
   onClose?: () => void;
   onViewAll?: () => void;
 }

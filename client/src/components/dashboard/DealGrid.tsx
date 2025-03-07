@@ -9,10 +9,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { isExpiringSoon } from '@/utils/dealReminders';
 import ExpiringSoonBadge from '@/components/deals/ExpiringSoonBadge';
 
-import { Deal } from '@shared/schema';
-
-// Define a type that matches what we expect from the API
-interface DealWithBusiness extends Partial<Deal> {
+// Use a looser type for the API response since it may not match the database schema exactly
+interface DealWithBusiness {
   id: number;
   title: string;
   description: string;
@@ -22,12 +20,14 @@ interface DealWithBusiness extends Partial<Deal> {
   endDate: Date | string;
   discount?: string;
   business: {
+    id?: number;
     businessName: string;
     address?: string;
     phone?: string;
     website?: string;
     [key: string]: any;
   };
+  [key: string]: any; // Allow any additional properties
 }
 
 interface DealGridProps {
