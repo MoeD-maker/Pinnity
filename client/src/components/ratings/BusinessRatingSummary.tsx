@@ -17,13 +17,21 @@ export default function BusinessRatingSummary({ businessId }: BusinessRatingSumm
     data: summary, 
     isLoading: isSummaryLoading, 
     error: summaryError 
-  } = useBusinessRatingSummary(businessId);
+  } = useBusinessRatingSummary(businessId) as { 
+    data: BusinessRatingSummaryType | undefined, 
+    isLoading: boolean, 
+    error: unknown 
+  };
   
   const { 
     data: ratings, 
     isLoading: isRatingsLoading, 
     error: ratingsError 
-  } = useBusinessRatings(businessId);
+  } = useBusinessRatings(businessId) as {
+    data: UserRatingItem[] | undefined,
+    isLoading: boolean,
+    error: unknown
+  };
   
   const isLoading = isSummaryLoading || isRatingsLoading;
   const error = summaryError || ratingsError;

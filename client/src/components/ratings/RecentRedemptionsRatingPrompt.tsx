@@ -6,29 +6,44 @@ import RatingDialog from '@/components/ui/RatingDialog';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getQueryFn } from '@/lib/queryClient';
 
+interface Redemption {
+  id: number;
+  status: string;
+  hasRating: boolean;
+  deal: {
+    id: number;
+    title: string;
+    business: {
+      businessName: string;
+    };
+  };
+}
+
 interface RecentRedemptionsRatingPromptProps {
   userId: number;
 }
 
 export default function RecentRedemptionsRatingPrompt({ userId }: RecentRedemptionsRatingPromptProps) {
-  const [selectedRedemption, setSelectedRedemption] = useState<any | null>(null);
+  const [selectedRedemption, setSelectedRedemption] = useState<Redemption | null>(null);
   const [isRatingDialogOpen, setIsRatingDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // Fetch user's recent redemptions
-  const { data: redemptions, isLoading } = useQuery({
+  const { data: redemptions, isLoading } = useQuery<Redemption[]>({
     queryKey: ['/api/user', userId, 'redemptions'],
     queryFn: getQueryFn({ on401: 'returnNull' }),
     enabled: !!userId,
   });
 
   // Get only unrated redemptions
-  const unratedRedemptions = redemptions?.filter((redemption: any) => {
-    // Check if this redemption doesn't have a rating yet
-    return redemption.status === 'redeemed' && !redemption.hasRating;
-  });
+  const unratedRedemptions = redemptions && Array.isArray(redemptions) 
+    ? redemptions.filter((redemption: Redemption) => {
+        // Check if this redemption doesn't have a rating yet
+        return redemption.status === 'redeemed' && !redemption.hasRating;
+      })
+    : [];
 
-  const handleRateClick = (redemption: any) => {
+  const handleRateClick = (redemption: Redemption) => {
     setSelectedRedemption(redemption);
     setIsRatingDialogOpen(true);
   };
@@ -69,7 +84,7 @@ export default function RecentRedemptionsRatingPrompt({ userId }: RecentRedempti
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {unratedRedemptions.map((redemption: any) => (
+            {unratedRedemptions.map((redemption: Redemption) => (
               <div key={redemption.id} className="border rounded-lg p-4">
                 <div className="flex justify-between items-center">
                   <div>
