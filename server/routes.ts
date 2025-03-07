@@ -1,8 +1,10 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { loginUserSchema, insertUserSchema, insertDealSchema } from "@shared/schema";
 import { z } from "zod";
+import { generateToken } from "./auth";
+import { authenticate, authorize, checkOwnership } from "./middleware";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
@@ -18,11 +20,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid email or password" });
       }
       
-      // Return success (would normally set session/JWT here)
+      // Generate JWT token
+      const token = generateToken(user);
+      
+      // Return success with token
       return res.status(200).json({ 
         message: "Login successful",
         userId: user.id,
-        userType: user.userType
+        userType: user.userType,
+        token
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -56,10 +62,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create the user
       const user = await storage.createIndividualUser(userData);
       
-      // Return success
+      // Generate JWT token
+      const token = generateToken(user);
+      
+      // Return success with token
       return res.status(201).json({ 
         message: "User registered successfully",
-        userId: user.id
+        userId: user.id,
+        userType: user.userType,
+        token
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -122,10 +133,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       );
       
-      // Return success
+      // Generate JWT token
+      const token = generateToken(user);
+      
+      // Return success with token
       return res.status(201).json({ 
         message: "Business registered successfully",
-        userId: user.id
+        userId: user.id,
+        userType: user.userType,
+        token
       });
     } catch (error) {
       if (error instanceof Error) {

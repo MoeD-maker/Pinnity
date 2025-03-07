@@ -524,13 +524,12 @@ export class MemStorage implements IStorage {
       throw new Error("User not found");
     }
     
-    // Verify current password
-    const hashedCurrentPassword = hashPassword(currentPassword);
-    if (user.password !== hashedCurrentPassword) {
+    // Verify current password using bcrypt
+    if (!bcrypt.compareSync(currentPassword, user.password)) {
       return false;
     }
     
-    // Set new password
+    // Set new password with bcrypt
     const hashedNewPassword = hashPassword(newPassword);
     const updatedUser: User = {
       ...user,
