@@ -11,6 +11,8 @@ import CategoryFilter from '@/components/dashboard/CategoryFilter';
 import { CATEGORIES } from '@/components/dashboard/CategoryFilter';
 import DealGrid from '@/components/dashboard/DealGrid';
 import DealDetail from '@/components/dashboard/DealDetail';
+// Import the Deal type
+import { Deal } from '@shared/schema';
 
 // Map API categories to our internal category IDs (same as in dashboard.tsx)
 const mapCategoryToId = (category: string): string => {
@@ -51,13 +53,38 @@ export default function ExplorePage() {
   }, []);
   
   // Fetch all deals
-  const { data: deals = [], isLoading } = useQuery({
+  const { data: deals = [], isLoading, error } = useQuery({
     queryKey: ['/api/deals'],
     queryFn: async () => {
-      return apiRequest('/api/deals');
+      const response = await apiRequest('/api/deals');
+      console.log("API Response:", response);
+      return response;
     },
   });
   
+  // Log error if any occurs
+  if (error) {
+    console.error("Error fetching deals:", error);
+  }
+  
+  // Define a local Deal & Business interface to avoid TypeScript errors
+  interface DealWithBusiness {
+    id: number;
+    title: string;
+    description: string;
+    category: string;
+    imageUrl?: string;
+    startDate: Date;
+    endDate: Date;
+    discount?: string;
+    business: {
+      businessName: string;
+      address?: string;
+      phone?: string;
+      website?: string;
+    };
+  }
+
   // Calculate category counts
   const categoryCounter: Record<string, number> = {};
   if (deals && Array.isArray(deals)) {
@@ -67,7 +94,7 @@ export default function ExplorePage() {
     });
     
     // Count deals per category
-    deals.forEach((deal: Deal & { business: any }) => {
+    deals.forEach((deal: DealWithBusiness) => {
       const categoryId = mapCategoryToId(deal.category);
       categoryCounter[categoryId] = (categoryCounter[categoryId] || 0) + 1;
     });
@@ -78,7 +105,7 @@ export default function ExplorePage() {
   
   // Filter deals based on search query and selected categories
   const filteredDeals = deals && Array.isArray(deals) 
-    ? deals.filter((deal: Deal & { business: any }) => {
+    ? deals.filter((deal: DealWithBusiness) => {
         // Map API category to our category system
         const dealCategoryId = mapCategoryToId(deal.category);
         

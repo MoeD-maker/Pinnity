@@ -1,6 +1,5 @@
 import React from 'react';
 import { useInView } from 'react-intersection-observer';
-import { Deal } from '@shared/schema';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,8 +7,26 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Heart, MapPin, Calendar } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
+// Define a type that matches what we expect from the API
+interface DealWithBusiness {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  imageUrl?: string;
+  startDate: Date | string;
+  endDate: Date | string;
+  discount?: string;
+  business: {
+    businessName: string;
+    address?: string;
+    phone?: string;
+    website?: string;
+  };
+}
+
 interface DealGridProps {
-  deals: (Deal & { business: any })[];
+  deals: DealWithBusiness[];
   isLoading: boolean;
   onSelect: (dealId: number) => void;
 }
@@ -50,7 +67,7 @@ export default function DealGrid({ deals, isLoading, onSelect }: DealGridProps) 
 }
 
 interface DealCardProps {
-  deal: Deal & { business: any };
+  deal: DealWithBusiness;
   onSelect: () => void;
 }
 
