@@ -24,13 +24,13 @@ const Explore = lazy(() => import("@/pages/explore"));
 const Map = lazy(() => import("@/pages/map"));
 
 // Admin pages
-const AdminDashboard = lazy(() => import("@/pages/admin/index"));
-const AdminVendors = lazy(() => import("@/pages/admin/vendors/index"));
+const AdminDashboard = lazy(() => import("@/pages/admin"));
+const AdminVendors = lazy(() => import("@/pages/admin/vendors"));
 const AdminVendorDetail = lazy(() => import("@/pages/admin/vendors/[id]"));
-const AdminDeals = lazy(() => import("@/pages/admin/deals/index"));
+const AdminDeals = lazy(() => import("@/pages/admin/deals"));
 
 // Vendor pages
-const VendorDashboard = lazy(() => import("@/pages/vendor/index"));
+const VendorDashboard = lazy(() => import("@/pages/vendor"));
 const CreateDeal = lazy(() => import("@/pages/vendor/deals/create"));
 const VendorProfile = lazy(() => import("@/pages/vendor/profile"));
 
