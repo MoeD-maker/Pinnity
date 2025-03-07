@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { loginUserSchema, insertUserSchema, insertDealSchema } from "@shared/schema";
+import { loginUserSchema, insertUserSchema, insertDealSchema, ratingSchema } from "@shared/schema";
 import { z } from "zod";
 import { generateToken } from "./auth";
 import { authenticate, authorize, checkOwnership } from "./middleware";
@@ -884,6 +884,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof Error) {
         return res.status(400).json({ message: error.message });
       }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Redemption Rating routes
+  app.post("/api/redemptions/:redemptionId/ratings", authenticate, async (req: Request, res: Response) => {
+    try {
+      const redemptionId = parseInt(req.params.redemptionId);
+      if (isNaN(redemptionId)) {
+        return res.status(400).json({ message: "Invalid redemption ID" });
+      }
+      
+      // Validate request body
+      const validatedData = ratingSchema.parse(req.body);
+      
+      // Find the redemption to get user, deal, and business IDs
+      const redemption = await storage.getDealRedemptions(redemptionId);
+      if (!redemption || redemption.length === 0) {
+        return res.status(404).json({ message: "Redemption not found" });
+      }
+      
+      const userRedemption = redemption[0];
+      
+      // Ensure the authenticated user owns this redemption
+      if (req.user && req.user.userId !== userRedemption.userId) {
+        return res.status(403).json({ message: "You can only rate your own redemptions" });
+      }
+      
+      // Get the deal to find the business ID
+      const deal = await storage.getDeal(userRedemption.dealId);
+      if (!deal) {
+        return res.status(404).json({ message: "Deal not found" });
+      }
+      
+      // Create the rating
+      const rating = await storage.createRedemptionRating(
+        redemptionId, 
+        userRedemption.userId, 
+        userRedemption.dealId, 
+        deal.businessId, 
+        validatedData
+      );
+      
+      return res.status(201).json(rating);
+    } catch (error) {
+      console.error("Create rating error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Get ratings for a business
+  app.get("/api/business/:businessId/ratings", async (req: Request, res: Response) => {
+    try {
+      const businessId = parseInt(req.params.businessId);
+      if (isNaN(businessId)) {
+        return res.status(400).json({ message: "Invalid business ID" });
+      }
+      
+      const ratings = await storage.getBusinessRatings(businessId);
+      return res.status(200).json(ratings);
+    } catch (error) {
+      console.error("Get business ratings error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Get rating summary for a business
+  app.get("/api/business/:businessId/ratings/summary", async (req: Request, res: Response) => {
+    try {
+      const businessId = parseInt(req.params.businessId);
+      if (isNaN(businessId)) {
+        return res.status(400).json({ message: "Invalid business ID" });
+      }
+      
+      const summary = await storage.getBusinessRatingSummary(businessId);
+      return res.status(200).json(summary);
+    } catch (error) {
+      console.error("Get business rating summary error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Get user's ratings
+  app.get("/api/user/:userId/ratings", authenticate, checkOwnership('userId'), async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const ratings = await storage.getUserRatings(userId);
+      return res.status(200).json(ratings);
+    } catch (error) {
+      console.error("Get user ratings error:", error);
       return res.status(500).json({ message: "Internal server error" });
     }
   });
