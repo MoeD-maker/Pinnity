@@ -15,104 +15,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 
-interface FeaturedDealsProps {
-  deals: (Deal & { business: any })[];
-  isLoading: boolean;
-  onSelect: (dealId: number) => void;
-}
-
-export default function FeaturedDeals({ deals, isLoading, onSelect }: FeaturedDealsProps) {
-  if (isLoading) {
-    return (
-      <div className="flex overflow-x-auto gap-4 pb-4 hide-scrollbar">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <FeaturedDealSkeleton key={i} />
-        ))}
-      </div>
-    );
-  }
-
-  if (deals.length === 0) {
-    return (
-      <div className="text-center py-6">
-        <p className="text-muted-foreground">No featured deals available</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex overflow-x-auto gap-4 pb-4 hide-scrollbar">
-      {deals.map((deal) => (
-        <FeaturedDealCard 
-          key={deal.id} 
-          deal={deal} 
-          onSelect={() => onSelect(deal.id)} 
-        />
-      ))}
-    </div>
-  );
-}
-
-interface FeaturedDealCardProps {
-  deal: Deal & { business: any };
-  onSelect: () => void;
-}
-
-function FeaturedDealCard({ deal, onSelect }: FeaturedDealCardProps) {
-  const { ref, inView } = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  });
-
-  // Calculate discount percentage or value
-  const discount = deal.discount || '';
-
-  return (
-    <Card 
-      ref={ref} 
-      className="overflow-hidden flex-shrink-0 w-[280px] cursor-pointer transition-all hover:shadow-md"
-      onClick={onSelect}
-    >
-      {inView ? (
-        <div className="aspect-[4/3] relative">
-          <img 
-            src={deal.imageUrl || 'https://images.unsplash.com/photo-1556742111-a301076d9d18?ixlib=rb-4.0.3'} 
-            alt={deal.title}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-4">
-            <div className="flex flex-wrap gap-2 mb-2">
-              <Badge className="self-start bg-primary text-white">
-                {discount}
-              </Badge>
-              {isExpired(deal) ? (
-                <ExpiredBadge deal={deal} className="bg-white/90" />
-              ) : isExpiringSoon(deal) && (
-                <ExpiringSoonBadge deal={deal} className="bg-white/90" />
-              )}
-            </div>
-            <h3 className="text-white font-semibold line-clamp-1">{deal.title}</h3>
-            <p className="text-white/90 text-sm line-clamp-1">
-              {deal.business.businessName}
-            </p>
-          </div>
-          <div className="absolute top-2 left-2">
-            <FeaturedDealFavoriteButton dealId={deal.id} />
-          </div>
-        </div>
-      ) : (
-        <div className="aspect-[4/3] bg-muted animate-pulse" />
-      )}
-      
-      <CardContent className="p-3">
-        <p className="text-sm line-clamp-2 text-muted-foreground">
-          {deal.description}
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
-
+// Feature Deal Favorite Button
 interface FeaturedDealFavoriteButtonProps {
   dealId: number;
 }
@@ -234,6 +137,107 @@ function FeaturedDealFavoriteButton({ dealId }: FeaturedDealFavoriteButtonProps)
   );
 }
 
+// Featured Deals Component
+interface FeaturedDealsProps {
+  deals: (Deal & { business: any })[];
+  isLoading: boolean;
+  onSelect: (dealId: number) => void;
+}
+
+export default function FeaturedDeals({ deals, isLoading, onSelect }: FeaturedDealsProps) {
+  if (isLoading) {
+    return (
+      <div className="flex overflow-x-auto gap-4 pb-4 hide-scrollbar">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <FeaturedDealSkeleton key={i} />
+        ))}
+      </div>
+    );
+  }
+
+  if (deals.length === 0) {
+    return (
+      <div className="text-center py-6">
+        <p className="text-muted-foreground">No featured deals available</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex overflow-x-auto gap-4 pb-4 hide-scrollbar">
+      {deals.map((deal) => (
+        <FeaturedDealCard 
+          key={deal.id} 
+          deal={deal} 
+          onSelect={() => onSelect(deal.id)} 
+        />
+      ))}
+    </div>
+  );
+}
+
+// Featured Deal Card Component
+interface FeaturedDealCardProps {
+  deal: Deal & { business: any };
+  onSelect: () => void;
+}
+
+function FeaturedDealCard({ deal, onSelect }: FeaturedDealCardProps) {
+  const { ref, inView } = useInView({
+    triggerOnce: true,
+    threshold: 0.1,
+  });
+
+  // Calculate discount percentage or value
+  const discount = deal.discount || '';
+
+  return (
+    <Card 
+      ref={ref} 
+      className="overflow-hidden flex-shrink-0 w-[280px] cursor-pointer transition-all hover:shadow-md"
+      onClick={onSelect}
+    >
+      {inView ? (
+        <div className="aspect-[4/3] relative">
+          <img 
+            src={deal.imageUrl || 'https://images.unsplash.com/photo-1556742111-a301076d9d18?ixlib=rb-4.0.3'} 
+            alt={deal.title}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-4">
+            <div className="flex flex-wrap gap-2 mb-2">
+              <Badge className="self-start bg-primary text-white">
+                {discount}
+              </Badge>
+              {isExpired(deal) ? (
+                <ExpiredBadge deal={deal} className="bg-white/90" />
+              ) : isExpiringSoon(deal) && (
+                <ExpiringSoonBadge deal={deal} className="bg-white/90" />
+              )}
+            </div>
+            <h3 className="text-white font-semibold line-clamp-1">{deal.title}</h3>
+            <p className="text-white/90 text-sm line-clamp-1">
+              {deal.business.businessName}
+            </p>
+          </div>
+          <div className="absolute top-2 left-2">
+            <FeaturedDealFavoriteButton dealId={deal.id} />
+          </div>
+        </div>
+      ) : (
+        <div className="aspect-[4/3] bg-muted animate-pulse" />
+      )}
+      
+      <CardContent className="p-3">
+        <p className="text-sm line-clamp-2 text-muted-foreground">
+          {deal.description}
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Skeleton for loading state
 function FeaturedDealSkeleton() {
   return (
     <Card className="overflow-hidden flex-shrink-0 w-[280px]">
