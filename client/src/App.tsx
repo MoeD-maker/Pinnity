@@ -1,3 +1,4 @@
+import React from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -8,6 +9,7 @@ import Dashboard from "@/pages/dashboard";
 import MainLayout from "@/components/layout/MainLayout";
 import { Suspense, lazy } from "react";
 import TestLogin from "./test-login";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 // Lazy-loaded pages for better performance
 const Favorites = lazy(() => import("@/pages/favorites"));
@@ -22,14 +24,28 @@ const AdminVendorDetail = lazy(() => import("@/pages/admin/vendors/[id]"));
 
 // Authenticated route wrapper
 function AuthenticatedRoute({ component: Component, ...rest }: any) {
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
+  const { isAuthenticated, isLoading } = useAuth();
   
-  // This is a simplified auth check, in a real app would check tokens/session
-  const isAuthenticated = true; // For demo purposes, always logged in
+  // Use useEffect to handle the redirect instead of doing it during render
+  // Always declare hooks before any conditional returns
+  React.useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      setLocation("/auth");
+    }
+  }, [isLoading, isAuthenticated, setLocation]);
   
+  // Show loading indicator while checking auth status
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00796B]"></div>
+      </div>
+    );
+  }
+  
+  // If not authenticated and not loading, don't render anything during the redirect
   if (!isAuthenticated) {
-    // Redirect to login
-    setLocation("/auth");
     return null;
   }
   
@@ -118,8 +134,10 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router />
-      <Toaster />
+      <AuthProvider>
+        <Router />
+        <Toaster />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
@@ -8,11 +8,12 @@ import PasswordInput from "./PasswordInput";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { apiRequest } from "@/lib/queryClient";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginForm() {
-  const [isLoading, setIsLoading] = useState(false);
+  const { login, isLoading: authLoading, error: authError } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   
   const {
@@ -28,37 +29,31 @@ export default function LoginForm() {
     },
   });
 
-  const onSubmit = async (data: LoginFormValues) => {
-    setIsLoading(true);
-    try {
-      const response = await apiRequest("/api/auth/login", {
-        method: "POST",
-        data: data
+  // Show auth error as a toast when it changes
+  useEffect(() => {
+    if (authError) {
+      toast({
+        title: "Login failed",
+        description: typeof authError === 'string' ? authError : "Please check your credentials and try again",
+        variant: "destructive",
       });
+    }
+  }, [authError, toast]);
+
+  const onSubmit = async (data: LoginFormValues) => {
+    setIsSubmitting(true);
+    try {
+      await login(data.email, data.password, data.rememberMe);
       
       toast({
         title: "Success",
         description: "You have successfully logged in",
       });
-      
-      // Redirect to dashboard based on user type
-      if (response.userType === "admin") {
-        window.location.href = "/admin";
-      } else if (response.userType === "business") {
-        window.location.href = "/vendor";
-      } else {
-        window.location.href = "/dashboard";
-      }
-      
     } catch (error) {
       console.error("Login error:", error);
-      toast({
-        title: "Login failed",
-        description: error instanceof Error ? error.message : "Please check your credentials and try again",
-        variant: "destructive",
-      });
+      // Error is already handled by the auth context and shown via the useEffect above
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -96,9 +91,9 @@ export default function LoginForm() {
       <Button 
         type="submit" 
         className="w-full bg-[#00796B] hover:bg-[#004D40]"
-        disabled={isLoading}
+        disabled={isSubmitting || authLoading}
       >
-        {isLoading ? (
+        {(isSubmitting || authLoading) ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
             Signing in...
