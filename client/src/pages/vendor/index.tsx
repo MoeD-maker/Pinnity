@@ -272,7 +272,7 @@ export default function VendorDashboard() {
             <h2 className="text-xl font-semibold mb-4">Performance Analytics</h2>
             <p className="text-gray-500 mb-6">Track the performance of your deals over time</p>
             
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Deal Views - Last 30 Days</CardTitle>
@@ -290,6 +290,43 @@ export default function VendorDashboard() {
                   <p className="text-gray-500">Analytics charts will appear here</p>
                 </CardContent>
               </Card>
+            </div>
+            
+            <div>
+              <h3 className="text-lg font-medium mb-4 flex items-center">
+                <Star className="h-5 w-5 text-[#FF9800] mr-2" /> Customer Ratings & Feedback
+              </h3>
+              
+              {business?.id ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div>
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Rating Summary</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <BusinessRatingSummary businessId={business.id} />
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  <div>
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Recent Reviews</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4 max-h-96 overflow-y-auto">
+                          {/* We'll display the most recent ratings here */}
+                          <p className="text-sm text-gray-500">No reviews available yet</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-500">Ratings information will appear once you have customer ratings</p>
+              )}
             </div>
           </div>
         </TabsContent>
@@ -539,6 +576,15 @@ function BusinessProfile({ business }: { business: any }) {
           
           <h3 className="text-sm font-medium text-gray-500 mb-2">Description</h3>
           <p className="text-sm text-gray-700 mb-6">{business.description || 'No description provided'}</p>
+          
+          <h3 className="text-sm font-medium text-gray-500 mb-2">Customer Ratings</h3>
+          <div className="mb-6">
+            {business?.id ? (
+              <BusinessRatingSummary businessId={business.id} />
+            ) : (
+              <p className="text-sm text-gray-500">No ratings available yet</p>
+            )}
+          </div>
           
           <h3 className="text-sm font-medium text-gray-500 mb-2">Business Hours</h3>
           <p className="text-sm text-gray-500">Not set - add your business hours</p>

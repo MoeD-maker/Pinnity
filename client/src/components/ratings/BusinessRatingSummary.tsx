@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type { BusinessRatingSummary as BusinessRatingSummaryType, UserRatingItem } from '@/hooks/use-ratings';
 
 interface BusinessRatingSummaryProps {
   businessId: number;
