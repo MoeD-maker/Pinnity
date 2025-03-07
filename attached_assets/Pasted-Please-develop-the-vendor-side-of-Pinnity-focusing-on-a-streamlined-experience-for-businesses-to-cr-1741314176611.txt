@@ -1,0 +1,114 @@
+Please develop the vendor side of Pinnity, focusing on a streamlined experience for businesses to create and manage deals. The system should include approval workflows and deal redemption verification.
+
+## 1. VENDOR DASHBOARD
+
+Create a clean, organized dashboard with:
+
+- Welcome section showing approval status (pending/approved)
+- Stats overview showing: active deals, redeemed deals, views, etc.
+- Prominent "Create Deal" button (disabled if not approved)
+- List of current deals with status indicators (pending approval, active, expired)
+- Quick access to analytics and profile management
+- Notification area for approval updates or system messages
+
+If vendor is not approved yet, show:
+- Prominent "Pending Approval" status message
+- Estimated approval timeline
+- Checklist of required documents with completion status
+- Option to submit any missing information
+- Contact support option
+
+## 2. DEAL CREATION WORKFLOW
+
+Implement a guided, step-based deal creation process:
+
+### Step 1: Deal Basics
+- Deal title field
+- Business category dropdown (matching customer-side categories)
+- Detailed description field with character counter
+- Deal type selection with options:
+  * Percentage discount (10%, 15%, 20%, 25%)
+  * Buy One Get One Free
+- Visual preview of how deal will appear to customers
+
+### Step 2: Deal Terms
+- Start date and end date selection (with calendar picker)
+- Deal usage limits:
+  * Maximum redemptions per customer
+  * Total available redemptions (optional)
+- Special conditions or restrictions (optional text field)
+- Fine print/terms & conditions field
+
+### Step 3: Redemption Setup
+- Custom 4-digit secret code creation for verification
+- Preview of redemption flow for customers
+- Option to add special redemption instructions
+- Information about the verification process
+
+### Step 4: Review & Submit
+- Complete preview of deal as it will appear to customers
+- Summary of all entered information
+- Checkbox to confirm terms of service
+- Submit for approval button
+- Clear indication that deals require admin approval
+
+## 3. VENDOR PROFILE MANAGEMENT
+
+Create a profile management interface with:
+
+- Business information (name, address, hours, description)
+- Contact details management
+- Logo and cover image upload/management
+- Business category and tags management
+- Social media links
+- Password change functionality
+- Public profile preview (as seen by customers)
+- Document verification status
+- Option to upload additional verification documents if needed
+
+## 4. DEAL MANAGEMENT INTERFACE
+
+Create an interface to manage existing deals:
+
+- Table/grid view of all deals with filtering options
+- Status indicators (pending, approved, active, expired, rejected)
+- Analytics per deal (views, saves, redemptions)
+- Ability to edit deals that are still pending approval
+- Ability to cancel deals (with confirmation)
+- Option to extend deal duration (requires re-approval)
+- Duplicate deal functionality for easy recreation
+- Sorting and filtering options
+
+## 5. REDEMPTION VERIFICATION SYSTEM
+
+Implement a simple redemption verification process:
+
+- Dedicated "Verify Redemption" section
+- Input field for the customer's unique redemption code
+- Visual confirmation when verified successfully
+- Error handling for invalid codes
+- Redemption history log
+- Option to manually record redemptions if needed
+
+## 6. APPROVAL WORKFLOW VIEWS
+
+Create clear interfaces for the approval workflow:
+
+- Pending approval view with status and timestamp
+- Rejection view with feedback and option to revise
+- Approval confirmation with "go live" date
+- History of all submissions and their outcomes
+
+## TECHNICAL REQUIREMENTS
+
+- Use React with TypeScript
+- Implement proper form validation
+- Create responsive designs that work on all devices
+- Use optimistic UI updates for better user experience
+- Implement proper loading states and error handling
+- Ensure all forms preserve state between steps
+- Create reusable components for common elements
+- Add confirmation dialogs for important actions
+- Implement proper data fetching with caching
+
+All interfaces should use the brand colors (#00796B, #FF9800) consistently and focus on a clean, modern design without excessive animations.

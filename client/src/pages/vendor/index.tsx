@@ -1,14 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLocation } from 'wouter';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, BarChart3, Calendar, Tag, Settings, FileText, Store, PackageOpen } from 'lucide-react';
+import { 
+  PlusCircle, BarChart3, Calendar, Tag, Settings, FileText, Store, 
+  PackageOpen, Bell, CheckCircle, AlertCircle, Clock, HelpCircle
+} from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
-import MainLayout from '@/components/layout/MainLayout';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
+
+// Define status colors for consistent use across components
+const statusColors: Record<string, string> = {
+  approved: 'bg-green-100 text-green-800 border-green-200',
+  verified: 'bg-green-100 text-green-800 border-green-200',
+  pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  rejected: 'bg-red-100 text-red-800 border-red-200',
+  draft: 'bg-gray-100 text-gray-700 border-gray-200',
+  expired: 'bg-gray-100 text-gray-700 border-gray-200',
+  active: 'bg-blue-100 text-blue-800 border-blue-200'
+};
 
 export default function VendorDashboard() {
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
   const [business, setBusiness] = useState<any>(null);
   const [deals, setDeals] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -19,15 +38,18 @@ export default function VendorDashboard() {
     savesCount: 0
   });
 
+  // Notifications for demo purposes
+  const [notifications] = useState([
+    { id: 1, type: 'approval', message: 'Your business profile has been approved!', read: false },
+    { id: 2, type: 'deal', message: 'Your "Summer Sale" deal is expiring in 3 days', read: true }
+  ]);
+
   useEffect(() => {
     async function fetchBusinessData() {
       try {
         if (user && user.id) {
-          console.log('Fetching business for user ID:', user.id);
-          
           // Get business by user ID from storage
           const businessResponse = await apiRequest(`/api/business/user/${user.id}`);
-          console.log('Business response:', businessResponse);
           
           if (businessResponse) {
             setBusiness(businessResponse);
@@ -35,7 +57,6 @@ export default function VendorDashboard() {
             // Fetch deals if business exists
             if (businessResponse.id) {
               const dealsData = await apiRequest(`/api/business/${businessResponse.id}/deals`);
-              console.log('Deals data:', dealsData);
               setDeals(dealsData || []);
               
               // Calculate stats
@@ -67,105 +88,290 @@ export default function VendorDashboard() {
     fetchBusinessData();
   }, [user]);
 
+  const handleCreateDeal = () => {
+    setLocation('/vendor/deals/create');
+  };
+
   if (loading) {
     return (
-      <MainLayout>
-        <div className="flex items-center justify-center h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00796B]"></div>
-        </div>
-      </MainLayout>
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00796B]"></div>
+      </div>
     );
   }
 
-  return (
-    <MainLayout>
-      <div className="container mx-auto px-4 py-8">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Vendor Dashboard</h1>
-          <p className="text-gray-500">
-            Welcome back, {business?.businessName || user?.firstName}
-          </p>
-        </header>
+  const isBusinessApproved = business?.verificationStatus === 'verified';
 
-        {/* Stats Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <StatCard 
-            title="Active Deals" 
-            value={stats.activeDeals} 
-            description="Currently running deals"
-            icon={<Tag className="h-5 w-5 text-[#00796B]" />}
-          />
-          <StatCard 
-            title="Total Views" 
-            value={stats.viewCount} 
-            description="Views across all deals"
-            icon={<BarChart3 className="h-5 w-5 text-[#00796B]" />}
-          />
-          <StatCard 
-            title="Redemptions" 
-            value={stats.redemptionCount} 
-            description="Total customer redemptions"
-            icon={<PackageOpen className="h-5 w-5 text-[#00796B]" />}
-          />
-          <StatCard 
-            title="Saved Deals" 
-            value={stats.savesCount} 
-            description="Deals saved by customers"
-            icon={<Calendar className="h-5 w-5 text-[#00796B]" />}
-          />
+  return (
+    <div className="container mx-auto px-4 py-6">
+      {/* Welcome and approval status banner */}
+      <header className="mb-8">
+        <div className="flex justify-between items-start mb-2">
+          <div>
+            <h1 className="text-3xl font-bold">Welcome, {business?.businessName || user?.firstName}</h1>
+            <p className="text-gray-500 mt-1">Manage your deals and business profile</p>
+          </div>
+          <Button 
+            className="bg-[#00796B] hover:bg-[#004D40]"
+            disabled={!isBusinessApproved}
+            onClick={handleCreateDeal}
+          >
+            <PlusCircle className="mr-2 h-4 w-4" /> Create Deal
+          </Button>
         </div>
 
-        <Tabs defaultValue="deals" className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="deals">Deals</TabsTrigger>
-            <TabsTrigger value="business">Business Profile</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="deals" className="space-y-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Your Deals</h2>
-              <Button className="bg-[#00796B] hover:bg-[#004D40]">
+        {/* Approval status banner */}
+        {!isBusinessApproved && (
+          <Alert className="mt-4 border-yellow-200 bg-yellow-50">
+            <AlertCircle className="h-5 w-5 text-yellow-700" />
+            <AlertTitle className="text-yellow-800">Approval Pending</AlertTitle>
+            <AlertDescription className="text-yellow-700">
+              Your business profile is currently under review. You'll be able to create deals once approved.
+              <div className="mt-2 flex items-center">
+                <span className="text-sm mr-2">Estimated time: 1-2 business days</span>
+                <Button variant="outline" size="sm" className="h-7 ml-auto">
+                  <HelpCircle className="h-3.5 w-3.5 mr-1.5" /> Contact Support
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Notification area */}
+        {notifications.length > 0 && (
+          <div className="mt-4 space-y-2">
+            {notifications.map(notification => (
+              <Alert key={notification.id} className={`${notification.read ? 'bg-gray-50' : 'bg-blue-50 border-blue-200'}`}>
+                <Bell className={`h-4 w-4 ${notification.read ? 'text-gray-500' : 'text-blue-500'}`} />
+                <AlertDescription className={`${notification.read ? 'text-gray-700' : 'text-blue-700'}`}>
+                  {notification.message}
+                </AlertDescription>
+              </Alert>
+            ))}
+          </div>
+        )}
+      </header>
+
+      {/* Stats Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <StatCard 
+          title="Active Deals" 
+          value={stats.activeDeals} 
+          description="Currently running deals"
+          icon={<Tag className="h-5 w-5 text-[#00796B]" />}
+        />
+        <StatCard 
+          title="Total Views" 
+          value={stats.viewCount} 
+          description="Views across all deals"
+          icon={<BarChart3 className="h-5 w-5 text-[#00796B]" />}
+        />
+        <StatCard 
+          title="Redemptions" 
+          value={stats.redemptionCount} 
+          description="Total customer redemptions"
+          icon={<PackageOpen className="h-5 w-5 text-[#00796B]" />}
+        />
+        <StatCard 
+          title="Saved Deals" 
+          value={stats.savesCount} 
+          description="Deals saved by customers"
+          icon={<Calendar className="h-5 w-5 text-[#00796B]" />}
+        />
+      </div>
+
+      {!isBusinessApproved && (
+        <VerificationRequirements business={business} />
+      )}
+
+      <Tabs defaultValue="deals" className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger value="deals">My Deals</TabsTrigger>
+          <TabsTrigger value="redemptions">Verify Redemptions</TabsTrigger>
+          <TabsTrigger value="business">Business Profile</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="deals" className="space-y-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Your Deals</h2>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm">
+                <Settings className="h-4 w-4 mr-2" /> Filter
+              </Button>
+              <Button 
+                className="bg-[#00796B] hover:bg-[#004D40]"
+                disabled={!isBusinessApproved}
+                onClick={handleCreateDeal}
+                size="sm"
+              >
                 <PlusCircle className="mr-2 h-4 w-4" /> Create New Deal
               </Button>
             </div>
+          </div>
+          
+          {deals.length === 0 ? (
+            <EmptyState 
+              title="No deals yet"
+              description="Create your first deal to start attracting customers"
+              actionText="Create Deal"
+              onClick={handleCreateDeal}
+              disabled={!isBusinessApproved}
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {deals.map((deal) => (
+                <DealCard key={deal.id} deal={deal} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="redemptions">
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <h2 className="text-xl font-semibold mb-4">Redemption Verification</h2>
             
-            {deals.length === 0 ? (
-              <EmptyState 
-                title="No deals yet"
-                description="Create your first deal to start attracting customers"
-                actionText="Create Deal"
-              />
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {deals.map((deal) => (
-                  <DealCard key={deal.id} deal={deal} />
-                ))}
+            <div className="max-w-md mx-auto">
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Enter customer redemption code
+                </label>
+                <div className="mt-1 flex items-center">
+                  <input
+                    type="text"
+                    className="shadow-sm focus:ring-[#00796B] focus:border-[#00796B] block w-full sm:text-sm border-gray-300 p-2 border rounded-md"
+                    placeholder="Enter 4-digit code"
+                    maxLength={4}
+                  />
+                  <Button className="ml-3 bg-[#00796B] hover:bg-[#004D40]">
+                    Verify
+                  </Button>
+                </div>
+                <p className="mt-2 text-sm text-gray-500">
+                  Ask the customer for their redemption code to verify the deal
+                </p>
               </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="business">
-            <BusinessProfile business={business} />
-          </TabsContent>
-          
-          <TabsContent value="analytics">
-            <div className="bg-white p-6 rounded-lg shadow-sm border">
-              <h2 className="text-xl font-semibold mb-4">Performance Analytics</h2>
-              <p className="text-gray-500">Detailed analytics will be available soon.</p>
+
+              <Separator className="my-6" />
+
+              <div className="mb-4">
+                <h3 className="font-medium mb-2">Recent Redemptions</h3>
+                <p className="text-sm text-gray-500 mb-4">No recent redemptions found</p>
+              </div>
             </div>
-          </TabsContent>
-          
-          <TabsContent value="settings">
-            <div className="bg-white p-6 rounded-lg shadow-sm border">
-              <h2 className="text-xl font-semibold mb-4">Account Settings</h2>
-              <p className="text-gray-500">Account settings will be available soon.</p>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="business">
+          <BusinessProfile business={business} />
+        </TabsContent>
+        
+        <TabsContent value="analytics">
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <h2 className="text-xl font-semibold mb-4">Performance Analytics</h2>
+            <p className="text-gray-500 mb-6">Track the performance of your deals over time</p>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Deal Views - Last 30 Days</CardTitle>
+                </CardHeader>
+                <CardContent className="h-64 flex items-center justify-center">
+                  <p className="text-gray-500">Analytics charts will appear here</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Redemptions - Last 30 Days</CardTitle>
+                </CardHeader>
+                <CardContent className="h-64 flex items-center justify-center">
+                  <p className="text-gray-500">Analytics charts will appear here</p>
+                </CardContent>
+              </Card>
             </div>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </MainLayout>
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function VerificationRequirements({ business }: { business: any }) {
+  const documents = [
+    { id: 'business_license', name: 'Business License', status: business?.governmentId ? 'completed' : 'missing' },
+    { id: 'identity', name: 'Government-issued ID', status: business?.proofOfAddress ? 'completed' : 'missing' },
+    { id: 'proof_address', name: 'Proof of Address', status: business?.proofOfBusiness ? 'completed' : 'missing' }
+  ];
+
+  const completedCount = documents.filter(doc => doc.status === 'completed').length;
+  const progressPercentage = (completedCount / documents.length) * 100;
+
+  return (
+    <Card className="mb-8">
+      <CardHeader>
+        <CardTitle>Complete Your Verification</CardTitle>
+        <CardDescription>
+          Submit the required documents to verify your business
+        </CardDescription>
+        <Progress value={progressPercentage} className="h-2 mt-2" />
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {documents.map(doc => (
+            <div key={doc.id} className="flex items-center">
+              <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center ${
+                doc.status === 'completed' ? 'text-green-500' : 'text-gray-300'
+              }`}>
+                {doc.status === 'completed' ? (
+                  <CheckCircle className="w-5 h-5" />
+                ) : (
+                  <Circle className="w-5 h-5" />
+                )}
+              </div>
+              <div className="ml-4 flex-1">
+                <p className="text-sm font-medium">{doc.name}</p>
+              </div>
+              <div>
+                {doc.status === 'completed' ? (
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                    Submitted
+                  </Badge>
+                ) : (
+                  <Button variant="outline" size="sm">
+                    Upload
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+      <CardFooter className="border-t pt-6 flex justify-between">
+        <div className="flex items-center text-sm text-gray-500">
+          <Clock className="w-4 h-4 mr-2" />
+          <span>Estimated approval: 1-2 business days after all documents are submitted</span>
+        </div>
+      </CardFooter>
+    </Card>
+  );
+}
+
+// A simple circle component for the verification checklist
+function Circle(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <circle cx="12" cy="12" r="10" />
+    </svg>
   );
 }
 
@@ -184,13 +390,29 @@ function StatCard({ title, value, description, icon }: { title: string; value: n
   );
 }
 
-function EmptyState({ title, description, actionText }: { title: string; description: string; actionText: string }) {
+function EmptyState({ 
+  title, 
+  description, 
+  actionText, 
+  onClick, 
+  disabled = false 
+}: { 
+  title: string; 
+  description: string; 
+  actionText: string;
+  onClick?: () => void;
+  disabled?: boolean;
+}) {
   return (
     <div className="bg-white p-8 rounded-lg border border-dashed border-gray-300 text-center">
       <Store className="h-12 w-12 text-gray-400 mx-auto mb-4" />
       <h3 className="text-lg font-medium mb-2">{title}</h3>
       <p className="text-gray-500 mb-4">{description}</p>
-      <Button className="bg-[#00796B] hover:bg-[#004D40]">
+      <Button 
+        className="bg-[#00796B] hover:bg-[#004D40]"
+        onClick={onClick}
+        disabled={disabled}
+      >
         <PlusCircle className="mr-2 h-4 w-4" /> {actionText}
       </Button>
     </div>
@@ -199,15 +421,10 @@ function EmptyState({ title, description, actionText }: { title: string; descrip
 
 function DealCard({ deal }: { deal: any }) {
   const isActive = new Date(deal.endDate) >= new Date();
-  const statusColors: Record<string, string> = {
-    approved: 'bg-green-100 text-green-800',
-    pending: 'bg-yellow-100 text-yellow-800',
-    rejected: 'bg-red-100 text-red-800',
-    draft: 'bg-gray-100 text-gray-800'
-  };
-
+  const status = deal.status || 'draft';
+  
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden h-full flex flex-col">
       {deal.imageUrl && (
         <div className="h-48 w-full relative overflow-hidden">
           <img 
@@ -216,19 +433,19 @@ function DealCard({ deal }: { deal: any }) {
             className="object-cover w-full h-full"
           />
           <div className="absolute top-2 right-2">
-            <span className={`text-xs px-2 py-1 rounded-full ${statusColors[deal.status] || 'bg-gray-100'}`}>
-              {deal.status || 'Draft'}
-            </span>
+            <Badge className={`${statusColors[status]}`}>
+              {status.charAt(0).toUpperCase() + status.slice(1)}
+            </Badge>
           </div>
         </div>
       )}
-      <CardHeader>
-        <CardTitle>{deal.title}</CardTitle>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg">{deal.title}</CardTitle>
         <CardDescription>
           {new Date(deal.startDate).toLocaleDateString()} - {new Date(deal.endDate).toLocaleDateString()}
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pb-4 flex-grow">
         <p className="text-sm text-gray-500 mb-2 line-clamp-2">{deal.description}</p>
         <div className="flex space-x-4 text-sm mt-2">
           <div className="flex items-center">
@@ -266,52 +483,83 @@ function BusinessProfile({ business }: { business: any }) {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border">
-      <h2 className="text-xl font-semibold mb-4">Business Information</h2>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <h3 className="text-sm font-medium text-gray-500 mb-1">Business Name</h3>
-          <p className="mb-4">{business.businessName}</p>
-          
-          <h3 className="text-sm font-medium text-gray-500 mb-1">Category</h3>
-          <p className="mb-4">{business.businessCategory}</p>
-          
-          <h3 className="text-sm font-medium text-gray-500 mb-1">Address</h3>
-          <p className="mb-4">{business.address}</p>
-        </div>
-        
-        <div>
-          <h3 className="text-sm font-medium text-gray-500 mb-1">Phone</h3>
-          <p className="mb-4">{business.phone}</p>
-          
-          <h3 className="text-sm font-medium text-gray-500 mb-1">Website</h3>
-          <p className="mb-4">{business.website || 'Not provided'}</p>
-          
-          <h3 className="text-sm font-medium text-gray-500 mb-1">Verification Status</h3>
-          <p className="mb-4">
-            <span className={`inline-block px-2 py-1 text-xs rounded-full ${
-              business.verificationStatus === 'verified' 
-                ? 'bg-green-100 text-green-800' 
-                : 'bg-yellow-100 text-yellow-800'
-            }`}>
-              {business.verificationStatus || 'Pending'}
-            </span>
-          </p>
-        </div>
-      </div>
-      
-      <div className="mt-6 pt-6 border-t">
-        <h3 className="text-sm font-medium text-gray-500 mb-3">Business Description</h3>
-        <p className="text-gray-700">{business.description || 'No description provided'}</p>
-      </div>
-      
-      <div className="mt-6 pt-6 border-t flex justify-end">
-        <Button variant="outline" className="mr-2">
+      <div className="flex justify-between items-start mb-6">
+        <h2 className="text-xl font-semibold">Business Profile</h2>
+        <Button variant="outline">
           <FileText className="h-4 w-4 mr-2" /> Edit Profile
         </Button>
-        <Button className="bg-[#00796B] hover:bg-[#004D40]">
-          <Store className="h-4 w-4 mr-2" /> Verify Business
-        </Button>
+      </div>
+      
+      <div className="flex flex-col md:flex-row gap-6">
+        <div className="md:w-1/3">
+          <div className="aspect-square rounded-lg bg-gray-100 overflow-hidden">
+            {business.imageUrl ? (
+              <img 
+                src={business.imageUrl} 
+                alt={business.businessName} 
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <Store className="h-16 w-16 text-gray-400" />
+              </div>
+            )}
+          </div>
+          
+          <div className="mt-6">
+            <Badge className={`${statusColors[business.verificationStatus || 'pending']} mb-2`}>
+              {business.verificationStatus === 'verified' ? 'Verified' : 'Pending Verification'}
+            </Badge>
+            <h3 className="text-lg font-medium">{business.businessName}</h3>
+            <p className="text-sm text-gray-500 capitalize">{business.businessCategory} Business</p>
+          </div>
+        </div>
+        
+        <div className="md:w-2/3">
+          <h3 className="text-sm font-medium text-gray-500 mb-2">Business Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label className="block text-xs text-gray-500">Address</label>
+              <p className="text-sm">{business.address || 'Not provided'}</p>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500">Phone</label>
+              <p className="text-sm">{business.phone || 'Not provided'}</p>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500">Website</label>
+              <p className="text-sm">{business.website || 'Not provided'}</p>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500">Email</label>
+              <p className="text-sm">{business.email || 'Not provided'}</p>
+            </div>
+          </div>
+          
+          <h3 className="text-sm font-medium text-gray-500 mb-2">Description</h3>
+          <p className="text-sm text-gray-700 mb-6">{business.description || 'No description provided'}</p>
+          
+          <h3 className="text-sm font-medium text-gray-500 mb-2">Business Hours</h3>
+          <p className="text-sm text-gray-500">Not set - add your business hours</p>
+          
+          <Separator className="my-6" />
+          
+          <h3 className="text-sm font-medium text-gray-500 mb-2">Verification Documents</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="border rounded-md p-3">
+              <p className="text-xs text-gray-500">Business License</p>
+              <Badge variant="outline" className="mt-2 bg-green-50 text-green-700 border-green-200">Submitted</Badge>
+            </div>
+            <div className="border rounded-md p-3">
+              <p className="text-xs text-gray-500">Identity Verification</p>
+              <Badge variant="outline" className="mt-2 bg-green-50 text-green-700 border-green-200">Submitted</Badge>
+            </div>
+            <div className="border rounded-md p-3">
+              <p className="text-xs text-gray-500">Proof of Address</p>
+              <Badge variant="outline" className="mt-2 bg-green-50 text-green-700 border-green-200">Submitted</Badge>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

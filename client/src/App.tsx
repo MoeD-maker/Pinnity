@@ -24,6 +24,8 @@ const AdminVendorDetail = lazy(() => import("@/pages/admin/vendors/[id]"));
 
 // Vendor pages
 const VendorDashboard = lazy(() => import("@/pages/vendor/index"));
+const CreateDeal = lazy(() => import("@/pages/vendor/deals/create"));
+const VendorProfile = lazy(() => import("@/pages/vendor/profile"));
 
 // Authenticated route wrapper
 function AuthenticatedRoute({ component: Component, ...rest }: any) {
@@ -134,6 +136,22 @@ function Router() {
         {(params) => (
           <Suspense fallback={<div>Loading...</div>}>
             <AuthenticatedRoute component={VendorDashboard} params={params} />
+          </Suspense>
+        )}
+      </Route>
+      
+      <Route path="/vendor/deals/create">
+        {(params) => (
+          <Suspense fallback={<div>Loading...</div>}>
+            <AuthenticatedRoute component={CreateDeal} params={params} />
+          </Suspense>
+        )}
+      </Route>
+      
+      <Route path="/vendor/profile">
+        {(params) => (
+          <Suspense fallback={<div>Loading...</div>}>
+            <AuthenticatedRoute component={VendorProfile} params={params} />
           </Suspense>
         )}
       </Route>
