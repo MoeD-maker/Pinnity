@@ -41,9 +41,15 @@ const StatCard = ({ title, value, icon, description, trend, trendValue, action }
         {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
         {trend && (
           <div className="flex items-center gap-1 mt-2">
-            <Badge variant={trend === "up" ? "success" : trend === "down" ? "destructive" : "secondary"} className="text-xs">
+            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs ${
+              trend === "up" 
+                ? "bg-green-100 text-green-800" 
+                : trend === "down" 
+                  ? "bg-red-100 text-red-800" 
+                  : "bg-gray-100 text-gray-800"
+            }`}>
               {trend === "up" ? "↑" : trend === "down" ? "↓" : "→"} {trendValue}
-            </Badge>
+            </span>
           </div>
         )}
         {action && (

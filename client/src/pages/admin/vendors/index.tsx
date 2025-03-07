@@ -276,7 +276,8 @@ const AdminVendorsPage = () => {
   };
 
   // Unique categories for filter
-  const categories = ["all", ...new Set(businesses.map(b => b.businessCategory))];
+  const uniqueCategories = businesses.map(b => b.businessCategory).filter((value, index, self) => self.indexOf(value) === index);
+  const categories = ["all", ...uniqueCategories];
 
   return (
     <AdminLayout>

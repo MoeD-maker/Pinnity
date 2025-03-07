@@ -92,9 +92,9 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         </SheetTrigger>
         <SheetContent side="left" className="w-64 p-0">
           <div className="flex h-16 items-center px-6 border-b">
-            <Link href="/admin">
-              <h2 className="text-xl font-bold">Pinnity Admin</h2>
-            </Link>
+            <h2 className="text-xl font-bold cursor-pointer" onClick={() => window.location.href = "/admin"}>
+              Pinnity Admin
+            </h2>
             <Button variant="ghost" size="icon" className="ml-auto" onClick={() => setIsMobileMenuOpen(false)}>
               <X className="h-5 w-5" />
               <span className="sr-only">Close</span>
@@ -123,9 +123,9 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 hidden lg:flex lg:w-64 flex-col border-r bg-white dark:bg-gray-800 dark:border-gray-700">
         <div className="flex h-16 items-center px-6 border-b">
-          <Link href="/admin">
-            <h2 className="text-xl font-bold">Pinnity Admin</h2>
-          </Link>
+          <h2 className="text-xl font-bold cursor-pointer" onClick={() => window.location.href = "/admin"}>
+            Pinnity Admin
+          </h2>
         </div>
         <nav className="flex-1 overflow-y-auto p-4">
           <div className="flex flex-col gap-1">
