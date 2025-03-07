@@ -133,6 +133,18 @@ export const businessDocuments = pgTable("business_documents", {
   reviewedAt: timestamp("reviewed_at"),
 });
 
+// Redemption ratings - user feedback after redeeming deals
+export const redemptionRatings = pgTable("redemption_ratings", {
+  id: serial("id").primaryKey(),
+  redemptionId: integer("redemption_id").notNull().references(() => dealRedemptions.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  dealId: integer("deal_id").notNull().references(() => deals.id),
+  businessId: integer("business_id").notNull().references(() => businesses.id),
+  rating: integer("rating").notNull(), // 1-5 stars
+  comment: text("comment"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Create Zod schemas for insertion
 export const insertUserSchema = createInsertSchema(users);
 export const insertBusinessSchema = createInsertSchema(businesses);
@@ -144,12 +156,19 @@ export const insertDealApprovalSchema = createInsertSchema(dealApprovals);
 export const insertBusinessHoursSchema = createInsertSchema(businessHours);
 export const insertBusinessSocialSchema = createInsertSchema(businessSocial);
 export const insertBusinessDocumentSchema = createInsertSchema(businessDocuments);
+export const insertRedemptionRatingSchema = createInsertSchema(redemptionRatings);
 
 // Login schema
 export const loginUserSchema = z.object({
   email: z.string().email(),
   password: z.string(),
   rememberMe: z.boolean().optional(),
+});
+
+// Rating submission schema
+export const ratingSchema = z.object({
+  rating: z.number().min(1).max(5).int(),
+  comment: z.string().optional(),
 });
 
 // Export types
@@ -176,4 +195,9 @@ export type InsertBusinessSocial = typeof businessSocial.$inferInsert;
 export type BusinessDocument = typeof businessDocuments.$inferSelect;
 export type InsertBusinessDocument = typeof businessDocuments.$inferInsert;
 
+// Rating types
+export type RedemptionRating = typeof redemptionRatings.$inferSelect;
+export type InsertRedemptionRating = typeof redemptionRatings.$inferInsert;
+
 export type LoginUser = z.infer<typeof loginUserSchema>;
+export type RatingData = z.infer<typeof ratingSchema>;
