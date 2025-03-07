@@ -21,12 +21,13 @@
       "purpose": "any maskable"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
   "theme_color": "#00796B",
   "background_color": "#ffffff",
   "orientation": "portrait",
   "scope": "/",
+  "prefer_related_applications": false,
   "shortcuts": [
     {
       "name": "Explore Deals",
@@ -43,21 +44,5 @@
       "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
     }
   ],
-  "categories": ["shopping", "finance", "lifestyle"],
-  "screenshots": [
-    {
-      "src": "screenshot1.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "platform": "wide",
-      "label": "Homescreen of Pinnity"
-    },
-    {
-      "src": "screenshot2.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "platform": "wide",
-      "label": "Deal details in Pinnity"
-    }
-  ]
+  "categories": ["shopping", "finance", "lifestyle"]
 }

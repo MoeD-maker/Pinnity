@@ -10,6 +10,8 @@ import MainLayout from "@/components/layout/MainLayout";
 import { Suspense, lazy } from "react";
 import TestLogin from "./test-login";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import InstallPrompt from "@/components/pwa/InstallPrompt";
+import UpdateNotification from "@/components/pwa/UpdateNotification";
 
 // Lazy-loaded pages for better performance
 const Favorites = lazy(() => import("@/pages/favorites"));
@@ -193,6 +195,8 @@ function App() {
       <AuthProvider>
         <Router />
         <Toaster />
+        <InstallPrompt className="fixed bottom-4 left-4 z-50 max-w-md" />
+        <UpdateNotification />
       </AuthProvider>
     </QueryClientProvider>
   );

@@ -5,9 +5,10 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 };
 
+// We're only extending the Window interface in the global scope, not redefining it
 declare global {
   interface Window {
-    deferredPrompt: BeforeInstallPromptEvent | null;
+    deferredPrompt: any; // Using 'any' to avoid type conflicts
   }
 }
 
