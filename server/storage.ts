@@ -10,7 +10,7 @@ import {
   type BusinessSocial, type InsertBusinessSocial,
   type BusinessDocument, type InsertBusinessDocument
 } from "@shared/schema";
-import crypto from "crypto";
+import bcrypt from 'bcryptjs';
 
 export interface IStorage {
   // User methods
@@ -86,7 +86,8 @@ export interface IStorage {
 
 // Hash passwords for storage
 function hashPassword(password: string): string {
-  return crypto.createHash("sha256").update(password).digest("hex");
+  const salt = bcrypt.genSaltSync(10);
+  return bcrypt.hashSync(password, salt);
 }
 
 export class MemStorage implements IStorage {
@@ -494,8 +495,8 @@ export class MemStorage implements IStorage {
     const user = await this.getUserByEmail(email);
     if (!user) return null;
     
-    const hashedPassword = hashPassword(password);
-    if (user.password === hashedPassword) {
+    // Use bcrypt to compare passwords instead of hash comparison
+    if (bcrypt.compareSync(password, user.password)) {
       return user;
     }
     
