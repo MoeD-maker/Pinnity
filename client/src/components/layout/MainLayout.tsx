@@ -1,6 +1,9 @@
 import React from 'react';
 import { Link, useLocation } from 'wouter';
-import { Home, Search, Heart, User, MapPin, Menu, LogOut, Bell } from 'lucide-react';
+import { 
+  Home, Search, Heart, User, MapPin, Menu, LogOut, Bell, 
+  Store, BarChart3, Settings, FileText, Package
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -11,6 +14,7 @@ import {
   DropdownMenuItem, 
   DropdownMenuSeparator 
 } from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -18,30 +22,53 @@ interface MainLayoutProps {
 
 export default function MainLayout({ children }: MainLayoutProps) {
   const [location, navigate] = useLocation();
+  const { user, logout } = useAuth();
   
-  // In a real app, this would come from an auth context/provider
-  const user = {
-    id: 1,
-    name: 'John Doe',
-    email: 'john@example.com'
+  // Define navigation items based on user type
+  const getNavigationItems = () => {
+    if (user?.userType === 'business') {
+      // Vendor navigation
+      return [
+        { icon: <Store className="w-5 h-5" />, label: 'Dashboard', path: '/vendor' },
+        { icon: <Package className="w-5 h-5" />, label: 'Create Deal', path: '/vendor/deals/create' },
+        { icon: <BarChart3 className="w-5 h-5" />, label: 'Analytics', path: '/vendor?tab=analytics' },
+        { icon: <FileText className="w-5 h-5" />, label: 'Profile', path: '/vendor/profile' },
+      ];
+    } else if (user?.userType === 'admin') {
+      // Admin navigation
+      return [
+        { icon: <BarChart3 className="w-5 h-5" />, label: 'Dashboard', path: '/admin' },
+        { icon: <Store className="w-5 h-5" />, label: 'Vendors', path: '/admin/vendors' },
+        { icon: <Package className="w-5 h-5" />, label: 'Deals', path: '/admin/deals' },
+        { icon: <User className="w-5 h-5" />, label: 'Users', path: '/admin/users' },
+      ];
+    } else {
+      // Customer navigation
+      return [
+        { icon: <Home className="w-5 h-5" />, label: 'Home', path: '/' },
+        { icon: <Search className="w-5 h-5" />, label: 'Explore', path: '/explore' },
+        { icon: <MapPin className="w-5 h-5" />, label: 'Map', path: '/map' },
+        { icon: <Heart className="w-5 h-5" />, label: 'Favorites', path: '/favorites' },
+        { icon: <User className="w-5 h-5" />, label: 'Profile', path: '/profile' },
+      ];
+    }
   };
 
-  const navigationItems = [
-    { icon: <Home className="w-5 h-5" />, label: 'Home', path: '/' },
-    { icon: <Search className="w-5 h-5" />, label: 'Explore', path: '/explore' },
-    { icon: <MapPin className="w-5 h-5" />, label: 'Map', path: '/map' },
-    { icon: <Heart className="w-5 h-5" />, label: 'Favorites', path: '/favorites' },
-    { icon: <User className="w-5 h-5" />, label: 'Profile', path: '/profile' },
-  ];
+  const navigationItems = getNavigationItems();
 
   const isActive = (path: string) => {
     if (path === '/' && location === '/') return true;
+    if (path.includes('?')) {
+      // Handle paths with query parameters
+      const basePath = path.split('?')[0];
+      return location.startsWith(basePath);
+    }
     if (path !== '/' && location.startsWith(path)) return true;
     return false;
   };
 
   const handleLogout = () => {
-    // In a real app, would call an auth logout method here
+    logout();
     navigate('/auth');
   };
 
@@ -61,11 +88,11 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 <div className="py-4">
                   <div className="flex items-center gap-2 mb-6 px-2">
                     <Avatar>
-                      <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                      <AvatarFallback>{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-medium">{user.name}</p>
-                      <p className="text-sm text-muted-foreground">{user.email}</p>
+                      <p className="font-medium">{user?.firstName} {user?.lastName}</p>
+                      <p className="text-sm text-muted-foreground">{user?.email}</p>
                     </div>
                   </div>
                   <nav className="flex flex-col gap-1">
@@ -96,7 +123,15 @@ export default function MainLayout({ children }: MainLayoutProps) {
             </Sheet>
             <div 
               className="font-bold text-xl text-primary ml-2 cursor-pointer"
-              onClick={() => navigate('/')}
+              onClick={() => {
+                if (user?.userType === 'business') {
+                  navigate('/vendor');
+                } else if (user?.userType === 'admin') {
+                  navigate('/admin');
+                } else {
+                  navigate('/');
+                }
+              }}
             >
               Pinnity
             </div>
@@ -110,7 +145,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
                   <Avatar className="h-8 w-8">
-                    <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                    <AvatarFallback>{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
@@ -136,7 +171,15 @@ export default function MainLayout({ children }: MainLayoutProps) {
         <nav className="hidden md:flex flex-col fixed w-60 h-screen border-r p-4">
           <div 
             className="font-bold text-2xl text-primary mb-8 cursor-pointer"
-            onClick={() => navigate('/')}
+            onClick={() => {
+              if (user?.userType === 'business') {
+                navigate('/vendor');
+              } else if (user?.userType === 'admin') {
+                navigate('/admin');
+              } else {
+                navigate('/');
+              }
+            }}
           >
             Pinnity
           </div>
@@ -162,11 +205,11 @@ export default function MainLayout({ children }: MainLayoutProps) {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Avatar>
-                  <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                  <AvatarFallback>{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-medium text-sm">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">{user.email}</p>
+                  <p className="font-medium text-sm">{user?.firstName} {user?.lastName}</p>
+                  <p className="text-xs text-muted-foreground">{user?.email}</p>
                 </div>
               </div>
               <DropdownMenu>
