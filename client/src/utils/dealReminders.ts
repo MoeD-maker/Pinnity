@@ -92,6 +92,24 @@ export function isExpiringSoon(deal: DealLike): boolean {
 }
 
 /**
+ * Check if a deal is expired
+ */
+export function isExpired(deal: DealLike): boolean {
+  if (!deal.endDate) return false;
+  
+  // Handle different date formats
+  const endDate = typeof deal.endDate === 'string' 
+    ? new Date(deal.endDate) 
+    : deal.endDate instanceof Date 
+      ? deal.endDate 
+      : new Date();
+      
+  const now = new Date();
+  
+  return endDate < now;
+}
+
+/**
  * Find deals that are expiring soon from a list of deals
  */
 export function getExpiringSoonDeals(deals: DealLike[]): DealLike[] {

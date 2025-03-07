@@ -5,16 +5,21 @@ import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { 
   Search, 
   Filter as ListFilterIcon, 
   Map as MapIcon, 
   Grid as GridIcon,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  Clock
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { isExpired } from '@/utils/dealReminders';
 
 // Use the barrel export for dashboard components
 import { 
@@ -52,8 +57,10 @@ export default function Dashboard() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(true); // Default to true to show filters
   const [selectedDeal, setSelectedDeal] = useState<number | null>(null);
+  const [showExpired, setShowExpired] = useState(false);
   const isMobile = useIsMobile();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Load saved filters on initial render
   useEffect(() => {
@@ -137,7 +144,7 @@ export default function Dashboard() {
     categoryCounter['all'] = deals.length;
   }
 
-  // Filter deals based on search query and selected categories
+  // Filter deals based on search query, selected categories, and expiration status
   const filteredDeals = deals && Array.isArray(deals) 
     ? deals.filter((deal: Deal & { business: any }) => {
         // Map API category to our category system
@@ -150,6 +157,20 @@ export default function Dashboard() {
         
         const matchesCategory = selectedCategories.length === 0 || 
           selectedCategories.includes(dealCategoryId);
+        
+        // For individual users, filter out expired deals
+        // For business and admin users, show expired deals based on toggle
+        const dealExpired = isExpired(deal);
+        
+        // For individual users (non-business, non-admin)
+        if (user?.userType === 'individual' && dealExpired) {
+          return false; // Hide expired deals for regular users
+        }
+        
+        // For business and admin users
+        if ((user?.userType === 'business' || user?.userType === 'admin') && dealExpired) {
+          return showExpired; // Only show if toggle is enabled
+        }
         
         return matchesSearch && matchesCategory;
       })
@@ -224,12 +245,29 @@ export default function Dashboard() {
       {showFilters && (
         <Card className="mb-6">
           <CardContent className="pt-6">
-            <CategoryFilter 
-              selectedCategories={selectedCategories}
-              onChange={handleCategoryChange}
-              dealCounts={categoryCounter}
-              onClearFilters={handleClearFilters}
-            />
+            <div className="flex flex-col gap-4">
+              <CategoryFilter 
+                selectedCategories={selectedCategories}
+                onChange={handleCategoryChange}
+                dealCounts={categoryCounter}
+                onClearFilters={handleClearFilters}
+              />
+              
+              {/* Expired deals toggle for business and admin users */}
+              {(user?.userType === 'business' || user?.userType === 'admin') && (
+                <div className="flex items-center space-x-2 pt-4 border-t">
+                  <Switch 
+                    id="show-expired" 
+                    checked={showExpired}
+                    onCheckedChange={setShowExpired}
+                  />
+                  <Label htmlFor="show-expired" className="flex items-center gap-2 cursor-pointer">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    Show expired deals
+                  </Label>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}
@@ -239,7 +277,19 @@ export default function Dashboard() {
         <div className="mb-8">
           <h2 className="text-2xl font-semibold mb-4">Featured Deals</h2>
           <FeaturedDeals 
-            deals={featuredDeals || []} 
+            deals={(featuredDeals || []).filter((deal: any) => {
+              // If user is individual, filter out expired deals
+              if (user?.userType === 'individual' && isExpired(deal)) {
+                return false;
+              }
+              
+              // For business and admin users, show expired deals based on toggle
+              if ((user?.userType === 'business' || user?.userType === 'admin') && isExpired(deal)) {
+                return showExpired;
+              }
+              
+              return true;
+            })} 
             isLoading={isLoadingFeatured}
             onSelect={handleDealSelect}
           />

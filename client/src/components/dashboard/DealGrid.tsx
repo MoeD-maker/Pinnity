@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Heart, MapPin, Calendar, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { isExpiringSoon, getExpirationText } from '@/utils/dealReminders';
+import { isExpiringSoon, getExpirationText, isExpired } from '@/utils/dealReminders';
 import ExpiringSoonBadge from '@/components/deals/ExpiringSoonBadge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';

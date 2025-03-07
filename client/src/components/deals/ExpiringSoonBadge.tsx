@@ -1,7 +1,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Clock } from 'lucide-react';
-import { DealLike } from '@/utils/dealReminders';
+import { Clock, X } from 'lucide-react';
+import { DealLike, isExpired } from '@/utils/dealReminders';
 
 interface ExpiringSoonBadgeProps {
   deal: DealLike;
