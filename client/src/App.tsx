@@ -7,6 +7,7 @@ import AuthPage from "@/pages/auth";
 import Dashboard from "@/pages/dashboard";
 import MainLayout from "@/components/layout/MainLayout";
 import { Suspense, lazy } from "react";
+import TestLogin from "./test-login";
 
 // Lazy-loaded pages for better performance
 const Favorites = lazy(() => import("@/pages/favorites"));
@@ -43,6 +44,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/auth" component={AuthPage}/>
+      <Route path="/test-login" component={TestLogin}/>
       
       {/* Protected routes */}
       <Route path="/">
