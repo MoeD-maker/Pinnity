@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { CategoryFilter, DealGrid, DealDetail, CATEGORIES } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Search, MapPin, Filter as FilterIcon } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
-import { Deal } from '@shared/schema';
+// Import each component separately to avoid potential bundling issues
+import CategoryFilter from '@/components/dashboard/CategoryFilter';
+import { CATEGORIES } from '@/components/dashboard/CategoryFilter';
+import DealGrid from '@/components/dashboard/DealGrid';
+import DealDetail from '@/components/dashboard/DealDetail';
 
 // Map API categories to our internal category IDs (same as in dashboard.tsx)
 const mapCategoryToId = (category: string): string => {
