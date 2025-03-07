@@ -153,7 +153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User Profile routes
-  app.get("/api/user/:id", async (req: Request, res: Response) => {
+  app.get("/api/user/:id", authenticate, checkOwnership('id'), async (req: Request, res: Response) => {
     try {
       const userId = parseInt(req.params.id);
       if (isNaN(userId)) {
@@ -320,7 +320,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User favorites routes
-  app.get("/api/user/:userId/favorites", async (req: Request, res: Response) => {
+  app.get("/api/user/:userId/favorites", authenticate, checkOwnership('userId'), async (req: Request, res: Response) => {
     try {
       const userId = parseInt(req.params.userId);
       if (isNaN(userId)) {
@@ -335,7 +335,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/user/:userId/favorites", async (req: Request, res: Response) => {
+  app.post("/api/user/:userId/favorites", authenticate, checkOwnership('userId'), async (req: Request, res: Response) => {
     try {
       const userId = parseInt(req.params.userId);
       if (isNaN(userId)) {
@@ -358,7 +358,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/user/:userId/favorites/:dealId", async (req: Request, res: Response) => {
+  app.delete("/api/user/:userId/favorites/:dealId", authenticate, checkOwnership('userId'), async (req: Request, res: Response) => {
     try {
       const userId = parseInt(req.params.userId);
       const dealId = parseInt(req.params.dealId);
@@ -379,7 +379,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Deal redemption routes
-  app.get("/api/user/:userId/redemptions", async (req: Request, res: Response) => {
+  app.get("/api/user/:userId/redemptions", authenticate, checkOwnership('userId'), async (req: Request, res: Response) => {
     try {
       const userId = parseInt(req.params.userId);
       if (isNaN(userId)) {
@@ -394,7 +394,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/user/:userId/redemptions", async (req: Request, res: Response) => {
+  app.post("/api/user/:userId/redemptions", authenticate, checkOwnership('userId'), async (req: Request, res: Response) => {
     try {
       const userId = parseInt(req.params.userId);
       if (isNaN(userId)) {
