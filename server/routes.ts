@@ -418,7 +418,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User notification preferences routes
-  app.get("/api/user/:userId/notification-preferences", async (req: Request, res: Response) => {
+  app.get("/api/user/:userId/notification-preferences", authenticate, checkOwnership('userId'), async (req: Request, res: Response) => {
     try {
       const userId = parseInt(req.params.userId);
       if (isNaN(userId)) {
@@ -437,7 +437,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/user/:userId/notification-preferences", async (req: Request, res: Response) => {
+  app.put("/api/user/:userId/notification-preferences", authenticate, checkOwnership('userId'), async (req: Request, res: Response) => {
     try {
       const userId = parseInt(req.params.userId);
       if (isNaN(userId)) {
@@ -464,7 +464,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Business management
   
   // Get business by user ID (must come before the general /:id route)
-  app.get("/api/business/user/:userId", async (req: Request, res: Response) => {
+  app.get("/api/business/user/:userId", authenticate, checkOwnership('userId'), async (req: Request, res: Response) => {
     try {
       const userId = parseInt(req.params.userId);
       if (isNaN(userId)) {
@@ -509,17 +509,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.put("/api/business/:id", async (req: Request, res: Response) => {
+  app.put("/api/business/:id", authenticate, async (req: Request, res: Response) => {
+    // For business operations, we need to verify that the user is the business owner
     try {
       const businessId = parseInt(req.params.id);
       if (isNaN(businessId)) {
         return res.status(400).json({ message: "Invalid business ID" });
       }
       
-      const businessData = req.body;
-      const updatedBusiness = await storage.updateBusiness(businessId, businessData);
+      // Get the business to check ownership
+      const business = await storage.getBusiness(businessId);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
       
-      return res.status(200).json(updatedBusiness);
+      // Verify ownership - user must be the business owner or an admin
+      if (req.user && (req.user.userId === business.userId || req.user.userType === 'admin')) {
+        const businessData = req.body;
+        const updatedBusiness = await storage.updateBusiness(businessId, businessData);
+        
+        return res.status(200).json(updatedBusiness);
+      } else {
+        return res.status(403).json({ message: "Unauthorized: You do not have permission to update this business" });
+      }
     } catch (error) {
       console.error("Update business error:", error);
       if (error instanceof Error) {
@@ -530,7 +542,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Business verification
-  app.put("/api/business/:id/verification", async (req: Request, res: Response) => {
+  app.put("/api/business/:id/verification", authenticate, async (req: Request, res: Response) => {
+    // Only admin users should be able to update verification status
+    if (!req.user || req.user.userType !== 'admin') {
+      return res.status(403).json({ message: "Unauthorized: Only administrators can update verification status" });
+    }
     try {
       const businessId = parseInt(req.params.id);
       if (isNaN(businessId)) {
@@ -555,7 +571,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Business hours
-  app.get("/api/business/:businessId/hours", async (req: Request, res: Response) => {
+  app.get("/api/business/:businessId/hours", authenticate, async (req: Request, res: Response) => {
     try {
       const businessId = parseInt(req.params.businessId);
       if (isNaN(businessId)) {
@@ -574,12 +590,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/business/hours", async (req: Request, res: Response) => {
+  app.post("/api/business/hours", authenticate, async (req: Request, res: Response) => {
+    // Verify business ownership
     try {
-      const hoursData = req.body;
-      const newHours = await storage.addBusinessHours(hoursData);
+      const { businessId } = req.body;
+      if (!businessId) {
+        return res.status(400).json({ message: "Business ID is required" });
+      }
       
-      return res.status(201).json(newHours);
+      // Get the business to check ownership
+      const business = await storage.getBusiness(businessId);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+      
+      // Verify ownership - user must be the business owner or an admin
+      if (req.user && (req.user.userId === business.userId || req.user.userType === 'admin')) {
+        const hoursData = req.body;
+        const newHours = await storage.addBusinessHours(hoursData);
+        
+        return res.status(201).json(newHours);
+      } else {
+        return res.status(403).json({ message: "Unauthorized: You do not have permission to add hours for this business" });
+      }
     } catch (error) {
       console.error("Add business hours error:", error);
       if (error instanceof Error) {
@@ -589,7 +622,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.put("/api/business/hours/:id", async (req: Request, res: Response) => {
+  app.put("/api/business/hours/:id", authenticate, async (req: Request, res: Response) => {
     try {
       const hoursId = parseInt(req.params.id);
       if (isNaN(hoursId)) {
