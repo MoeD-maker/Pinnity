@@ -75,6 +75,8 @@ export function checkForUpdates(callback: () => void) {
         if (newWorker) {
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // New content is available; dispatch an event for components to listen to
+              window.dispatchEvent(new Event('serviceWorkerUpdateFound'));
               callback();
             }
           });

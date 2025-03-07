@@ -1,7 +1,7 @@
 {
   "short_name": "Pinnity",
-  "name": "Pinnity - Local Deals",
-  "description": "Discover and redeem local deals from businesses near you",
+  "name": "Pinnity - Discover Local Deals",
+  "description": "Find and save on the best local deals near you with Pinnity",
   "icons": [
     {
       "src": "favicon.ico",
@@ -27,5 +27,37 @@
   "background_color": "#ffffff",
   "orientation": "portrait",
   "scope": "/",
-  "categories": ["local", "deals", "shopping"]
+  "shortcuts": [
+    {
+      "name": "Explore Deals",
+      "short_name": "Explore",
+      "description": "View all available deals",
+      "url": "/explore",
+      "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "My Favorites",
+      "short_name": "Favorites",
+      "description": "View your saved deals",
+      "url": "/favorites",
+      "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
+    }
+  ],
+  "categories": ["shopping", "finance", "lifestyle"],
+  "screenshots": [
+    {
+      "src": "screenshot1.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "platform": "wide",
+      "label": "Homescreen of Pinnity"
+    },
+    {
+      "src": "screenshot2.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "platform": "wide",
+      "label": "Deal details in Pinnity"
+    }
+  ]
 }
