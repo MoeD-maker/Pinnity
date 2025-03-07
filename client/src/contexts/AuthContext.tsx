@@ -45,6 +45,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Try to fetch user data to verify authentication
             const userData = await apiRequest(`/api/user/${storedUserId}`);
             setUser(userData);
+            
+            // If we're on the root path or auth page, redirect based on user type 
+            const path = window.location.pathname;
+            if (path === '/' || path === '/auth') {
+              if (userData.userType === 'admin') {
+                setLocation('/admin');
+              } else if (userData.userType === 'business') {
+                setLocation('/vendor');
+              }
+              // Keep individual users on the homepage if that's where they are
+            }
           } catch (err) {
             // If this fails, user is not authenticated
             localStorage.removeItem('userId');

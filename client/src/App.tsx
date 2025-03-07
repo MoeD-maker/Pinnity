@@ -29,16 +29,42 @@ const VendorProfile = lazy(() => import("@/pages/vendor/profile"));
 
 // Authenticated route wrapper
 function AuthenticatedRoute({ component: Component, ...rest }: any) {
-  const [, setLocation] = useLocation();
-  const { isAuthenticated, isLoading } = useAuth();
+  const [location, setLocation] = useLocation();
+  const { isAuthenticated, isLoading, user } = useAuth();
   
   // Use useEffect to handle the redirect instead of doing it during render
   // Always declare hooks before any conditional returns
   React.useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      setLocation("/auth");
+    if (!isLoading) {
+      // Redirect to auth if not authenticated
+      if (!isAuthenticated) {
+        setLocation("/auth");
+        return;
+      }
+      
+      // Role-based route protection
+      const path = location;
+      const userType = user?.userType;
+      
+      // Vendor trying to access non-vendor routes
+      if (userType === 'business' && !path.startsWith('/vendor') && path !== '/profile') {
+        setLocation('/vendor');
+        return;
+      }
+      
+      // Admin trying to access non-admin routes
+      if (userType === 'admin' && !path.startsWith('/admin') && path !== '/profile') {
+        setLocation('/admin');
+        return;
+      }
+      
+      // Individual user trying to access vendor or admin routes
+      if (userType === 'individual' && (path.startsWith('/vendor') || path.startsWith('/admin'))) {
+        setLocation('/');
+        return;
+      }
     }
-  }, [isLoading, isAuthenticated, setLocation]);
+  }, [isLoading, isAuthenticated, user, location, setLocation]);
   
   // Show loading indicator while checking auth status
   if (isLoading) {
