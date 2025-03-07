@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import AdminLayout from "@/components/admin/AdminLayout";
+import ViewDetailsLink from "@/components/admin/ViewDetailsLink";
 import { 
   ChevronDown, 
   ChevronUp, 
@@ -489,11 +490,12 @@ const AdminVendorsPage = () => {
                               <Store className="h-4 w-4 text-gray-600" />
                             </div>
                             <div>
-                              <Link href={`/admin/vendors/${business.id}`}>
-                                <div className="font-medium hover:underline cursor-pointer">
-                                  {business.businessName}
-                                </div>
-                              </Link>
+                              <div 
+                                className="font-medium hover:underline cursor-pointer"
+                                onClick={() => window.location.href = `/admin/vendors/${business.id}`}
+                              >
+                                {business.businessName}
+                              </div>
                               <div className="text-xs text-muted-foreground">{business.email}</div>
                             </div>
                           </div>
