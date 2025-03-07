@@ -142,6 +142,7 @@ export const redemptionRatings = pgTable("redemption_ratings", {
   businessId: integer("business_id").notNull().references(() => businesses.id),
   rating: integer("rating").notNull(), // 1-5 stars
   comment: text("comment"),
+  anonymous: boolean("anonymous").default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -169,6 +170,7 @@ export const loginUserSchema = z.object({
 export const ratingSchema = z.object({
   rating: z.number().min(1).max(5).int(),
   comment: z.string().optional(),
+  anonymous: z.boolean().optional().default(false),
 });
 
 // Export types

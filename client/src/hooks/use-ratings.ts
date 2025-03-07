@@ -11,7 +11,7 @@ export function useCreateRating() {
     mutationFn: async ({ redemptionId, data }: { redemptionId: number; data: RatingData }) => {
       return await apiRequest(`/api/redemptions/${redemptionId}/ratings`, {
         method: 'POST',
-        body: JSON.stringify(data),
+        data: data,
       });
     },
     onSuccess: () => {
