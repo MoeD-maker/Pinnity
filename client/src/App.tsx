@@ -15,7 +15,9 @@ import InstallPrompt from "@/components/pwa/InstallPrompt";
 import UpdateNotification from "@/components/pwa/UpdateNotification";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { WifiOff, Wifi, X } from "lucide-react";
-import * as localforage from 'localforage';
+
+// Debug logs
+console.log("App.tsx module loading");
 
 // Lazy-loaded pages for better performance
 const Favorites = lazy(() => import("@/pages/favorites"));
@@ -330,45 +332,31 @@ function Router() {
 }
 
 function App() {
-  // Set up offline data handling with useOfflineData hook
-  const isOffline = useOfflineData();
-
-  // Track whether PWA update is available
-  const [updateAvailable, setUpdateAvailable] = useState(false);
+  console.log("App component rendering");
   
-  // Setup PWA event listeners
-  useEffect(() => {
-    const handlePwaUpdate = () => {
-      setUpdateAvailable(true);
-    };
-    
-    // Listen for PWA update events
-    window.addEventListener('pwaUpdate', handlePwaUpdate);
-    
-    return () => {
-      window.removeEventListener('pwaUpdate', handlePwaUpdate);
-    };
-  }, []);
-
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router />
-        <Toaster />
-        
-        {/* Show install prompt only in supported browsers */}
-        {'serviceWorker' in navigator && (
-          <InstallPrompt className="fixed bottom-4 left-4 z-50 max-w-md" />
-        )}
-        
-        {/* Show update notification only when an update is available */}
-        {updateAvailable && <UpdateNotification />}
-        
-        {/* Always include the network status notification component */}
-        <NetworkStatusAlert />
-      </AuthProvider>
-    </QueryClientProvider>
-  );
+  // Simplified App component for debugging
+  try {
+    return (
+      <div className="p-8">
+        <h1 className="text-3xl font-bold">Pinnity Debugging Mode</h1>
+        <p className="mt-4">This is a simplified version of the app for debugging purposes.</p>
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold">Navigation</h2>
+          <ul className="mt-2 space-y-2">
+            <li><a href="/auth" className="text-blue-500 hover:underline">Go to Auth Page</a></li>
+          </ul>
+        </div>
+      </div>
+    );
+  } catch (error) {
+    console.error("Error in App component:", error);
+    return (
+      <div className="p-8 text-red-500">
+        <h1 className="text-3xl font-bold">Error in App</h1>
+        <p className="mt-4">{String(error)}</p>
+      </div>
+    );
+  }
 }
 
 export default App;
