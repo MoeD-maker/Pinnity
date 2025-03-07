@@ -446,6 +446,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // -------------------------------------------------------------------------
   
   // Business management
+  
+  // Get business by user ID (must come before the general /:id route)
+  app.get("/api/business/user/:userId", async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const business = await storage.getBusinessByUserId(userId);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found for this user" });
+      }
+      
+      return res.status(200).json(business);
+    } catch (error) {
+      console.error("Get business by user ID error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Get business by ID route (must come after more specific routes)
   app.get("/api/business/:id", async (req: Request, res: Response) => {
     try {
       const businessId = parseInt(req.params.id);
@@ -747,7 +772,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const updatedDeal = await storage.incrementDealViews(dealId);
       
-      return res.status(200).json({ views: updatedDeal.views });
+      // Use viewCount property from the schema instead of views
+      return res.status(200).json({ viewCount: updatedDeal.viewCount });
     } catch (error) {
       console.error("Increment deal views error:", error);
       if (error instanceof Error) {

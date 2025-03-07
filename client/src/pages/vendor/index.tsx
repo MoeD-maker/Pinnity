@@ -23,31 +23,38 @@ export default function VendorDashboard() {
     async function fetchBusinessData() {
       try {
         if (user && user.id) {
-          // Fetch business profile
-          const businessData = await apiRequest(`/api/business/user/${user.id}`);
-          setBusiness(businessData);
-
-          // Fetch deals if business exists
-          if (businessData && businessData.id) {
-            const dealsData = await apiRequest(`/api/business/${businessData.id}/deals`);
-            setDeals(dealsData || []);
+          console.log('Fetching business for user ID:', user.id);
+          
+          // Get business by user ID from storage
+          const businessResponse = await apiRequest(`/api/business/user/${user.id}`);
+          console.log('Business response:', businessResponse);
+          
+          if (businessResponse) {
+            setBusiness(businessResponse);
             
-            // Calculate stats
-            const activeDeals = dealsData ? dealsData.filter((deal: any) => 
-              new Date(deal.endDate) >= new Date() && deal.status === 'approved'
-            ).length : 0;
-            
-            // Sum up counts
-            const viewCount = dealsData ? dealsData.reduce((sum: number, deal: any) => sum + (deal.views || 0), 0) : 0;
-            const redemptionCount = dealsData ? dealsData.reduce((sum: number, deal: any) => sum + (deal.redemptionCount || 0), 0) : 0;
-            const savesCount = dealsData ? dealsData.reduce((sum: number, deal: any) => sum + (deal.saves || 0), 0) : 0;
-            
-            setStats({
-              activeDeals,
-              viewCount,
-              redemptionCount,
-              savesCount
-            });
+            // Fetch deals if business exists
+            if (businessResponse.id) {
+              const dealsData = await apiRequest(`/api/business/${businessResponse.id}/deals`);
+              console.log('Deals data:', dealsData);
+              setDeals(dealsData || []);
+              
+              // Calculate stats
+              const activeDeals = dealsData ? dealsData.filter((deal: any) => 
+                new Date(deal.endDate) >= new Date() && deal.status === 'approved'
+              ).length : 0;
+              
+              // Sum up counts
+              const viewCount = dealsData ? dealsData.reduce((sum: number, deal: any) => sum + (deal.viewCount || 0), 0) : 0;
+              const redemptionCount = dealsData ? dealsData.reduce((sum: number, deal: any) => sum + (deal.redemptionCount || 0), 0) : 0;
+              const savesCount = dealsData ? dealsData.reduce((sum: number, deal: any) => sum + (deal.saveCount || 0), 0) : 0;
+              
+              setStats({
+                activeDeals,
+                viewCount,
+                redemptionCount,
+                savesCount
+              });
+            }
           }
         }
       } catch (error) {
