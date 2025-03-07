@@ -83,6 +83,13 @@ export interface IStorage {
   // Notification preferences methods
   getUserNotificationPreferences(userId: number): Promise<UserNotificationPreferences | undefined>;
   updateUserNotificationPreferences(userId: number, preferences: Partial<Omit<InsertUserNotificationPreferences, "id" | "userId">>): Promise<UserNotificationPreferences>;
+  
+  // Redemption rating methods
+  createRedemptionRating(redemptionId: number, userId: number, dealId: number, businessId: number, ratingData: RatingData): Promise<RedemptionRating>;
+  getRedemptionRating(redemptionId: number): Promise<RedemptionRating | undefined>;
+  getUserRatings(userId: number): Promise<(RedemptionRating & { deal: Deal, business: Business })[]>;
+  getBusinessRatings(businessId: number): Promise<RedemptionRating[]>;
+  getBusinessRatingSummary(businessId: number): Promise<{ averageRating: number, totalRatings: number, ratingCounts: Record<number, number> }>;
 }
 
 // Hash passwords for storage
@@ -105,6 +112,9 @@ export class MemStorage implements IStorage {
   private businessSocial: Map<number, BusinessSocial>;
   private businessDocuments: Map<number, BusinessDocument>;
   
+  // Rating collection
+  private redemptionRatings: Map<number, RedemptionRating>;
+  
   private currentUserId: number;
   private currentBusinessId: number;
   private currentDealId: number;
@@ -115,6 +125,7 @@ export class MemStorage implements IStorage {
   private currentBusinessHoursId: number;
   private currentBusinessSocialId: number;
   private currentBusinessDocumentId: number;
+  private currentRedemptionRatingId: number;
 
   constructor() {
     this.users = new Map();
@@ -130,6 +141,9 @@ export class MemStorage implements IStorage {
     this.businessSocial = new Map();
     this.businessDocuments = new Map();
     
+    // Initialize ratings collection
+    this.redemptionRatings = new Map();
+    
     this.currentUserId = 1;
     this.currentBusinessId = 1;
     this.currentDealId = 1;
@@ -140,6 +154,7 @@ export class MemStorage implements IStorage {
     this.currentBusinessHoursId = 1;
     this.currentBusinessSocialId = 1;
     this.currentBusinessDocumentId = 1;
+    this.currentRedemptionRatingId = 1;
     
     // Populate with sample data
     this.initializeSampleData();
