@@ -513,10 +513,10 @@ const AdminVendorsPage = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
-                                <Link href={`/admin/vendors/${business.id}`}>
+                              <DropdownMenuItem asChild>
+                                <ViewDetailsLink businessId={business.id}>
                                   <div className="flex items-center">View Details</div>
-                                </Link>
+                                </ViewDetailsLink>
                               </DropdownMenuItem>
                               {business.status === "new" && (
                                 <DropdownMenuItem>Start Review</DropdownMenuItem>
