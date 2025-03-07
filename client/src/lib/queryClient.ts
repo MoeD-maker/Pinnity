@@ -1,5 +1,10 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// Function to get token from storage
+const getToken = (): string | null => {
+  return localStorage.getItem('pinnity_auth_token');
+};
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -20,9 +25,25 @@ export async function apiRequest(
     
     console.log(`Making ${method} request to ${url}`, data);
     
+    // Get token if it exists
+    const token = getToken();
+    
+    // Create headers with token if it exists
+    const headers: Record<string, string> = {};
+    
+    // Add content-type header for requests with data
+    if (data) {
+      headers["Content-Type"] = "application/json";
+    }
+    
+    // Add authorization header if we have a token
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    
     const res = await fetch(url, {
       method,
-      headers: data ? { "Content-Type": "application/json" } : {},
+      headers,
       body: data ? JSON.stringify(data) : undefined,
       credentials: "include",
     });
@@ -47,7 +68,19 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    // Get token if it exists
+    const token = getToken();
+    
+    // Create headers
+    const headers: Record<string, string> = {};
+    
+    // Add authorization header if we have a token
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    
     const res = await fetch(queryKey[0] as string, {
+      headers,
       credentials: "include",
     });
 

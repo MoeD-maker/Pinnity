@@ -2,6 +2,24 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
 
+// JWT token utilities
+const TOKEN_KEY = 'pinnity_auth_token';
+
+// Function to get token from storage
+const getToken = (): string | null => {
+  return localStorage.getItem(TOKEN_KEY);
+};
+
+// Function to save token to storage
+const saveToken = (token: string): void => {
+  localStorage.setItem(TOKEN_KEY, token);
+};
+
+// Function to remove token from storage
+const removeToken = (): void => {
+  localStorage.removeItem(TOKEN_KEY);
+};
+
 // Define the User type based on your schema
 interface User {
   id: number;
@@ -36,28 +54,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         setIsLoading(true);
         
-        // Try to get user data from local storage
-        const storedUserId = localStorage.getItem('userId');
-        const storedUserType = localStorage.getItem('userType');
+        // Check for JWT token
+        const token = getToken();
         
-        if (storedUserId) {
+        // Also check for stored userId (backward compatibility)
+        const storedUserId = localStorage.getItem('userId');
+        
+        if (token || storedUserId) {
           try {
-            // Try to fetch user data to verify authentication
-            const userData = await apiRequest(`/api/user/${storedUserId}`);
-            setUser(userData);
+            // If we have a token, the API request will include it in the header
+            // If we have a userId but no token, try to fetch user data anyway
+            const userId = storedUserId || '';
+            const userData = await apiRequest(`/api/user/${userId}`);
             
-            // If we're on the root path or auth page, redirect based on user type 
-            const path = window.location.pathname;
-            if (path === '/' || path === '/auth') {
-              if (userData.userType === 'admin') {
-                setLocation('/admin');
-              } else if (userData.userType === 'business') {
-                setLocation('/vendor');
+            if (userData) {
+              setUser(userData);
+              
+              // If we have user data but no token, store the userId for backward compatibility
+              if (!token && userData.id) {
+                localStorage.setItem('userId', userData.id.toString());
+                localStorage.setItem('userType', userData.userType);
               }
-              // Keep individual users on the homepage if that's where they are
+              
+              // If we're on the root path or auth page, redirect based on user type 
+              const path = window.location.pathname;
+              if (path === '/' || path === '/auth') {
+                if (userData.userType === 'admin') {
+                  setLocation('/admin');
+                } else if (userData.userType === 'business') {
+                  setLocation('/vendor');
+                }
+                // Keep individual users on the homepage if that's where they are
+              }
             }
           } catch (err) {
             // If this fails, user is not authenticated
+            removeToken();
             localStorage.removeItem('userId');
             localStorage.removeItem('userType');
           }
@@ -82,10 +114,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         data: { email, password, rememberMe }
       });
 
-      if (response && response.userId) {
-        // Store user info in localStorage for persistence
-        localStorage.setItem('userId', response.userId.toString());
-        localStorage.setItem('userType', response.userType);
+      if (response && response.token) {
+        // Store JWT token
+        saveToken(response.token);
+        
+        // For backward compatibility, also store user ID and type
+        if (response.userId) {
+          localStorage.setItem('userId', response.userId.toString());
+          localStorage.setItem('userType', response.userType);
+        }
         
         // Fetch complete user data
         const userData = await apiRequest(`/api/user/${response.userId}`);
@@ -115,11 +152,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true);
       
-      // In a real app, you'd make a request to invalidate the session
+      // In a real app with server-side session management, you'd make a request to invalidate the session
       // await apiRequest('/api/auth/logout', { method: 'POST' });
       
       // Clear user data
       setUser(null);
+      
+      // Remove JWT token
+      removeToken();
+      
+      // Also remove legacy storage items
       localStorage.removeItem('userId');
       localStorage.removeItem('userType');
       
