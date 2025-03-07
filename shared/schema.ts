@@ -85,6 +85,8 @@ export const userNotificationPreferences = pgTable("user_notification_preference
   emailNotifications: boolean("email_notifications").default(true),
   pushNotifications: boolean("push_notifications").default(true),
   dealAlerts: boolean("deal_alerts").default(true),
+  expiringDealReminders: boolean("expiring_deal_reminders").default(true), // New field for expiring deal reminders
+  expiringDealReminderHours: integer("expiring_deal_reminder_hours").default(48), // Hours before expiration to send reminder
   weeklyNewsletter: boolean("weekly_newsletter").default(true),
 });
 
