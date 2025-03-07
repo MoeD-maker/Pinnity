@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { apiRequest } from '@/lib/queryClient';
 import { User as UserIcon } from 'lucide-react';
 import PasswordChangeForm from '@/components/profile/PasswordChangeForm';
+import UserRatingsList from '@/components/ratings/UserRatingsList';
+import RecentRedemptionsRatingPrompt from '@/components/ratings/RecentRedemptionsRatingPrompt';
 
 export default function ProfilePage() {
   // For demo purposes, hardcoded user ID
@@ -205,6 +207,12 @@ export default function ProfilePage() {
         {/* Password Change Form */}
         <PasswordChangeForm userId={userId} />
         
+        {/* Recent Redemptions Ratings Prompt */}
+        <RecentRedemptionsRatingPrompt userId={userId} />
+        
+        {/* User Ratings List */}
+        <UserRatingsList userId={userId} />
+        
         <Card>
           <CardHeader>
             <CardTitle>Deal History</CardTitle>
@@ -218,7 +226,7 @@ export default function ProfilePage() {
                     <div>
                       <p className="font-medium">{redemption.deal.title}</p>
                       <p className="text-sm text-muted-foreground">
-                        {redemption.deal.business.businessName} • {new Date(redemption.redemptionDate).toLocaleDateString()}
+                        {redemption.deal.business.businessName} • {new Date(redemption.redeemedAt).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="text-sm font-medium">

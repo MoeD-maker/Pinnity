@@ -6,13 +6,14 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { 
   PlusCircle, BarChart3, Calendar, Tag, Settings, FileText, Store, 
-  PackageOpen, Bell, CheckCircle, AlertCircle, Clock, HelpCircle
+  PackageOpen, Bell, CheckCircle, AlertCircle, Clock, HelpCircle, Star
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
+import BusinessRatingSummary from '@/components/ratings/BusinessRatingSummary';
 
 // Define status colors for consistent use across components
 const statusColors: Record<string, string> = {
