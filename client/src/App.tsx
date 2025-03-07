@@ -11,6 +11,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import TestLogin from "./test-login";
 import SimpleExplorePage from "@/pages/simple-explore";
 import TestPage from "@/pages/test-page";
+import MinimalPage from "@/pages/minimal";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
 import UpdateNotification from "@/components/pwa/UpdateNotification";
@@ -234,6 +235,7 @@ function Router() {
       <Route path="/test-login" component={TestLogin}/>
       <Route path="/simple-explore" component={SimpleExplorePage}/>
       <Route path="/test-page" component={TestPage}/>
+      <Route path="/minimal" component={MinimalPage}/>
       
       {/* Protected routes */}
       <Route path="/">
