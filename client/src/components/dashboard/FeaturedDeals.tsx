@@ -7,6 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Heart } from 'lucide-react';
 import { FavoriteButton } from './DealGrid';
+import { isExpired, isExpiringSoon } from '@/utils/dealReminders';
+import ExpiredBadge from '@/components/deals/ExpiredBadge';
+import ExpiringSoonBadge from '@/components/deals/ExpiringSoonBadge';
 
 interface FeaturedDealsProps {
   deals: (Deal & { business: any })[];
@@ -74,9 +77,16 @@ function FeaturedDealCard({ deal, onSelect }: FeaturedDealCardProps) {
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-4">
-            <Badge className="mb-2 self-start bg-primary text-white">
-              {discount}
-            </Badge>
+            <div className="flex flex-wrap gap-2 mb-2">
+              <Badge className="self-start bg-primary text-white">
+                {discount}
+              </Badge>
+              {isExpired(deal) ? (
+                <ExpiredBadge deal={deal} className="bg-white/90" />
+              ) : isExpiringSoon(deal) && (
+                <ExpiringSoonBadge deal={deal} className="bg-white/90" />
+              )}
+            </div>
             <h3 className="text-white font-semibold line-clamp-1">{deal.title}</h3>
             <p className="text-white/90 text-sm line-clamp-1">
               {deal.business.businessName}

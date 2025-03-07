@@ -12,6 +12,11 @@ interface ExpiringSoonBadgeProps {
  * A badge that shows when a deal is expiring soon
  */
 export default function ExpiringSoonBadge({ deal, className = '' }: ExpiringSoonBadgeProps) {
+  // Don't show 'expiring soon' if the deal is already expired
+  if (isExpired(deal)) {
+    return null;
+  }
+  
   // Handle different date formats
   const endDate = typeof deal.endDate === 'string' 
     ? new Date(deal.endDate) 

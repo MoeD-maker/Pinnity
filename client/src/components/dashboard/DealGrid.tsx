@@ -9,6 +9,7 @@ import { Heart, MapPin, Calendar, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { isExpiringSoon, getExpirationText, isExpired } from '@/utils/dealReminders';
 import ExpiringSoonBadge from '@/components/deals/ExpiringSoonBadge';
+import ExpiredBadge from '@/components/deals/ExpiredBadge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
@@ -124,7 +125,9 @@ function DealCard({ deal, onSelect }: DealCardProps) {
               <Badge variant="outline">
                 {deal.category}
               </Badge>
-              {isExpiringSoon(deal) && (
+              {isExpired(deal) ? (
+                <ExpiredBadge deal={deal} />
+              ) : isExpiringSoon(deal) && (
                 <ExpiringSoonBadge deal={deal} />
               )}
             </div>
