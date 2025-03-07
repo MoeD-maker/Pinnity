@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 import AdminLayout from "@/components/admin/AdminLayout";
 import ViewDetailsLink from "@/components/admin/ViewDetailsLink";
 import { 
@@ -67,6 +67,7 @@ interface Business {
 }
 
 const AdminVendorsPage = () => {
+  const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | "all">("all");
   const [categoryFilter, setCategoryFilter] = useState<string | "all">("all");
@@ -405,137 +406,112 @@ const AdminVendorsPage = () => {
                     <TableHead className="w-[250px]">
                       <Button 
                         variant="ghost" 
-                        className="p-0 font-medium flex items-center" 
+                        className="p-0 font-medium flex items-center gap-1"
                         onClick={() => handleSort("businessName")}
                       >
-                        Business Name
-                        {sortField === "businessName" && (
-                          sortDirection === "asc" ? 
-                            <ChevronUp className="ml-1 h-4 w-4" /> : 
-                            <ChevronDown className="ml-1 h-4 w-4" />
-                        )}
-                        {sortField !== "businessName" && (
-                          <ArrowUpDown className="ml-1 h-4 w-4 opacity-30" />
+                        Business
+                        {sortField === "businessName" ? (
+                          sortDirection === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ArrowUpDown className="h-4 w-4 opacity-50" />
                         )}
                       </Button>
                     </TableHead>
                     <TableHead>
                       <Button 
                         variant="ghost" 
-                        className="p-0 font-medium flex items-center" 
+                        className="p-0 font-medium flex items-center gap-1"
                         onClick={() => handleSort("businessCategory")}
                       >
                         Category
-                        {sortField === "businessCategory" && (
-                          sortDirection === "asc" ? 
-                            <ChevronUp className="ml-1 h-4 w-4" /> : 
-                            <ChevronDown className="ml-1 h-4 w-4" />
-                        )}
-                        {sortField !== "businessCategory" && (
-                          <ArrowUpDown className="ml-1 h-4 w-4 opacity-30" />
+                        {sortField === "businessCategory" ? (
+                          sortDirection === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ArrowUpDown className="h-4 w-4 opacity-50" />
                         )}
                       </Button>
                     </TableHead>
                     <TableHead>
                       <Button 
                         variant="ghost" 
-                        className="p-0 font-medium flex items-center" 
+                        className="p-0 font-medium flex items-center gap-1"
                         onClick={() => handleSort("appliedDate")}
                       >
-                        Applied Date
-                        {sortField === "appliedDate" && (
-                          sortDirection === "asc" ? 
-                            <ChevronUp className="ml-1 h-4 w-4" /> : 
-                            <ChevronDown className="ml-1 h-4 w-4" />
-                        )}
-                        {sortField !== "appliedDate" && (
-                          <ArrowUpDown className="ml-1 h-4 w-4 opacity-30" />
+                        Applied
+                        {sortField === "appliedDate" ? (
+                          sortDirection === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ArrowUpDown className="h-4 w-4 opacity-50" />
                         )}
                       </Button>
                     </TableHead>
                     <TableHead>
                       <Button 
                         variant="ghost" 
-                        className="p-0 font-medium flex items-center" 
+                        className="p-0 font-medium flex items-center gap-1"
                         onClick={() => handleSort("status")}
                       >
                         Status
-                        {sortField === "status" && (
-                          sortDirection === "asc" ? 
-                            <ChevronUp className="ml-1 h-4 w-4" /> : 
-                            <ChevronDown className="ml-1 h-4 w-4" />
-                        )}
-                        {sortField !== "status" && (
-                          <ArrowUpDown className="ml-1 h-4 w-4 opacity-30" />
+                        {sortField === "status" ? (
+                          sortDirection === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ArrowUpDown className="h-4 w-4 opacity-50" />
                         )}
                       </Button>
                     </TableHead>
-                    <TableHead>Documents</TableHead>
+                    <TableHead className="w-[180px]">Documents</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredBusinesses.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                        No vendors found. Try adjusting your filters.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredBusinesses.map((business) => (
-                      <TableRow key={business.id}>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                              <Store className="h-4 w-4 text-gray-600" />
-                            </div>
-                            <div>
-                              <div 
-                                className="font-medium hover:underline cursor-pointer"
-                                onClick={() => window.location.href = `/admin/vendors/${business.id}`}
-                              >
+                  {filteredBusinesses.map((business) => (
+                    <TableRow key={business.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                            <Store className="h-4 w-4 text-gray-600" />
+                          </div>
+                          <div>
+                            <ViewDetailsLink href={`/admin/vendors/${business.id}`}>
+                              <div className="font-medium hover:underline">
                                 {business.businessName}
                               </div>
-                              <div className="text-xs text-muted-foreground">{business.email}</div>
-                            </div>
+                            </ViewDetailsLink>
+                            <div className="text-xs text-muted-foreground">{business.email}</div>
                           </div>
-                        </TableCell>
-                        <TableCell>{business.businessCategory}</TableCell>
-                        <TableCell>{new Date(business.appliedDate).toLocaleDateString()}</TableCell>
-                        <TableCell>{getStatusBadge(business.status)}</TableCell>
-                        <TableCell>{getDocumentStatusBadge(business.verificationStatus)}</TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                Actions
-                                <ChevronDown className="ml-1 h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem asChild>
-                                <ViewDetailsLink businessId={business.id}>
-                                  <div className="flex items-center">View Details</div>
-                                </ViewDetailsLink>
-                              </DropdownMenuItem>
-                              {business.status === "new" && (
-                                <DropdownMenuItem>Start Review</DropdownMenuItem>
-                              )}
-                              {(business.status === "new" || business.status === "in_review") && (
-                                <>
-                                  <DropdownMenuItem>Approve</DropdownMenuItem>
-                                  <DropdownMenuItem>Reject</DropdownMenuItem>
-                                  <DropdownMenuItem>Request More Info</DropdownMenuItem>
-                                </>
-                              )}
-                              {business.status === "approved" && (
-                                <DropdownMenuItem className="text-red-500">Suspend</DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                        </div>
+                      </TableCell>
+                      <TableCell>{business.businessCategory}</TableCell>
+                      <TableCell>
+                        {new Date(business.appliedDate).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </TableCell>
+                      <TableCell>{getStatusBadge(business.status)}</TableCell>
+                      <TableCell>{getDocumentStatusBadge(business.verificationStatus)}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => navigate(`/admin/vendors/${business.id}`)}
+                        >
+                          View Details
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {filteredBusinesses.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        <div className="flex flex-col items-center justify-center">
+                          <AlertTriangle className="h-12 w-12 text-muted-foreground mb-3 opacity-20" />
+                          <p className="text-muted-foreground">No vendors found</p>
+                          <p className="text-xs text-muted-foreground mt-1">Try adjusting your filters</p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -549,60 +525,71 @@ const AdminVendorsPage = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[250px]">Business Name</TableHead>
+                    <TableHead className="w-[300px]">Business</TableHead>
+                    <TableHead>Applied</TableHead>
                     <TableHead>Category</TableHead>
-                    <TableHead>Applied Date</TableHead>
-                    <TableHead>Documents</TableHead>
+                    <TableHead>Contact</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredBusinesses
-                    .filter(business => business.status === "new")
-                    .length === 0 ? (
+                    .filter(b => b.status === "new")
+                    .map((business) => (
+                      <TableRow key={business.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                              <Store className="h-4 w-4 text-gray-600" />
+                            </div>
+                            <div>
+                              <ViewDetailsLink href={`/admin/vendors/${business.id}`}>
+                                <div className="font-medium hover:underline">
+                                  {business.businessName}
+                                </div>
+                              </ViewDetailsLink>
+                              <div className="text-xs text-muted-foreground">{business.address}</div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {new Date(business.appliedDate).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </TableCell>
+                        <TableCell>{business.businessCategory}</TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{business.email}</div>
+                            <div className="text-sm text-muted-foreground">{business.phone}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right space-x-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              // In a real app, would update the business status
+                              navigate(`/admin/vendors/${business.id}`);
+                            }}
+                          >
+                            Start Review
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  {filteredBusinesses.filter(b => b.status === "new").length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                        No new vendor applications.
+                      <TableCell colSpan={5} className="text-center py-8">
+                        <div className="flex flex-col items-center justify-center">
+                          <CheckCircle className="h-12 w-12 text-muted-foreground mb-3 opacity-20" />
+                          <p className="text-muted-foreground">No new applications</p>
+                          <p className="text-xs text-muted-foreground mt-1">All caught up!</p>
+                        </div>
                       </TableCell>
                     </TableRow>
-                  ) : (
-                    filteredBusinesses
-                      .filter(business => business.status === "new")
-                      .map((business) => (
-                        <TableRow key={business.id}>
-                          <TableCell className="font-medium">
-                            <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                                <Store className="h-4 w-4 text-gray-600" />
-                              </div>
-                              <div>
-                                <Link href={`/admin/vendors/${business.id}`}>
-                                  <div className="font-medium hover:underline cursor-pointer">
-                                    {business.businessName}
-                                  </div>
-                                </Link>
-                                <div className="text-xs text-muted-foreground">{business.email}</div>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>{business.businessCategory}</TableCell>
-                          <TableCell>{new Date(business.appliedDate).toLocaleDateString()}</TableCell>
-                          <TableCell>{getDocumentStatusBadge(business.verificationStatus)}</TableCell>
-                          <TableCell className="text-right">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="mr-2" 
-                              asChild
-                            >
-                              <ViewDetailsLink businessId={business.id}>
-                                <div>View</div>
-                              </ViewDetailsLink>
-                            </Button>
-                            <Button size="sm">Start Review</Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
                   )}
                 </TableBody>
               </Table>
@@ -610,61 +597,81 @@ const AdminVendorsPage = () => {
           </Card>
         </TabsContent>
         
-        {/* Similar table layouts for other tabs (in_review, approved, rejected) would go here */}
+        {/* Repeat similar table structure for in_review, approved, and rejected tabs */}
         <TabsContent value="in_review" className="m-0">
           <Card>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[250px]">Business Name</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Applied Date</TableHead>
+                    <TableHead className="w-[300px]">Business</TableHead>
+                    <TableHead>Applied</TableHead>
                     <TableHead>Documents</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredBusinesses
-                    .filter(business => business.status === "in_review")
-                    .length === 0 ? (
+                    .filter(b => b.status === "in_review")
+                    .map((business) => (
+                      <TableRow key={business.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                              <Store className="h-4 w-4 text-gray-600" />
+                            </div>
+                            <div>
+                              <ViewDetailsLink href={`/admin/vendors/${business.id}`}>
+                                <div className="font-medium hover:underline">
+                                  {business.businessName}
+                                </div>
+                              </ViewDetailsLink>
+                              <div className="text-xs text-muted-foreground">{business.businessCategory}</div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {new Date(business.appliedDate).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </TableCell>
+                        <TableCell>{getDocumentStatusBadge(business.verificationStatus)}</TableCell>
+                        <TableCell className="text-right space-x-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              // In a real app, would update the business status to rejected
+                              navigate(`/admin/vendors/${business.id}`);
+                            }}
+                          >
+                            Reject
+                          </Button>
+                          <Button 
+                            variant="default" 
+                            size="sm"
+                            onClick={() => {
+                              // In a real app, would update the business status to approved
+                              navigate(`/admin/vendors/${business.id}`);
+                            }}
+                          >
+                            Approve
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  {filteredBusinesses.filter(b => b.status === "in_review").length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                        No vendors currently in review.
+                      <TableCell colSpan={4} className="text-center py-8">
+                        <div className="flex flex-col items-center justify-center">
+                          <CheckCircle className="h-12 w-12 text-muted-foreground mb-3 opacity-20" />
+                          <p className="text-muted-foreground">No vendors in review</p>
+                          <p className="text-xs text-muted-foreground mt-1">All caught up!</p>
+                        </div>
                       </TableCell>
                     </TableRow>
-                  ) : (
-                    filteredBusinesses
-                      .filter(business => business.status === "in_review")
-                      .map((business) => (
-                        <TableRow key={business.id}>
-                          <TableCell className="font-medium">
-                            <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                                <Store className="h-4 w-4 text-gray-600" />
-                              </div>
-                              <div>
-                                <Link href={`/admin/vendors/${business.id}`}>
-                                  <div className="font-medium hover:underline cursor-pointer">
-                                    {business.businessName}
-                                  </div>
-                                </Link>
-                                <div className="text-xs text-muted-foreground">{business.email}</div>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>{business.businessCategory}</TableCell>
-                          <TableCell>{new Date(business.appliedDate).toLocaleDateString()}</TableCell>
-                          <TableCell>{getDocumentStatusBadge(business.verificationStatus)}</TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="outline" size="sm" className="mr-2">
-                              <Link href={`/admin/vendors/${business.id}`}>
-                                <div>Continue Review</div>
-                              </Link>
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
                   )}
                 </TableBody>
               </Table>
@@ -672,7 +679,140 @@ const AdminVendorsPage = () => {
           </Card>
         </TabsContent>
         
-        {/* Other tab content would be similar */}
+        <TabsContent value="approved" className="m-0">
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[300px]">Business</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Approved Date</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredBusinesses
+                    .filter(b => b.status === "approved")
+                    .map((business) => (
+                      <TableRow key={business.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                              <Store className="h-4 w-4 text-gray-600" />
+                            </div>
+                            <div>
+                              <ViewDetailsLink href={`/admin/vendors/${business.id}`}>
+                                <div className="font-medium hover:underline">
+                                  {business.businessName}
+                                </div>
+                              </ViewDetailsLink>
+                              <div className="text-xs text-muted-foreground">{business.email}</div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{business.businessCategory}</TableCell>
+                        <TableCell>
+                          {new Date(business.appliedDate).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/admin/vendors/${business.id}`)}
+                          >
+                            View Details
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  {filteredBusinesses.filter(b => b.status === "approved").length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8">
+                        <div className="flex flex-col items-center justify-center">
+                          <AlertTriangle className="h-12 w-12 text-muted-foreground mb-3 opacity-20" />
+                          <p className="text-muted-foreground">No approved vendors</p>
+                          <p className="text-xs text-muted-foreground mt-1">Approve vendors from the In Review tab</p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="rejected" className="m-0">
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[300px]">Business</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Rejected Date</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredBusinesses
+                    .filter(b => b.status === "rejected")
+                    .map((business) => (
+                      <TableRow key={business.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                              <Store className="h-4 w-4 text-gray-600" />
+                            </div>
+                            <div>
+                              <ViewDetailsLink href={`/admin/vendors/${business.id}`}>
+                                <div className="font-medium hover:underline">
+                                  {business.businessName}
+                                </div>
+                              </ViewDetailsLink>
+                              <div className="text-xs text-muted-foreground">{business.email}</div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{business.businessCategory}</TableCell>
+                        <TableCell>
+                          {new Date(business.appliedDate).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/admin/vendors/${business.id}`)}
+                          >
+                            View Details
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  {filteredBusinesses.filter(b => b.status === "rejected").length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8">
+                        <div className="flex flex-col items-center justify-center">
+                          <CheckCircle className="h-12 w-12 text-muted-foreground mb-3 opacity-20" />
+                          <p className="text-muted-foreground">No rejected vendors</p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </AdminLayout>
   );
