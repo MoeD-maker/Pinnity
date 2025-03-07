@@ -66,15 +66,24 @@
   <div class="buttons">
     <a href="https://pinnity.replit.app" class="button" target="_blank">Open Deployed App</a>
     <a href="http://localhost:5000" class="button secondary" target="_blank">Try localhost:5000</a>
-    <a href="/test-page" class="button secondary">Try Direct Route</a>
+    <a href="/minimal" class="button secondary">Try Minimal Page</a>
+    <a href="/webview-debug.html" class="button">Diagnose Webview Issues</a>
   </div>
   
   <script>
+    // Check if webview issues and redirect to diagnostic page
+    if (window.location.pathname === '/' && 
+        window.location.hostname.includes('replit') && 
+        document.getElementById('root') === null) {
+      console.log('Detected blank screen, redirecting to diagnostic page');
+      window.location.href = '/webview-debug.html';
+    }
+    
     // Add auto-refresh option for development
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('refresh') === 'true') {
       setTimeout(() => {
-        window.location.href = '/test-page';
+        window.location.href = '/minimal';
       }, 2000);
     }
   </script>

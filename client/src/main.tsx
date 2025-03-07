@@ -68,6 +68,18 @@ window.addEventListener('offline', () => {
   }));
 });
 
+// Disable service worker in development to prevent blank screens
+if (import.meta.env.DEV) {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      for (const registration of registrations) {
+        registration.unregister();
+        console.log('Service worker unregistered in development mode');
+      }
+    });
+  }
+}
+
 // Try with a basic initial render
 try {
   console.log("About to render React application");
