@@ -31,16 +31,25 @@ export default function LoginForm() {
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     try {
-      const response = await apiRequest("POST", "/api/auth/login", data);
+      const response = await apiRequest("/api/auth/login", {
+        method: "POST",
+        data: data
+      });
       
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: "You have successfully logged in",
-        });
-        // Redirect to dashboard or home page after successful login
-        // window.location.href = "/dashboard";
+      toast({
+        title: "Success",
+        description: "You have successfully logged in",
+      });
+      
+      // Redirect to dashboard based on user type
+      if (response.userType === "admin") {
+        window.location.href = "/admin";
+      } else if (response.userType === "business") {
+        window.location.href = "/vendor";
+      } else {
+        window.location.href = "/dashboard";
       }
+      
     } catch (error) {
       console.error("Login error:", error);
       toast({

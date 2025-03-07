@@ -14,21 +14,31 @@ export async function apiRequest(
     data?: unknown;
   },
 ): Promise<any> {
-  const method = options?.method || 'GET';
-  const data = options?.data;
-  
-  const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
+  try {
+    const method = options?.method || 'GET';
+    const data = options?.data;
+    
+    console.log(`Making ${method} request to ${url}`, data);
+    
+    const res = await fetch(url, {
+      method,
+      headers: data ? { "Content-Type": "application/json" } : {},
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: "include",
+    });
 
-  await throwIfResNotOk(res);
-  
-  // Handle empty responses
-  const text = await res.text();
-  return text ? JSON.parse(text) : null;
+    await throwIfResNotOk(res);
+    
+    // Handle empty responses
+    const text = await res.text();
+    const result = text ? JSON.parse(text) : null;
+    console.log(`Response from ${url}:`, result);
+    
+    return result;
+  } catch (error) {
+    console.error(`Error in apiRequest to ${url}:`, error);
+    throw error;
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
