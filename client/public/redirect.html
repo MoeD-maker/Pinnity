@@ -1,57 +1,86 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Redirecting to Pinnity App...</title>
+  <title>Pinnity - Redirecting</title>
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: #f5f5f5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 20px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
-      margin: 0;
-      padding: 20px;
+      min-height: 90vh;
       text-align: center;
     }
+    h1 {
+      color: #00796B;
+      margin-bottom: 10px;
+    }
+    .message {
+      max-width: 600px;
+      margin: 0 auto 30px;
+    }
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+    }
+    .button {
+      background-color: #00796B;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      text-decoration: none;
+      font-weight: 500;
+      transition: background-color 0.2s;
+    }
+    .button:hover {
+      background-color: #00635a;
+    }
+    .button.secondary {
+      background-color: #607D8B;
+    }
+    .button.secondary:hover {
+      background-color: #546E7A;
+    }
     .spinner {
-      border: 4px solid rgba(0, 121, 107, 0.1);
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
-      border-top: 4px solid #00796b;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
+      border-left-color: #00796B;
+      animation: spin 1s ease infinite;
       margin-bottom: 20px;
     }
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
-    .message {
-      max-width: 500px;
-    }
-    .buttons {
-      margin-top: 20px;
-      display: flex;
-      gap: 10px;
-    }
-    .button {
-      padding: 10px 15px;
-      background-color: #00796b;
-      color: white;
-      border: none;
+    .tech-info {
+      background-color: #f0f0f0;
+      padding: 15px;
       border-radius: 4px;
-      cursor: pointer;
-      text-decoration: none;
+      margin-top: 30px;
+      text-align: left;
+      max-width: 600px;
       font-size: 14px;
     }
-    .button.secondary {
-      background-color: #f0f0f0;
-      color: #333;
-      border: 1px solid #ddd;
+    .tech-info pre {
+      overflow-x: auto;
+      background: #e5e5e5;
+      padding: 10px;
+      border-radius: 4px;
     }
   </style>
 </head>
@@ -65,26 +94,62 @@
   
   <div class="buttons">
     <a href="https://pinnity.replit.app" class="button" target="_blank">Open Deployed App</a>
-    <a href="http://localhost:5000" class="button secondary" target="_blank">Try localhost:5000</a>
+    <a href="/" class="button secondary">Try Root Path</a>
     <a href="/minimal" class="button secondary">Try Minimal Page</a>
     <a href="/webview-debug.html" class="button">Diagnose Webview Issues</a>
   </div>
   
+  <div class="tech-info">
+    <h3>Technical Information</h3>
+    <p>Current Path: <span id="current-path"></span></p>
+    <p>Attempted Redirect: <span id="redirect-to"></span></p>
+    <div id="route-info"></div>
+  </div>
+  
   <script>
-    // Check if webview issues and redirect to diagnostic page
-    if (window.location.pathname === '/' && 
-        window.location.hostname.includes('replit') && 
-        document.getElementById('root') === null) {
-      console.log('Detected blank screen, redirecting to diagnostic page');
-      window.location.href = '/webview-debug.html';
+    // Display current path information
+    document.getElementById('current-path').textContent = window.location.pathname;
+    
+    // Check if we got here from a direct route
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectFrom = urlParams.get('from');
+    if (redirectFrom) {
+      document.getElementById('redirect-to').textContent = redirectFrom;
+    } else {
+      document.getElementById('redirect-to').textContent = 'N/A';
     }
     
-    // Add auto-refresh option for development
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('refresh') === 'true') {
-      setTimeout(() => {
-        window.location.href = '/minimal';
-      }, 2000);
+    // Save intended route to localStorage
+    if (window.location.pathname !== '/' && 
+        window.location.pathname !== '/redirect.html' &&
+        window.location.pathname !== '/webview-debug.html') {
+      localStorage.setItem('intendedRoute', window.location.pathname);
+      document.getElementById('route-info').innerHTML = 
+        `<p>Saved route <code>${window.location.pathname}</code> for later navigation</p>`;
+    }
+    
+    // If we're at the root, check if there's a saved route
+    if (window.location.pathname === '/') {
+      const savedRoute = localStorage.getItem('intendedRoute');
+      if (savedRoute) {
+        document.getElementById('route-info').innerHTML = 
+          `<p>Found saved route: <code>${savedRoute}</code></p>`;
+      }
+    }
+    
+    // Auto-redirect to minimal if the webview seems broken
+    if (window.location.hostname.includes('replit') || 
+        window.location.hostname.includes('repl.co')) {
+      const appRoot = document.getElementById('root');
+      const appContainer = document.getElementById('app');
+      
+      if (!appRoot && !appContainer) {
+        console.log('App container not found, redirecting to debug page');
+        // Wait to ensure the app had time to mount
+        setTimeout(() => {
+          window.location.href = '/webview-debug.html';
+        }, 1500);
+      }
     }
   </script>
 </body>

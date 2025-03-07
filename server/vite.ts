@@ -71,18 +71,22 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(__dirname, "public");
+  const staticPath = path.resolve(__dirname, "../dist/public");
+  app.use(express.static(staticPath));
 
-  if (!fs.existsSync(distPath)) {
-    throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
-    );
-  }
+  // Add SPA fallback to serve index.html for all routes that don't match any files or API routes
+  app.get('*', (req, res, next) => {
+    // Skip API routes
+    if (req.path.startsWith('/api/')) {
+      return next();
+    }
 
-  app.use(express.static(distPath));
+    // Skip files with extensions (static assets)
+    if (path.extname(req.path) !== '') {
+      return next();
+    }
 
-  // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+    // Serve index.html for all other routes (SPA fallback)
+    res.sendFile(path.join(staticPath, 'index.html'));
   });
 }
