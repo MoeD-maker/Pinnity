@@ -847,8 +847,8 @@ export class MemStorage implements IStorage {
       title: `${deal.title} (Copy)`,
       createdAt: new Date(),
       status: 'draft',
-      views: 0,
-      saves: 0,
+      viewCount: 0,
+      saveCount: 0,
       redemptionCount: 0,
     };
     
@@ -864,7 +864,7 @@ export class MemStorage implements IStorage {
     
     const updatedDeal: Deal = {
       ...deal,
-      views: (deal.views || 0) + 1,
+      viewCount: (deal.viewCount || 0) + 1,
     };
     
     this.deals.set(dealId, updatedDeal);
@@ -879,7 +879,7 @@ export class MemStorage implements IStorage {
     
     const updatedDeal: Deal = {
       ...deal,
-      saves: (deal.saves || 0) + 1,
+      saveCount: (deal.saveCount || 0) + 1,
     };
     
     this.deals.set(dealId, updatedDeal);

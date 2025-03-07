@@ -233,7 +233,7 @@ function DealCard({ deal }: { deal: any }) {
         <div className="flex space-x-4 text-sm mt-2">
           <div className="flex items-center">
             <BarChart3 className="h-4 w-4 mr-1" />
-            <span>{deal.views || 0} views</span>
+            <span>{deal.viewCount || 0} views</span>
           </div>
           <div className="flex items-center">
             <PackageOpen className="h-4 w-4 mr-1" />
