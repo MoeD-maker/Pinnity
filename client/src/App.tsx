@@ -27,6 +27,7 @@ const Map = lazy(() => import("@/pages/map"));
 const AdminDashboard = lazy(() => import("@/pages/admin/index"));
 const AdminVendors = lazy(() => import("@/pages/admin/vendors/index"));
 const AdminVendorDetail = lazy(() => import("@/pages/admin/vendors/[id]"));
+const AdminDeals = lazy(() => import("@/pages/admin/deals/index"));
 
 // Vendor pages
 const VendorDashboard = lazy(() => import("@/pages/vendor/index"));
@@ -286,6 +287,14 @@ function Router() {
         {(params) => (
           <Suspense fallback={<LoadingFallback />}>
             <AuthenticatedRoute component={AdminVendorDetail} params={params} />
+          </Suspense>
+        )}
+      </Route>
+      
+      <Route path="/admin/deals">
+        {(params) => (
+          <Suspense fallback={<LoadingFallback />}>
+            <AuthenticatedRoute component={AdminDeals} params={params} />
           </Suspense>
         )}
       </Route>
