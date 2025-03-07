@@ -589,10 +589,15 @@ const AdminVendorsPage = () => {
                           <TableCell>{new Date(business.appliedDate).toLocaleDateString()}</TableCell>
                           <TableCell>{getDocumentStatusBadge(business.verificationStatus)}</TableCell>
                           <TableCell className="text-right">
-                            <Button variant="outline" size="sm" className="mr-2">
-                              <Link href={`/admin/vendors/${business.id}`}>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="mr-2" 
+                              asChild
+                            >
+                              <ViewDetailsLink businessId={business.id}>
                                 <div>View</div>
-                              </Link>
+                              </ViewDetailsLink>
                             </Button>
                             <Button size="sm">Start Review</Button>
                           </TableCell>
