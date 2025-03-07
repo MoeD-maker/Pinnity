@@ -642,7 +642,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.delete("/api/business/hours/:id", async (req: Request, res: Response) => {
+  app.delete("/api/business/hours/:id", authenticate, async (req: Request, res: Response) => {
     try {
       const hoursId = parseInt(req.params.id);
       if (isNaN(hoursId)) {
@@ -662,7 +662,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Deal approval API routes
-  app.post("/api/deals/:dealId/approval", async (req: Request, res: Response) => {
+  app.post("/api/deals/:dealId/approval", authenticate, async (req: Request, res: Response) => {
     try {
       const dealId = parseInt(req.params.dealId);
       if (isNaN(dealId)) {
@@ -686,7 +686,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/deals/:dealId/approval", async (req: Request, res: Response) => {
+  app.get("/api/deals/:dealId/approval", authenticate, async (req: Request, res: Response) => {
     try {
       const dealId = parseInt(req.params.dealId);
       if (isNaN(dealId)) {
@@ -708,7 +708,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/deals/:dealId/approval/history", async (req: Request, res: Response) => {
+  app.get("/api/deals/:dealId/approval/history", authenticate, async (req: Request, res: Response) => {
     try {
       const dealId = parseInt(req.params.dealId);
       if (isNaN(dealId)) {
@@ -727,7 +727,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.put("/api/deal-approvals/:id", async (req: Request, res: Response) => {
+  app.put("/api/deal-approvals/:id", authenticate, authorize(['admin']), async (req: Request, res: Response) => {
     try {
       const approvalId = parseInt(req.params.id);
       if (isNaN(approvalId)) {
@@ -752,7 +752,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Additional deal management routes
-  app.get("/api/deals/status/:status", async (req: Request, res: Response) => {
+  app.get("/api/deals/status/:status", authenticate, authorize(['admin', 'business']), async (req: Request, res: Response) => {
     try {
       const status = req.params.status;
       
@@ -768,7 +768,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.put("/api/deals/:id/status", async (req: Request, res: Response) => {
+  app.put("/api/deals/:id/status", authenticate, authorize(['admin']), async (req: Request, res: Response) => {
     try {
       const dealId = parseInt(req.params.id);
       if (isNaN(dealId)) {
@@ -792,7 +792,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/deals/:id/duplicate", async (req: Request, res: Response) => {
+  app.post("/api/deals/:id/duplicate", authenticate, async (req: Request, res: Response) => {
     try {
       const dealId = parseInt(req.params.id);
       if (isNaN(dealId)) {
@@ -832,7 +832,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/deals/:dealId/redemptions", async (req: Request, res: Response) => {
+  app.get("/api/deals/:dealId/redemptions", authenticate, authorize(['admin', 'business']), async (req: Request, res: Response) => {
     try {
       const dealId = parseInt(req.params.dealId);
       if (isNaN(dealId)) {
@@ -851,7 +851,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/deals/:dealId/verify-code", async (req: Request, res: Response) => {
+  app.post("/api/deals/:dealId/verify-code", authenticate, authorize(['business']), async (req: Request, res: Response) => {
     try {
       const dealId = parseInt(req.params.dealId);
       if (isNaN(dealId)) {
