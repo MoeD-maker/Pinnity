@@ -58,7 +58,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const token = getToken();
         
         // Also check for stored userId (backward compatibility)
-        const storedUserId = localStorage.getItem('userId');
+        let storedUserId = localStorage.getItem('userId');
+        let storedUserType = localStorage.getItem('userType');
+        
+        // If we have a token but no stored user ID, we need to decode the JWT token
+        // This is just a temporary fix until we fully update the app to use JWT
+        if (token && !storedUserId) {
+          // This is a basic implementation - in production, we'd use a proper JWT decoder
+          try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            
+            const payload = JSON.parse(jsonPayload);
+            if (payload.userId) {
+              localStorage.setItem('userId', payload.userId.toString());
+              localStorage.setItem('userType', payload.userType);
+              // Update our local variables with the values from the token
+              storedUserType = payload.userType;
+              storedUserId = payload.userId.toString();
+            }
+          } catch (e) {
+            console.error('Error decoding token:', e);
+          }
+        }
         
         if (token || storedUserId) {
           try {
@@ -79,15 +104,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               // If we're on the root path or auth page, redirect based on user type 
               const path = window.location.pathname;
               if (path === '/' || path === '/auth') {
-                if (userData.userType === 'admin') {
+                if (userData.userType === 'admin' || storedUserType === 'admin') {
                   setLocation('/admin');
-                } else if (userData.userType === 'business') {
+                } else if (userData.userType === 'business' || storedUserType === 'business') {
                   setLocation('/vendor');
                 }
                 // Keep individual users on the homepage if that's where they are
               }
             }
           } catch (err) {
+            console.error('Error fetching user data:', err);
             // If this fails, user is not authenticated
             removeToken();
             localStorage.removeItem('userId');
