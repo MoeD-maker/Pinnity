@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useInView } from 'react-intersection-observer';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,9 @@ import { Heart, MapPin, Calendar, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { isExpiringSoon } from '@/utils/dealReminders';
 import ExpiringSoonBadge from '@/components/deals/ExpiringSoonBadge';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 
 // Use a looser type for the API response since it may not match the database schema exactly
 interface DealWithBusiness {
@@ -106,17 +110,8 @@ function DealCard({ deal, onSelect }: DealCardProps) {
               {discount}
             </Badge>
           </div>
-          <Button 
-            size="icon" 
-            variant="ghost" 
-            className="absolute top-2 left-2 bg-white/80 hover:bg-white"
-            onClick={(e) => {
-              e.stopPropagation();
-              // Add favorite functionality here
-            }}
-          >
-            <Heart className="h-4 w-4 text-muted-foreground" />
-          </Button>
+          <FavoriteButton dealId={deal.id} />
+          
         </div>
       ) : (
         <div className="aspect-video bg-muted animate-pulse" />
@@ -183,5 +178,127 @@ function DealCardSkeleton() {
         <Skeleton className="h-9 w-full" />
       </CardFooter>
     </Card>
+  );
+}
+
+interface FavoriteButtonProps {
+  dealId: number;
+}
+
+function FavoriteButton({ dealId }: FavoriteButtonProps) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isFavorite, setIsFavorite] = useState(false);
+  
+  // Check if this deal is already in favorites
+  const { data: favorites } = useQuery({
+    queryKey: ['/api/user', user?.id, 'favorites'],
+    queryFn: async () => {
+      if (!user) return [];
+      try {
+        const response = await apiRequest(`/api/user/${user.id}/favorites`);
+        return response;
+      } catch (error) {
+        console.error('Error fetching favorites:', error);
+        return [];
+      }
+    },
+    enabled: !!user,
+  });
+  
+  // Set initial favorite state once favorites are loaded
+  React.useEffect(() => {
+    if (favorites) {
+      const isFav = favorites.some((fav: any) => fav.deal.id === dealId);
+      setIsFavorite(isFav);
+    }
+  }, [favorites, dealId]);
+  
+  // Add to favorites mutation
+  const addToFavorites = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error('Not authenticated');
+      return apiRequest(`/api/user/${user.id}/favorites`, {
+        method: 'POST',
+        data: { dealId }
+      });
+    },
+    onSuccess: () => {
+      setIsFavorite(true);
+      toast({
+        title: 'Deal saved',
+        description: 'Deal has been added to your favorites',
+      });
+      // Invalidate favorites query to fetch updated list
+      queryClient.invalidateQueries({ queryKey: ['/api/user', user?.id, 'favorites'] });
+    },
+    onError: (error) => {
+      console.error('Error adding to favorites:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to add deal to favorites',
+      });
+    }
+  });
+  
+  // Remove from favorites mutation
+  const removeFromFavorites = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error('Not authenticated');
+      return apiRequest(`/api/user/${user.id}/favorites/${dealId}`, {
+        method: 'DELETE',
+      });
+    },
+    onSuccess: () => {
+      setIsFavorite(false);
+      toast({
+        title: 'Deal removed',
+        description: 'Deal has been removed from your favorites',
+      });
+      // Invalidate favorites query to fetch updated list
+      queryClient.invalidateQueries({ queryKey: ['/api/user', user?.id, 'favorites'] });
+    },
+    onError: (error) => {
+      console.error('Error removing from favorites:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to remove deal from favorites',
+      });
+    }
+  });
+  
+  const handleToggleFavorite = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent the card click event
+    
+    if (!user) {
+      toast({
+        title: 'Authentication required',
+        description: 'Please log in to save deals to favorites',
+      });
+      return;
+    }
+    
+    if (isFavorite) {
+      removeFromFavorites.mutate();
+    } else {
+      addToFavorites.mutate();
+    }
+  };
+  
+  const isPending = addToFavorites.isPending || removeFromFavorites.isPending;
+  
+  return (
+    <Button 
+      size="icon" 
+      variant="ghost" 
+      className="absolute top-2 left-2 bg-white/80 hover:bg-white"
+      onClick={handleToggleFavorite}
+      disabled={isPending}
+    >
+      <Heart className={`h-4 w-4 ${isFavorite ? 'text-red-500 fill-red-500' : 'text-muted-foreground'}`} />
+    </Button>
   );
 }
