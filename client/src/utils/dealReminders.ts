@@ -7,6 +7,50 @@
 export const EXPIRING_SOON_HOURS = 48; // Define deals as "expiring soon" if they expire within 48 hours
 
 /**
+ * Get formatted expiration text for a deal
+ * @param deal The deal to check
+ * @returns Properly formatted text about expiration
+ */
+export function getExpirationText(deal: DealLike): string {
+  const now = new Date();
+  const endDate = new Date(deal.endDate);
+  
+  // If the deal is expired
+  if (endDate < now) {
+    return 'Expired';
+  }
+  
+  // If the deal is expiring soon
+  if (isExpiringSoon(deal)) {
+    const diffMs = endDate.getTime() - now.getTime();
+    const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+    
+    if (diffHrs < 1) {
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      return `Expires in ${diffMins} minute${diffMins !== 1 ? 's' : ''}`;
+    }
+    
+    return `Expires in ${diffHrs} hour${diffHrs !== 1 ? 's' : ''}`;
+  }
+  
+  // For regular deals, use relative format
+  const diffMs = endDate.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  
+  if (diffDays <= 1) {
+    return 'Expires today';
+  } else if (diffDays <= 7) {
+    return `Expires in ${diffDays} day${diffDays !== 1 ? 's' : ''}`;
+  } else if (diffDays <= 30) {
+    const weeks = Math.floor(diffDays / 7);
+    return `Expires in ${weeks} week${weeks !== 1 ? 's' : ''}`;
+  } else {
+    const months = Math.floor(diffDays / 30);
+    return `Expires in ${months} month${months !== 1 ? 's' : ''}`;
+  }
+}
+
+/**
  * Generic interface for any deal object
  */
 export interface DealLike {

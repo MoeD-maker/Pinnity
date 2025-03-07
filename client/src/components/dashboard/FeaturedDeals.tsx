@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Heart } from 'lucide-react';
+import { FavoriteButton } from './DealGrid';
 
 interface FeaturedDealsProps {
   deals: (Deal & { business: any })[];
@@ -81,17 +82,9 @@ function FeaturedDealCard({ deal, onSelect }: FeaturedDealCardProps) {
               {deal.business.businessName}
             </p>
           </div>
-          <Button 
-            size="icon" 
-            variant="ghost" 
-            className="absolute top-2 right-2 bg-white/80 hover:bg-white"
-            onClick={(e) => {
-              e.stopPropagation();
-              // Add favorite functionality here
-            }}
-          >
-            <Heart className="h-4 w-4 text-muted-foreground" />
-          </Button>
+          <div className="absolute top-2 right-2">
+            <FavoriteButton dealId={deal.id} />
+          </div>
         </div>
       ) : (
         <div className="aspect-[4/3] bg-muted animate-pulse" />

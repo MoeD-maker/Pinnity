@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Heart, MapPin, Calendar, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { isExpiringSoon } from '@/utils/dealReminders';
+import { isExpiringSoon, getExpirationText } from '@/utils/dealReminders';
 import ExpiringSoonBadge from '@/components/deals/ExpiringSoonBadge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -86,8 +86,8 @@ function DealCard({ deal, onSelect }: DealCardProps) {
     threshold: 0.1,
   });
 
-  // Format the expiration date
-  const expiresIn = formatDistanceToNow(new Date(deal.endDate), { addSuffix: true });
+  // Get formatted expiration text
+  const expirationText = getExpirationText(deal);
   
   // Calculate discount percentage or value
   const discount = deal.discount || '';
@@ -145,7 +145,7 @@ function DealCard({ deal, onSelect }: DealCardProps) {
           <MapPin className="h-3 w-3 mr-1" />
           <span className="mr-3">2.4 miles</span>
           <Calendar className="h-3 w-3 mr-1" />
-          <span>Expires {expiresIn}</span>
+          <span>{expirationText}</span>
         </div>
       </CardContent>
       
@@ -185,7 +185,7 @@ interface FavoriteButtonProps {
   dealId: number;
 }
 
-function FavoriteButton({ dealId }: FavoriteButtonProps) {
+export function FavoriteButton({ dealId }: FavoriteButtonProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
