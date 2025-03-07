@@ -174,28 +174,45 @@ function AuthenticatedRoute({ component: Component, ...rest }: any) {
     if (!isLoading) {
       // Redirect to auth if not authenticated
       if (!isAuthenticated) {
+        console.log("User not authenticated, redirecting to /auth");
         setLocation("/auth");
         return;
       }
       
-      // Role-based route protection
+      // Skip role-based routing for diagnostic pages
       const path = location;
+      // Skip role checks for diagnostic and test pages
+      if (
+        path === '/minimal' || 
+        path === '/test-page' || 
+        path === '/simple-explore' || 
+        path === '/test-login' ||
+        path.startsWith('/test')
+      ) {
+        console.log("Accessing diagnostic page:", path);
+        return;
+      }
+      
       const userType = user?.userType;
+      console.log("Authenticated user type:", userType, "at path:", path);
       
       // Vendor trying to access non-vendor routes
       if (userType === 'business' && !path.startsWith('/vendor') && path !== '/profile') {
+        console.log("Business user redirected to /vendor");
         setLocation('/vendor');
         return;
       }
       
       // Admin trying to access non-admin routes
       if (userType === 'admin' && !path.startsWith('/admin') && path !== '/profile') {
+        console.log("Admin user redirected to /admin");
         setLocation('/admin');
         return;
       }
       
       // Individual user trying to access vendor or admin routes
       if (userType === 'individual' && (path.startsWith('/vendor') || path.startsWith('/admin'))) {
+        console.log("Individual user redirected to /");
         setLocation('/');
         return;
       }
@@ -227,6 +244,26 @@ function Router() {
   // Use useLocation to track the current location for debugging
   const [location] = useLocation();
   console.log("Current route location:", location);
+  
+  // Extract path for direct comparison
+  const path = location;
+  
+  // Special handler for testing paths - bypass the normal router for diagnostic pages
+  if (
+    path === '/minimal' || 
+    path === '/test-page' || 
+    path === '/simple-explore' || 
+    path === '/test-login' ||
+    path.startsWith('/test')
+  ) {
+    console.log("Rendering diagnostic page directly:", path);
+    
+    // Return the appropriate test component based on path
+    if (path === '/minimal') return <MinimalPage />;
+    if (path === '/test-page') return <TestPage />;
+    if (path === '/simple-explore') return <SimpleExplorePage />;
+    if (path === '/test-login') return <TestLogin />;
+  }
   
   return (
     <Switch>
