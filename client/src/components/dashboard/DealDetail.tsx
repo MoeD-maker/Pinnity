@@ -134,15 +134,18 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="aspect-video rounded-lg overflow-hidden mb-4">
-              <img 
-                src={deal.imageUrl || 'https://images.unsplash.com/photo-1556742111-a301076d9d18?ixlib=rb-4.0.3'} 
-                alt={deal.title}
-                className="w-full h-full object-cover"
-              />
-            </div>
+            {/* Only show image in details view, not in redemption view */}
+            {step === 'details' && (
+              <div className="aspect-video rounded-lg overflow-hidden mb-4">
+                <img 
+                  src={deal.imageUrl || 'https://images.unsplash.com/photo-1556742111-a301076d9d18?ixlib=rb-4.0.3'} 
+                  alt={deal.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
 
-            <Tabs defaultValue="details" className="mb-4">
+            <Tabs defaultValue="details" value={step === 'redeem' ? 'redeem' : 'details'} className="mb-4">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger 
                   value="details" 
@@ -223,59 +226,63 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                 )}
               </TabsContent>
               
-              <TabsContent value="redeem" className="space-y-4 mt-4">
-                <div className="text-center py-2">
-                  <Award className="h-12 w-12 mx-auto mb-2 text-primary" />
-                  <h3 className="text-xl font-medium mb-1">How to redeem this deal</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Follow these simple steps to claim your offer
-                  </p>
-                </div>
+              <TabsContent value="redeem" className="mt-6 pb-4">
+                <div className="bg-card rounded-lg p-6 border shadow-sm">
+                  <div className="text-center mb-6">
+                    <div className="bg-primary/10 inline-flex p-3 rounded-full mb-3">
+                      <Award className="h-10 w-10 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-medium mb-1">How to redeem this deal</h3>
+                    <p className="text-muted-foreground">
+                      Follow these simple steps to claim your offer
+                    </p>
+                  </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3">
-                    <div className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0">
-                      1
+                  <div className="space-y-6 mb-8">
+                    <div className="flex items-start gap-4">
+                      <div className="bg-primary text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        1
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-base">Click the Redeem button</h4>
+                        <p className="text-sm text-muted-foreground">
+                          This will generate a unique redemption code
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-medium">Click the Redeem button</h4>
-                      <p className="text-sm text-muted-foreground">
-                        This will generate a unique redemption code
-                      </p>
+                    
+                    <div className="flex items-start gap-4">
+                      <div className="bg-primary text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        2
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-base">Visit {deal.business.businessName}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Go to the business location during operating hours
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-4">
+                      <div className="bg-primary text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        3
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-base">Show your redemption code</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Present the code to the staff to claim your deal
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  
-                  <div className="flex items-start gap-3">
-                    <div className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0">
-                      2
-                    </div>
-                    <div>
-                      <h4 className="font-medium">Visit {deal.business.businessName}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Go to the business location during operating hours
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start gap-3">
-                    <div className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0">
-                      3
-                    </div>
-                    <div>
-                      <h4 className="font-medium">Show your redemption code</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Present the code to the staff to claim your deal
-                      </p>
-                    </div>
-                  </div>
-                </div>
 
-                {deal.redemptionCode && (
-                  <div className="mt-6 p-4 border rounded-lg bg-muted/50 text-center">
-                    <p className="text-sm text-muted-foreground mb-2">Redemption Code</p>
-                    <div className="text-xl font-mono font-medium">{deal.redemptionCode}</div>
-                  </div>
-                )}
+                  {deal.redemptionCode && (
+                    <div className="mt-8 p-6 border-2 rounded-lg bg-primary/5 text-center">
+                      <p className="text-sm font-medium uppercase text-muted-foreground tracking-wide mb-3">Redemption Code</p>
+                      <div className="text-2xl font-mono font-bold tracking-wider">{deal.redemptionCode}</div>
+                    </div>
+                  )}
+                </div>
               </TabsContent>
             </Tabs>
 

@@ -318,6 +318,7 @@ export class MemStorage implements IStorage {
       });
       
       // Create sample deals
+      // Expired deals
       await this.createDeal({
         businessId: cafeBusiness.id,
         title: "50% Off Your First Coffee",
@@ -346,6 +347,67 @@ export class MemStorage implements IStorage {
         dealType: "free_item",
         featured: true,
         redemptionCode: "FREEAPP"
+      });
+      
+      // Future-dated deals
+      await this.createDeal({
+        businessId: cafeBusiness.id,
+        title: "Buy One, Get One Free Coffee",
+        description: "Purchase any coffee and get a second one free of equal or lesser value!",
+        category: "Food & Drink",
+        imageUrl: "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30), // 30 days in the future
+        terms: "Valid any day from 2pm-5pm. Cannot be combined with other offers.",
+        discount: "BOGO",
+        dealType: "bogo",
+        featured: true,
+        redemptionCode: "BOGO2024"
+      });
+      
+      await this.createDeal({
+        businessId: restaurantBusiness.id,
+        title: "20% Off Weekday Lunch",
+        description: "Enjoy 20% off your entire lunch bill Monday through Friday!",
+        category: "Food & Drink",
+        imageUrl: "https://images.unsplash.com/photo-1600891964599-f61ba0e24092?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 45), // 45 days in the future
+        terms: "Valid Monday-Friday from 11am-2pm. Not valid on holidays. Maximum discount $25.",
+        discount: "20%",
+        dealType: "percent_off",
+        featured: false,
+        redemptionCode: "LUNCH20"
+      });
+      
+      await this.createDeal({
+        businessId: retailBusiness.id,
+        title: "Summer Sale: 30% Off All Swimwear",
+        description: "Get ready for summer with 30% off our entire swimwear collection!",
+        category: "Retail",
+        imageUrl: "https://images.unsplash.com/photo-1560774358-d727658f457c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14), // 14 days in the future
+        terms: "Cannot be combined with other promotions. Sale applies to regular-priced items only.",
+        discount: "30%",
+        dealType: "percent_off",
+        featured: true,
+        redemptionCode: "SWIM30"
+      });
+      
+      await this.createDeal({
+        businessId: spaBusiness.id,
+        title: "Spa Day Package: 15% Off",
+        description: "Treat yourself to our deluxe spa package including massage, facial, and pedicure!",
+        category: "Health & Beauty",
+        imageUrl: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 60), // 60 days in the future
+        terms: "Appointment required. 24-hour cancellation notice required. Gratuity not included.",
+        discount: "15%",
+        dealType: "percent_off",
+        featured: false,
+        redemptionCode: "SPAPKG15"
       });
       
       await this.createDeal({

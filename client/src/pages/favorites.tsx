@@ -120,7 +120,7 @@ export default function FavoritesPage() {
         </div>
       ) : (
         <DealGrid
-          deals={(favorites?.map((fav: { deal: DealLike }) => fav.deal) || []).filter(deal => {
+          deals={(favorites?.map((fav: { deal: DealLike }) => fav.deal) || []).filter((deal) => {
             // For individual users, filter out expired deals
             if (user?.userType === 'individual' && isExpired(deal)) {
               return false;
