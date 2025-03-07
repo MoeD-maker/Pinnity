@@ -4,17 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { getExpirationNotificationText } from '@/utils/dealReminders';
 
-// Generic interface for any deal object
-interface DealLike {
-  id: number;
-  title: string;
-  endDate: string | Date;
-  business?: {
-    businessName: string;
-    [key: string]: any;
-  };
-  [key: string]: any;
-}
+// Import the DealLike interface from the utils
+import { DealLike } from '@/utils/dealReminders';
 
 interface ExpiringDealsNotificationProps {
   deals: DealLike[];

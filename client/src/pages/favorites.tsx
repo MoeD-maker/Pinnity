@@ -17,7 +17,7 @@ export default function FavoritesPage() {
   
   // State for notification banner
   const [showExpiringNotification, setShowExpiringNotification] = useState(true);
-  const [expiringDeals, setExpiringDeals] = useState<any[]>([]);
+  const [expiringDeals, setExpiringDeals] = useState<DealLike[]>([]);
   
   // Fetch user favorites
   const { data: favorites, isLoading } = useQuery({
@@ -31,7 +31,7 @@ export default function FavoritesPage() {
   // Check for expiring deals when favorites are loaded
   useEffect(() => {
     if (favorites && favorites.length > 0) {
-      const deals = favorites.map((fav: any) => fav.deal);
+      const deals = favorites.map((fav: { deal: DealLike }) => fav.deal);
       const expiringSoon = getExpiringSoonDeals(deals);
       setExpiringDeals(expiringSoon);
       
@@ -94,7 +94,7 @@ export default function FavoritesPage() {
         </div>
       ) : (
         <DealGrid
-          deals={favorites?.map((fav: any) => fav.deal) || []}
+          deals={favorites?.map((fav: { deal: DealLike }) => fav.deal) || []}
           isLoading={isLoading}
           onSelect={handleSelectDeal}
         />

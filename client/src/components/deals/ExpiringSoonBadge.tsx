@@ -1,14 +1,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Clock } from 'lucide-react';
-
-// Generic interface for any deal object
-interface DealLike {
-  id: number;
-  title: string;
-  endDate: string | Date;
-  [key: string]: any;
-}
+import { DealLike } from '@/utils/dealReminders';
 
 interface ExpiringSoonBadgeProps {
   deal: DealLike;
