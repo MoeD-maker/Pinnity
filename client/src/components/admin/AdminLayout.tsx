@@ -10,7 +10,8 @@ import {
   Menu, 
   X, 
   Bell, 
-  User 
+  User,
+  LogOut
 } from "lucide-react";
 import { 
   Sheet, 
@@ -26,6 +27,7 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -34,6 +36,7 @@ interface AdminLayoutProps {
 const AdminLayout = ({ children }: AdminLayoutProps) => {
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { logout, user } = useAuth();
 
   const navigationItems = [
     {
@@ -118,6 +121,19 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
                 </div>
               </Link>
             ))}
+            
+            <div className="mt-4 pt-4 border-t">
+              <div 
+                className="flex items-center px-3 py-2 rounded-md text-sm cursor-pointer text-red-500 hover:bg-gray-100"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  logout();
+                }}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+              </div>
+            </div>
           </nav>
         </SheetContent>
       </Sheet>
@@ -147,6 +163,16 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
                 </div>
               </Link>
             ))}
+            
+            <div className="mt-4 pt-4 border-t">
+              <div 
+                className="flex items-center px-3 py-2 rounded-md text-sm cursor-pointer text-red-500 hover:bg-gray-100"
+                onClick={logout}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+              </div>
+            </div>
           </div>
         </nav>
       </aside>
@@ -172,12 +198,17 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel>
+                {user ? `${user.firstName} ${user.lastName}` : 'My Account'}
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>Profile</DropdownMenuItem>
               <DropdownMenuItem>Settings</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Logout</DropdownMenuItem>
+              <DropdownMenuItem onClick={logout} className="text-red-500 focus:text-red-500 cursor-pointer">
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
