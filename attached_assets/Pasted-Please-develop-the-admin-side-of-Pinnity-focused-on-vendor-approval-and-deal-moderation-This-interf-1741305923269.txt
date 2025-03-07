@@ -1,0 +1,97 @@
+Please develop the admin side of Pinnity focused on vendor approval and deal moderation. This interface should be comprehensive yet straightforward.
+
+## 1. ADMIN DASHBOARD OVERVIEW
+
+Create a dashboard with:
+- Summary statistics (pending vendors, pending deals, active deals, total users)
+- Recent activity feed
+- Quick action buttons for common tasks
+- System alerts for urgent items requiring attention
+
+## 2. VENDOR APPROVAL SYSTEM
+
+Implement a vendor management interface with:
+- List of pending vendor applications with:
+  * Business name
+  * Application date
+  * Business category
+  * Status (new, in review, approved, rejected)
+  * Document verification status
+- Detailed vendor view showing:
+  * All submitted information
+  * Document previewer for uploaded verification documents
+  * Business details with validation status
+  * Contact information
+  * Notes/comments section for internal use
+- Approval actions:
+  * Approve button (with confirmation)
+  * Reject button (with reason and feedback form)
+  * Request additional information option
+  * Flag for review option
+- Approved vendors section with ability to:
+  * Temporarily suspend vendors
+  * Permanently remove vendors
+  * Send direct messages
+  * View all vendor deals and activity
+
+## 3. DEAL APPROVAL WORKFLOW
+
+Create a deal moderation interface:
+- Queue of pending deals with:
+  * Business name
+  * Deal title
+  * Submission date
+  * Deal type (percentage discount, BOGO)
+  * Deal duration
+- Deal review interface showing:
+  * Complete deal details as customers would see them
+  * Deal terms and restrictions
+  * Previous deals from this vendor (for context)
+  * Vendor status and rating
+- Approval actions:
+  * Approve as-is
+  * Approve with modifications (with change tracking)
+  * Reject (with reason and feedback form)
+  * Request clarification (with specific questions)
+- Deal moderation history and audit log
+
+## 4. USER MANAGEMENT
+
+Implement user management capabilities:
+- Customer account management
+- Admin user management (create/edit admin accounts)
+- Role-based permissions system
+- User search and filtering
+- Account status management (active, suspended, deleted)
+
+## 5. CONTENT MANAGEMENT
+
+Create interfaces for managing site content:
+- FAQ management (add/edit/remove FAQ items)
+- Category management for deals
+- Promotional banner management
+- Email template management
+- System notification management
+
+## 6. REPORTING & ANALYTICS
+
+Develop a reporting interface with:
+- Platform usage statistics
+- User growth charts
+- Deal performance metrics
+- Vendor performance metrics
+- Redemption analytics
+- Customizable date ranges
+- Export functionality for reports
+
+## TECHNICAL REQUIREMENTS
+
+- Secure admin authentication with role-based access
+- Audit logging for all administrative actions
+- Responsive design that works well on desktop (primarily used on larger screens)
+- Efficient data tables with sorting, filtering, and pagination
+- Document preview capabilities for verification documents
+- Real-time updates for new submissions when possible
+- Batch operations for processing multiple items
+
+The admin interface should be functional and efficient rather than flashy, with clear visual hierarchy and intuitive workflows.
