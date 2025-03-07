@@ -147,6 +147,60 @@ export class MemStorage implements IStorage {
   private async initializeSampleData() {
     // Create some sample users, businesses, and deals if no data exists
     if (this.users.size === 0) {
+      // Create test accounts for customer, admin, and vendor
+      
+      // 1. Customer test account
+      const customerUser = await this.createIndividualUser({
+        firstName: "Customer",
+        lastName: "User",
+        email: "customer@test.com",
+        password: "Customer123!",
+        phone: "555-123-4567",
+        address: "100 User Ave, Anytown, USA",
+      });
+      
+      // 2. Admin test account
+      const adminUser = await this.createIndividualUser({
+        firstName: "Admin",
+        lastName: "User",
+        email: "admin@test.com",
+        password: "Admin123!",
+        phone: "555-987-6543",
+        address: "200 Admin Blvd, Anytown, USA",
+      });
+      // Update user type to admin
+      this.users.set(adminUser.id, {
+        ...adminUser,
+        userType: "admin"
+      });
+      
+      // 3. Vendor test account
+      const vendorUser = await this.createBusinessUser(
+        {
+          firstName: "Vendor",
+          lastName: "User",
+          email: "vendor@test.com",
+          password: "Vendor123!",
+          phone: "555-456-7890",
+          address: "300 Business St, Anytown, USA",
+        },
+        {
+          businessName: "Test Vendor Business",
+          businessCategory: "retail",
+          description: "A test vendor business for demonstration purposes",
+          address: "300 Business St, Anytown, USA",
+          latitude: 37.7841,
+          longitude: -122.4077,
+          phone: "555-456-7890",
+          website: "www.testvendor.com",
+          imageUrl: "https://images.unsplash.com/photo-1556740738-b6a63e27c4df?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80",
+          governmentId: "placeholder",
+          proofOfAddress: "placeholder",
+          proofOfBusiness: "placeholder",
+          verificationStatus: "verified"
+        }
+      );
+      
       // Create a sample individual user
       const user1 = await this.createIndividualUser({
         firstName: "John",
