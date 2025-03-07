@@ -3,6 +3,7 @@ import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
+import { ToastProvider } from "@/components/ui/toast";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth";
 import Dashboard from "@/pages/dashboard";
@@ -222,8 +223,13 @@ function AuthenticatedRoute({ component: Component, ...rest }: any) {
 }
 
 function Router() {
+  // Use useLocation to track the current location for debugging
+  const [location] = useLocation();
+  console.log("Current route location:", location);
+  
   return (
     <Switch>
+      {/* Public routes - no authentication required */}
       <Route path="/auth" component={AuthPage}/>
       <Route path="/test-login" component={TestLogin}/>
       <Route path="/simple-explore" component={SimpleExplorePage}/>
@@ -326,6 +332,7 @@ function Router() {
         )}
       </Route>
       
+      {/* Fallback for unmatched routes */}
       <Route component={NotFound} />
     </Switch>
   );
@@ -334,19 +341,31 @@ function Router() {
 function App() {
   console.log("App component rendering");
   
+  // Initialize the offline data hook for availability throughout the app
+  useOfflineData();
+  
   // Simplified App component for debugging
   try {
+    // Instead of returning the debug view directly, let's wrap everything in providers
     return (
-      <div className="p-8">
-        <h1 className="text-3xl font-bold">Pinnity Debugging Mode</h1>
-        <p className="mt-4">This is a simplified version of the app for debugging purposes.</p>
-        <div className="mt-8">
-          <h2 className="text-xl font-semibold">Navigation</h2>
-          <ul className="mt-2 space-y-2">
-            <li><a href="/auth" className="text-blue-500 hover:underline">Go to Auth Page</a></li>
-          </ul>
-        </div>
-      </div>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <ToastProvider>
+            <div className="app-container min-h-screen flex flex-col bg-background text-foreground">
+              {/* PWA-related notifications */}
+              <NetworkStatusAlert />
+              <InstallPrompt />
+              <UpdateNotification />
+              
+              {/* Main routing */}
+              <Router />
+              
+              {/* Toast notifications */}
+              <Toaster />
+            </div>
+          </ToastProvider>
+        </AuthProvider>
+      </QueryClientProvider>
     );
   } catch (error) {
     console.error("Error in App component:", error);
