@@ -87,14 +87,14 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
 /**
  * Send a browser notification for an expiring deal
  */
-export function sendDealExpirationNotification(deal: Deal | DealWithBusiness): boolean {
+export function sendDealExpirationNotification(deal: DealLike): boolean {
   // Check if notifications are supported and permission is granted
   if (!areBrowserNotificationsSupported() || Notification.permission !== 'granted') {
     return false;
   }
   
   try {
-    const businessName = 'business' in deal ? deal.business.businessName : 'a business';
+    const businessName = deal.business?.businessName || 'a business';
     const title = `Deal Expiring Soon: ${deal.title}`;
     const body = `The deal "${deal.title}" from ${businessName} expires in less than 48 hours!`;
     
@@ -124,7 +124,7 @@ export function sendDealExpirationNotification(deal: Deal | DealWithBusiness): b
  * Check user's saved deals and send notifications for those expiring soon
  */
 export async function checkAndNotifyExpiringSoonDeals(
-  savedDeals: (Deal | DealWithBusiness)[],
+  savedDeals: DealLike[],
   notificationsEnabled: boolean = true
 ): Promise<{ notified: boolean, expiringSoonCount: number }> {
   if (!notificationsEnabled) {
@@ -177,7 +177,7 @@ export function scheduleExpiringDealsCheck(intervalMinutes: number = 60): number
 /**
  * Generate text for an expiring deal notification
  */
-export function getExpirationNotificationText(deal: Deal | DealWithBusiness): string {
+export function getExpirationNotificationText(deal: DealLike): string {
   // Handle different date formats
   const endDate = typeof deal.endDate === 'string' 
     ? new Date(deal.endDate) 
@@ -192,7 +192,7 @@ export function getExpirationNotificationText(deal: Deal | DealWithBusiness): st
   const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
   
   // Format the business name
-  const businessName = 'business' in deal ? deal.business.businessName : 'a business';
+  const businessName = deal.business?.businessName || 'a business';
   
   if (diffHours < 1) {
     return `"${deal.title}" from ${businessName} expires in less than an hour!`;
@@ -207,7 +207,7 @@ export function getExpirationNotificationText(deal: Deal | DealWithBusiness): st
 /**
  * Queue offline notifications to be sent when the app is back online
  */
-export function queueOfflineNotification(deal: Deal | DealWithBusiness): void {
+export function queueOfflineNotification(deal: DealLike): void {
   // Get existing queue from localStorage or initialize a new one
   const queue = JSON.parse(localStorage.getItem('offlineNotificationQueue') || '[]');
   
