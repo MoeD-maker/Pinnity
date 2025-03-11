@@ -90,8 +90,8 @@ export default function CategoryFilter({
         )}
       </div>
       
-      <ScrollArea className="w-full">
-        <div className="flex flex-wrap sm:flex-nowrap gap-2 py-1">
+      <ScrollArea className="w-full" orientation="horizontal">
+        <div className="flex gap-2 py-1 px-1 pb-3 w-max min-w-full">
           {CATEGORIES.map(category => (
             <CategoryBadge
               key={category.id}
