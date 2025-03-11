@@ -793,7 +793,7 @@ export default function CreateDealPage() {
                       className="ml-2"
                       onClick={() => form.setValue("redemptionCode", generateRandomCode())}
                     >
-                      Generate PIN
+                      Generate Code
                     </Button>
                   </div>
                   {form.formState.errors.redemptionCode && (
