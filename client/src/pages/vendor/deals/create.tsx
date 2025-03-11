@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { z } from 'zod';
@@ -25,12 +25,17 @@ import {
   Tag, 
   Clock, 
   Truck, 
-  ShoppingBag 
+  ShoppingBag,
+  UploadCloud,
+  Image,
+  AlertCircle,
+  CropIcon
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Define deal categories that match those in consumer side
 const CATEGORIES = [
@@ -95,6 +100,15 @@ export default function CreateDealPage() {
   const [, setLocation] = useLocation();
   const [currentStep, setCurrentStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  
+  // Image upload related state
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [imageDimensions, setImageDimensions] = useState<{width: number, height: number} | null>(null);
+  const [showImageHover, setShowImageHover] = useState(false);
+  const [useLogo, setUseLogo] = useState(false);
+  const [logoPosition, setLogoPosition] = useState<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'>('bottom-right');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Initialize form with default values
   const form = useForm<DealFormValues>({
