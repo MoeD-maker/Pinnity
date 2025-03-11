@@ -23,12 +23,20 @@ export interface IStorage {
   verifyLogin(email: string, password: string): Promise<User | null>;
   updateUser(userId: number, userData: Partial<Omit<InsertUser, "id" | "password">>): Promise<User>;
   changePassword(userId: number, currentPassword: string, newPassword: string): Promise<boolean>;
+  getAllUsers(): Promise<User[]>;
+  
+  // Admin methods
+  adminCreateUser(userData: Omit<InsertUser, "id">, password: string): Promise<User>;
+  adminUpdateUser(userId: number, userData: Partial<Omit<InsertUser, "id">>): Promise<User>;
+  adminDeleteUser(userId: number): Promise<boolean>;
+  adminCreateBusinessUser(userData: Omit<InsertUser, "id">, businessData: Omit<InsertBusiness, "id" | "userId">): Promise<User & { business: Business }>;
 
   // Business methods
   getBusiness(id: number): Promise<Business | undefined>;
   getBusinessByUserId(userId: number): Promise<Business | undefined>;
   updateBusiness(id: number, businessData: Partial<Omit<InsertBusiness, "id" | "userId">>): Promise<Business>;
   updateBusinessVerificationStatus(id: number, status: string, feedback?: string): Promise<Business>;
+  getAllBusinesses(): Promise<(Business & { user: User })[]>;
   
   // Business Hours methods
   getBusinessHours(businessId: number): Promise<BusinessHours[]>;
