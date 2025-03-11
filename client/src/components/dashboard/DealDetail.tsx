@@ -69,7 +69,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
     }
   };
 
-  // Verify redemption PIN mutation
+  // Verify redemption code mutation
   const verifyCode = useMutation({
     mutationFn: async () => {
       // For demonstration purposes only - in a real app, get userId from auth context
@@ -109,7 +109,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
     },
   });
 
-  // Redeem deal mutation - only called after PIN verification
+  // Redeem deal mutation - only called after code verification
   const redeemDeal = useMutation({
     mutationFn: async () => {
       // For demonstration purposes only - in a real app, get userId from auth context
