@@ -390,7 +390,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <ToastProvider>
-            <div className="app-container min-h-screen flex flex-col bg-background text-foreground">
+            <div className="app-container min-h-screen flex flex-col bg-background text-foreground overflow-x-hidden">
               {/* PWA-related notifications */}
               <NetworkStatusAlert />
               <InstallPrompt />

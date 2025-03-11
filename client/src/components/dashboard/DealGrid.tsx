@@ -46,7 +46,7 @@ export default function DealGrid({ deals, isLoading, onSelect }: DealGridProps) 
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-[100vw] px-0 sm:px-0">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full px-0 sm:px-0">
         {Array.from({ length: 6 }).map((_, i) => (
           <DealCardSkeleton key={i} />
         ))}
@@ -64,7 +64,7 @@ export default function DealGrid({ deals, isLoading, onSelect }: DealGridProps) 
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-[100vw] px-0 sm:px-0">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full px-0 sm:px-0">
       {deals.map((deal) => (
         <DealCard 
           key={deal.id} 
