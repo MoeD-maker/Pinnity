@@ -58,6 +58,24 @@ const DEAL_TYPES = [
   { id: 'fixed_amount', name: 'Fixed Amount Off', icon: <Truck className="h-4 w-4" /> }
 ];
 
+// Standard terms and conditions checkboxes
+const STANDARD_TERMS = [
+  { id: 'no_combine', text: 'Cannot be combined with any other offers or discounts' },
+  { id: 'valid_period', text: 'Valid only during the specified deal period' },
+  { id: 'tax_excluded', text: 'Tax not included (discounts apply to pre-tax amounts)' },
+  { id: 'no_cash', text: 'No cash value or cash back' },
+  { id: 'participating_locations', text: 'Valid only at participating locations' },
+  { id: 'management_rights', text: 'Management reserves the right to modify or cancel at any time' },
+];
+
+// Deal-type specific terms
+const DEAL_TYPE_TERMS = {
+  'bogo': [{ id: 'lesser_value', text: 'Discount applies to item of equal or lesser value' }],
+  'percent_off': [{ id: 'max_discount', text: 'Maximum discount amount may apply' }],
+  'fixed_amount': [{ id: 'min_purchase', text: 'Minimum purchase requirement may apply' }],
+  'free_item': []
+};
+
 // Discount percentage options
 const DISCOUNT_OPTIONS = [
   { value: '10%', label: '10% off' },
@@ -80,6 +98,13 @@ const dealSchema = z.object({
   endDate: z.date({ required_error: 'End date is required' }),
   maxRedemptionsPerCustomer: z.number().min(1).default(1),
   totalRedemptions: z.number().optional(),
+  // Standard T&C checkboxes - default to all selected
+  standardTerms: z.array(z.string()).default(STANDARD_TERMS.map(term => term.id)),
+  // Deal-type specific T&C checkboxes
+  dealTypeTerms: z.array(z.string()).default([]),
+  // Additional custom terms
+  customTerms: z.string().optional(),
+  // The combined terms string that will be stored
   terms: z.string().optional(),
   redemptionCode: z.string().length(4, { message: 'Redemption code must be exactly 4 digits' }),
   redemptionInstructions: z.string().optional(),
@@ -171,6 +196,10 @@ export default function CreateDealPage() {
       endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)), // Default to 1 month duration
       maxRedemptionsPerCustomer: 1,
       totalRedemptions: undefined,
+      // All standard terms selected by default
+      standardTerms: STANDARD_TERMS.map(term => term.id),
+      dealTypeTerms: [],
+      customTerms: '',
       terms: '',
       redemptionCode: generateRandomCode(),
       redemptionInstructions: '',
