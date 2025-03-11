@@ -163,7 +163,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
 
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto w-[calc(100%-24px)] mx-auto max-w-full sm:max-w-[600px] p-3 sm:p-6">
+      <DialogContent className="w-[calc(100%-24px)] max-h-[90vh] overflow-y-auto mx-auto sm:max-w-[600px] p-3 sm:p-6">
         {isLoading ? (
           <DealDetailSkeleton />
         ) : deal ? (

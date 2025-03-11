@@ -150,8 +150,8 @@ export default function ExplorePage() {
   };
 
   return (
-    <div className="container max-w-7xl mx-auto px-0 sm:px-4 py-4 overflow-x-hidden max-w-[100vw]">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 px-3 sm:px-0 max-w-[100vw]">
+    <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-4 overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-primary">Explore Deals</h1>
           <p className="text-muted-foreground mt-1">
@@ -255,7 +255,7 @@ export default function ExplorePage() {
 
           {/* Deal grid */}
           {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 max-w-[100vw] px-0 sm:px-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 w-full">
               {Array.from({ length: 9 }).map((_, i) => (
                 <Card key={i}>
                   <CardContent className="p-0">
@@ -293,7 +293,7 @@ export default function ExplorePage() {
           if (!open) setSelectedDealId(null);
         }}
       >
-        <DialogContent className="w-[calc(100%-32px)] max-w-full sm:max-w-2xl p-3 sm:p-6 max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[calc(100%-24px)] sm:max-w-2xl p-3 sm:p-6 max-h-[90vh] overflow-y-auto">
           {selectedDealId && (
             <DealDetail
               dealId={selectedDealId}
