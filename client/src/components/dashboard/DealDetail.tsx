@@ -381,7 +381,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                         )}
                         
                         <p className="text-xs text-muted-foreground">
-                          The PIN will be provided by the business staff at the time of redemption
+                          The business staff will provide you with this PIN when you visit
                         </p>
                       </>
                     )}

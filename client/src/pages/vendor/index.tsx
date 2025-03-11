@@ -356,7 +356,7 @@ export default function VendorDashboard() {
                     Provide your redemption PIN
                   </h4>
                   <p className="text-sm text-blue-700 pl-7 mb-3">
-                    Give the customer the PIN from your deal that they need to enter in their app
+                    Give the customer the PIN for your deal that they will enter in their app
                   </p>
                   <div className="pl-7">
                     <div className="flex items-center">
@@ -381,7 +381,7 @@ export default function VendorDashboard() {
                     Confirm redemption
                   </h4>
                   <p className="text-sm text-blue-700 pl-7 mb-3">
-                    Watch as customer enters PIN and receives confirmation
+                    Watch as the customer enters the PIN and receives confirmation
                   </p>
                 </div>
               </div>
