@@ -184,6 +184,49 @@ export default function CreateDealPage() {
     setLogoPosition(position);
   };
   
+  // Update the combined terms field from the selected standard, deal-specific, and custom terms
+  const updateCombinedTerms = () => {
+    // Get current values
+    const standardTermIds = form.getValues("standardTerms") || [];
+    const dealTypeTermIds = form.getValues("dealTypeTerms") || [];
+    const customTermsText = form.getValues("customTerms") || '';
+    
+    // Get the text of the selected standard terms
+    const standardTermsText = standardTermIds
+      .map(id => STANDARD_TERMS.find(term => term.id === id)?.text)
+      .filter(Boolean);
+    
+    // Get the text of the selected deal-type terms
+    const dealTypeTermsText = dealTypeTermIds
+      .map(id => {
+        const dealType = form.getValues("dealType") as keyof typeof DEAL_TYPE_TERMS;
+        return DEAL_TYPE_TERMS[dealType]?.find(term => term.id === id)?.text;
+      })
+      .filter(Boolean);
+    
+    // Combine all terms
+    const allTerms = [...standardTermsText, ...dealTypeTermsText];
+    
+    // Add custom terms if any
+    if (customTermsText.trim()) {
+      // Split custom terms by line breaks to add as separate bullet points
+      const customTermsLines = customTermsText
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+        
+      allTerms.push(...customTermsLines);
+    }
+    
+    // Format as a bulleted list
+    const formattedTerms = allTerms.length > 0
+      ? allTerms.map(term => `• ${term}`).join('\n')
+      : '';
+    
+    // Set the combined terms field
+    form.setValue("terms", formattedTerms);
+  };
+  
   // Initialize form with default values
   const form = useForm<DealFormValues>({
     resolver: zodResolver(dealSchema),
@@ -209,6 +252,29 @@ export default function CreateDealPage() {
   
   // Watch form values for UI updates
   const watchedValues = form.watch();
+  
+  // Initialize terms when component mounts
+  useEffect(() => {
+    updateCombinedTerms();
+  }, []);
+  
+  // Update deal-type specific terms when deal type changes
+  useEffect(() => {
+    if (watchedValues.dealType) {
+      // Get deal-type specific terms for this deal type
+      const dealTypeSpecificTerms = DEAL_TYPE_TERMS[watchedValues.dealType as keyof typeof DEAL_TYPE_TERMS] || [];
+      
+      // Select all deal-type specific terms by default
+      if (dealTypeSpecificTerms.length > 0) {
+        form.setValue('dealTypeTerms', dealTypeSpecificTerms.map(term => term.id));
+      } else {
+        form.setValue('dealTypeTerms', []);
+      }
+      
+      // Update the combined terms
+      updateCombinedTerms();
+    }
+  }, [watchedValues.dealType]);
   
   // Calculate progress percentage
   const progress = ((currentStep + 1) / steps.length) * 100;
@@ -245,6 +311,9 @@ export default function CreateDealPage() {
   const handleSubmit = async () => {
     try {
       setSubmitting(true);
+      
+      // Make sure the terms are properly combined before submission
+      updateCombinedTerms();
       
       // Get form values
       const values = form.getValues();
@@ -537,17 +606,111 @@ export default function CreateDealPage() {
                 </div>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="terms">Terms & Conditions</Label>
-                <Textarea 
-                  id="terms" 
-                  placeholder="Any additional terms or restrictions..." 
-                  rows={4}
-                  {...form.register("terms")}
-                />
-                <p className="text-xs text-gray-500">
-                  E.g. "Cannot be combined with other offers", "Valid for dine-in only", etc.
-                </p>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-medium">Terms & Conditions</h3>
+                  <div className="text-sm text-[#00796B] bg-[#E0F2F1] px-2 py-1 rounded">
+                    {watchedValues.standardTerms?.length + watchedValues.dealTypeTerms?.length} Terms Selected
+                  </div>
+                </div>
+                
+                {/* Standard Terms & Conditions */}
+                <div className="space-y-2 p-4 bg-gray-50 rounded-md border">
+                  <h4 className="font-medium text-sm">Standard Terms & Conditions</h4>
+                  <div className="space-y-3 mt-2">
+                    {STANDARD_TERMS.map((term) => (
+                      <div key={term.id} className="flex items-start space-x-2">
+                        <Checkbox 
+                          id={`standard-term-${term.id}`} 
+                          checked={watchedValues.standardTerms?.includes(term.id)}
+                          onCheckedChange={(checked) => {
+                            const currentTerms = form.getValues("standardTerms") || [];
+                            if (checked) {
+                              if (!currentTerms.includes(term.id)) {
+                                form.setValue("standardTerms", [...currentTerms, term.id]);
+                              }
+                            } else {
+                              form.setValue(
+                                "standardTerms", 
+                                currentTerms.filter((id) => id !== term.id)
+                              );
+                            }
+                            
+                            // After changing selection, update the terms field
+                            updateCombinedTerms();
+                          }}
+                          className="mt-1"
+                        />
+                        <label 
+                          htmlFor={`standard-term-${term.id}`} 
+                          className="text-sm leading-tight cursor-pointer"
+                        >
+                          {term.text}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Deal-type specific Terms & Conditions */}
+                {watchedValues.dealType && DEAL_TYPE_TERMS[watchedValues.dealType as keyof typeof DEAL_TYPE_TERMS]?.length > 0 && (
+                  <div className="space-y-2 p-4 bg-[#E0F2F1] bg-opacity-30 rounded-md border border-[#B2DFDB]">
+                    <h4 className="font-medium text-sm">
+                      {DEAL_TYPES.find(d => d.id === watchedValues.dealType)?.name} Specific Terms
+                    </h4>
+                    <div className="space-y-3 mt-2">
+                      {DEAL_TYPE_TERMS[watchedValues.dealType as keyof typeof DEAL_TYPE_TERMS].map((term) => (
+                        <div key={term.id} className="flex items-start space-x-2">
+                          <Checkbox 
+                            id={`deal-type-term-${term.id}`} 
+                            checked={watchedValues.dealTypeTerms?.includes(term.id)}
+                            onCheckedChange={(checked) => {
+                              const currentTerms = form.getValues("dealTypeTerms") || [];
+                              if (checked) {
+                                if (!currentTerms.includes(term.id)) {
+                                  form.setValue("dealTypeTerms", [...currentTerms, term.id]);
+                                }
+                              } else {
+                                form.setValue(
+                                  "dealTypeTerms", 
+                                  currentTerms.filter((id) => id !== term.id)
+                                );
+                              }
+                              
+                              // After changing selection, update the terms field
+                              updateCombinedTerms();
+                            }}
+                            className="mt-1"
+                          />
+                          <label 
+                            htmlFor={`deal-type-term-${term.id}`} 
+                            className="text-sm leading-tight cursor-pointer"
+                          >
+                            {term.text}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Additional Custom Terms */}
+                <div className="space-y-2">
+                  <Label htmlFor="customTerms">Additional Terms & Conditions (Optional)</Label>
+                  <Textarea 
+                    id="customTerms" 
+                    placeholder="Enter any additional terms or restrictions specific to this deal..." 
+                    rows={3}
+                    {...form.register("customTerms")}
+                    onChange={(e) => {
+                      form.setValue("customTerms", e.target.value);
+                      updateCombinedTerms();
+                    }}
+                  />
+                  <p className="text-xs text-gray-500">
+                    E.g. "Valid for dine-in only", "First-time customers only", etc.
+                  </p>
+                </div>
               </div>
             </div>
           )}
@@ -826,9 +989,16 @@ export default function CreateDealPage() {
                 </div>
                 
                 {watchedValues.terms && (
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     <p className="text-sm font-medium">Terms & Conditions</p>
-                    <p className="text-sm">{watchedValues.terms}</p>
+                    <div className="p-3 bg-gray-50 rounded border text-sm space-y-1">
+                      {watchedValues.terms.split('\n').map((term, index) => (
+                        <p key={index} className="text-sm">{term}</p>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-500 italic">
+                      {watchedValues.standardTerms?.length || 0} standard terms and {watchedValues.dealTypeTerms?.length || 0} deal-specific terms
+                    </p>
                   </div>
                 )}
                 
