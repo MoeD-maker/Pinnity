@@ -168,17 +168,29 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
           <DealDetailSkeleton />
         ) : deal ? (
           <>
+            {/* Add close class with right margin to prevent overlap */}
+            <div className="absolute top-4 right-4 flex items-center space-x-2">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={() => addToFavorites.mutate()} 
+                className="h-7 w-7 sm:h-8 sm:w-8 bg-white rounded-full"
+              >
+                <Heart className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              </Button>
+            </div>
+            
             <DialogHeader>
               <div className="flex justify-between items-center mb-2">
                 <Badge className="text-xs sm:text-sm">{deal.category}</Badge>
-                <div className="flex gap-1.5 sm:gap-2">
-                  <Button variant="outline" size="icon" onClick={handleShare} className="h-7 w-7 sm:h-8 sm:w-8">
-                    <Share2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon" onClick={() => addToFavorites.mutate()} className="h-7 w-7 sm:h-8 sm:w-8">
-                    <Heart className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  </Button>
-                </div>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={handleShare} 
+                  className="h-7 w-7 sm:h-8 sm:w-8"
+                >
+                  <Share2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </Button>
               </div>
               <DialogTitle className="text-xl sm:text-2xl">{deal.title}</DialogTitle>
               <DialogDescription className="text-sm sm:text-base font-medium">

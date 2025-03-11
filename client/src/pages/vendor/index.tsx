@@ -609,8 +609,23 @@ function EmptyState({
 }
 
 function DealCard({ deal }: { deal: any }) {
-  const isActive = new Date(deal.endDate) >= new Date();
-  const status = deal.status || 'draft';
+  const isActive = new Date(deal.endDate) >= new Date() && new Date(deal.startDate) <= new Date();
+  const isUpcoming = new Date(deal.startDate) > new Date();
+  const isExpired = new Date(deal.endDate) < new Date();
+  
+  // Status logic - include pending and approval states
+  let status = deal.status || 'draft';
+  
+  // If deal is in 'pending' approval state
+  const isPending = status === 'pending';
+  
+  // Show appropriate status label based on approval state and date
+  let statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+  if (status === 'approved') {
+    if (isExpired) statusLabel = 'Expired';
+    else if (isUpcoming) statusLabel = 'Upcoming';
+    else statusLabel = 'Active';
+  }
   
   return (
     <Card className="overflow-hidden h-full flex flex-col">
@@ -623,9 +638,17 @@ function DealCard({ deal }: { deal: any }) {
           />
           <div className="absolute top-2 right-2">
             <Badge className={`${statusColors[status]}`}>
-              {status.charAt(0).toUpperCase() + status.slice(1)}
+              {statusLabel}
             </Badge>
           </div>
+          {isPending && (
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+              <div className="bg-white/90 px-4 py-2 rounded-md flex items-center">
+                <Clock className="h-4 w-4 text-yellow-600 mr-2" />
+                <span className="text-sm font-medium">Awaiting Approval</span>
+              </div>
+            </div>
+          )}
         </div>
       )}
       <CardHeader className="pb-2">
