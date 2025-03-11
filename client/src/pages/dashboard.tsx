@@ -5,6 +5,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { 
@@ -335,12 +336,21 @@ export default function Dashboard() {
       )}
 
       {/* Deal detail modal */}
-      {selectedDeal !== null && (
-        <DealDetail 
-          dealId={selectedDeal} 
-          onClose={handleDetailClose} 
-        />
-      )}
+      <Dialog
+        open={selectedDeal !== null}
+        onOpenChange={(open) => {
+          if (!open) handleDetailClose();
+        }}
+      >
+        <DialogContent className="w-[calc(100%-24px)] sm:max-w-2xl p-3 sm:p-6 max-h-[90vh] overflow-y-auto">
+          {selectedDeal !== null && (
+            <DealDetail 
+              dealId={selectedDeal} 
+              onClose={handleDetailClose} 
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
