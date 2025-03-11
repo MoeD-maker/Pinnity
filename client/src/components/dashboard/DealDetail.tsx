@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow, format } from 'date-fns';
 import { queryClient } from '@/lib/queryClient';
 import { apiRequest } from '@/lib/queryClient';
+import RedemptionDialog from './RedemptionDialog';
 
 interface DealDetailProps {
   dealId: number;
@@ -19,12 +20,11 @@ interface DealDetailProps {
 
 export default function DealDetail({ dealId, onClose }: DealDetailProps) {
   const [step, setStep] = useState<'details' | 'redeem'>('details');
-  const [enteredCode, setEnteredCode] = useState<string>("");
-  const [verificationStatus, setVerificationStatus] = useState<'idle' | 'success' | 'error' | 'pending'>('idle');
+  const [showRedemptionDialog, setShowRedemptionDialog] = useState(false);
   const { toast } = useToast();
   
   // Fetch the deal details
-  const { data: deal, isLoading } = useQuery({
+  const { data: deal, isLoading, refetch } = useQuery({
     queryKey: ['/api/deals', dealId],
     queryFn: async () => {
       return apiRequest(`/api/deals/${dealId}`);
@@ -34,8 +34,9 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
   // Add to favorites mutation
   const addToFavorites = useMutation({
     mutationFn: async () => {
-      // For demonstration purposes only - in a real app, get userId from auth context
-      const userId = 1;
+      // Get userId from local storage
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const userId = user?.id || 1;
       
       return apiRequest(`/api/user/${userId}/favorites`, {
         method: 'POST',
@@ -60,84 +61,20 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
     },
   });
 
-  // Handle Code input change
-  const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEnteredCode(e.target.value);
-    // Reset verification status when code changes
-    if (verificationStatus !== 'idle') {
-      setVerificationStatus('idle');
-    }
+  // Handle redemption success
+  const handleRedemptionSuccess = () => {
+    // Refetch the deal to update redemption count
+    refetch();
+    
+    // Update any other data that might be affected
+    queryClient.invalidateQueries({ queryKey: ['/api/user/redemptions'] });
+    
+    // Show a success toast
+    toast({
+      title: "Deal Redeemed Successfully!",
+      description: "Your redemption has been recorded",
+    });
   };
-
-  // Verify redemption code mutation
-  const verifyCode = useMutation({
-    mutationFn: async () => {
-      // For demonstration purposes only - in a real app, get userId from auth context
-      const userId = 1;
-      
-      return apiRequest(`/api/deals/${dealId}/verify-code`, {
-        method: 'POST',
-        data: { code: enteredCode }
-      });
-    },
-    onSuccess: (response) => {
-      if (response.valid) {
-        setVerificationStatus('success');
-        toast({
-          title: 'Code verified',
-          description: 'Deal redemption successful!',
-        });
-        
-        // Create redemption
-        redeemDeal.mutate();
-      } else {
-        setVerificationStatus('error');
-        toast({
-          title: 'Invalid Code',
-          description: 'The code you entered is incorrect. Please try again.',
-          variant: 'destructive',
-        });
-      }
-    },
-    onError: (error) => {
-      setVerificationStatus('error');
-      toast({
-        title: 'Verification failed',
-        description: 'Failed to verify the code. Please try again.',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  // Redeem deal mutation - only called after code verification
-  const redeemDeal = useMutation({
-    mutationFn: async () => {
-      // For demonstration purposes only - in a real app, get userId from auth context
-      const userId = 1;
-      
-      return apiRequest(`/api/user/${userId}/redemptions`, {
-        method: 'POST',
-        data: { dealId }
-      });
-    },
-    onSuccess: (data) => {
-      // Show redemption success
-      toast({
-        title: 'Deal redeemed successfully!',
-        description: 'Your redemption has been recorded',
-      });
-      
-      // Invalidate redemptions query
-      queryClient.invalidateQueries({ queryKey: ['/api/user/redemptions'] });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: 'Failed to record the redemption',
-        variant: 'destructive',
-      });
-    },
-  });
 
   // Share deal functionality
   const handleShare = () => {
@@ -331,7 +268,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                         3
                       </div>
                       <div>
-                        <h4 className="font-medium text-sm sm:text-base">Enter the code below to redeem</h4>
+                        <h4 className="font-medium text-sm sm:text-base">Enter the redemption code</h4>
                         <p className="text-xs sm:text-sm text-muted-foreground">
                           Enter the code provided by the staff to confirm your redemption
                         </p>
@@ -339,109 +276,45 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                     </div>
                   </div>
 
-                  <div className={`mt-6 sm:mt-8 p-4 sm:p-6 border-2 rounded-lg 
-                    ${verificationStatus === 'success' 
-                     ? 'bg-green-50 border-green-200' 
-                     : verificationStatus === 'error' 
-                        ? 'bg-red-50 border-red-200' 
-                        : 'bg-primary/5'} 
-                    flex flex-col items-center`}>
-                    <p className="text-sm font-medium uppercase text-muted-foreground tracking-wide mb-3">
-                      {verificationStatus === 'success' 
-                        ? 'Redemption Successful!' 
-                        : 'Enter Redemption Code'}
-                    </p>
+                  <div className="mt-6 flex flex-col items-center">
+                    <Button 
+                      className="bg-[#00796B] hover:bg-[#00695C] w-full max-w-xs"
+                      onClick={() => setShowRedemptionDialog(true)}
+                    >
+                      Enter Redemption Code
+                    </Button>
                     
-                    {verificationStatus === 'success' ? (
-                      <div className="flex flex-col items-center">
-                        <div className="bg-green-100 p-2 sm:p-3 rounded-full mb-3">
-                          <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
-                        </div>
-                        <p className="text-center text-xs sm:text-sm text-green-700 mb-2">
-                          Your deal has been successfully redeemed!
-                        </p>
+                    {deal.redemptionInstructions && (
+                      <div className="mt-4 text-xs sm:text-sm text-muted-foreground">
+                        <h4 className="font-medium mb-1">Additional instructions:</h4>
+                        <p>{deal.redemptionInstructions}</p>
                       </div>
-                    ) : (
-                      <>
-                        <div className="flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0 mb-3 sm:mb-4 items-center">
-                          <input 
-                            type="text" 
-                            inputMode="numeric"
-                            maxLength={8}
-                            placeholder="Enter Code"
-                            value={enteredCode}
-                            onChange={handleCodeChange}
-                            className={`border rounded-md px-3 py-2 text-center font-mono text-base sm:text-lg tracking-wider w-full sm:w-40 max-w-[200px]
-                              ${verificationStatus === 'error' 
-                                ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
-                                : 'border-input focus:border-primary focus:ring-primary'}`}
-                          />
-                          <Button
-                            size="sm"
-                            onClick={() => {
-                              setVerificationStatus('pending');
-                              verifyCode.mutate();
-                            }}
-                            disabled={verifyCode.isPending || !enteredCode || enteredCode.length < 4}
-                            className="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm"
-                          >
-                            {verifyCode.isPending ? 'Verifying...' : 'Verify Code'}
-                          </Button>
-                        </div>
-                        
-                        {verificationStatus === 'error' && (
-                          <div className="mb-2 sm:mb-3 flex items-center space-x-1.5 sm:space-x-2 text-red-600">
-                            <AlertCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                            <span className="text-xs">Invalid code. Please try again.</span>
-                          </div>
-                        )}
-                        
-                        <p className="text-xs text-muted-foreground">
-                          The business staff will provide you with this code when you visit
-                        </p>
-                      </>
                     )}
                   </div>
                 </div>
               </TabsContent>
             </Tabs>
 
-            <DialogFooter>
-              {step === 'details' ? (
-                <Button 
-                  className="w-full text-sm sm:text-base py-1.5 sm:py-2" 
-                  onClick={() => setStep('redeem')}
-                >
-                  Redeem This Deal
-                </Button>
-              ) : verificationStatus === 'success' ? (
-                <Button 
-                  variant="outline"
-                  className="w-full text-sm sm:text-base py-1.5 sm:py-2" 
-                  onClick={onClose}
-                >
-                  Close
-                </Button>
-              ) : (
-                <Button 
-                  className="w-full text-sm sm:text-base py-1.5 sm:py-2" 
-                  onClick={() => {
-                    setVerificationStatus('pending');
-                    verifyCode.mutate();
-                  }}
-                  disabled={verifyCode.isPending || !enteredCode || enteredCode.length < 4 || verificationStatus === 'pending'}
-                >
-                  {verifyCode.isPending ? 'Verifying Code...' : 'Verify Redemption Code'}
-                </Button>
-              )}
-            </DialogFooter>
+            {/* Redemption dialog */}
+            {showRedemptionDialog && (
+              <RedemptionDialog
+                isOpen={showRedemptionDialog}
+                onClose={() => setShowRedemptionDialog(false)}
+                dealId={deal.id}
+                dealTitle={deal.title}
+                businessName={deal.business.businessName}
+                onRedeemSuccess={handleRedemptionSuccess}
+              />
+            )}
           </>
         ) : (
-          <div className="text-center py-4 sm:py-6">
-            <p className="text-sm sm:text-base">Could not load deal details. Please try again.</p>
-            <Button variant="outline" onClick={onClose} className="mt-3 sm:mt-4 text-xs sm:text-sm py-1.5 sm:py-2">
-              Close
-            </Button>
+          <div className="text-center p-6">
+            <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+            <h3 className="text-lg font-semibold mb-1">Deal Not Found</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              We couldn't find details for this deal. It may have expired or been removed.
+            </p>
+            <Button variant="outline" onClick={onClose}>Go Back</Button>
           </div>
         )}
       </DialogContent>
@@ -451,38 +324,26 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
 
 function DealDetailSkeleton() {
   return (
-    <>
-      <DialogHeader>
-        <div className="flex justify-between items-center mb-2">
-          <Skeleton className="h-4 sm:h-5 w-16 sm:w-20" />
-          <div className="flex gap-1.5 sm:gap-2">
-            <Skeleton className="h-7 w-7 sm:h-8 sm:w-8 rounded" />
-            <Skeleton className="h-7 w-7 sm:h-8 sm:w-8 rounded" />
-          </div>
-        </div>
-        <Skeleton className="h-6 sm:h-8 w-3/4 mb-2" />
-        <Skeleton className="h-3 sm:h-4 w-1/2" />
-      </DialogHeader>
-
-      <Skeleton className="aspect-video w-full rounded-lg mb-4" />
+    <div className="animate-pulse space-y-4">
+      <div className="h-4 w-16 bg-muted rounded"></div>
+      <div className="h-8 w-3/4 bg-muted rounded"></div>
+      <div className="h-4 w-1/2 bg-muted rounded"></div>
       
-      <div className="space-y-3 sm:space-y-4">
-        <Skeleton className="h-8 sm:h-10 w-full" />
-        <Skeleton className="h-3 sm:h-4 w-full" />
-        <Skeleton className="h-3 sm:h-4 w-full" />
-        <Skeleton className="h-3 sm:h-4 w-3/4" />
-        
-        <div className="pt-3 sm:pt-4">
-          <Skeleton className="h-4 sm:h-5 w-32 sm:w-40 mb-2" />
-          <Skeleton className="h-3 sm:h-4 w-full" />
-          <Skeleton className="h-3 sm:h-4 w-full mt-1" />
-          <Skeleton className="h-3 sm:h-4 w-1/2 mt-1" />
-        </div>
+      <div className="h-10 bg-muted rounded"></div>
+      
+      <div className="aspect-video bg-muted rounded"></div>
+      
+      <div className="space-y-2">
+        <div className="h-5 w-32 bg-muted rounded"></div>
+        <div className="h-20 bg-muted rounded"></div>
       </div>
       
-      <div className="mt-4 sm:mt-6">
-        <Skeleton className="h-8 sm:h-10 w-full" />
+      <div className="space-y-2">
+        <div className="h-5 w-40 bg-muted rounded"></div>
+        <div className="h-4 w-full bg-muted rounded"></div>
+        <div className="h-4 w-full bg-muted rounded"></div>
+        <div className="h-4 w-3/4 bg-muted rounded"></div>
       </div>
-    </>
+    </div>
   );
 }
