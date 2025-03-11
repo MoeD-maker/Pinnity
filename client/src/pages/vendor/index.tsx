@@ -439,10 +439,10 @@ export default function VendorDashboard() {
                 <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <h4 className="font-medium text-blue-800 mb-2 flex items-center">
                     <div className="bg-blue-100 w-5 h-5 rounded-full flex items-center justify-center mr-2 text-xs font-bold text-blue-800">1</div>
-                    Customer shows deal in their Pinnity app
+                    Select a deal to verify
                   </h4>
-                  <p className="text-sm text-blue-700 pl-7">
-                    Verify the deal details and confirm it's valid and not expired
+                  <p className="text-sm text-blue-700 pl-7 mb-3">
+                    Choose the deal the customer is trying to redeem
                   </p>
                 </div>
                 
@@ -450,10 +450,10 @@ export default function VendorDashboard() {
                 <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <h4 className="font-medium text-blue-800 mb-2 flex items-center">
                     <div className="bg-blue-100 w-5 h-5 rounded-full flex items-center justify-center mr-2 text-xs font-bold text-blue-800">2</div>
-                    Provide your redemption PIN
+                    Verify the customer's redemption ID
                   </h4>
                   <p className="text-sm text-blue-700 pl-7 mb-3">
-                    Give the customer the PIN for your deal that they will enter in their app
+                    Ask the customer to show you their redemption ID from the Pinnity app
                   </p>
                   <div className="pl-7">
                     <div className="flex flex-col space-y-2">
@@ -470,49 +470,15 @@ export default function VendorDashboard() {
                             </option>
                           ))}
                         </select>
-                        <Button 
-                          size="sm"
-                          variant="outline"
-                          className="border-blue-300 text-blue-700"
-                          onClick={() => selectedDealId && handleGenerateCode(selectedDealId)}
-                          disabled={!selectedDealId || generateCodeMutation.isPending}
-                        >
-                          {generateCodeMutation.isPending ? (
-                            <RefreshCw className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <RefreshCw className="h-4 w-4 mr-1" />
-                          )}
-                          {generateCodeMutation.isPending ? "Generating..." : "New PIN"}
-                        </Button>
                       </div>
                       
-                      {selectedDealId && (
-                        <div className="bg-white p-3 rounded-md border border-blue-200 flex items-center justify-between">
-                          <div className="flex items-center">
-                            <Shield className="h-4 w-4 text-blue-700 mr-2" />
-                            <span className="font-mono text-lg font-bold text-blue-800">
-                              {deals.find(d => d.id === selectedDealId)?.redemptionCode || verificationCode || 'N/A'}
-                            </span>
-                          </div>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-7 w-7 p-0"
-                            onClick={() => {
-                              const code = deals.find(d => d.id === selectedDealId)?.redemptionCode || verificationCode;
-                              if (code) {
-                                navigator.clipboard.writeText(code);
-                                toast({
-                                  title: "PIN Copied",
-                                  description: "Redemption PIN copied to clipboard"
-                                });
-                              }
-                            }}
-                          >
-                            <Copy className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      )}
+                      <input
+                        type="text"
+                        placeholder="Enter customer's redemption ID"
+                        value={redemptionId}
+                        onChange={(e) => setRedemptionId(e.target.value)}
+                        className="border border-blue-300 rounded-md p-2 text-sm w-full bg-white focus:ring-[#00796B] focus:border-[#00796B] font-mono"
+                      />
                     </div>
                   </div>
                 </div>
@@ -521,21 +487,14 @@ export default function VendorDashboard() {
                 <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <h4 className="font-medium text-blue-800 mb-2 flex items-center">
                     <div className="bg-blue-100 w-5 h-5 rounded-full flex items-center justify-center mr-2 text-xs font-bold text-blue-800">3</div>
-                    Confirm redemption
+                    Provide the deal to the customer
                   </h4>
                   <p className="text-sm text-blue-700 pl-7 mb-3">
-                    Enter the redemption ID shown in the customer's app after they enter the PIN
+                    After successful verification, provide the customer with their deal as described
                   </p>
                   
                   <div className="pl-7">
                     <div className="flex flex-col space-y-2">
-                      <input
-                        type="text"
-                        placeholder="Enter redemption ID shown in customer's app"
-                        value={redemptionId}
-                        onChange={(e) => setRedemptionId(e.target.value)}
-                        className="border border-blue-300 rounded-md p-2 text-sm w-full bg-white focus:ring-[#00796B] focus:border-[#00796B]"
-                      />
                       <Button 
                         variant="default"
                         className="w-full bg-[#00796B] hover:bg-[#004D40]"
@@ -543,11 +502,16 @@ export default function VendorDashboard() {
                         disabled={!selectedDealId || !redemptionId || verifyCodeMutation.isPending}
                       >
                         {verifyCodeMutation.isPending ? (
-                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            Verifying...
+                          </>
                         ) : (
-                          <CheckCircle className="h-4 w-4 mr-2" />
+                          <>
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Verify Redemption
+                          </>
                         )}
-                        {verifyCodeMutation.isPending ? "Verifying..." : "Verify Redemption"}
                       </Button>
                     </div>
                   </div>
