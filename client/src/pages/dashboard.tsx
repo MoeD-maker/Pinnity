@@ -274,7 +274,7 @@ export default function Dashboard() {
       )}
 
       {/* Featured deals section */}
-      {viewMode === 'grid' && !isMobile && filteredDeals.length > 0 && (
+      {viewMode === 'grid' && filteredDeals.length > 0 && (
         <div className="mb-8">
           <h2 className="text-2xl font-semibold mb-4">Featured Deals</h2>
           <FeaturedDeals 
@@ -309,7 +309,7 @@ export default function Dashboard() {
 
       {/* No results message */}
       {filteredDeals.length === 0 && !isLoadingDeals && (
-        <div className="text-center py-12">
+        <div className="text-center py-12 pb-16">
           <h3 className="text-xl font-medium mb-2">No deals found</h3>
           <p className="text-muted-foreground mb-4">
             Try adjusting your search or filters
