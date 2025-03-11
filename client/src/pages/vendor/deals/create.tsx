@@ -97,7 +97,7 @@ const dealSchema = z.object({
   startDate: z.date({ required_error: 'Start date is required' }),
   endDate: z.date({ required_error: 'End date is required' }),
   maxRedemptionsPerCustomer: z.number().min(1).default(1),
-  totalRedemptions: z.number().optional(),
+
   // Standard T&C checkboxes - default to all selected
   standardTerms: z.array(z.string()).default(STANDARD_TERMS.map(term => term.id)),
   // Deal-type specific T&C checkboxes
@@ -238,7 +238,6 @@ export default function CreateDealPage() {
       startDate: new Date(),
       endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)), // Default to 1 month duration
       maxRedemptionsPerCustomer: 1,
-      totalRedemptions: undefined,
       // All standard terms selected by default
       standardTerms: STANDARD_TERMS.map(term => term.id),
       dealTypeTerms: [],
@@ -591,19 +590,7 @@ export default function CreateDealPage() {
                   <p className="text-sm text-red-500">{form.formState.errors.maxRedemptionsPerCustomer.message}</p>
                 )}
                 
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="totalRedemptions">
-                    Total Available Redemptions
-                    <span className="ml-2 text-xs text-gray-500">(Optional, leave empty for unlimited)</span>
-                  </Label>
-                  <Input 
-                    id="totalRedemptions" 
-                    type="number"
-                    className="w-20 text-center"
-                    min={1}
-                    {...form.register("totalRedemptions", { valueAsNumber: true })}
-                  />
-                </div>
+
               </div>
               
               <div className="space-y-4">
@@ -976,10 +963,7 @@ export default function CreateDealPage() {
                     <p className="text-sm">{watchedValues.maxRedemptionsPerCustomer}</p>
                   </div>
                   
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Total Available Redemptions</p>
-                    <p className="text-sm">{watchedValues.totalRedemptions || 'Unlimited'}</p>
-                  </div>
+
                 </div>
                 
                 <div className="space-y-1 mt-4">
