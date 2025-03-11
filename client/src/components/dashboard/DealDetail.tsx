@@ -19,7 +19,7 @@ interface DealDetailProps {
 
 export default function DealDetail({ dealId, onClose }: DealDetailProps) {
   const [step, setStep] = useState<'details' | 'redeem'>('details');
-  const [enteredPin, setEnteredPin] = useState<string>("");
+  const [enteredCode, setEnteredCode] = useState<string>("");
   const [verificationStatus, setVerificationStatus] = useState<'idle' | 'success' | 'error' | 'pending'>('idle');
   const { toast } = useToast();
   
@@ -60,10 +60,10 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
     },
   });
 
-  // Handle PIN input change
-  const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEnteredPin(e.target.value);
-    // Reset verification status when pin changes
+  // Handle Code input change
+  const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEnteredCode(e.target.value);
+    // Reset verification status when code changes
     if (verificationStatus !== 'idle') {
       setVerificationStatus('idle');
     }
@@ -77,14 +77,14 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
       
       return apiRequest(`/api/deals/${dealId}/verify-code`, {
         method: 'POST',
-        data: { code: enteredPin }
+        data: { code: enteredCode }
       });
     },
     onSuccess: (response) => {
       if (response.valid) {
         setVerificationStatus('success');
         toast({
-          title: 'PIN verified',
+          title: 'Code verified',
           description: 'Deal redemption successful!',
         });
         
@@ -357,8 +357,8 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                             inputMode="numeric"
                             maxLength={8}
                             placeholder="Enter Code"
-                            value={enteredPin}
-                            onChange={handlePinChange}
+                            value={enteredCode}
+                            onChange={handleCodeChange}
                             className={`border rounded-md px-3 py-2 text-center font-mono text-base sm:text-lg tracking-wider w-full sm:w-40 max-w-[200px]
                               ${verificationStatus === 'error' 
                                 ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
@@ -370,7 +370,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                               setVerificationStatus('pending');
                               verifyPin.mutate();
                             }}
-                            disabled={verifyPin.isPending || !enteredPin || enteredPin.length < 4}
+                            disabled={verifyPin.isPending || !enteredCode || enteredCode.length < 4}
                             className="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm"
                           >
                             {verifyPin.isPending ? 'Verifying...' : 'Verify Code'}
@@ -385,7 +385,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                         )}
                         
                         <p className="text-xs text-muted-foreground">
-                          The business staff will provide you with this PIN when you visit
+                          The business staff will provide you with this code when you visit
                         </p>
                       </>
                     )}
@@ -417,9 +417,9 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                     setVerificationStatus('pending');
                     verifyPin.mutate();
                   }}
-                  disabled={verifyPin.isPending || !enteredPin || enteredPin.length < 4 || verificationStatus === 'pending'}
+                  disabled={verifyPin.isPending || !enteredCode || enteredCode.length < 4 || verificationStatus === 'pending'}
                 >
-                  {verifyPin.isPending ? 'Verifying PIN...' : 'Verify Redemption Pin'}
+                  {verifyPin.isPending ? 'Verifying Code...' : 'Verify Redemption Code'}
                 </Button>
               )}
             </DialogFooter>
