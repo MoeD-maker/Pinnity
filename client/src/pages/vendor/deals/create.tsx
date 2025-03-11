@@ -361,10 +361,35 @@ export default function CreateDealPage() {
     }
   }
   
-  // Generate a random redemption PIN code
+  // Generate a random redemption code
   function generateRandomCode() {
-    // Generate a 4-digit PIN for redemption
-    return Math.floor(1000 + Math.random() * 9000).toString();
+    // Determine if we should generate a numeric PIN or alphanumeric code (50/50 chance)
+    const useAlphanumeric = Math.random() > 0.5;
+    
+    if (useAlphanumeric) {
+      // Generate an alphanumeric code (6-8 characters)
+      const length = Math.floor(6 + Math.random() * 3); // Random length between 6-8
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let result = '';
+      
+      // Include at least one letter for prefix (often represents the deal category)
+      const prefix = chars.substring(0, 26).charAt(Math.floor(Math.random() * 26));
+      result += prefix;
+      
+      // Fill the rest with random characters
+      for (let i = 1; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      
+      return result;
+    } else {
+      // Generate a 4-6 digit numeric PIN
+      const length = Math.floor(4 + Math.random() * 3); // Random length between 4-6
+      const min = Math.pow(10, length - 1);
+      const max = Math.pow(10, length) - 1;
+      
+      return Math.floor(min + Math.random() * (max - min + 1)).toString();
+    }
   }
   
   return (
@@ -751,7 +776,7 @@ export default function CreateDealPage() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="redemptionCode">
-                    Redemption PIN <span className="text-red-500">*</span>
+                    Redemption Code <span className="text-red-500">*</span>
                     <span className="ml-2 text-xs text-gray-500">(Give this to customers during redemption)</span>
                   </Label>
                   <div className="flex">
@@ -775,7 +800,7 @@ export default function CreateDealPage() {
                     <p className="text-sm text-red-500">{form.formState.errors.redemptionCode.message}</p>
                   )}
                   <p className="text-xs text-gray-500">
-                    This PIN will be provided to customers when they visit your business to redeem this deal
+                    This code (4-8 characters) will be provided to customers when they visit your business to redeem this deal
                   </p>
                 </div>
                 
@@ -802,8 +827,8 @@ export default function CreateDealPage() {
                   <ol className="list-decimal list-inside space-y-2 text-sm">
                     <li>Customer visits your business and requests to redeem the deal</li>
                     <li>Customer shows the deal on their Pinnity app</li>
-                    <li>Your staff provides the redemption PIN: <span className="font-mono font-bold">{watchedValues.redemptionCode}</span></li>
-                    <li>Customer enters the PIN in their app to confirm redemption</li>
+                    <li>Your staff provides the redemption code: <span className="font-mono font-bold">{watchedValues.redemptionCode}</span></li>
+                    <li>Customer enters the code in their app to confirm redemption</li>
                     <li>Deal is marked as redeemed in the system</li>
                   </ol>
                 </div>
@@ -1022,7 +1047,7 @@ export default function CreateDealPage() {
                 )}
                 
                 <div className="space-y-1">
-                  <p className="text-sm font-medium">Redemption PIN</p>
+                  <p className="text-sm font-medium">Redemption Code</p>
                   <p className="text-sm font-mono">{watchedValues.redemptionCode}</p>
                 </div>
                 
