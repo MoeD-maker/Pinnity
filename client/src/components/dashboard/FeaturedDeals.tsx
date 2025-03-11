@@ -147,7 +147,7 @@ interface FeaturedDealsProps {
 export default function FeaturedDeals({ deals, isLoading, onSelect }: FeaturedDealsProps) {
   if (isLoading) {
     return (
-      <div className="flex overflow-x-auto gap-4 pb-4 hide-scrollbar">
+      <div className="flex overflow-x-auto gap-4 pb-4 px-0 max-w-[100vw] hide-scrollbar">
         {Array.from({ length: 4 }).map((_, i) => (
           <FeaturedDealSkeleton key={i} />
         ))}
@@ -164,7 +164,7 @@ export default function FeaturedDeals({ deals, isLoading, onSelect }: FeaturedDe
   }
 
   return (
-    <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 -mx-3 px-3 sm:mx-0 sm:px-0">
+    <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 px-0 sm:px-0 max-w-[100vw]">
       {deals.map((deal) => (
         <FeaturedDealCard 
           key={deal.id} 
