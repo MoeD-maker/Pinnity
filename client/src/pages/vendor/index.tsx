@@ -6,13 +6,17 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { 
   PlusCircle, BarChart3, Calendar, Tag, Settings, FileText, Store, 
-  PackageOpen, Bell, CheckCircle, AlertCircle, Clock, HelpCircle, Star
+  PackageOpen, Bell, CheckCircle, AlertCircle, Clock, HelpCircle, Star,
+  Search, Copy
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 import BusinessRatingSummary from '@/components/ratings/BusinessRatingSummary';
 
 // Define status colors for consistent use across components
@@ -32,6 +36,7 @@ export default function VendorDashboard() {
   const [business, setBusiness] = useState<any>(null);
   const [deals, setDeals] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const { toast } = useToast();
   const [stats, setStats] = useState({
     activeDeals: 0,
     viewCount: 0,
@@ -230,30 +235,126 @@ export default function VendorDashboard() {
 
         <TabsContent value="redemptions">
           <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <h2 className="text-xl font-semibold mb-4">Redemption Verification</h2>
+            <h2 className="text-xl font-semibold mb-4">Verify Redemption</h2>
             
+            <div className="flex justify-between items-center mb-6">
+              <div className="relative w-full max-w-md">
+                <input
+                  type="search"
+                  placeholder="Search deals by title or category..."
+                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:ring-[#00796B] focus:border-[#00796B]"
+                />
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-4 w-4 text-gray-400" />
+                </div>
+              </div>
+              <div className="ml-4">
+                <Select defaultValue="active">
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Deals</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="upcoming">Upcoming</SelectItem>
+                    <SelectItem value="expired">Expired</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse mb-6">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Deal</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Type</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Date Range</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Redemption PIN</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Redemptions</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-500"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {deals.length > 0 ? deals.map((deal: any) => {
+                    const isActive = new Date(deal.endDate) >= new Date() && new Date(deal.startDate) <= new Date();
+                    const isUpcoming = new Date(deal.startDate) > new Date();
+                    const statusClass = isActive ? 'bg-green-100 text-green-800' : 
+                                       isUpcoming ? 'bg-blue-100 text-blue-800' : 
+                                       'bg-gray-100 text-gray-800';
+                    
+                    return (
+                      <tr key={deal.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-4 text-sm">
+                          <div className="font-medium">{deal.title}</div>
+                        </td>
+                        <td className="px-4 py-4 text-sm">{deal.dealType?.replace('_', ' ') || '-'}</td>
+                        <td className="px-4 py-4 text-sm">
+                          {format(new Date(deal.startDate), 'MM/dd/yyyy')} - {format(new Date(deal.endDate), 'MM/dd/yyyy')}
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex items-center space-x-2">
+                            <span className="font-mono text-base font-bold">{deal.redemptionCode}</span>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 w-6 p-0" 
+                              onClick={() => {
+                                navigator.clipboard.writeText(deal.redemptionCode);
+                                toast({
+                                  title: "PIN Copied",
+                                  description: "Redemption PIN copied to clipboard"
+                                });
+                              }}
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 text-sm">
+                          <span>{deal.redemptionCount || 0}/{deal.totalRedemptions || '∞'}</span>
+                        </td>
+                        <td className="px-4 py-4 text-right">
+                          <Badge className={statusClass}>
+                            {isActive ? 'Active' : isUpcoming ? 'Upcoming' : 'Expired'}
+                          </Badge>
+                        </td>
+                      </tr>
+                    );
+                  }) : (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-500">
+                        No deals found. <Button variant="link" onClick={handleCreateDeal} className="p-0 h-auto text-primary">Create your first deal</Button>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <Separator className="my-6" />
+
             <div className="max-w-md mx-auto">
               <div className="mb-6">
+                <h3 className="font-medium mb-4">Customer Verification</h3>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Enter customer redemption code
+                  Verify customer redemption
                 </label>
                 <div className="mt-1 flex items-center">
                   <input
                     type="text"
                     className="shadow-sm focus:ring-[#00796B] focus:border-[#00796B] block w-full sm:text-sm border-gray-300 p-2 border rounded-md"
-                    placeholder="Enter 4-digit code"
-                    maxLength={4}
+                    placeholder="Enter customer code"
+                    maxLength={6}
                   />
                   <Button className="ml-3 bg-[#00796B] hover:bg-[#004D40]">
                     Verify
                   </Button>
                 </div>
                 <p className="mt-2 text-sm text-gray-500">
-                  Ask the customer for their redemption code to verify the deal
+                  Verify the code provided by the customer to validate their redemption
                 </p>
               </div>
-
-              <Separator className="my-6" />
 
               <div className="mb-4">
                 <h3 className="font-medium mb-2">Recent Redemptions</h3>

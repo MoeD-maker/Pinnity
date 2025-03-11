@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { MapPin, Calendar, Phone, Globe, Clock, Share2, Heart, Award } from 'lucide-react';
+import { MapPin, Calendar, Phone, Globe, Clock, Share2, Heart, Award, AlertCircle, CheckCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,8 @@ interface DealDetailProps {
 
 export default function DealDetail({ dealId, onClose }: DealDetailProps) {
   const [step, setStep] = useState<'details' | 'redeem'>('details');
+  const [enteredPin, setEnteredPin] = useState<string>("");
+  const [verificationStatus, setVerificationStatus] = useState<'idle' | 'success' | 'error' | 'pending'>('idle');
   const { toast } = useToast();
   
   // Fetch the deal details
@@ -58,7 +60,56 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
     },
   });
 
-  // Redeem deal mutation
+  // Handle PIN input change
+  const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEnteredPin(e.target.value);
+    // Reset verification status when pin changes
+    if (verificationStatus !== 'idle') {
+      setVerificationStatus('idle');
+    }
+  };
+
+  // Verify redemption PIN mutation
+  const verifyPin = useMutation({
+    mutationFn: async () => {
+      // For demonstration purposes only - in a real app, get userId from auth context
+      const userId = 1;
+      
+      return apiRequest(`/api/deals/${dealId}/verify-code`, {
+        method: 'POST',
+        data: { code: enteredPin }
+      });
+    },
+    onSuccess: (response) => {
+      if (response.valid) {
+        setVerificationStatus('success');
+        toast({
+          title: 'PIN verified',
+          description: 'Deal redemption successful!',
+        });
+        
+        // Create redemption
+        redeemDeal.mutate();
+      } else {
+        setVerificationStatus('error');
+        toast({
+          title: 'Invalid PIN',
+          description: 'The PIN you entered is incorrect. Please try again.',
+          variant: 'destructive',
+        });
+      }
+    },
+    onError: (error) => {
+      setVerificationStatus('error');
+      toast({
+        title: 'Verification failed',
+        description: 'Failed to verify the PIN. Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Redeem deal mutation - only called after PIN verification
   const redeemDeal = useMutation({
     mutationFn: async () => {
       // For demonstration purposes only - in a real app, get userId from auth context
@@ -69,10 +120,11 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
         data: { dealId }
       });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Show redemption success
       toast({
-        title: 'Deal redeemed',
-        description: 'Show this screen to the business to claim your deal',
+        title: 'Deal redeemed successfully!',
+        description: 'Your redemption has been recorded',
       });
       
       // Invalidate redemptions query
@@ -81,7 +133,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
     onError: (error) => {
       toast({
         title: 'Error',
-        description: 'Failed to redeem this deal',
+        description: 'Failed to record the redemption',
         variant: 'destructive',
       });
     },
@@ -241,18 +293,6 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                         1
                       </div>
                       <div>
-                        <h4 className="font-medium text-base">Click the Redeem button</h4>
-                        <p className="text-sm text-muted-foreground">
-                          This will generate a unique redemption code
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-4">
-                      <div className="bg-primary text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                        2
-                      </div>
-                      <div>
                         <h4 className="font-medium text-base">Visit {deal.business.businessName}</h4>
                         <p className="text-sm text-muted-foreground">
                           Go to the business location during operating hours
@@ -262,23 +302,90 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                     
                     <div className="flex items-start gap-4">
                       <div className="bg-primary text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        2
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-base">Request the redemption PIN from staff</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Ask the business staff for the deal's redemption PIN
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-4">
+                      <div className="bg-primary text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                         3
                       </div>
                       <div>
-                        <h4 className="font-medium text-base">Show your redemption code</h4>
+                        <h4 className="font-medium text-base">Enter the PIN below to redeem</h4>
                         <p className="text-sm text-muted-foreground">
-                          Present the code to the staff to claim your deal
+                          Enter the PIN provided by the staff to confirm your redemption
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  {deal.redemptionCode && (
-                    <div className="mt-8 p-6 border-2 rounded-lg bg-primary/5 text-center">
-                      <p className="text-sm font-medium uppercase text-muted-foreground tracking-wide mb-3">Redemption Code</p>
-                      <div className="text-2xl font-mono font-bold tracking-wider">{deal.redemptionCode}</div>
-                    </div>
-                  )}
+                  <div className={`mt-8 p-6 border-2 rounded-lg 
+                    ${verificationStatus === 'success' 
+                     ? 'bg-green-50 border-green-200' 
+                     : verificationStatus === 'error' 
+                        ? 'bg-red-50 border-red-200' 
+                        : 'bg-primary/5'} 
+                    flex flex-col items-center`}>
+                    <p className="text-sm font-medium uppercase text-muted-foreground tracking-wide mb-3">
+                      {verificationStatus === 'success' 
+                        ? 'Redemption Successful!' 
+                        : 'Enter Redemption PIN'}
+                    </p>
+                    
+                    {verificationStatus === 'success' ? (
+                      <div className="flex flex-col items-center">
+                        <div className="bg-green-100 p-3 rounded-full mb-3">
+                          <CheckCircle className="h-8 w-8 text-green-600" />
+                        </div>
+                        <p className="text-center text-sm text-green-700 mb-2">
+                          Your deal has been successfully redeemed!
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex space-x-2 mb-4">
+                          <input 
+                            type="text" 
+                            maxLength={6}
+                            placeholder="Enter PIN"
+                            value={enteredPin}
+                            onChange={handlePinChange}
+                            className={`border rounded-md px-3 py-2 text-center font-mono text-lg tracking-wider w-40
+                              ${verificationStatus === 'error' 
+                                ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
+                                : 'border-input focus:border-primary focus:ring-primary'}`}
+                          />
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setVerificationStatus('pending');
+                              verifyPin.mutate();
+                            }}
+                            disabled={verifyPin.isPending || !enteredPin || enteredPin.length < 4}
+                          >
+                            {verifyPin.isPending ? 'Verifying...' : 'Verify'}
+                          </Button>
+                        </div>
+                        
+                        {verificationStatus === 'error' && (
+                          <div className="mb-3 flex items-center space-x-2 text-red-600">
+                            <AlertCircle className="h-4 w-4" />
+                            <span className="text-xs">Invalid PIN. Please try again.</span>
+                          </div>
+                        )}
+                        
+                        <p className="text-xs text-muted-foreground">
+                          The PIN will be provided by the business staff at the time of redemption
+                        </p>
+                      </>
+                    )}
+                  </div>
                 </div>
               </TabsContent>
             </Tabs>
@@ -291,13 +398,24 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                 >
                   Redeem This Deal
                 </Button>
+              ) : verificationStatus === 'success' ? (
+                <Button 
+                  variant="outline"
+                  className="w-full" 
+                  onClick={onClose}
+                >
+                  Close
+                </Button>
               ) : (
                 <Button 
                   className="w-full" 
-                  onClick={() => redeemDeal.mutate()}
-                  disabled={redeemDeal.isPending}
+                  onClick={() => {
+                    setVerificationStatus('pending');
+                    verifyPin.mutate();
+                  }}
+                  disabled={verifyPin.isPending || !enteredPin || enteredPin.length < 4 || verificationStatus === 'pending'}
                 >
-                  {redeemDeal.isPending ? 'Processing...' : 'Confirm Redemption'}
+                  {verifyPin.isPending ? 'Verifying PIN...' : 'Verify Redemption Pin'}
                 </Button>
               )}
             </DialogFooter>
