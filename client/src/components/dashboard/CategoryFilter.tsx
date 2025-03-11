@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import {
@@ -10,7 +9,7 @@ import {
   Scissors,
   Dumbbell,
   Ticket,
-  Wrench, // Replace Tool with Wrench
+  Wrench,
   Hotel,
   Wine,
   Briefcase
@@ -51,9 +50,6 @@ export default function CategoryFilter({
       const parsed = JSON.parse(savedCategories);
       // Check if the saved categories are in the correct format and not empty
       if (Array.isArray(parsed) && parsed.length > 0) {
-        // Calling onChange for each saved category would not work well
-        // This should be handled in the parent component by setting the initial state
-        // We just log here to debug
         console.log('Loaded saved categories:', parsed);
       }
     }
@@ -90,8 +86,8 @@ export default function CategoryFilter({
         )}
       </div>
       
-      <ScrollArea className="w-full" orientation="horizontal">
-        <div className="flex gap-2 py-1 px-1 pb-3 w-max min-w-full">
+      <div className="overflow-x-auto">
+        <div className="flex gap-2 py-1 px-1 pb-2 w-max">
           {CATEGORIES.map(category => (
             <CategoryBadge
               key={category.id}
@@ -106,7 +102,7 @@ export default function CategoryFilter({
             />
           ))}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }
