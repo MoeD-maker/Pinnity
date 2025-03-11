@@ -70,7 +70,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
   };
 
   // Verify redemption PIN mutation
-  const verifyPin = useMutation({
+  const verifyCode = useMutation({
     mutationFn: async () => {
       // For demonstration purposes only - in a real app, get userId from auth context
       const userId = 1;
@@ -93,8 +93,8 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
       } else {
         setVerificationStatus('error');
         toast({
-          title: 'Invalid PIN',
-          description: 'The PIN you entered is incorrect. Please try again.',
+          title: 'Invalid Code',
+          description: 'The code you entered is incorrect. Please try again.',
           variant: 'destructive',
         });
       }
@@ -103,7 +103,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
       setVerificationStatus('error');
       toast({
         title: 'Verification failed',
-        description: 'Failed to verify the PIN. Please try again.',
+        description: 'Failed to verify the code. Please try again.',
         variant: 'destructive',
       });
     },
@@ -368,12 +368,12 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                             size="sm"
                             onClick={() => {
                               setVerificationStatus('pending');
-                              verifyPin.mutate();
+                              verifyCode.mutate();
                             }}
-                            disabled={verifyPin.isPending || !enteredCode || enteredCode.length < 4}
+                            disabled={verifyCode.isPending || !enteredCode || enteredCode.length < 4}
                             className="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm"
                           >
-                            {verifyPin.isPending ? 'Verifying...' : 'Verify Code'}
+                            {verifyCode.isPending ? 'Verifying...' : 'Verify Code'}
                           </Button>
                         </div>
                         
@@ -415,11 +415,11 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                   className="w-full text-sm sm:text-base py-1.5 sm:py-2" 
                   onClick={() => {
                     setVerificationStatus('pending');
-                    verifyPin.mutate();
+                    verifyCode.mutate();
                   }}
-                  disabled={verifyPin.isPending || !enteredCode || enteredCode.length < 4 || verificationStatus === 'pending'}
+                  disabled={verifyCode.isPending || !enteredCode || enteredCode.length < 4 || verificationStatus === 'pending'}
                 >
-                  {verifyPin.isPending ? 'Verifying Code...' : 'Verify Redemption Code'}
+                  {verifyCode.isPending ? 'Verifying Code...' : 'Verify Redemption Code'}
                 </Button>
               )}
             </DialogFooter>
