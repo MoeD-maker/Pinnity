@@ -163,7 +163,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
 
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto w-[calc(100%-32px)] max-w-full sm:max-w-[600px] p-3 sm:p-6">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto w-[calc(100%-24px)] mx-auto max-w-full sm:max-w-[600px] p-3 sm:p-6">
         {isLoading ? (
           <DealDetailSkeleton />
         ) : deal ? (
@@ -180,8 +180,8 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                   </Button>
                 </div>
               </div>
-              <DialogTitle className="text-2xl">{deal.title}</DialogTitle>
-              <DialogDescription className="text-base font-medium">
+              <DialogTitle className="text-xl sm:text-2xl">{deal.title}</DialogTitle>
+              <DialogDescription className="text-sm sm:text-base font-medium">
                 {deal.business.businessName}
               </DialogDescription>
             </DialogHeader>
@@ -212,36 +212,36 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                   />
                 </div>
                 
-                <div className="bg-card rounded-lg p-5 border shadow-sm">
-                  <h3 className="font-medium mb-3">About This Deal</h3>
-                  <p className="text-muted-foreground">{deal.description}</p>
+                <div className="bg-card rounded-lg p-4 sm:p-5 border shadow-sm">
+                  <h3 className="font-medium mb-3 text-sm sm:text-base">About This Deal</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{deal.description}</p>
                 </div>
 
-                <div className="bg-card rounded-lg p-5 border shadow-sm">
-                  <h3 className="font-medium mb-3">Business Information</h3>
+                <div className="bg-card rounded-lg p-4 sm:p-5 border shadow-sm">
+                  <h3 className="font-medium mb-3 text-sm sm:text-base">Business Information</h3>
                   <div className="space-y-3">
-                    <div className="flex items-start gap-3">
-                      <div className="bg-muted p-2 rounded-md">
-                        <MapPin className="h-4 w-4 text-primary" />
+                    <div className="flex items-start gap-2 sm:gap-3">
+                      <div className="bg-muted p-1.5 sm:p-2 rounded-md">
+                        <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
                       </div>
-                      <span className="mt-1">{deal.business.address || 'Address not available'}</span>
+                      <span className="mt-0.5 text-xs sm:text-sm sm:mt-1 break-words">{deal.business.address || 'Address not available'}</span>
                     </div>
-                    <div className="flex items-start gap-3">
-                      <div className="bg-muted p-2 rounded-md">
-                        <Phone className="h-4 w-4 text-primary" />
+                    <div className="flex items-start gap-2 sm:gap-3">
+                      <div className="bg-muted p-1.5 sm:p-2 rounded-md">
+                        <Phone className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
                       </div>
-                      <span className="mt-1">{deal.business.phone || 'Phone not available'}</span>
+                      <span className="mt-0.5 text-xs sm:text-sm sm:mt-1">{deal.business.phone || 'Phone not available'}</span>
                     </div>
                     {deal.business.website && (
-                      <div className="flex items-start gap-3">
-                        <div className="bg-muted p-2 rounded-md">
-                          <Globe className="h-4 w-4 text-primary" />
+                      <div className="flex items-start gap-2 sm:gap-3">
+                        <div className="bg-muted p-1.5 sm:p-2 rounded-md">
+                          <Globe className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
                         </div>
                         <a 
                           href={deal.business.website.startsWith('http') ? deal.business.website : `https://${deal.business.website}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="text-primary hover:underline mt-1"
+                          className="text-primary hover:underline mt-0.5 text-xs sm:text-sm sm:mt-1 break-all"
                         >
                           {deal.business.website}
                         </a>
@@ -349,14 +349,15 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                       </div>
                     ) : (
                       <>
-                        <div className="flex space-x-2 mb-4">
+                        <div className="flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0 mb-4 items-center">
                           <input 
                             type="text" 
+                            inputMode="numeric"
                             maxLength={6}
                             placeholder="Enter PIN"
                             value={enteredPin}
                             onChange={handlePinChange}
-                            className={`border rounded-md px-3 py-2 text-center font-mono text-lg tracking-wider w-40
+                            className={`border rounded-md px-3 py-2 text-center font-mono text-lg tracking-wider w-full sm:w-40 max-w-[200px]
                               ${verificationStatus === 'error' 
                                 ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
                                 : 'border-input focus:border-primary focus:ring-primary'}`}
@@ -368,8 +369,9 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                               verifyPin.mutate();
                             }}
                             disabled={verifyPin.isPending || !enteredPin || enteredPin.length < 4}
+                            className="px-4"
                           >
-                            {verifyPin.isPending ? 'Verifying...' : 'Verify'}
+                            {verifyPin.isPending ? 'Verifying...' : 'Verify PIN'}
                           </Button>
                         </div>
                         
