@@ -864,7 +864,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/deals/:dealId/verify-code", authenticate, authorize(['business']), async (req: Request, res: Response) => {
+  app.post("/api/deals/:dealId/verify-code", authenticate, async (req: Request, res: Response) => {
     try {
       const dealId = parseInt(req.params.dealId);
       if (isNaN(dealId)) {
