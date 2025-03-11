@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { 
   PlusCircle, BarChart3, Calendar, Tag, Settings, FileText, Store, 
   PackageOpen, Bell, CheckCircle, AlertCircle, Clock, HelpCircle, Star,
-  Search, Copy
+  Search, Copy, RefreshCw, Shield
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -17,6 +17,7 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import BusinessRatingSummary from '@/components/ratings/BusinessRatingSummary';
 
 // Define status colors for consistent use across components
@@ -32,11 +33,15 @@ const statusColors: Record<string, string> = {
 
 export default function VendorDashboard() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [business, setBusiness] = useState<any>(null);
   const [deals, setDeals] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const { toast } = useToast();
+  const [selectedDealId, setSelectedDealId] = useState<number | null>(null);
+  const [verificationCode, setVerificationCode] = useState<string>('');
+  const [redemptionId, setRedemptionId] = useState<string>('');
   const [stats, setStats] = useState({
     activeDeals: 0,
     viewCount: 0,
@@ -96,6 +101,98 @@ export default function VendorDashboard() {
 
   const handleCreateDeal = () => {
     setLocation('/vendor/deals/create');
+  };
+  
+  // Generate verification code mutation
+  const generateCodeMutation = useMutation({
+    mutationFn: async (dealId: number) => {
+      return apiRequest(`/api/deals/${dealId}/generate-code`, {
+        method: 'POST'
+      });
+    },
+    onSuccess: (data) => {
+      setVerificationCode(data.code);
+      toast({
+        title: "Verification Code Generated",
+        description: "New code is ready to share with customer"
+      });
+      // Refresh deals list to get the updated code
+      queryClient.invalidateQueries({ queryKey: [`/api/business/${business?.id}/deals`] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to generate verification code",
+        variant: "destructive"
+      });
+      console.error("Generate code error:", error);
+    }
+  });
+  
+  // Verify redemption code mutation
+  const verifyCodeMutation = useMutation({
+    mutationFn: async ({ dealId, code, redemptionId }: { dealId: number, code: string, redemptionId: string }) => {
+      return apiRequest(`/api/deals/${dealId}/verify-code`, {
+        method: 'POST',
+        data: {
+          code,
+          redemptionId
+        }
+      });
+    },
+    onSuccess: (data) => {
+      if (data.valid) {
+        toast({
+          title: "Verification Successful",
+          description: "Deal has been successfully redeemed",
+        });
+      } else {
+        toast({
+          title: "Verification Failed",
+          description: "Invalid verification code",
+          variant: "destructive"
+        });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to verify code",
+        variant: "destructive"
+      });
+      console.error("Verify code error:", error);
+    }
+  });
+  
+  const handleGenerateCode = (dealId: number) => {
+    setSelectedDealId(dealId);
+    generateCodeMutation.mutate(dealId);
+  };
+  
+  const handleVerifyCode = () => {
+    if (!selectedDealId) {
+      toast({
+        title: "No Deal Selected",
+        description: "Please select a deal first",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!redemptionId) {
+      toast({
+        title: "Missing Redemption ID",
+        description: "Please enter the redemption ID from the customer's app",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    verifyCodeMutation.mutate({
+      dealId: selectedDealId,
+      code: verificationCode,
+      redemptionId
+    });
   };
 
   if (loading) {
@@ -359,17 +456,63 @@ export default function VendorDashboard() {
                     Give the customer the PIN for your deal that they will enter in their app
                   </p>
                   <div className="pl-7">
-                    <div className="flex items-center">
-                      <select 
-                        className="border border-blue-300 rounded-md p-2 text-sm w-full bg-white focus:ring-[#00796B] focus:border-[#00796B]"
-                      >
-                        <option value="">-- Select a deal --</option>
-                        {deals.map(deal => (
-                          <option key={deal.id} value={deal.id}>
-                            {deal.title} ({deal.redemptionCode || 'No PIN'})
-                          </option>
-                        ))}
-                      </select>
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex items-center gap-2">
+                        <select 
+                          value={selectedDealId || ""}
+                          onChange={(e) => setSelectedDealId(e.target.value ? parseInt(e.target.value) : null)}
+                          className="border border-blue-300 rounded-md p-2 text-sm w-full bg-white focus:ring-[#00796B] focus:border-[#00796B]"
+                        >
+                          <option value="">-- Select a deal --</option>
+                          {deals.map(deal => (
+                            <option key={deal.id} value={deal.id}>
+                              {deal.title}
+                            </option>
+                          ))}
+                        </select>
+                        <Button 
+                          size="sm"
+                          variant="outline"
+                          className="border-blue-300 text-blue-700"
+                          onClick={() => selectedDealId && handleGenerateCode(selectedDealId)}
+                          disabled={!selectedDealId || generateCodeMutation.isPending}
+                        >
+                          {generateCodeMutation.isPending ? (
+                            <RefreshCw className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <RefreshCw className="h-4 w-4 mr-1" />
+                          )}
+                          {generateCodeMutation.isPending ? "Generating..." : "New PIN"}
+                        </Button>
+                      </div>
+                      
+                      {selectedDealId && (
+                        <div className="bg-white p-3 rounded-md border border-blue-200 flex items-center justify-between">
+                          <div className="flex items-center">
+                            <Shield className="h-4 w-4 text-blue-700 mr-2" />
+                            <span className="font-mono text-lg font-bold text-blue-800">
+                              {deals.find(d => d.id === selectedDealId)?.redemptionCode || verificationCode || 'N/A'}
+                            </span>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-7 w-7 p-0"
+                            onClick={() => {
+                              const code = deals.find(d => d.id === selectedDealId)?.redemptionCode || verificationCode;
+                              if (code) {
+                                navigator.clipboard.writeText(code);
+                                toast({
+                                  title: "PIN Copied",
+                                  description: "Redemption PIN copied to clipboard"
+                                });
+                              }
+                            }}
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -381,8 +524,33 @@ export default function VendorDashboard() {
                     Confirm redemption
                   </h4>
                   <p className="text-sm text-blue-700 pl-7 mb-3">
-                    Watch as the customer enters the PIN and receives confirmation
+                    Enter the redemption ID shown in the customer's app after they enter the PIN
                   </p>
+                  
+                  <div className="pl-7">
+                    <div className="flex flex-col space-y-2">
+                      <input
+                        type="text"
+                        placeholder="Enter redemption ID shown in customer's app"
+                        value={redemptionId}
+                        onChange={(e) => setRedemptionId(e.target.value)}
+                        className="border border-blue-300 rounded-md p-2 text-sm w-full bg-white focus:ring-[#00796B] focus:border-[#00796B]"
+                      />
+                      <Button 
+                        variant="default"
+                        className="w-full bg-[#00796B] hover:bg-[#004D40]"
+                        onClick={handleVerifyCode}
+                        disabled={!selectedDealId || !redemptionId || verifyCodeMutation.isPending}
+                      >
+                        {verifyCodeMutation.isPending ? (
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                        )}
+                        {verifyCodeMutation.isPending ? "Verifying..." : "Verify Redemption"}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
