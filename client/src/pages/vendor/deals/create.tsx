@@ -108,7 +108,54 @@ export default function CreateDealPage() {
   const [showImageHover, setShowImageHover] = useState(false);
   const [useLogo, setUseLogo] = useState(false);
   const [logoPosition, setLogoPosition] = useState<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'>('bottom-right');
+  const [dimensionsWarning, setDimensionsWarning] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Handle image upload
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    setSelectedImage(file);
+    
+    // Create a preview URL
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    
+    // Check image dimensions
+    const img = new Image();
+    img.onload = () => {
+      setImageDimensions({ width: img.width, height: img.height });
+      
+      // Validate dimensions
+      if (img.width < 600) {
+        setDimensionsWarning("Image is too small. Minimum width should be 600px.");
+      } else if (Math.abs(img.width / img.height - 4/3) > 0.2) {
+        setDimensionsWarning("Image doesn't follow the recommended 4:3 ratio.");
+      } else {
+        setDimensionsWarning(null);
+      }
+      
+      // Set the imageUrl in the form
+      form.setValue("imageUrl", url);
+    };
+    img.src = url;
+  };
+  
+  // Trigger file input click
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+  
+  // Toggle logo option
+  const toggleUseLogo = () => {
+    setUseLogo(!useLogo);
+  };
+  
+  // Change logo position
+  const handleLogoPositionChange = (position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right') => {
+    setLogoPosition(position);
+  };
   
   // Initialize form with default values
   const form = useForm<DealFormValues>({
