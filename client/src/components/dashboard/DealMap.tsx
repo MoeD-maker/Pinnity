@@ -73,7 +73,7 @@ export default function DealMap({ deals, isLoading, onSelect }: DealMapProps) {
   }
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden pb-16">
       <CardContent className="p-0">
         <div className="h-[70vh]">
           <MapContainer
@@ -207,7 +207,7 @@ function MapController({ center }: MapControllerProps) {
 
 function MapSkeleton() {
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden pb-16">
       <Skeleton className="h-[70vh] w-full" />
     </Card>
   );
