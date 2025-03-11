@@ -106,7 +106,7 @@ const dealSchema = z.object({
   customTerms: z.string().optional(),
   // The combined terms string that will be stored
   terms: z.string().optional(),
-  redemptionCode: z.string().length(4, { message: 'Redemption code must be exactly 4 digits' }),
+  redemptionCode: z.string().min(4, { message: 'Redemption code must be at least 4 characters' }).max(8, { message: 'Redemption code cannot exceed 8 characters' }),
   redemptionInstructions: z.string().optional(),
   imageUrl: z.string().optional(),
   acceptTerms: z.boolean().refine(val => val === true, { message: 'You must accept the terms' })
@@ -757,8 +757,8 @@ export default function CreateDealPage() {
                   <div className="flex">
                     <Input 
                       id="redemptionCode" 
-                      placeholder="e.g. 1234" 
-                      maxLength={4}
+                      placeholder="e.g. 1234 or COFFEE50" 
+                      maxLength={8}
                       className="text-center font-mono text-lg tracking-wider"
                       {...form.register("redemptionCode")}
                     />
