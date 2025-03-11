@@ -1,0 +1,20 @@
+
+/* Ensure category badges display properly */
+.category-badge {
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1;
+  font-weight: 500;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.category-badge-count {
+  margin-left: 0.25rem;
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
