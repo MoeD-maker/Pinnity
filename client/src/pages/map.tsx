@@ -224,8 +224,8 @@ export default function MapPage() {
 
       {/* Active filters indicator */}
       {activeFiltersCount > 0 && (
-        <div className="bg-background px-4 py-2 border-t border-b z-10">
-          <div className="container max-w-7xl mx-auto flex flex-wrap items-center gap-2">
+        <div className="bg-background px-4 py-2 border-t border-b z-10 w-full">
+          <div className="container mx-auto flex flex-wrap items-center gap-2">
             <span className="text-sm text-muted-foreground whitespace-nowrap">Active filters:</span>
             
             {searchQuery && (
