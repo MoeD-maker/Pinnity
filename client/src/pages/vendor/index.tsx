@@ -40,7 +40,6 @@ export default function VendorDashboard() {
   const [loading, setLoading] = useState<boolean>(true);
   const { toast } = useToast();
   const [selectedDealId, setSelectedDealId] = useState<number | null>(null);
-  const [verificationCode, setVerificationCode] = useState<string>('');
   const [redemptionId, setRedemptionId] = useState<string>('');
   const [stats, setStats] = useState({
     activeDeals: 0,
@@ -103,39 +102,14 @@ export default function VendorDashboard() {
     setLocation('/vendor/deals/create');
   };
   
-  // Generate verification code mutation
-  const generateCodeMutation = useMutation({
-    mutationFn: async (dealId: number) => {
-      return apiRequest(`/api/deals/${dealId}/generate-code`, {
-        method: 'POST'
-      });
-    },
-    onSuccess: (data) => {
-      setVerificationCode(data.code);
-      toast({
-        title: "Verification Code Generated",
-        description: "New code is ready to share with customer"
-      });
-      // Refresh deals list to get the updated code
-      queryClient.invalidateQueries({ queryKey: [`/api/business/${business?.id}/deals`] });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to generate verification code",
-        variant: "destructive"
-      });
-      console.error("Generate code error:", error);
-    }
-  });
+  // This functionality has been replaced with verification by redemption ID
   
   // Verify redemption code mutation
   const verifyCodeMutation = useMutation({
-    mutationFn: async ({ dealId, code, redemptionId }: { dealId: number, code: string, redemptionId: string }) => {
+    mutationFn: async ({ dealId, redemptionId }: { dealId: number, redemptionId: string }) => {
       return apiRequest(`/api/deals/${dealId}/verify-code`, {
         method: 'POST',
         data: {
-          code,
           redemptionId
         }
       });
@@ -146,10 +120,13 @@ export default function VendorDashboard() {
           title: "Verification Successful",
           description: "Deal has been successfully redeemed",
         });
+        setRedemptionId('');
+        // Refresh deals list
+        queryClient.invalidateQueries({ queryKey: [`/api/business/${business?.id}/deals`] });
       } else {
         toast({
           title: "Verification Failed",
-          description: "Invalid verification code",
+          description: "Invalid redemption ID",
           variant: "destructive"
         });
       }
@@ -157,17 +134,12 @@ export default function VendorDashboard() {
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to verify code",
+        description: "Failed to verify redemption",
         variant: "destructive"
       });
-      console.error("Verify code error:", error);
+      console.error("Verify redemption error:", error);
     }
   });
-  
-  const handleGenerateCode = (dealId: number) => {
-    setSelectedDealId(dealId);
-    generateCodeMutation.mutate(dealId);
-  };
   
   const handleVerifyCode = () => {
     if (!selectedDealId) {
@@ -190,7 +162,6 @@ export default function VendorDashboard() {
     
     verifyCodeMutation.mutate({
       dealId: selectedDealId,
-      code: verificationCode,
       redemptionId
     });
   };
@@ -367,9 +338,8 @@ export default function VendorDashboard() {
                     <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Deal</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Type</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Date Range</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Redemption PIN</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Redemptions</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-500"></th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -388,25 +358,6 @@ export default function VendorDashboard() {
                         <td className="px-4 py-4 text-sm">{deal.dealType?.replace('_', ' ') || '-'}</td>
                         <td className="px-4 py-4 text-sm">
                           {format(new Date(deal.startDate), 'MM/dd/yyyy')} - {format(new Date(deal.endDate), 'MM/dd/yyyy')}
-                        </td>
-                        <td className="px-4 py-4">
-                          <div className="flex items-center space-x-2">
-                            <span className="font-mono text-base font-bold">{deal.redemptionCode}</span>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-6 w-6 p-0" 
-                              onClick={() => {
-                                navigator.clipboard.writeText(deal.redemptionCode);
-                                toast({
-                                  title: "PIN Copied",
-                                  description: "Redemption PIN copied to clipboard"
-                                });
-                              }}
-                            >
-                              <Copy className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
                         </td>
                         <td className="px-4 py-4 text-sm">
                           <span>{deal.redemptionCount || 0}/{deal.totalRedemptions || '∞'}</span>
