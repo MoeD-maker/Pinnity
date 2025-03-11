@@ -49,7 +49,8 @@ export const deals = pgTable("deals", {
   discount: text("discount"),
   dealType: text("deal_type").notNull(), // "percent_off", "buy_one_get_one", "fixed_amount", etc.
   featured: boolean("featured").default(false),
-  redemptionCode: text("redemption_code"),
+  redemptionCode: text("redemption_code"), // Deprecated - kept for backward compatibility
+  vendorVerificationCode: text("vendor_verification_code"), // New field for vendor verification
   createdAt: timestamp("created_at").notNull().defaultNow(),
   status: text("status").notNull().default("pending"), // "pending", "approved", "active", "expired", "rejected"
   approvalDate: timestamp("approval_date"),
@@ -75,7 +76,9 @@ export const dealRedemptions = pgTable("deal_redemptions", {
   userId: integer("user_id").notNull().references(() => users.id),
   dealId: integer("deal_id").notNull().references(() => deals.id),
   redeemedAt: timestamp("redeemed_at").notNull().defaultNow(),
-  status: text("status").notNull().default("redeemed"), // "redeemed", "completed", "cancelled"
+  verificationCode: text("verification_code"), // Optional - vendor-provided code for verification
+  verifiedAt: timestamp("verified_at"), // When the vendor verified the redemption
+  status: text("status").notNull().default("pending"), // "pending", "verified", "completed", "cancelled"
 });
 
 // User notification preferences
