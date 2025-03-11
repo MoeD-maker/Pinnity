@@ -170,13 +170,13 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
           <>
             <DialogHeader>
               <div className="flex justify-between items-center mb-2">
-                <Badge>{deal.category}</Badge>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="icon" onClick={handleShare}>
-                    <Share2 className="h-4 w-4" />
+                <Badge className="text-xs sm:text-sm">{deal.category}</Badge>
+                <div className="flex gap-1.5 sm:gap-2">
+                  <Button variant="outline" size="icon" onClick={handleShare} className="h-7 w-7 sm:h-8 sm:w-8">
+                    <Share2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </Button>
-                  <Button variant="outline" size="icon" onClick={() => addToFavorites.mutate()}>
-                    <Heart className="h-4 w-4" />
+                  <Button variant="outline" size="icon" onClick={() => addToFavorites.mutate()} className="h-7 w-7 sm:h-8 sm:w-8">
+                    <Heart className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </Button>
                 </div>
               </div>
@@ -191,12 +191,14 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                 <TabsTrigger 
                   value="details" 
                   onClick={() => setStep('details')}
+                  className="text-xs sm:text-sm py-1.5 sm:py-2"
                 >
                   Details
                 </TabsTrigger>
                 <TabsTrigger 
                   value="redeem" 
                   onClick={() => setStep('redeem')}
+                  className="text-xs sm:text-sm py-1.5 sm:py-2"
                 >
                   How to Redeem
                 </TabsTrigger>
@@ -423,9 +425,9 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
             </DialogFooter>
           </>
         ) : (
-          <div className="text-center py-6">
-            <p>Could not load deal details. Please try again.</p>
-            <Button variant="outline" onClick={onClose} className="mt-4">
+          <div className="text-center py-4 sm:py-6">
+            <p className="text-sm sm:text-base">Could not load deal details. Please try again.</p>
+            <Button variant="outline" onClick={onClose} className="mt-3 sm:mt-4 text-xs sm:text-sm py-1.5 sm:py-2">
               Close
             </Button>
           </div>
@@ -440,34 +442,34 @@ function DealDetailSkeleton() {
     <>
       <DialogHeader>
         <div className="flex justify-between items-center mb-2">
-          <Skeleton className="h-5 w-20" />
-          <div className="flex gap-2">
-            <Skeleton className="h-8 w-8 rounded" />
-            <Skeleton className="h-8 w-8 rounded" />
+          <Skeleton className="h-4 sm:h-5 w-16 sm:w-20" />
+          <div className="flex gap-1.5 sm:gap-2">
+            <Skeleton className="h-7 w-7 sm:h-8 sm:w-8 rounded" />
+            <Skeleton className="h-7 w-7 sm:h-8 sm:w-8 rounded" />
           </div>
         </div>
-        <Skeleton className="h-8 w-3/4 mb-2" />
-        <Skeleton className="h-4 w-1/2" />
+        <Skeleton className="h-6 sm:h-8 w-3/4 mb-2" />
+        <Skeleton className="h-3 sm:h-4 w-1/2" />
       </DialogHeader>
 
       <Skeleton className="aspect-video w-full rounded-lg mb-4" />
       
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-3/4" />
+      <div className="space-y-3 sm:space-y-4">
+        <Skeleton className="h-8 sm:h-10 w-full" />
+        <Skeleton className="h-3 sm:h-4 w-full" />
+        <Skeleton className="h-3 sm:h-4 w-full" />
+        <Skeleton className="h-3 sm:h-4 w-3/4" />
         
-        <div className="pt-4">
-          <Skeleton className="h-5 w-40 mb-2" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-full mt-1" />
-          <Skeleton className="h-4 w-1/2 mt-1" />
+        <div className="pt-3 sm:pt-4">
+          <Skeleton className="h-4 sm:h-5 w-32 sm:w-40 mb-2" />
+          <Skeleton className="h-3 sm:h-4 w-full" />
+          <Skeleton className="h-3 sm:h-4 w-full mt-1" />
+          <Skeleton className="h-3 sm:h-4 w-1/2 mt-1" />
         </div>
       </div>
       
-      <div className="mt-6">
-        <Skeleton className="h-10 w-full" />
+      <div className="mt-4 sm:mt-6">
+        <Skeleton className="h-8 sm:h-10 w-full" />
       </div>
     </>
   );
