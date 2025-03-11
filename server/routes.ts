@@ -871,16 +871,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid deal ID" });
       }
       
-      const { code } = req.body;
+      const { code, redemptionId } = req.body;
       if (!code) {
-        return res.status(400).json({ message: "Redemption code is required" });
+        return res.status(400).json({ message: "Verification code is required" });
       }
       
+      if (!redemptionId) {
+        return res.status(400).json({ message: "Redemption ID is required" });
+      }
+      
+      // Verify the code against the deal
       const isValid = await storage.verifyRedemptionCode(dealId, code);
+      
+      if (isValid) {
+        // Update the redemption status to verified
+        await storage.updateRedemptionStatus(
+          parseInt(redemptionId), 
+          "verified", 
+          code
+        );
+      }
       
       return res.status(200).json({ valid: isValid });
     } catch (error) {
       console.error("Verify redemption code error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Generate a new verification code for a deal
+  app.post("/api/deals/:dealId/generate-code", authenticate, authorize(['business']), async (req: Request, res: Response) => {
+    try {
+      const dealId = parseInt(req.params.dealId);
+      if (isNaN(dealId)) {
+        return res.status(400).json({ message: "Invalid deal ID" });
+      }
+      
+      // Generate a new verification code for the deal
+      const code = await storage.generateVerificationCode(dealId);
+      
+      return res.status(200).json({ code });
+    } catch (error) {
+      console.error("Generate verification code error:", error);
       if (error instanceof Error) {
         return res.status(400).json({ message: error.message });
       }
