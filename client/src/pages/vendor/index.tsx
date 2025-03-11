@@ -329,8 +329,9 @@ export default function VendorDashboard() {
                       </td>
                     </tr>
                   )}
-                </tbody>
-              </table>
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             <Separator className="my-6" />
@@ -416,7 +417,77 @@ export default function VendorDashboard() {
         </TabsContent>
         
         <TabsContent value="business">
-          <BusinessProfile business={business} />
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <div className="flex justify-between items-start mb-6">
+              <h2 className="text-xl font-semibold">Business Profile</h2>
+              <Button variant="outline">
+                <FileText className="h-4 w-4 mr-2" /> Edit Profile
+              </Button>
+            </div>
+            
+            <div className="flex flex-col md:flex-row gap-6">
+              <div className="md:w-1/3">
+                <div className="aspect-square rounded-lg bg-gray-100 overflow-hidden">
+                  {business?.imageUrl ? (
+                    <img 
+                      src={business.imageUrl} 
+                      alt={business.businessName} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <Store className="h-16 w-16 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+                
+                <div className="mt-6">
+                  <Badge className={`${statusColors[business?.verificationStatus || 'pending']} mb-2`}>
+                    {business?.verificationStatus === 'verified' ? 'Verified' : 'Pending Verification'}
+                  </Badge>
+                  <h3 className="text-lg font-medium">{business?.businessName}</h3>
+                  <p className="text-sm text-gray-500 capitalize">{business?.businessCategory} Business</p>
+                </div>
+              </div>
+              
+              <div className="md:w-2/3">
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Business Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div>
+                    <h4 className="text-xs text-gray-500">Address</h4>
+                    <p className="text-sm">{business?.address || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-xs text-gray-500">Phone</h4>
+                    <p className="text-sm">{business?.phone || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-xs text-gray-500">Website</h4>
+                    <p className="text-sm">{business?.website || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-xs text-gray-500">Email</h4>
+                    <p className="text-sm">{user?.email || 'Not provided'}</p>
+                  </div>
+                </div>
+                
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Description</h3>
+                <p className="text-sm mb-6">{business?.description || 'No business description provided'}</p>
+                
+                <Separator className="my-6" />
+                
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Hours of Operation</h3>
+                <div className="text-sm mb-6">
+                  <p className="text-gray-500">No hours of operation set</p>
+                </div>
+                
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Social Media</h3>
+                <div className="text-sm">
+                  <p className="text-gray-500">No social media links added</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </TabsContent>
         
         <TabsContent value="analytics">
@@ -484,66 +555,6 @@ export default function VendorDashboard() {
         </TabsContent>
       </Tabs>
     </div>
-  );
-}
-
-function VerificationRequirements({ business }: { business: any }) {
-  const documents = [
-    { id: 'business_license', name: 'Business License', status: business?.governmentId ? 'completed' : 'missing' },
-    { id: 'identity', name: 'Government-issued ID', status: business?.proofOfAddress ? 'completed' : 'missing' },
-    { id: 'proof_address', name: 'Proof of Address', status: business?.proofOfBusiness ? 'completed' : 'missing' }
-  ];
-
-  const completedCount = documents.filter(doc => doc.status === 'completed').length;
-  const progressPercentage = (completedCount / documents.length) * 100;
-
-  return (
-    <Card className="mb-8">
-      <CardHeader>
-        <CardTitle>Complete Your Verification</CardTitle>
-        <CardDescription>
-          Submit the required documents to verify your business
-        </CardDescription>
-        <Progress value={progressPercentage} className="h-2 mt-2" />
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {documents.map(doc => (
-            <div key={doc.id} className="flex items-center">
-              <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center ${
-                doc.status === 'completed' ? 'text-green-500' : 'text-gray-300'
-              }`}>
-                {doc.status === 'completed' ? (
-                  <CheckCircle className="w-5 h-5" />
-                ) : (
-                  <Circle className="w-5 h-5" />
-                )}
-              </div>
-              <div className="ml-4 flex-1">
-                <p className="text-sm font-medium">{doc.name}</p>
-              </div>
-              <div>
-                {doc.status === 'completed' ? (
-                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                    Submitted
-                  </Badge>
-                ) : (
-                  <Button variant="outline" size="sm">
-                    Upload
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-      <CardFooter className="border-t pt-6 flex justify-between">
-        <div className="flex items-center text-sm text-gray-500">
-          <Clock className="w-4 h-4 mr-2" />
-          <span>Estimated approval: 1-2 business days after all documents are submitted</span>
-        </div>
-      </CardFooter>
-    </Card>
   );
 }
 
@@ -683,106 +694,62 @@ function DealCard({ deal }: { deal: any }) {
   );
 }
 
-function BusinessProfile({ business }: { business: any }) {
-  if (!business) {
-    return (
-      <EmptyState 
-        title="Business profile not found"
-        description="Complete your business profile to get started"
-        actionText="Complete Profile"
-      />
-    );
-  }
+function VerificationRequirements({ business }: { business: any }) {
+  const documents = [
+    { id: 'business_license', name: 'Business License', status: business?.governmentId ? 'completed' : 'missing' },
+    { id: 'identity', name: 'Government-issued ID', status: business?.proofOfAddress ? 'completed' : 'missing' },
+    { id: 'proof_address', name: 'Proof of Address', status: business?.proofOfBusiness ? 'completed' : 'missing' }
+  ];
+
+  const completedCount = documents.filter(doc => doc.status === 'completed').length;
+  const progressPercentage = (completedCount / documents.length) * 100;
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm border">
-      <div className="flex justify-between items-start mb-6">
-        <h2 className="text-xl font-semibold">Business Profile</h2>
-        <Button variant="outline">
-          <FileText className="h-4 w-4 mr-2" /> Edit Profile
-        </Button>
-      </div>
-      
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="md:w-1/3">
-          <div className="aspect-square rounded-lg bg-gray-100 overflow-hidden">
-            {business.imageUrl ? (
-              <img 
-                src={business.imageUrl} 
-                alt={business.businessName} 
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <Store className="h-16 w-16 text-gray-400" />
+    <Card className="mb-8">
+      <CardHeader>
+        <CardTitle>Complete Your Verification</CardTitle>
+        <CardDescription>
+          Submit the required documents to verify your business
+        </CardDescription>
+        <Progress value={progressPercentage} className="h-2 mt-2" />
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {documents.map(doc => (
+            <div key={doc.id} className="flex items-center">
+              <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center ${
+                doc.status === 'completed' ? 'text-green-500' : 'text-gray-300'
+              }`}>
+                {doc.status === 'completed' ? (
+                  <CheckCircle className="w-5 h-5" />
+                ) : (
+                  <Circle className="w-5 h-5" />
+                )}
               </div>
-            )}
-          </div>
-          
-          <div className="mt-6">
-            <Badge className={`${statusColors[business.verificationStatus || 'pending']} mb-2`}>
-              {business.verificationStatus === 'verified' ? 'Verified' : 'Pending Verification'}
-            </Badge>
-            <h3 className="text-lg font-medium">{business.businessName}</h3>
-            <p className="text-sm text-gray-500 capitalize">{business.businessCategory} Business</p>
-          </div>
+              <div className="ml-4 flex-1">
+                <p className="text-sm font-medium">{doc.name}</p>
+              </div>
+              <div>
+                {doc.status === 'completed' ? (
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                    Submitted
+                  </Badge>
+                ) : (
+                  <Button variant="outline" size="sm">
+                    Upload
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
-        
-        <div className="md:w-2/3">
-          <h3 className="text-sm font-medium text-gray-500 mb-2">Business Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div>
-              <label className="block text-xs text-gray-500">Address</label>
-              <p className="text-sm">{business.address || 'Not provided'}</p>
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500">Phone</label>
-              <p className="text-sm">{business.phone || 'Not provided'}</p>
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500">Website</label>
-              <p className="text-sm">{business.website || 'Not provided'}</p>
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500">Email</label>
-              <p className="text-sm">{business.email || 'Not provided'}</p>
-            </div>
-          </div>
-          
-          <h3 className="text-sm font-medium text-gray-500 mb-2">Description</h3>
-          <p className="text-sm text-gray-700 mb-6">{business.description || 'No description provided'}</p>
-          
-          <h3 className="text-sm font-medium text-gray-500 mb-2">Customer Ratings</h3>
-          <div className="mb-6">
-            {business?.id ? (
-              <BusinessRatingSummary businessId={business.id} />
-            ) : (
-              <p className="text-sm text-gray-500">No ratings available yet</p>
-            )}
-          </div>
-          
-          <h3 className="text-sm font-medium text-gray-500 mb-2">Business Hours</h3>
-          <p className="text-sm text-gray-500">Not set - add your business hours</p>
-          
-          <Separator className="my-6" />
-          
-          <h3 className="text-sm font-medium text-gray-500 mb-2">Verification Documents</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="border rounded-md p-3">
-              <p className="text-xs text-gray-500">Business License</p>
-              <Badge variant="outline" className="mt-2 bg-green-50 text-green-700 border-green-200">Submitted</Badge>
-            </div>
-            <div className="border rounded-md p-3">
-              <p className="text-xs text-gray-500">Identity Verification</p>
-              <Badge variant="outline" className="mt-2 bg-green-50 text-green-700 border-green-200">Submitted</Badge>
-            </div>
-            <div className="border rounded-md p-3">
-              <p className="text-xs text-gray-500">Proof of Address</p>
-              <Badge variant="outline" className="mt-2 bg-green-50 text-green-700 border-green-200">Submitted</Badge>
-            </div>
-          </div>
+      </CardContent>
+      <CardFooter className="border-t pt-6 flex justify-between">
+        <div className="flex items-center text-sm text-gray-500">
+          <Clock className="w-4 h-4 mr-2" />
+          <span>Estimated approval: 1-2 business days after all documents are submitted</span>
         </div>
-      </div>
-    </div>
+      </CardFooter>
+    </Card>
   );
 }

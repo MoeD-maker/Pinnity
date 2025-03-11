@@ -7,7 +7,7 @@ import {
   Search, 
   Filter, 
   Store, 
-  Buildings, 
+  Building, 
   Trash2, 
   Edit, 
   Plus,
