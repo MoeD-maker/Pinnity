@@ -1,0 +1,44 @@
+Please modify the redemption mechanism in the app to implement a vendor-provided code approach instead of the current customer-generated code. Make the following changes:
+
+1. VENDOR DASHBOARD - Redemption Verification Section:
+   - Create a new "Verify Redemption" section in the vendor dashboard
+   - Implement a searchable/filterable list view of all active deals from the business
+   - For each deal, display:
+     * Deal title
+     * Deal type (percent off, BOGO, etc.)
+     * Start/end dates
+     * Redemption PIN code (prominently displayed)
+     * Total redemptions used/available
+   - Add a quick-copy button next to each PIN
+   - Add a search function to filter deals by title or category
+   - Group deals by status (active, upcoming, expired)
+
+2. KEEP EXISTING PIN GENERATION IN DEAL CREATION:
+   - Maintain the current "generate pin" functionality in create.tsx
+   - Continue allowing vendors to either generate a random code or input their own
+   - Add a small informational tooltip explaining that "This pin will be provided to customers at redemption time"
+
+3. CUSTOMER SIDE CHANGES:
+   - Modify the DealDetail.tsx component to change the redemption flow
+   - In the "How to Redeem" tab, update the instructions to explain the new process:
+     * "1. Visit [Business Name]"
+     * "2. Request the redemption pin from staff"
+     * "3. Enter the pin below to redeem your deal"
+   - Replace the current redemption code display with a PIN entry field
+   - Add a "Redeem" button that validates the entered PIN against the deal's stored PIN
+   - Show appropriate success/error messages based on PIN validation and redemption limits
+
+4. BACKEND VERIFICATION LOGIC:
+   - Update the redemption API endpoint to verify:
+     * The entered PIN matches the deal's PIN
+     * The user hasn't exceeded redemption limits
+     * The deal is still active
+   - Track individual user redemptions in the database as before
+   - Ensure the vendor can see real-time redemption counts
+
+5. FLOW IMPROVEMENTS:
+   - Add visual confirmation on successful redemption
+   - Create a "Recently Redeemed" section in the user's profile
+   - Implement error handling for incorrect PINs with helpful messages
+
+Please update all necessary components to maintain UI consistency and ensure the redemption process is intuitive for both vendors and customers.
