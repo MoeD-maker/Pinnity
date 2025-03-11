@@ -188,9 +188,10 @@ export default function CreateDealPage() {
     }
   }
   
-  // Generate a random redemption code
+  // Generate a random redemption PIN code
   function generateRandomCode() {
-    return Math.floor(1000 + Math.random() * 9000).toString();
+    // Generate a 6-digit PIN for redemption
+    return Math.floor(100000 + Math.random() * 900000).toString();
   }
   
   return (
@@ -465,21 +466,21 @@ export default function CreateDealPage() {
               <Alert className="bg-blue-50 border-blue-200">
                 <Info className="h-4 w-4 text-blue-500" />
                 <AlertDescription className="text-blue-700">
-                  Customers will need to show this deal to you and enter the redemption code to complete the transaction.
+                  You will provide customers with a unique PIN at the time of redemption. Customers will enter this PIN in their app to confirm the deal.
                 </AlertDescription>
               </Alert>
               
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="redemptionCode">
-                    Redemption Code <span className="text-red-500">*</span>
-                    <span className="ml-2 text-xs text-gray-500">(Used to verify the deal)</span>
+                    Redemption PIN <span className="text-red-500">*</span>
+                    <span className="ml-2 text-xs text-gray-500">(Your staff will provide this to customers)</span>
                   </Label>
                   <div className="flex">
                     <Input 
                       id="redemptionCode" 
-                      placeholder="e.g. ABC123" 
-                      maxLength={10}
+                      placeholder="e.g. 123456" 
+                      maxLength={6}
                       className="text-center font-mono text-lg tracking-wider"
                       {...form.register("redemptionCode")}
                     />
@@ -489,14 +490,14 @@ export default function CreateDealPage() {
                       className="ml-2"
                       onClick={() => form.setValue("redemptionCode", generateRandomCode())}
                     >
-                      Generate
+                      Generate PIN
                     </Button>
                   </div>
                   {form.formState.errors.redemptionCode && (
                     <p className="text-sm text-red-500">{form.formState.errors.redemptionCode.message}</p>
                   )}
                   <p className="text-xs text-gray-500">
-                    This code should be kept confidential and only shared during redemption
+                    This PIN must be kept secure and only provided to customers when they redeem the deal in person
                   </p>
                 </div>
                 
@@ -509,7 +510,7 @@ export default function CreateDealPage() {
                     {...form.register("redemptionInstructions")}
                   />
                   <p className="text-xs text-gray-500">
-                    For example: "Show this deal to the cashier", "Available only during happy hour 4-6 PM"
+                    For example: "Must present valid ID", "Available only during business hours", "Limit one per customer"
                   </p>
                 </div>
               </div>
@@ -517,14 +518,15 @@ export default function CreateDealPage() {
               <div className="p-4 bg-gray-50 rounded-lg border mt-6">
                 <h3 className="font-medium mb-2 flex items-center">
                   <Clock className="h-4 w-4 mr-2 text-[#00796B]" />
-                  Redemption Preview
+                  New Redemption Process
                 </h3>
                 <div className="p-4 border rounded-md bg-white">
-                  <p className="text-sm mb-4">This is how customers will redeem your deal:</p>
+                  <p className="text-sm mb-4">This is how the new PIN-based redemption works:</p>
                   <ol className="list-decimal list-inside space-y-2 text-sm">
+                    <li>Customer visits your business and requests to redeem the deal</li>
                     <li>Customer shows the deal on their Pinnity app</li>
-                    <li>You verify and provide the product/service</li>
-                    <li>Customer enters the redemption code: <span className="font-mono font-bold">{watchedValues.redemptionCode}</span></li>
+                    <li>Your staff provides the redemption PIN: <span className="font-mono font-bold">{watchedValues.redemptionCode}</span></li>
+                    <li>Customer enters the PIN in their app to confirm redemption</li>
                     <li>Deal is marked as redeemed in the system</li>
                   </ol>
                 </div>
@@ -602,7 +604,7 @@ export default function CreateDealPage() {
                 )}
                 
                 <div className="space-y-1">
-                  <p className="text-sm font-medium">Redemption Code</p>
+                  <p className="text-sm font-medium">Redemption PIN</p>
                   <p className="text-sm font-mono">{watchedValues.redemptionCode}</p>
                 </div>
                 

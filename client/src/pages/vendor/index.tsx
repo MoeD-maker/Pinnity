@@ -337,28 +337,78 @@ export default function VendorDashboard() {
             <div className="max-w-md mx-auto">
               <div className="mb-6">
                 <h3 className="font-medium mb-4">Customer Verification</h3>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Verify customer redemption
-                </label>
-                <div className="mt-1 flex items-center">
-                  <input
-                    type="text"
-                    className="shadow-sm focus:ring-[#00796B] focus:border-[#00796B] block w-full sm:text-sm border-gray-300 p-2 border rounded-md"
-                    placeholder="Enter customer code"
-                    maxLength={6}
-                  />
-                  <Button className="ml-3 bg-[#00796B] hover:bg-[#004D40]">
-                    Verify
-                  </Button>
+                  
+                {/* Step 1 */}
+                <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h4 className="font-medium text-blue-800 mb-2 flex items-center">
+                    <div className="bg-blue-100 w-5 h-5 rounded-full flex items-center justify-center mr-2 text-xs font-bold text-blue-800">1</div>
+                    Customer shows deal in their Pinnity app
+                  </h4>
+                  <p className="text-sm text-blue-700 pl-7">
+                    Verify the deal details and confirm it's valid and not expired
+                  </p>
                 </div>
-                <p className="mt-2 text-sm text-gray-500">
-                  Verify the code provided by the customer to validate their redemption
-                </p>
+                
+                {/* Step 2 */}
+                <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h4 className="font-medium text-blue-800 mb-2 flex items-center">
+                    <div className="bg-blue-100 w-5 h-5 rounded-full flex items-center justify-center mr-2 text-xs font-bold text-blue-800">2</div>
+                    Provide your redemption PIN
+                  </h4>
+                  <p className="text-sm text-blue-700 pl-7 mb-3">
+                    Give the customer the PIN from your deal that they need to enter in their app
+                  </p>
+                  <div className="pl-7">
+                    <div className="flex items-center">
+                      <select 
+                        className="border border-blue-300 rounded-md p-2 text-sm w-full bg-white focus:ring-[#00796B] focus:border-[#00796B]"
+                      >
+                        <option value="">-- Select a deal --</option>
+                        {deals.map(deal => (
+                          <option key={deal.id} value={deal.id}>
+                            {deal.title} ({deal.redemptionCode || 'No PIN'})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Step 3 */}
+                <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h4 className="font-medium text-blue-800 mb-2 flex items-center">
+                    <div className="bg-blue-100 w-5 h-5 rounded-full flex items-center justify-center mr-2 text-xs font-bold text-blue-800">3</div>
+                    Confirm redemption
+                  </h4>
+                  <p className="text-sm text-blue-700 pl-7 mb-3">
+                    Watch as customer enters PIN and receives confirmation
+                  </p>
+                </div>
               </div>
 
               <div className="mb-4">
                 <h3 className="font-medium mb-2">Recent Redemptions</h3>
-                <p className="text-sm text-gray-500 mb-4">No recent redemptions found</p>
+                {deals.length > 0 && deals.some(d => d.redemptionCount > 0) ? (
+                  <div className="mt-3 divide-y border rounded-md overflow-hidden">
+                    {deals.filter(d => d.redemptionCount > 0).map(deal => (
+                      <div key={deal.id} className="p-3 bg-white hover:bg-gray-50">
+                        <div className="flex justify-between">
+                          <div>
+                            <p className="font-medium text-sm">{deal.title}</p>
+                            <p className="text-xs text-gray-500">
+                              {deal.redemptionCount} redemptions
+                            </p>
+                          </div>
+                          <Button variant="ghost" size="sm" className="h-8 text-xs">
+                            View Details
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 mb-4">No recent redemptions found</p>
+                )}
               </div>
             </div>
           </div>
