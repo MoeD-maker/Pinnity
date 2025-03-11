@@ -150,10 +150,10 @@ export default function ExplorePage() {
   };
 
   return (
-    <div className="container max-w-7xl mx-auto p-4">
+    <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-primary">Explore Deals</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-primary">Explore Deals</h1>
           <p className="text-muted-foreground mt-1">
             Discover local deals and promotions
           </p>
@@ -181,7 +181,7 @@ export default function ExplorePage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4 sm:gap-6">
         {/* Categories sidebar */}
         <Card className="h-fit sticky top-20 hidden lg:block">
           <CardContent className="p-4">
@@ -229,11 +229,11 @@ export default function ExplorePage() {
           </CardContent>
         </Card>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Mobile category filter */}
           {showFilters && (
-            <Card className="lg:hidden">
-              <CardContent className="pt-6">
+            <Card className="lg:hidden overflow-hidden">
+              <CardContent className="p-3 sm:pt-6">
                 <CategoryFilter
                   selectedCategories={selectedCategories}
                   onChange={handleCategoryChange}
@@ -245,9 +245,9 @@ export default function ExplorePage() {
           )}
 
           {/* Location indicator */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4" />
-            <span>Showing deals near San Francisco, CA</span>
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            <MapPin className="h-4 w-4 flex-shrink-0" />
+            <span className="mr-1">Showing deals near San Francisco, CA</span>
             <Button variant="link" className="p-0 h-auto" size="sm">
               Change
             </Button>
@@ -255,7 +255,7 @@ export default function ExplorePage() {
 
           {/* Deal grid */}
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
               {Array.from({ length: 9 }).map((_, i) => (
                 <Card key={i}>
                   <CardContent className="p-0">
@@ -293,7 +293,7 @@ export default function ExplorePage() {
           if (!open) setSelectedDealId(null);
         }}
       >
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-[calc(100%-32px)] max-w-full sm:max-w-2xl p-3 sm:p-6 max-h-[90vh] overflow-y-auto">
           {selectedDealId && (
             <DealDetail
               dealId={selectedDealId}

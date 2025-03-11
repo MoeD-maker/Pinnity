@@ -187,10 +187,10 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="container max-w-7xl mx-auto p-4">
+    <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-4">
       {/* Header section */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-primary mb-2">Discover Local Deals</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-primary mb-2">Discover Local Deals</h1>
         <p className="text-muted-foreground">Find and save the best deals near you</p>
       </div>
 
@@ -214,7 +214,7 @@ export default function Dashboard() {
             className="flex items-center gap-2"
           >
             <ListFilterIcon className="h-4 w-4" />
-            Filters
+            <span className="inline-block">Filters</span>
             {showFilters ? (
               <ChevronUp className="h-3 w-3 ml-0.5" />
             ) : (
@@ -243,8 +243,8 @@ export default function Dashboard() {
 
       {/* Category filter section */}
       {showFilters && (
-        <Card className="mb-6">
-          <CardContent className="pt-6">
+        <Card className="mb-6 overflow-hidden">
+          <CardContent className="p-3 sm:pt-6">
             <div className="flex flex-col gap-4">
               <CategoryFilter 
                 selectedCategories={selectedCategories}
