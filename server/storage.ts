@@ -77,9 +77,8 @@ export interface IStorage {
   getUserRedemptions(userId: number): Promise<(DealRedemption & { deal: Deal & { business: Business } })[]>;
   getDealRedemptions(dealId: number): Promise<DealRedemption[]>;
   createRedemption(userId: number, dealId: number): Promise<DealRedemption>;
-  updateRedemptionStatus(id: number, status: string, verificationCode?: string): Promise<DealRedemption>;
+  updateRedemptionStatus(id: number, status: string): Promise<DealRedemption>;
   verifyRedemptionCode(dealId: number, code: string): Promise<boolean>;
-  generateVerificationCode(dealId: number): Promise<string>;
   
   // Notification preferences methods
   getUserNotificationPreferences(userId: number): Promise<UserNotificationPreferences | undefined>;
@@ -1060,32 +1059,7 @@ export class MemStorage implements IStorage {
       throw new Error("Deal not found");
     }
     
-    // First try to match with deal's vendor verification code
-    if (deal.vendorVerificationCode === code) {
-      return true;
-    }
-    
-    // For backward compatibility, check the old redemption code
     return deal.redemptionCode === code;
-  }
-  
-  async generateVerificationCode(dealId: number): Promise<string> {
-    const deal = this.deals.get(dealId);
-    if (!deal) {
-      throw new Error("Deal not found");
-    }
-    
-    // Generate a random 4-digit code between 1000-9999
-    const code = Math.floor(1000 + Math.random() * 9000).toString();
-    
-    // Update the deal with the new verification code
-    const updatedDeal: Deal = {
-      ...deal,
-      vendorVerificationCode: code
-    };
-    
-    this.deals.set(dealId, updatedDeal);
-    return code;
   }
   
   // User favorites methods
@@ -1177,20 +1151,14 @@ export class MemStorage implements IStorage {
       userId,
       dealId,
       redeemedAt: new Date(),
-      status: "pending", // Changed from "redeemed" to "pending"
-      verificationCode: null, // Will be set when the vendor verifies
-      verifiedAt: null // Will be set when the vendor verifies
+      status: "redeemed",
     };
     
     this.dealRedemptions.set(id, redemption);
-    
-    // Increment the redemption count for the deal
-    await this.incrementDealRedemptions(dealId);
-    
     return redemption;
   }
 
-  async updateRedemptionStatus(id: number, status: string, verificationCode?: string): Promise<DealRedemption> {
+  async updateRedemptionStatus(id: number, status: string): Promise<DealRedemption> {
     const redemption = this.dealRedemptions.get(id);
     if (!redemption) {
       throw new Error("Redemption not found");
@@ -1200,16 +1168,6 @@ export class MemStorage implements IStorage {
       ...redemption,
       status,
     };
-    
-    // If verification code is provided, add it and update the verified timestamp
-    if (verificationCode) {
-      updatedRedemption.verificationCode = verificationCode;
-      
-      // If status is being set to verified, update verification timestamp
-      if (status === 'verified') {
-        updatedRedemption.verifiedAt = new Date();
-      }
-    }
     
     this.dealRedemptions.set(id, updatedRedemption);
     return updatedRedemption;

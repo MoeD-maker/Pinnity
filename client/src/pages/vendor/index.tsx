@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { 
   PlusCircle, BarChart3, Calendar, Tag, Settings, FileText, Store, 
   PackageOpen, Bell, CheckCircle, AlertCircle, Clock, HelpCircle, Star,
-  Search, Copy, RefreshCw, Shield
+  Search, Copy
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -17,7 +17,6 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import BusinessRatingSummary from '@/components/ratings/BusinessRatingSummary';
 
 // Define status colors for consistent use across components
@@ -33,14 +32,11 @@ const statusColors: Record<string, string> = {
 
 export default function VendorDashboard() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [business, setBusiness] = useState<any>(null);
   const [deals, setDeals] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const { toast } = useToast();
-  const [selectedDealId, setSelectedDealId] = useState<number | null>(null);
-  const [redemptionId, setRedemptionId] = useState<string>('');
   const [stats, setStats] = useState({
     activeDeals: 0,
     viewCount: 0,
@@ -100,70 +96,6 @@ export default function VendorDashboard() {
 
   const handleCreateDeal = () => {
     setLocation('/vendor/deals/create');
-  };
-  
-  // This functionality has been replaced with verification by redemption ID
-  
-  // Verify redemption code mutation
-  const verifyCodeMutation = useMutation({
-    mutationFn: async ({ dealId, redemptionId }: { dealId: number, redemptionId: string }) => {
-      return apiRequest(`/api/deals/${dealId}/verify-code`, {
-        method: 'POST',
-        data: {
-          redemptionId
-        }
-      });
-    },
-    onSuccess: (data) => {
-      if (data.valid) {
-        toast({
-          title: "Verification Successful",
-          description: "Deal has been successfully redeemed",
-        });
-        setRedemptionId('');
-        // Refresh deals list
-        queryClient.invalidateQueries({ queryKey: [`/api/business/${business?.id}/deals`] });
-      } else {
-        toast({
-          title: "Verification Failed",
-          description: "Invalid redemption ID",
-          variant: "destructive"
-        });
-      }
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to verify redemption",
-        variant: "destructive"
-      });
-      console.error("Verify redemption error:", error);
-    }
-  });
-  
-  const handleVerifyCode = () => {
-    if (!selectedDealId) {
-      toast({
-        title: "No Deal Selected",
-        description: "Please select a deal first",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (!redemptionId) {
-      toast({
-        title: "Missing Redemption ID",
-        description: "Please enter the redemption ID from the customer's app",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    verifyCodeMutation.mutate({
-      dealId: selectedDealId,
-      redemptionId
-    });
   };
 
   if (loading) {
@@ -338,8 +270,9 @@ export default function VendorDashboard() {
                     <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Deal</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Type</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Date Range</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Redemption PIN</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Redemptions</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Status</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-500"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -358,6 +291,25 @@ export default function VendorDashboard() {
                         <td className="px-4 py-4 text-sm">{deal.dealType?.replace('_', ' ') || '-'}</td>
                         <td className="px-4 py-4 text-sm">
                           {format(new Date(deal.startDate), 'MM/dd/yyyy')} - {format(new Date(deal.endDate), 'MM/dd/yyyy')}
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex items-center space-x-2">
+                            <span className="font-mono text-base font-bold">{deal.redemptionCode}</span>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 w-6 p-0" 
+                              onClick={() => {
+                                navigator.clipboard.writeText(deal.redemptionCode);
+                                toast({
+                                  title: "PIN Copied",
+                                  description: "Redemption PIN copied to clipboard"
+                                });
+                              }}
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
                         </td>
                         <td className="px-4 py-4 text-sm">
                           <span>{deal.redemptionCount || 0}/{deal.totalRedemptions || '∞'}</span>
@@ -390,10 +342,10 @@ export default function VendorDashboard() {
                 <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <h4 className="font-medium text-blue-800 mb-2 flex items-center">
                     <div className="bg-blue-100 w-5 h-5 rounded-full flex items-center justify-center mr-2 text-xs font-bold text-blue-800">1</div>
-                    Select a deal to verify
+                    Customer shows deal in their Pinnity app
                   </h4>
-                  <p className="text-sm text-blue-700 pl-7 mb-3">
-                    Choose the deal the customer is trying to redeem
+                  <p className="text-sm text-blue-700 pl-7">
+                    Verify the deal details and confirm it's valid and not expired
                   </p>
                 </div>
                 
@@ -401,35 +353,23 @@ export default function VendorDashboard() {
                 <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <h4 className="font-medium text-blue-800 mb-2 flex items-center">
                     <div className="bg-blue-100 w-5 h-5 rounded-full flex items-center justify-center mr-2 text-xs font-bold text-blue-800">2</div>
-                    Verify the customer's redemption ID
+                    Provide your redemption PIN
                   </h4>
                   <p className="text-sm text-blue-700 pl-7 mb-3">
-                    Ask the customer to show you their redemption ID from the Pinnity app
+                    Give the customer the PIN for your deal that they will enter in their app
                   </p>
                   <div className="pl-7">
-                    <div className="flex flex-col space-y-2">
-                      <div className="flex items-center gap-2">
-                        <select 
-                          value={selectedDealId || ""}
-                          onChange={(e) => setSelectedDealId(e.target.value ? parseInt(e.target.value) : null)}
-                          className="border border-blue-300 rounded-md p-2 text-sm w-full bg-white focus:ring-[#00796B] focus:border-[#00796B]"
-                        >
-                          <option value="">-- Select a deal --</option>
-                          {deals.map(deal => (
-                            <option key={deal.id} value={deal.id}>
-                              {deal.title}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      
-                      <input
-                        type="text"
-                        placeholder="Enter customer's redemption ID"
-                        value={redemptionId}
-                        onChange={(e) => setRedemptionId(e.target.value)}
-                        className="border border-blue-300 rounded-md p-2 text-sm w-full bg-white focus:ring-[#00796B] focus:border-[#00796B] font-mono"
-                      />
+                    <div className="flex items-center">
+                      <select 
+                        className="border border-blue-300 rounded-md p-2 text-sm w-full bg-white focus:ring-[#00796B] focus:border-[#00796B]"
+                      >
+                        <option value="">-- Select a deal --</option>
+                        {deals.map(deal => (
+                          <option key={deal.id} value={deal.id}>
+                            {deal.title} ({deal.redemptionCode || 'No PIN'})
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                 </div>
@@ -438,34 +378,11 @@ export default function VendorDashboard() {
                 <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <h4 className="font-medium text-blue-800 mb-2 flex items-center">
                     <div className="bg-blue-100 w-5 h-5 rounded-full flex items-center justify-center mr-2 text-xs font-bold text-blue-800">3</div>
-                    Provide the deal to the customer
+                    Confirm redemption
                   </h4>
                   <p className="text-sm text-blue-700 pl-7 mb-3">
-                    After successful verification, provide the customer with their deal as described
+                    Watch as the customer enters the PIN and receives confirmation
                   </p>
-                  
-                  <div className="pl-7">
-                    <div className="flex flex-col space-y-2">
-                      <Button 
-                        variant="default"
-                        className="w-full bg-[#00796B] hover:bg-[#004D40]"
-                        onClick={handleVerifyCode}
-                        disabled={!selectedDealId || !redemptionId || verifyCodeMutation.isPending}
-                      >
-                        {verifyCodeMutation.isPending ? (
-                          <>
-                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                            Verifying...
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Verify Redemption
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
                 </div>
               </div>
 

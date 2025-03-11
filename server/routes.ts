@@ -871,50 +871,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid deal ID" });
       }
       
-      const { redemptionId } = req.body;
-      
-      if (!redemptionId) {
-        return res.status(400).json({ message: "Redemption ID is required" });
+      const { code } = req.body;
+      if (!code) {
+        return res.status(400).json({ message: "Redemption code is required" });
       }
       
-      try {
-        // Get the redemption by ID
-        const redemptionIdNum = parseInt(redemptionId);
-        
-        // Update the redemption status to verified
-        await storage.updateRedemptionStatus(
-          redemptionIdNum,
-          "verified"
-        );
-        
-        // Return successful verification response
-        return res.status(200).json({ valid: true });
-      } catch (innerError) {
-        console.error("Verify redemption error:", innerError);
-        return res.status(400).json({ valid: false, message: "Invalid redemption ID" });
-      }
+      const isValid = await storage.verifyRedemptionCode(dealId, code);
+      
+      return res.status(200).json({ valid: isValid });
     } catch (error) {
       console.error("Verify redemption code error:", error);
-      if (error instanceof Error) {
-        return res.status(400).json({ message: error.message });
-      }
-      return res.status(500).json({ message: "Internal server error" });
-    }
-  });
-  
-  // This endpoint is deprecated as we've moved to redemptionId-based verification
-  // Keeping it for backward compatibility
-  app.post("/api/deals/:dealId/generate-code", authenticate, authorize(['business']), async (req: Request, res: Response) => {
-    try {
-      const dealId = parseInt(req.params.dealId);
-      if (isNaN(dealId)) {
-        return res.status(400).json({ message: "Invalid deal ID" });
-      }
-      
-      // Return a dummy code since we're not using PIN verification anymore
-      return res.status(200).json({ code: "DEPRECATED" });
-    } catch (error) {
-      console.error("Generate verification code error:", error);
       if (error instanceof Error) {
         return res.status(400).json({ message: error.message });
       }
