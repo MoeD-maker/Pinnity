@@ -90,8 +90,8 @@ export default function CategoryFilter({
         )}
       </div>
       
-      <ScrollArea className="w-full whitespace-nowrap pb-4">
-        <div className="flex gap-2 pb-2 pr-6 px-1 min-w-0">
+      <ScrollArea className="w-full">
+        <div className="flex flex-wrap sm:flex-nowrap gap-2 py-1">
           {CATEGORIES.map(category => (
             <CategoryBadge
               key={category.id}

@@ -188,7 +188,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="container max-w-7xl mx-auto px-2 sm:px-4 py-4 overflow-hidden">
+    <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-4">
       {/* Header section */}
       <div className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-primary mb-2">Discover Local Deals</h1>
@@ -342,7 +342,7 @@ export default function Dashboard() {
           if (!open) handleDetailClose();
         }}
       >
-        <DialogContent className="w-[calc(100%-24px)] sm:max-w-2xl p-3 sm:p-6 max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl p-4 sm:p-6 max-h-[85vh] overflow-y-auto">
           {selectedDeal !== null && (
             <DealDetail 
               dealId={selectedDeal} 

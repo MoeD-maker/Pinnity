@@ -150,7 +150,7 @@ export default function ExplorePage() {
   };
 
   return (
-    <div className="container max-w-7xl mx-auto px-2 sm:px-4 py-4 overflow-hidden">
+    <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-primary">Explore Deals</h1>
@@ -293,7 +293,7 @@ export default function ExplorePage() {
           if (!open) setSelectedDealId(null);
         }}
       >
-        <DialogContent className="w-[calc(100%-24px)] sm:max-w-2xl p-3 sm:p-6 max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl p-4 sm:p-6 max-h-[85vh] overflow-y-auto">
           {selectedDealId && (
             <DealDetail
               dealId={selectedDealId}
