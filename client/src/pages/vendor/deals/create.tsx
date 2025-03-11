@@ -235,7 +235,7 @@ export default function CreateDealPage() {
       category: '',
       description: '',
       dealType: '',
-      startDate: new Date(),
+      startDate: new Date(new Date().setHours(new Date().getHours() + 24)), // Default to 24 hours in future
       endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)), // Default to 1 month duration
       maxRedemptionsPerCustomer: 1,
       // All standard terms selected by default
@@ -255,6 +255,19 @@ export default function CreateDealPage() {
   // Initialize terms when component mounts
   useEffect(() => {
     updateCombinedTerms();
+    
+    // Validate start date is at least 24 hours in future
+    const startDate = form.getValues("startDate");
+    if (startDate) {
+      const tomorrow = new Date();
+      tomorrow.setHours(tomorrow.getHours() + 24);
+      if (startDate < tomorrow) {
+        form.setError("startDate", {
+          type: "manual",
+          message: "Please select a start date at least 24 hours in the future to allow for approval."
+        });
+      }
+    }
   }, []);
   
   // Update deal-type specific terms when deal type changes
@@ -531,7 +544,23 @@ export default function CreateDealPage() {
                       <Calendar
                         mode="single"
                         selected={watchedValues.startDate}
-                        onSelect={(date) => form.setValue("startDate", date || new Date())}
+                        onSelect={(date) => {
+                          form.setValue("startDate", date || new Date());
+                          
+                          // Check if selected date is less than 24 hours in the future
+                          if (date) {
+                            const tomorrow = new Date();
+                            tomorrow.setHours(tomorrow.getHours() + 24);
+                            if (date < tomorrow) {
+                              form.setError("startDate", {
+                                type: "manual",
+                                message: "Please select a start date at least 24 hours in the future to allow for approval."
+                              });
+                            } else {
+                              form.clearErrors("startDate");
+                            }
+                          }
+                        }}
                         initialFocus
                       />
                     </PopoverContent>
@@ -572,6 +601,13 @@ export default function CreateDealPage() {
                   )}
                 </div>
               </div>
+              
+              <Alert className="bg-amber-50 border-amber-200 mt-2">
+                <AlertTriangle className="h-4 w-4 text-amber-500" />
+                <AlertDescription className="text-amber-700 text-sm">
+                  Please allow up to 24 hours for deal approval before your deal goes live.
+                </AlertDescription>
+              </Alert>
               
               <Separator />
               
