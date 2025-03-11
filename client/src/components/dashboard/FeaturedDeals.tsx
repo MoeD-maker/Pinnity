@@ -164,7 +164,7 @@ export default function FeaturedDeals({ deals, isLoading, onSelect }: FeaturedDe
   }
 
   return (
-    <div className="flex overflow-x-auto gap-4 pb-4 hide-scrollbar">
+    <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 -mx-3 px-3 sm:mx-0 sm:px-0">
       {deals.map((deal) => (
         <FeaturedDealCard 
           key={deal.id} 
@@ -194,7 +194,7 @@ function FeaturedDealCard({ deal, onSelect }: FeaturedDealCardProps) {
   return (
     <Card 
       ref={ref} 
-      className="overflow-hidden flex-shrink-0 w-[280px] cursor-pointer transition-all hover:shadow-md"
+      className="overflow-hidden flex-shrink-0 w-[250px] sm:w-[280px] cursor-pointer transition-all hover:shadow-md"
       onClick={onSelect}
     >
       {inView ? (
@@ -240,7 +240,7 @@ function FeaturedDealCard({ deal, onSelect }: FeaturedDealCardProps) {
 // Skeleton for loading state
 function FeaturedDealSkeleton() {
   return (
-    <Card className="overflow-hidden flex-shrink-0 w-[280px]">
+    <Card className="overflow-hidden flex-shrink-0 w-[250px] sm:w-[280px]">
       <div className="aspect-[4/3]">
         <Skeleton className="h-full w-full" />
       </div>

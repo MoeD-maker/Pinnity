@@ -118,11 +118,11 @@ function DealCard({ deal, onSelect }: DealCardProps) {
         <div className="aspect-video bg-muted animate-pulse" />
       )}
       
-      <CardHeader className="p-4 pb-2">
+      <CardHeader className="p-3 sm:p-4 pb-2">
         <div className="flex justify-between items-start">
-          <div>
-            <div className="flex flex-wrap gap-2 mb-2">
-              <Badge variant="outline">
+          <div className="w-full">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-2">
+              <Badge variant="outline" className="text-xs">
                 {deal.category}
               </Badge>
               {isExpired(deal) ? (
@@ -131,16 +131,16 @@ function DealCard({ deal, onSelect }: DealCardProps) {
                 <ExpiringSoonBadge deal={deal} />
               )}
             </div>
-            <h3 className="font-semibold text-lg line-clamp-1">{deal.title}</h3>
-            <p className="text-sm text-muted-foreground line-clamp-1">
+            <h3 className="font-semibold text-base sm:text-lg line-clamp-1">{deal.title}</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">
               {deal.business.businessName}
             </p>
           </div>
         </div>
       </CardHeader>
       
-      <CardContent className="p-4 pt-0">
-        <p className="text-sm line-clamp-2 mb-2">
+      <CardContent className="p-3 sm:p-4 pt-0">
+        <p className="text-xs sm:text-sm line-clamp-2 mb-2">
           {deal.description}
         </p>
         
@@ -152,8 +152,8 @@ function DealCard({ deal, onSelect }: DealCardProps) {
         </div>
       </CardContent>
       
-      <CardFooter className="p-4 pt-0">
-        <Button onClick={onSelect} className="w-full">
+      <CardFooter className="p-3 sm:p-4 pt-0">
+        <Button onClick={onSelect} className="w-full text-sm h-9">
           View Deal
         </Button>
       </CardFooter>
@@ -167,17 +167,17 @@ function DealCardSkeleton() {
       <div className="aspect-video">
         <Skeleton className="h-full w-full" />
       </div>
-      <CardHeader className="p-4 pb-2">
+      <CardHeader className="p-3 sm:p-4 pb-2">
         <Skeleton className="h-5 w-20 mb-2" />
-        <Skeleton className="h-6 w-full mb-1" />
-        <Skeleton className="h-4 w-2/3" />
+        <Skeleton className="h-5 sm:h-6 w-full mb-1" />
+        <Skeleton className="h-3 sm:h-4 w-2/3" />
       </CardHeader>
-      <CardContent className="p-4 pt-0">
-        <Skeleton className="h-4 w-full mb-1" />
-        <Skeleton className="h-4 w-full mb-2" />
+      <CardContent className="p-3 sm:p-4 pt-0">
+        <Skeleton className="h-3 sm:h-4 w-full mb-1" />
+        <Skeleton className="h-3 sm:h-4 w-full mb-2" />
         <Skeleton className="h-3 w-1/2" />
       </CardContent>
-      <CardFooter className="p-4 pt-0">
+      <CardFooter className="p-3 sm:p-4 pt-0">
         <Skeleton className="h-9 w-full" />
       </CardFooter>
     </Card>
