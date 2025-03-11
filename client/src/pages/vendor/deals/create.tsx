@@ -773,10 +773,9 @@ export default function CreateDealPage() {
               <div className="p-4 bg-gray-50 rounded-lg border mt-6">
                 <h3 className="font-medium mb-2 flex items-center">
                   <Clock className="h-4 w-4 mr-2 text-[#00796B]" />
-                  New Redemption Process
+                  Redemption Process
                 </h3>
                 <div className="p-4 border rounded-md bg-white">
-                  <p className="text-sm mb-4">This is how the new PIN-based redemption works:</p>
                   <ol className="list-decimal list-inside space-y-2 text-sm">
                     <li>Customer visits your business and requests to redeem the deal</li>
                     <li>Customer shows the deal on their Pinnity app</li>
