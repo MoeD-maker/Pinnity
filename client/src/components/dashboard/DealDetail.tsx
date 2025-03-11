@@ -250,15 +250,15 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                   </div>
                 </div>
 
-                <div className="bg-card rounded-lg p-5 border shadow-sm">
-                  <h3 className="font-medium mb-3">Deal Validity</h3>
-                  <div className="flex items-start gap-3">
-                    <div className="bg-muted p-2 rounded-md">
-                      <Calendar className="h-4 w-4 text-primary" />
+                <div className="bg-card rounded-lg p-4 sm:p-5 border shadow-sm">
+                  <h3 className="font-medium mb-3 text-sm sm:text-base">Deal Validity</h3>
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <div className="bg-muted p-1.5 sm:p-2 rounded-md">
+                      <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
                     </div>
-                    <div className="mt-1">
-                      <p>Valid until {format(new Date(deal.endDate), 'MMMM d, yyyy')}</p>
-                      <p className="text-sm text-muted-foreground">
+                    <div className="mt-0.5 sm:mt-1">
+                      <p className="text-xs sm:text-sm">Valid until {format(new Date(deal.endDate), 'MMMM d, yyyy')}</p>
+                      <p className="text-xs text-muted-foreground">
                         Expires {formatDistanceToNow(new Date(deal.endDate), { addSuffix: true })}
                       </p>
                     </div>
@@ -266,9 +266,9 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                 </div>
 
                 {deal.terms && (
-                  <div className="bg-card rounded-lg p-5 border shadow-sm">
-                    <h3 className="font-medium mb-3">Terms & Conditions</h3>
-                    <p className="text-sm text-muted-foreground whitespace-pre-line">
+                  <div className="bg-card rounded-lg p-4 sm:p-5 border shadow-sm">
+                    <h3 className="font-medium mb-3 text-sm sm:text-base">Terms & Conditions</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground whitespace-pre-line">
                       {deal.terms}
                     </p>
                   </div>
@@ -276,56 +276,56 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
               </TabsContent>
               
               <TabsContent value="redeem" className="mt-6 pb-4">
-                <div className="bg-card rounded-lg p-6 border shadow-sm">
-                  <div className="text-center mb-6">
-                    <div className="bg-primary/10 inline-flex p-3 rounded-full mb-3">
-                      <Award className="h-10 w-10 text-primary" />
+                <div className="bg-card rounded-lg p-4 sm:p-6 border shadow-sm">
+                  <div className="text-center mb-5 sm:mb-6">
+                    <div className="bg-primary/10 inline-flex p-2 sm:p-3 rounded-full mb-2 sm:mb-3">
+                      <Award className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
                     </div>
-                    <h3 className="text-xl font-medium mb-1">How to redeem this deal</h3>
-                    <p className="text-muted-foreground">
+                    <h3 className="text-lg sm:text-xl font-medium mb-1">How to redeem this deal</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       Follow these simple steps to claim your offer
                     </p>
                   </div>
 
-                  <div className="space-y-6 mb-8">
-                    <div className="flex items-start gap-4">
-                      <div className="bg-primary text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <div className="space-y-4 sm:space-y-6 mb-6 sm:mb-8">
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className="bg-primary text-primary-foreground w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                         1
                       </div>
                       <div>
-                        <h4 className="font-medium text-base">Visit {deal.business.businessName}</h4>
-                        <p className="text-sm text-muted-foreground">
+                        <h4 className="font-medium text-sm sm:text-base">Visit {deal.business.businessName}</h4>
+                        <p className="text-xs sm:text-sm text-muted-foreground">
                           Go to the business location during operating hours
                         </p>
                       </div>
                     </div>
                     
-                    <div className="flex items-start gap-4">
-                      <div className="bg-primary text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className="bg-primary text-primary-foreground w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                         2
                       </div>
                       <div>
-                        <h4 className="font-medium text-base">Get the redemption PIN from staff</h4>
-                        <p className="text-sm text-muted-foreground">
+                        <h4 className="font-medium text-sm sm:text-base">Get the redemption PIN from staff</h4>
+                        <p className="text-xs sm:text-sm text-muted-foreground">
                           The business staff will provide you with the deal's redemption PIN
                         </p>
                       </div>
                     </div>
                     
-                    <div className="flex items-start gap-4">
-                      <div className="bg-primary text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className="bg-primary text-primary-foreground w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                         3
                       </div>
                       <div>
-                        <h4 className="font-medium text-base">Enter the PIN below to redeem</h4>
-                        <p className="text-sm text-muted-foreground">
+                        <h4 className="font-medium text-sm sm:text-base">Enter the PIN below to redeem</h4>
+                        <p className="text-xs sm:text-sm text-muted-foreground">
                           Enter the PIN provided by the staff to confirm your redemption
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  <div className={`mt-8 p-6 border-2 rounded-lg 
+                  <div className={`mt-6 sm:mt-8 p-4 sm:p-6 border-2 rounded-lg 
                     ${verificationStatus === 'success' 
                      ? 'bg-green-50 border-green-200' 
                      : verificationStatus === 'error' 
@@ -340,16 +340,16 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                     
                     {verificationStatus === 'success' ? (
                       <div className="flex flex-col items-center">
-                        <div className="bg-green-100 p-3 rounded-full mb-3">
-                          <CheckCircle className="h-8 w-8 text-green-600" />
+                        <div className="bg-green-100 p-2 sm:p-3 rounded-full mb-3">
+                          <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
                         </div>
-                        <p className="text-center text-sm text-green-700 mb-2">
+                        <p className="text-center text-xs sm:text-sm text-green-700 mb-2">
                           Your deal has been successfully redeemed!
                         </p>
                       </div>
                     ) : (
                       <>
-                        <div className="flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0 mb-4 items-center">
+                        <div className="flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0 mb-3 sm:mb-4 items-center">
                           <input 
                             type="text" 
                             inputMode="numeric"
@@ -357,7 +357,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                             placeholder="Enter PIN"
                             value={enteredPin}
                             onChange={handlePinChange}
-                            className={`border rounded-md px-3 py-2 text-center font-mono text-lg tracking-wider w-full sm:w-40 max-w-[200px]
+                            className={`border rounded-md px-3 py-2 text-center font-mono text-base sm:text-lg tracking-wider w-full sm:w-40 max-w-[200px]
                               ${verificationStatus === 'error' 
                                 ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
                                 : 'border-input focus:border-primary focus:ring-primary'}`}
@@ -369,15 +369,15 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                               verifyPin.mutate();
                             }}
                             disabled={verifyPin.isPending || !enteredPin || enteredPin.length < 4}
-                            className="px-4"
+                            className="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm"
                           >
                             {verifyPin.isPending ? 'Verifying...' : 'Verify PIN'}
                           </Button>
                         </div>
                         
                         {verificationStatus === 'error' && (
-                          <div className="mb-3 flex items-center space-x-2 text-red-600">
-                            <AlertCircle className="h-4 w-4" />
+                          <div className="mb-2 sm:mb-3 flex items-center space-x-1.5 sm:space-x-2 text-red-600">
+                            <AlertCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                             <span className="text-xs">Invalid PIN. Please try again.</span>
                           </div>
                         )}
@@ -395,7 +395,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
             <DialogFooter>
               {step === 'details' ? (
                 <Button 
-                  className="w-full" 
+                  className="w-full text-sm sm:text-base py-1.5 sm:py-2" 
                   onClick={() => setStep('redeem')}
                 >
                   Redeem This Deal
@@ -403,14 +403,14 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
               ) : verificationStatus === 'success' ? (
                 <Button 
                   variant="outline"
-                  className="w-full" 
+                  className="w-full text-sm sm:text-base py-1.5 sm:py-2" 
                   onClick={onClose}
                 >
                   Close
                 </Button>
               ) : (
                 <Button 
-                  className="w-full" 
+                  className="w-full text-sm sm:text-base py-1.5 sm:py-2" 
                   onClick={() => {
                     setVerificationStatus('pending');
                     verifyPin.mutate();
