@@ -1,103 +1,145 @@
-import React from 'react';
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import React, { useEffect } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
+import {
+  Utensils,
+  Coffee,
+  ShoppingBag,
+  Scissors,
+  Dumbbell,
+  Ticket,
+  Wrench, // Replace Tool with Wrench
+  Hotel,
+  Wine,
+  Briefcase
+} from 'lucide-react';
 
-// Keep any existing categories array if it exists in the file
+// Predefined categories with icons
 export const CATEGORIES = [
-  { id: "all", name: "All", count: 0 },
-  { id: "food", name: "Food & Drink", count: 0 },
-  { id: "retail", name: "Retail", count: 0 },
-  { id: "health", name: "Health & Beauty", count: 0 },
-  { id: "entertainment", name: "Entertainment", count: 0 },
-  { id: "services", name: "Services", count: 0 },
-  { id: "travel", name: "Travel", count: 0 },
-  { id: "other", name: "Other", count: 0 },
+  { id: 'all', name: 'All Categories', icon: Briefcase },
+  { id: 'restaurants', name: 'Restaurants', icon: Utensils },
+  { id: 'cafes', name: 'Cafés', icon: Coffee },
+  { id: 'retail', name: 'Retail & Shopping', icon: ShoppingBag },
+  { id: 'beauty', name: 'Beauty & Spas', icon: Scissors },
+  { id: 'health', name: 'Health & Fitness', icon: Dumbbell },
+  { id: 'entertainment', name: 'Entertainment', icon: Ticket },
+  { id: 'services', name: 'Services', icon: Wrench },
+  { id: 'travel', name: 'Travel & Hotels', icon: Hotel },
+  { id: 'nightlife', name: 'Nightlife', icon: Wine },
+  { id: 'other', name: 'Other', icon: Briefcase }
 ];
 
-export interface CategoryBadgeProps {
-  isSelected?: boolean;
-  isCount?: boolean;
-  count?: number;
-  onClick?: () => void;
-  className?: string;
-  children: React.ReactNode;
+interface CategoryFilterProps {
+  selectedCategories: string[];
+  onChange: (category: string) => void;
+  dealCounts?: Record<string, number>;
+  onClearFilters?: () => void;
 }
 
-export const CategoryBadge: React.FC<CategoryBadgeProps> = ({ 
-  isSelected, 
-  isCount, 
-  count, 
-  onClick, 
-  className, 
-  children 
-}) => {
-  return (
-    <Button
-      variant={isSelected ? "default" : "outline"}
-      size="sm"
-      className={cn(
-        "rounded-full h-8 text-xs px-3 gap-1.5 whitespace-nowrap flex-shrink-0",
-        isCount && "pr-2.5",
-        className
-      )}
-      onClick={onClick}
-    >
-      {children}
-      {isCount && count !== undefined && count > 0 && (
-        <span className="ml-1 min-w-[1.1rem] text-center text-xs opacity-70">{count}</span>
-      )}
-    </Button>
-  );
-};
+export default function CategoryFilter({ 
+  selectedCategories, 
+  onChange,
+  dealCounts = {},
+  onClearFilters
+}: CategoryFilterProps) {
+  // Load saved categories from localStorage on mount
+  useEffect(() => {
+    const savedCategories = localStorage.getItem('pinnity-category-filters');
+    if (savedCategories) {
+      const parsed = JSON.parse(savedCategories);
+      // Check if the saved categories are in the correct format and not empty
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Calling onChange for each saved category would not work well
+        // This should be handled in the parent component by setting the initial state
+        // We just log here to debug
+        console.log('Loaded saved categories:', parsed);
+      }
+    }
+  }, []);
 
-export interface CategoryFilterProps {
-  selectedCategory?: string;
-  onSelectCategory?: (category: string) => void;
-  categories?: Array<{id: string; name: string; count?: number}>;
-  className?: string;
-}
+  // Save selected categories to localStorage when they change
+  useEffect(() => {
+    // Don't save if only "all" is selected or if nothing is selected
+    if (selectedCategories.length === 0 || 
+        (selectedCategories.length === 1 && selectedCategories[0] === 'all')) {
+      localStorage.removeItem('pinnity-category-filters');
+      return;
+    }
+    localStorage.setItem('pinnity-category-filters', JSON.stringify(selectedCategories));
+  }, [selectedCategories]);
 
-const CategoryFilter: React.FC<CategoryFilterProps> = ({
-  selectedCategory = "all",
-  onSelectCategory,
-  categories = CATEGORIES,
-  className,
-}) => {
+  const hasActiveFilters = selectedCategories.length > 0 && 
+                          !(selectedCategories.length === 1 && selectedCategories[0] === 'all');
+
   return (
-    <div className={cn("space-y-2", className)}>
-      <div className="flex justify-between items-center">
-        <h3 className="text-sm font-medium">Filter By Category</h3>
-        {selectedCategory !== "all" && (
+    <div className="w-full">
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="text-sm font-medium">Filter by category</h3>
+        {hasActiveFilters && onClearFilters && (
           <Button 
             variant="ghost" 
             size="sm" 
+            onClick={onClearFilters}
             className="h-8 px-2 text-xs"
-            onClick={() => onSelectCategory?.("all")}
           >
-            Clear
+            <X className="h-3 w-3 mr-1" />
+            Clear filters
           </Button>
         )}
       </div>
-
-      <ScrollArea className="w-full pb-4 px-0">
-        <div className="flex gap-2 pb-2 pr-10">
-          {categories.map(category => (
+      
+      <ScrollArea className="w-full whitespace-nowrap pb-4 px-0 max-w-[100vw]">
+        <div className="flex gap-2 pb-2 pr-6">
+          {CATEGORIES.map(category => (
             <CategoryBadge
               key={category.id}
-              isSelected={selectedCategory === category.id}
-              isCount={true}
-              count={category.count}
-              onClick={() => onSelectCategory?.(category.id)}
-            >
-              {category.name}
-            </CategoryBadge>
+              category={category}
+              count={dealCounts[category.id] || 0}
+              isSelected={
+                category.id === 'all' 
+                  ? selectedCategories.length === 0 || selectedCategories.includes('all')
+                  : selectedCategories.includes(category.id)
+              }
+              onClick={() => onChange(category.id)}
+            />
           ))}
         </div>
       </ScrollArea>
     </div>
   );
-};
+}
 
-export default CategoryFilter;
+interface CategoryBadgeProps {
+  category: { id: string; name: string; icon: React.ComponentType<any> };
+  isSelected: boolean;
+  onClick: () => void;
+  count?: number;
+}
+
+function CategoryBadge({ category, isSelected, onClick, count = 0 }: CategoryBadgeProps) {
+  const Icon = category.icon;
+  
+  return (
+    <Badge
+      variant={isSelected ? 'default' : 'outline'}
+      className={`cursor-pointer px-3 py-1.5 h-9 hover:bg-primary hover:text-primary-foreground transition-colors ${
+        isSelected ? 'bg-primary text-primary-foreground' : 'bg-background'
+      }`}
+      onClick={onClick}
+    >
+      <Icon className="h-4 w-4 mr-1.5" />
+      <span>{category.name}</span>
+      {count > 0 && category.id !== 'all' && (
+        <span className={`ml-1.5 px-1.5 py-0.5 text-xs rounded-full ${
+          isSelected 
+            ? 'bg-primary-foreground/20 text-primary-foreground' 
+            : 'bg-muted text-muted-foreground'
+        }`}>
+          {count}
+        </span>
+      )}
+    </Badge>
+  );
+}

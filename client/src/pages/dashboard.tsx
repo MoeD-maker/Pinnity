@@ -37,7 +37,7 @@ type ViewMode = 'grid' | 'map';
 // Map API categories to our internal category IDs
 const mapCategoryToId = (category: string): string => {
   const lowerCategory = category.toLowerCase();
-
+  
   if (lowerCategory.includes('restaurant')) return 'restaurants';
   if (lowerCategory.includes('café') || lowerCategory.includes('cafe') || lowerCategory.includes('coffee')) return 'cafes';
   if (lowerCategory.includes('retail') || lowerCategory.includes('shop')) return 'retail';
@@ -47,7 +47,7 @@ const mapCategoryToId = (category: string): string => {
   if (lowerCategory.includes('service')) return 'services';
   if (lowerCategory.includes('travel') || lowerCategory.includes('hotel') || lowerCategory.includes('accommodation')) return 'travel';
   if (lowerCategory.includes('bar') || lowerCategory.includes('club') || lowerCategory.includes('nightlife')) return 'nightlife';
-
+  
   return 'other';
 };
 
@@ -100,17 +100,17 @@ export default function Dashboard() {
       if (category === 'all') {
         return [];
       }
-
+      
       // If any other category is selected, remove 'all' if it's there
       let newCategories = prev.filter(c => c !== 'all');
-
+      
       // Toggle the selected category
       if (newCategories.includes(category)) {
         newCategories = newCategories.filter(c => c !== category);
       } else {
         newCategories = [...newCategories, category];
       }
-
+      
       return newCategories;
     });
   };
@@ -133,13 +133,13 @@ export default function Dashboard() {
     CATEGORIES.forEach(cat => {
       categoryCounter[cat.id] = 0;
     });
-
+    
     // Count deals per category
     deals.forEach((deal: Deal & { business: any }) => {
       const categoryId = mapCategoryToId(deal.category);
       categoryCounter[categoryId] = (categoryCounter[categoryId] || 0) + 1;
     });
-
+    
     // Set "all" category count to total number of deals
     categoryCounter['all'] = deals.length;
   }
@@ -149,29 +149,29 @@ export default function Dashboard() {
     ? deals.filter((deal: Deal & { business: any }) => {
         // Map API category to our category system
         const dealCategoryId = mapCategoryToId(deal.category);
-
+        
         const matchesSearch = searchQuery === '' || 
           deal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           deal.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
           deal.business.businessName.toLowerCase().includes(searchQuery.toLowerCase());
-
+        
         const matchesCategory = selectedCategories.length === 0 || 
           selectedCategories.includes(dealCategoryId);
-
+        
         // For individual users, filter out expired deals
         // For business and admin users, show expired deals based on toggle
         const dealExpired = isExpired(deal);
-
+        
         // For individual users (non-business, non-admin)
         if (user?.userType === 'individual' && dealExpired) {
           return false; // Hide expired deals for regular users
         }
-
+        
         // For business and admin users
         if ((user?.userType === 'business' || user?.userType === 'admin') && dealExpired) {
           return showExpired; // Only show if toggle is enabled
         }
-
+        
         return matchesSearch && matchesCategory;
       })
     : [];
@@ -187,7 +187,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="container py-6 space-y-8 mx-auto px-4 sm:px-6 w-full max-w-full sm:max-w-7xl">
+    <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-4">
       {/* Header section */}
       <div className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-primary mb-2">Discover Local Deals</h1>
@@ -206,7 +206,7 @@ export default function Dashboard() {
           />
           <Search className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
         </div>
-
+        
         <div className="flex gap-2">
           <Button 
             variant="outline" 
@@ -221,7 +221,7 @@ export default function Dashboard() {
               <ChevronDown className="h-3 w-3 ml-0.5" />
             )}
           </Button>
-
+          
           <div className="hidden md:flex border rounded-md overflow-hidden">
             <Button 
               variant={viewMode === 'grid' ? 'default' : 'ghost'} 
@@ -252,7 +252,7 @@ export default function Dashboard() {
                 dealCounts={categoryCounter}
                 onClearFilters={handleClearFilters}
               />
-
+              
               {/* Expired deals toggle for business and admin users */}
               {(user?.userType === 'business' || user?.userType === 'admin') && (
                 <div className="flex items-center space-x-2 pt-4 border-t">
@@ -282,12 +282,12 @@ export default function Dashboard() {
               if (user?.userType === 'individual' && isExpired(deal)) {
                 return false;
               }
-
+              
               // For business and admin users, show expired deals based on toggle
               if ((user?.userType === 'business' || user?.userType === 'admin') && isExpired(deal)) {
                 return showExpired;
               }
-
+              
               return true;
             })} 
             isLoading={isLoadingFeatured}
