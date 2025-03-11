@@ -27,14 +27,16 @@ import {
   Truck, 
   ShoppingBag,
   UploadCloud,
-  Image,
+  Image as ImageIcon,
   AlertCircle,
-  CropIcon
+  CropIcon,
+  AlertTriangle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Define deal categories that match those in consumer side
@@ -604,6 +606,143 @@ export default function CreateDealPage() {
                   Please review your deal information carefully. All deals require admin approval before becoming active.
                 </AlertDescription>
               </Alert>
+              
+              {/* Deal Image Upload */}
+              <div className="space-y-4">
+                <h3 className="font-medium">Deal Image</h3>
+                
+                <div className="border rounded-lg p-4">
+                  <div 
+                    className={cn(
+                      "relative w-full aspect-[4/3] rounded-md overflow-hidden border-2 border-dashed",
+                      previewUrl ? "border-transparent" : "border-gray-300"
+                    )}
+                    onMouseEnter={() => setShowImageHover(true)}
+                    onMouseLeave={() => setShowImageHover(false)}
+                  >
+                    {previewUrl ? (
+                      <>
+                        <img 
+                          src={previewUrl} 
+                          alt="Deal preview" 
+                          className="w-full h-full object-cover" 
+                        />
+                        
+                        {/* Image dimensions indicator */}
+                        {imageDimensions && (
+                          <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                            {imageDimensions.width} × {imageDimensions.height}px
+                          </div>
+                        )}
+                        
+                        {/* Overlay on hover */}
+                        {showImageHover && (
+                          <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2">
+                            <Button onClick={triggerFileInput} size="sm" variant="secondary">
+                              <ImageIcon className="h-4 w-4 mr-2" /> Change Image
+                            </Button>
+                          </div>
+                        )}
+                        
+                        {/* Business logo if enabled */}
+                        {useLogo && (
+                          <div className={cn(
+                            "absolute w-16 h-16 bg-white/90 rounded-md flex items-center justify-center p-2",
+                            logoPosition === 'top-left' && "top-2 left-2",
+                            logoPosition === 'top-right' && "top-2 right-2",
+                            logoPosition === 'bottom-left' && "bottom-2 left-2",
+                            logoPosition === 'bottom-right' && "bottom-2 right-2",
+                          )}>
+                            <img 
+                              src="https://images.unsplash.com/photo-1556740738-b6a63e27c4df?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80" 
+                              alt="Business logo" 
+                              className="max-w-full max-h-full object-contain" 
+                            />
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
+                        <ImageIcon className="h-10 w-10 mb-2" />
+                        <p className="text-sm font-medium">Upload Deal Image</p>
+                        <p className="text-xs text-center mt-1">Recommended size: 800 × 600 pixels (4:3)</p>
+                        <p className="text-xs text-center">Minimum width: 600px</p>
+                        <Button onClick={triggerFileInput} size="sm" variant="secondary" className="mt-4">
+                          Select Image
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Hidden file input */}
+                  <input 
+                    type="file" 
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                  />
+                  
+                  {/* Dimension warning */}
+                  {dimensionsWarning && (
+                    <Alert className="mt-2 bg-amber-50 border-amber-200">
+                      <AlertTriangle className="h-4 w-4 text-amber-500" />
+                      <AlertDescription className="text-amber-700 text-xs">
+                        {dimensionsWarning}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {/* Logo toggle */}
+                  <div className="mt-4 flex flex-col space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="use-logo"
+                        checked={useLogo}
+                        onCheckedChange={toggleUseLogo}
+                      />
+                      <Label htmlFor="use-logo" className="text-sm">Add business logo to image</Label>
+                    </div>
+                    
+                    {useLogo && (
+                      <div className="flex flex-wrap gap-2 ml-6 mt-1">
+                        <Button 
+                          size="sm" 
+                          variant={logoPosition === 'top-left' ? 'default' : 'outline'} 
+                          className="h-8 text-xs"
+                          onClick={() => handleLogoPositionChange('top-left')}
+                        >
+                          Top Left
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant={logoPosition === 'top-right' ? 'default' : 'outline'} 
+                          className="h-8 text-xs"
+                          onClick={() => handleLogoPositionChange('top-right')}
+                        >
+                          Top Right
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant={logoPosition === 'bottom-left' ? 'default' : 'outline'} 
+                          className="h-8 text-xs"
+                          onClick={() => handleLogoPositionChange('bottom-left')}
+                        >
+                          Bottom Left
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant={logoPosition === 'bottom-right' ? 'default' : 'outline'} 
+                          className="h-8 text-xs"
+                          onClick={() => handleLogoPositionChange('bottom-right')}
+                        >
+                          Bottom Right
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
               
               <div className="space-y-4">
                 <h3 className="font-medium">Deal Summary</h3>
