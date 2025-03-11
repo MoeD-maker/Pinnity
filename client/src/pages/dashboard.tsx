@@ -244,9 +244,9 @@ export default function Dashboard() {
 
       {/* Category filter section */}
       {showFilters && (
-        <Card className="mb-6 overflow-hidden w-full">
-          <CardContent className="p-3 sm:pt-6">
-            <div className="flex flex-col gap-4 w-full">
+        <Card className="mb-6 w-full">
+          <CardContent className="p-4">
+            <div className="space-y-4 w-full">
               <CategoryFilter 
                 selectedCategories={selectedCategories}
                 onChange={handleCategoryChange}

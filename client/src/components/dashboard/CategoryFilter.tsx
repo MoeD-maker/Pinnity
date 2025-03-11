@@ -1,6 +1,4 @@
 import React, { useEffect } from 'react';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import {
@@ -10,7 +8,7 @@ import {
   Scissors,
   Dumbbell,
   Ticket,
-  Wrench, // Replace Tool with Wrench
+  Wrench,
   Hotel,
   Wine,
   Briefcase
@@ -44,21 +42,6 @@ export default function CategoryFilter({
   dealCounts = {},
   onClearFilters
 }: CategoryFilterProps) {
-  // Load saved categories from localStorage on mount
-  useEffect(() => {
-    const savedCategories = localStorage.getItem('pinnity-category-filters');
-    if (savedCategories) {
-      const parsed = JSON.parse(savedCategories);
-      // Check if the saved categories are in the correct format and not empty
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        // Calling onChange for each saved category would not work well
-        // This should be handled in the parent component by setting the initial state
-        // We just log here to debug
-        console.log('Loaded saved categories:', parsed);
-      }
-    }
-  }, []);
-
   // Save selected categories to localStorage when they change
   useEffect(() => {
     // Don't save if only "all" is selected or if nothing is selected
@@ -90,56 +73,40 @@ export default function CategoryFilter({
         )}
       </div>
       
-      <ScrollArea className="w-full">
-        <div className="flex flex-wrap sm:flex-nowrap gap-2 py-1">
-          {CATEGORIES.map(category => (
-            <CategoryBadge
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+        {CATEGORIES.map(category => {
+          const Icon = category.icon;
+          const isSelected = 
+            category.id === 'all' 
+              ? selectedCategories.length === 0 || selectedCategories.includes('all')
+              : selectedCategories.includes(category.id);
+          const count = dealCounts[category.id] || 0;
+          
+          return (
+            <div
               key={category.id}
-              category={category}
-              count={dealCounts[category.id] || 0}
-              isSelected={
-                category.id === 'all' 
-                  ? selectedCategories.length === 0 || selectedCategories.includes('all')
-                  : selectedCategories.includes(category.id)
-              }
               onClick={() => onChange(category.id)}
-            />
-          ))}
-        </div>
-      </ScrollArea>
+              className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-md cursor-pointer transition-colors ${
+                isSelected 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'bg-background border hover:bg-secondary'
+              }`}
+            >
+              <Icon className="h-4 w-4 flex-shrink-0" />
+              <span className="text-sm truncate">{category.name}</span>
+              {count > 0 && category.id !== 'all' && (
+                <span className={`px-1.5 py-0.5 text-xs rounded-full ${
+                  isSelected 
+                    ? 'bg-primary-foreground/20 text-primary-foreground' 
+                    : 'bg-muted text-muted-foreground'
+                }`}>
+                  {count}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
-  );
-}
-
-interface CategoryBadgeProps {
-  category: { id: string; name: string; icon: React.ComponentType<any> };
-  isSelected: boolean;
-  onClick: () => void;
-  count?: number;
-}
-
-function CategoryBadge({ category, isSelected, onClick, count = 0 }: CategoryBadgeProps) {
-  const Icon = category.icon;
-  
-  return (
-    <Badge
-      variant={isSelected ? 'default' : 'outline'}
-      className={`cursor-pointer px-2 sm:px-3 py-1.5 h-9 text-sm whitespace-nowrap hover:bg-primary hover:text-primary-foreground transition-colors ${
-        isSelected ? 'bg-primary text-primary-foreground' : 'bg-background'
-      }`}
-      onClick={onClick}
-    >
-      <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-1.5" />
-      <span>{category.name}</span>
-      {count > 0 && category.id !== 'all' && (
-        <span className={`ml-1.5 px-1.5 py-0.5 text-xs rounded-full ${
-          isSelected 
-            ? 'bg-primary-foreground/20 text-primary-foreground' 
-            : 'bg-muted text-muted-foreground'
-        }`}>
-          {count}
-        </span>
-      )}
-    </Badge>
   );
 }

@@ -185,55 +185,20 @@ export default function ExplorePage() {
         {/* Categories sidebar */}
         <Card className="h-fit sticky top-20 hidden lg:block">
           <CardContent className="p-4">
-            <h3 className="font-medium mb-3">Categories</h3>
-            <div className="space-y-1.5 pt-1">
-              {CATEGORIES.map((category) => (
-                <div
-                  key={category.id}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm cursor-pointer transition-colors ${
-                    category.id === 'all' 
-                      ? (selectedCategories.length === 0 || selectedCategories.includes('all'))
-                          ? 'bg-primary text-primary-foreground'
-                          : 'hover:bg-secondary' 
-                      : selectedCategories.includes(category.id)
-                          ? 'bg-primary text-primary-foreground'
-                          : 'hover:bg-secondary'
-                  }`}
-                  onClick={() => handleCategoryChange(category.id)}
-                >
-                  <category.icon className="h-4 w-4 flex-shrink-0" />
-                  <span>{category.name}</span>
-                  {categoryCounter[category.id] > 0 && category.id !== 'all' && (
-                    <span className={`ml-auto px-1.5 py-0.5 text-xs rounded-full ${
-                      selectedCategories.includes(category.id) 
-                        ? 'bg-primary-foreground/20 text-primary-foreground' 
-                        : 'bg-muted text-muted-foreground'
-                    }`}>
-                      {categoryCounter[category.id]}
-                    </span>
-                  )}
-                </div>
-              ))}
-
-              {selectedCategories.length > 0 && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={handleClearFilters}
-                  className="w-full justify-start text-sm mt-2"
-                >
-                  Clear filters
-                </Button>
-              )}
-            </div>
+            <CategoryFilter
+              selectedCategories={selectedCategories}
+              onChange={handleCategoryChange}
+              dealCounts={categoryCounter}
+              onClearFilters={handleClearFilters}
+            />
           </CardContent>
         </Card>
 
         <div className="space-y-4 sm:space-y-6">
           {/* Mobile category filter */}
           {showFilters && (
-            <Card className="lg:hidden overflow-hidden w-full">
-              <CardContent className="p-3 sm:pt-6">
+            <Card className="lg:hidden w-full">
+              <CardContent className="p-4">
                 <CategoryFilter
                   selectedCategories={selectedCategories}
                   onChange={handleCategoryChange}
