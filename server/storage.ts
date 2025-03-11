@@ -626,6 +626,161 @@ export class MemStorage implements IStorage {
     return true;
   }
   
+  async getAllUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
+  }
+  
+  // Admin methods
+  async adminCreateUser(userData: Omit<InsertUser, "id">, password: string): Promise<User> {
+    // Check if email already exists
+    const existingUser = await this.getUserByEmail(userData.email);
+    if (existingUser) {
+      throw new Error(`User with email ${userData.email} already exists`);
+    }
+    
+    const userId = this.currentUserId++;
+    
+    const user: User = {
+      id: userId,
+      ...userData,
+      password: hashPassword(password),
+    };
+    
+    this.users.set(user.id, user);
+    return user;
+  }
+  
+  async adminUpdateUser(userId: number, userData: Partial<Omit<InsertUser, "id">>): Promise<User> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+    
+    // If updating email, check if new email already exists
+    if (userData.email && userData.email !== user.email) {
+      const existingUser = await this.getUserByEmail(userData.email);
+      if (existingUser && existingUser.id !== userId) {
+        throw new Error(`User with email ${userData.email} already exists`);
+      }
+    }
+    
+    const updatedUser: User = {
+      ...user,
+      ...userData,
+      // If password is being updated, hash it
+      password: userData.password ? hashPassword(userData.password) : user.password
+    };
+    
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+  
+  async adminDeleteUser(userId: number): Promise<boolean> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      return false;
+    }
+    
+    // Check if it's a business user and delete the business too
+    if (user.userType === "business") {
+      const business = await this.getBusinessByUserId(userId);
+      if (business) {
+        // Remove all related data
+        this.businesses.delete(business.id);
+        
+        // Remove related business hours
+        for (const [id, hours] of this.businessHours.entries()) {
+          if (hours.businessId === business.id) {
+            this.businessHours.delete(id);
+          }
+        }
+        
+        // Remove related social links
+        for (const [id, social] of this.businessSocial.entries()) {
+          if (social.businessId === business.id) {
+            this.businessSocial.delete(id);
+          }
+        }
+        
+        // Remove related documents
+        for (const [id, doc] of this.businessDocuments.entries()) {
+          if (doc.businessId === business.id) {
+            this.businessDocuments.delete(id);
+          }
+        }
+        
+        // Remove related deals
+        for (const [id, deal] of this.deals.entries()) {
+          if (deal.businessId === business.id) {
+            this.deals.delete(id);
+            
+            // Remove related approvals
+            for (const [approvalId, approval] of this.dealApprovals.entries()) {
+              if (approval.dealId === id) {
+                this.dealApprovals.delete(approvalId);
+              }
+            }
+            
+            // Remove related redemptions
+            for (const [redemptionId, redemption] of this.dealRedemptions.entries()) {
+              if (redemption.dealId === id) {
+                this.dealRedemptions.delete(redemptionId);
+              }
+            }
+            
+            // Remove related favorites
+            for (const [favoriteId, favorite] of this.userFavorites.entries()) {
+              if (favorite.dealId === id) {
+                this.userFavorites.delete(favoriteId);
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // Remove user notification preferences
+    for (const [id, prefs] of this.userNotificationPreferences.entries()) {
+      if (prefs.userId === userId) {
+        this.userNotificationPreferences.delete(id);
+      }
+    }
+    
+    // Delete the user
+    this.users.delete(userId);
+    return true;
+  }
+  
+  async adminCreateBusinessUser(userData: Omit<InsertUser, "id">, businessData: Omit<InsertBusiness, "id" | "userId">): Promise<User & { business: Business }> {
+    // First create the user account
+    const user = await this.adminCreateUser({
+      ...userData,
+      userType: "business"
+    }, userData.password);
+    
+    // Then create the business
+    const business = await this.createBusiness({
+      ...businessData,
+      userId: user.id
+    });
+    
+    return { ...user, business };
+  }
+  
+  async getAllBusinesses(): Promise<(Business & { user: User })[]> {
+    const businesses = Array.from(this.businesses.values());
+    const result: (Business & { user: User })[] = [];
+    
+    for (const business of businesses) {
+      const user = await this.getUser(business.userId);
+      if (user) {
+        result.push({ ...business, user });
+      }
+    }
+    
+    return result;
+  }
+  
   // Business methods
   async getBusiness(id: number): Promise<Business | undefined> {
     return this.businesses.get(id);
