@@ -109,16 +109,16 @@ export default function VendorDashboard() {
   const isBusinessApproved = business?.verificationStatus === 'verified';
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto px-2 sm:px-4 py-6 overflow-hidden">
       {/* Welcome and approval status banner */}
       <header className="mb-8">
-        <div className="flex justify-between items-start mb-2">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-start mb-4 sm:mb-2 gap-3 sm:gap-0">
           <div>
-            <h1 className="text-3xl font-bold">Welcome, {business?.businessName || user?.firstName}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">Welcome, {business?.businessName || user?.firstName}</h1>
             <p className="text-gray-500 mt-1">Manage your deals and business profile</p>
           </div>
           <Button 
-            className="bg-[#00796B] hover:bg-[#004D40]"
+            className="bg-[#00796B] hover:bg-[#004D40] sm:mt-0 w-full sm:w-auto"
             disabled={!isBusinessApproved}
             onClick={handleCreateDeal}
           >
@@ -199,14 +199,14 @@ export default function VendorDashboard() {
         </TabsList>
         
         <TabsContent value="deals" className="space-y-6">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-2 mb-4">
             <h2 className="text-xl font-semibold">Your Deals</h2>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm">
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto">
                 <Settings className="h-4 w-4 mr-2" /> Filter
               </Button>
               <Button 
-                className="bg-[#00796B] hover:bg-[#004D40]"
+                className="bg-[#00796B] hover:bg-[#004D40] w-full sm:w-auto"
                 disabled={!isBusinessApproved}
                 onClick={handleCreateDeal}
                 size="sm"
@@ -237,8 +237,8 @@ export default function VendorDashboard() {
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <h2 className="text-xl font-semibold mb-4">Verify Redemption</h2>
             
-            <div className="flex justify-between items-center mb-6">
-              <div className="relative w-full max-w-md">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
+              <div className="relative w-full max-w-full sm:max-w-md">
                 <input
                   type="search"
                   placeholder="Search deals by title or category..."
@@ -248,9 +248,9 @@ export default function VendorDashboard() {
                   <Search className="h-4 w-4 text-gray-400" />
                 </div>
               </div>
-              <div className="ml-4">
+              <div className="w-full sm:w-auto sm:ml-4">
                 <Select defaultValue="active">
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder="Filter by status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -263,19 +263,20 @@ export default function VendorDashboard() {
               </div>
             </div>
             
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse mb-6">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Deal</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Type</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Date Range</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Redemption PIN</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Redemptions</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-500"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
+            <div className="overflow-x-auto -mx-6 sm:mx-0">
+              <div className="min-w-[800px] px-6 sm:px-0 sm:min-w-full">
+                <table className="w-full border-collapse mb-6">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Deal</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Type</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Date Range</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Redemption PIN</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Redemptions</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
                   {deals.length > 0 ? deals.map((deal: any) => {
                     const isActive = new Date(deal.endDate) >= new Date() && new Date(deal.startDate) <= new Date();
                     const isUpcoming = new Date(deal.startDate) > new Date();
