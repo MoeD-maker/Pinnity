@@ -187,7 +187,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-4">
+    <div className="container max-w-7xl mx-auto px-2 sm:px-4 py-4 overflow-hidden">
       {/* Header section */}
       <div className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-primary mb-2">Discover Local Deals</h1>
@@ -243,9 +243,9 @@ export default function Dashboard() {
 
       {/* Category filter section */}
       {showFilters && (
-        <Card className="mb-6 overflow-hidden">
+        <Card className="mb-6 overflow-hidden w-full">
           <CardContent className="p-3 sm:pt-6">
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 w-full">
               <CategoryFilter 
                 selectedCategories={selectedCategories}
                 onChange={handleCategoryChange}
