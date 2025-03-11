@@ -220,7 +220,7 @@ export default function ExplorePage() {
 
           {/* Deal grid */}
           {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 w-full">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 w-full pb-16">
               {Array.from({ length: 9 }).map((_, i) => (
                 <Card key={i}>
                   <CardContent className="p-0">
@@ -234,7 +234,7 @@ export default function ExplorePage() {
               ))}
             </div>
           ) : filteredDeals.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="text-center py-12 pb-16">
               <h3 className="text-xl font-medium mb-2">No deals found</h3>
               <p className="text-muted-foreground mb-4">
                 Try adjusting your search or filters

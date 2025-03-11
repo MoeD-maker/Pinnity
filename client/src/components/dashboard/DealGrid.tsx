@@ -46,7 +46,7 @@ export default function DealGrid({ deals, isLoading, onSelect }: DealGridProps) 
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full pb-16">
         {Array.from({ length: 6 }).map((_, i) => (
           <DealCardSkeleton key={i} />
         ))}
@@ -56,7 +56,7 @@ export default function DealGrid({ deals, isLoading, onSelect }: DealGridProps) 
 
   if (deals.length === 0) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-12 pb-16">
         <h3 className="text-xl font-medium mb-2">No deals found</h3>
         <p className="text-muted-foreground">Try adjusting your filters or search criteria</p>
       </div>
@@ -64,7 +64,7 @@ export default function DealGrid({ deals, isLoading, onSelect }: DealGridProps) 
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full pb-16">
       {deals.map((deal) => (
         <DealCard 
           key={deal.id} 
