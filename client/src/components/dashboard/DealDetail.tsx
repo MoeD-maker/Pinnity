@@ -307,9 +307,9 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                         2
                       </div>
                       <div>
-                        <h4 className="font-medium text-sm sm:text-base">Get the redemption PIN from staff</h4>
+                        <h4 className="font-medium text-sm sm:text-base">Get the redemption code from staff</h4>
                         <p className="text-xs sm:text-sm text-muted-foreground">
-                          The business staff will provide you with the deal's redemption PIN
+                          The business staff will provide you with the deal's redemption code
                         </p>
                       </div>
                     </div>
@@ -319,9 +319,9 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                         3
                       </div>
                       <div>
-                        <h4 className="font-medium text-sm sm:text-base">Enter the PIN below to redeem</h4>
+                        <h4 className="font-medium text-sm sm:text-base">Enter the code below to redeem</h4>
                         <p className="text-xs sm:text-sm text-muted-foreground">
-                          Enter the PIN provided by the staff to confirm your redemption
+                          Enter the code provided by the staff to confirm your redemption
                         </p>
                       </div>
                     </div>
@@ -337,7 +337,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                     <p className="text-sm font-medium uppercase text-muted-foreground tracking-wide mb-3">
                       {verificationStatus === 'success' 
                         ? 'Redemption Successful!' 
-                        : 'Enter Redemption PIN'}
+                        : 'Enter Redemption Code'}
                     </p>
                     
                     {verificationStatus === 'success' ? (
@@ -355,8 +355,8 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                           <input 
                             type="text" 
                             inputMode="numeric"
-                            maxLength={6}
-                            placeholder="Enter PIN"
+                            maxLength={8}
+                            placeholder="Enter Code"
                             value={enteredPin}
                             onChange={handlePinChange}
                             className={`border rounded-md px-3 py-2 text-center font-mono text-base sm:text-lg tracking-wider w-full sm:w-40 max-w-[200px]
@@ -373,14 +373,14 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                             disabled={verifyPin.isPending || !enteredPin || enteredPin.length < 4}
                             className="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm"
                           >
-                            {verifyPin.isPending ? 'Verifying...' : 'Verify PIN'}
+                            {verifyPin.isPending ? 'Verifying...' : 'Verify Code'}
                           </Button>
                         </div>
                         
                         {verificationStatus === 'error' && (
                           <div className="mb-2 sm:mb-3 flex items-center space-x-1.5 sm:space-x-2 text-red-600">
                             <AlertCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                            <span className="text-xs">Invalid PIN. Please try again.</span>
+                            <span className="text-xs">Invalid code. Please try again.</span>
                           </div>
                         )}
                         
