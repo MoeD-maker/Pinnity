@@ -90,8 +90,8 @@ export default function CategoryFilter({
         )}
       </div>
       
-      <ScrollArea className="w-full whitespace-nowrap pb-4 overflow-visible">
-        <div className="flex gap-2 pb-2 pr-6 px-1">
+      <ScrollArea className="w-full whitespace-nowrap pb-4">
+        <div className="flex gap-2 pb-2 pr-6 px-1 min-w-0">
           {CATEGORIES.map(category => (
             <CategoryBadge
               key={category.id}
@@ -124,12 +124,12 @@ function CategoryBadge({ category, isSelected, onClick, count = 0 }: CategoryBad
   return (
     <Badge
       variant={isSelected ? 'default' : 'outline'}
-      className={`cursor-pointer px-3 py-1.5 h-9 hover:bg-primary hover:text-primary-foreground transition-colors ${
+      className={`cursor-pointer px-2 sm:px-3 py-1.5 h-9 text-sm whitespace-nowrap hover:bg-primary hover:text-primary-foreground transition-colors ${
         isSelected ? 'bg-primary text-primary-foreground' : 'bg-background'
       }`}
       onClick={onClick}
     >
-      <Icon className="h-4 w-4 mr-1.5" />
+      <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-1.5" />
       <span>{category.name}</span>
       {count > 0 && category.id !== 'all' && (
         <span className={`ml-1.5 px-1.5 py-0.5 text-xs rounded-full ${

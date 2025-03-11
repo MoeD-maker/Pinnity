@@ -96,7 +96,7 @@ function DealCard({ deal, onSelect }: DealCardProps) {
   return (
     <Card 
       ref={ref} 
-      className="overflow-hidden transition-all hover:shadow-md cursor-pointer"
+      className="overflow-hidden transition-all hover:shadow-md cursor-pointer w-full"
       onClick={onSelect}
     >
       {inView ? (
@@ -163,7 +163,7 @@ function DealCard({ deal, onSelect }: DealCardProps) {
 
 function DealCardSkeleton() {
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden w-full">
       <div className="aspect-video">
         <Skeleton className="h-full w-full" />
       </div>

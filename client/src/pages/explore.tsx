@@ -150,7 +150,7 @@ export default function ExplorePage() {
   };
 
   return (
-    <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-4 overflow-x-hidden">
+    <div className="container max-w-7xl mx-auto px-2 sm:px-4 py-4 overflow-hidden">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-primary">Explore Deals</h1>
@@ -232,7 +232,7 @@ export default function ExplorePage() {
         <div className="space-y-4 sm:space-y-6">
           {/* Mobile category filter */}
           {showFilters && (
-            <Card className="lg:hidden overflow-hidden">
+            <Card className="lg:hidden overflow-hidden w-full">
               <CardContent className="p-3 sm:pt-6">
                 <CategoryFilter
                   selectedCategories={selectedCategories}
