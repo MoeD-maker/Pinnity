@@ -305,9 +305,9 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                         2
                       </div>
                       <div>
-                        <h4 className="font-medium text-base">Request the redemption PIN from staff</h4>
+                        <h4 className="font-medium text-base">Get the redemption PIN from staff</h4>
                         <p className="text-sm text-muted-foreground">
-                          Ask the business staff for the deal's redemption PIN
+                          The business staff will provide you with the deal's redemption PIN
                         </p>
                       </div>
                     </div>

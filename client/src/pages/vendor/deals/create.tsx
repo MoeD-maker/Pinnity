@@ -474,7 +474,7 @@ export default function CreateDealPage() {
                 <div className="space-y-2">
                   <Label htmlFor="redemptionCode">
                     Redemption PIN <span className="text-red-500">*</span>
-                    <span className="ml-2 text-xs text-gray-500">(Your staff will provide this to customers)</span>
+                    <span className="ml-2 text-xs text-gray-500">(Give this to customers during redemption)</span>
                   </Label>
                   <div className="flex">
                     <Input 
@@ -497,7 +497,7 @@ export default function CreateDealPage() {
                     <p className="text-sm text-red-500">{form.formState.errors.redemptionCode.message}</p>
                   )}
                   <p className="text-xs text-gray-500">
-                    This PIN must be kept secure and only provided to customers when they redeem the deal in person
+                    This PIN will be provided to customers when they visit your business to redeem this deal
                   </p>
                 </div>
                 
