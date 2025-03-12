@@ -1,0 +1,70 @@
+Fix the deal creation process by implementing the API call in the handleSubmit function in src/components/create.tsx. Currently, the function only simulates an API call with a timeout but doesn't actually send the data.
+
+1. Replace the simulation code with an actual API request:
+   - Remove the "TODO" comment and simulation code
+   - Use the apiRequest utility to send data to '/api/deals' endpoint
+   - Add the businessId to the form data (get it from the business object in state)
+   - Set the initial status to 'pending' for admin approval
+
+2. Code to replace the existing handleSubmit function:
+```javascript
+const handleSubmit = async () => {
+  try {
+    setSubmitting(true);
+    
+    // Get form values
+    const values = form.getValues();
+    
+    // Get the business ID from user context
+    const businessResponse = await apiRequest(`/api/business/user/${user?.id}`);
+    
+    if (!businessResponse || !businessResponse.id) {
+      throw new Error('Could not find business information');
+    }
+    
+    // Add business ID and status to the deal data
+    const dealData = {
+      ...values,
+      businessId: businessResponse.id,
+      status: 'pending',  // All new deals start with pending status
+      viewCount: 0,
+      redemptionCount: 0,
+      saveCount: 0
+    };
+    
+    // Submit to API endpoint
+    const result = await apiRequest('/api/deals', {
+      method: 'POST',
+      data: dealData
+    });
+    
+    // Show success message
+    toast({
+      title: 'Deal created',
+      description: 'Your deal has been submitted for approval',
+    });
+    
+    // Redirect to vendor dashboard
+    setLocation('/vendor');
+  } catch (error) {
+    console.error('Error submitting deal:', error);
+    
+    // Show error message
+    toast({
+      title: 'Error',
+      description: 'Failed to create deal. Please try again.',
+      variant: 'destructive',
+    });
+  } finally {
+    setSubmitting(false);
+  }
+};
+
+Add a toast import at the top of the file:
+
+javascriptCopyimport { useToast } from '@/hooks/use-toast';
+
+Add toast to the component:
+
+javascriptCopyconst { toast } = useToast();
+This implementation will properly send the deal data to your backend API, including the business ID, and show appropriate success/error messages to the user.

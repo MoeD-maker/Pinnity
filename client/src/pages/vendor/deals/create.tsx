@@ -261,16 +261,9 @@ export default function CreateDealPage() {
     const fetchBusinessData = async () => {
       if (user?.id) {
         try {
-          const data = await fetch(`/api/business/user/${user.id}`, {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-          }).then(res => {
-            if (!res.ok) throw new Error('Failed to load business data');
-            return res.json();
-          });
+          const data = await apiRequest(`/api/business/user/${user.id}`);
           
-          console.log('Loaded business data:', data);
+          console.log('Setting business data with ID:', data.id);
           setBusiness(data);
         } catch (error) {
           console.error('Error loading business data:', error);
