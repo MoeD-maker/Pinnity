@@ -109,12 +109,12 @@ export default function VendorDashboard() {
   const isBusinessApproved = business?.verificationStatus === 'verified';
 
   return (
-    <div className="container mx-auto px-2 sm:px-4 py-6 overflow-hidden">
+    <div className="w-full max-w-[1200px] mx-auto px-3 sm:px-4 py-4 sm:py-6 mb-12 sm:mb-24">
       {/* Welcome and approval status banner */}
-      <header className="mb-8">
+      <header className="mb-6 sm:mb-8">
         <div className="flex flex-col sm:flex-row justify-between sm:items-start mb-4 sm:mb-2 gap-3 sm:gap-0">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Welcome, {business?.businessName || user?.firstName}</h1>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Welcome, {business?.businessName || user?.firstName}</h1>
             <p className="text-gray-500 mt-1">Manage your deals and business profile</p>
           </div>
           <Button 
@@ -159,7 +159,7 @@ export default function VendorDashboard() {
       </header>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <StatCard 
           title="Active Deals" 
           value={stats.activeDeals} 
@@ -227,7 +227,7 @@ export default function VendorDashboard() {
               disabled={!isBusinessApproved}
             />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {deals.map((deal) => (
                 <DealCard key={deal.id} deal={deal} />
               ))}
@@ -236,8 +236,8 @@ export default function VendorDashboard() {
         </TabsContent>
 
         <TabsContent value="redemptions">
-          <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <h2 className="text-xl font-semibold mb-4">Verify Redemption</h2>
+          <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border">
+            <h2 className="text-xl font-semibold mb-2 sm:mb-4">Verify Redemption</h2>
             
             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
               <div className="relative w-full max-w-full sm:max-w-md">
