@@ -320,11 +320,37 @@ export default function VendorDashboard() {
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                   {deals.length > 0 ? deals.map((deal: any) => {
-                    const isActive = new Date(deal.endDate) >= new Date() && new Date(deal.startDate) <= new Date();
+                    // Deal approval status (from the backend)
+                    const isPending = deal.status === 'pending';
+                    const isApproved = deal.status === 'approved';
+                    
+                    // Deal time-based status
+                    const isTimeActive = new Date(deal.endDate) >= new Date() && new Date(deal.startDate) <= new Date();
                     const isUpcoming = new Date(deal.startDate) > new Date();
-                    const statusClass = isActive ? 'bg-green-100 text-green-800' : 
-                                       isUpcoming ? 'bg-blue-100 text-blue-800' : 
-                                       'bg-gray-100 text-gray-800';
+                    const isExpired = new Date(deal.endDate) < new Date();
+                    
+                    // Determine overall status and style
+                    let statusClass, statusText;
+                    
+                    if (isPending) {
+                      statusClass = 'bg-yellow-100 text-yellow-800';
+                      statusText = 'Pending Approval';
+                    } else if (isApproved && isTimeActive) {
+                      statusClass = 'bg-green-100 text-green-800';
+                      statusText = 'Active';
+                    } else if (isApproved && isUpcoming) {
+                      statusClass = 'bg-blue-100 text-blue-800';
+                      statusText = 'Upcoming';
+                    } else if (isExpired || deal.status === 'expired') {
+                      statusClass = 'bg-gray-100 text-gray-800';
+                      statusText = 'Expired';
+                    } else if (deal.status === 'rejected') {
+                      statusClass = 'bg-red-100 text-red-800';
+                      statusText = 'Rejected';
+                    } else {
+                      statusClass = 'bg-gray-100 text-gray-800';
+                      statusText = 'Unknown';
+                    }
                     
                     return (
                       <tr key={deal.id} className="hover:bg-gray-50">
@@ -359,7 +385,7 @@ export default function VendorDashboard() {
                         </td>
                         <td className="px-3 sm:px-4 py-3 sm:py-4 text-right">
                           <Badge className={`${statusClass} text-xs`}>
-                            {isActive ? 'Active' : isUpcoming ? 'Upcoming' : 'Expired'}
+                            {statusText}
                           </Badge>
                         </td>
                       </tr>
