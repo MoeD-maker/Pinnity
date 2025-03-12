@@ -233,6 +233,12 @@ function AuthenticatedRoute({ component: Component, ...rest }: any) {
     return null;
   }
   
+  // For admin routes, don't wrap with MainLayout since they already use AdminLayout
+  if (location.startsWith('/admin')) {
+    return <Component {...rest} />;
+  }
+  
+  // For non-admin routes, use MainLayout
   return (
     <MainLayout>
       <Component {...rest} />
