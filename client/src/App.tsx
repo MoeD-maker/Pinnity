@@ -33,6 +33,7 @@ const AdminVendors = lazy(() => import("@/pages/admin/vendors"));
 const AdminVendorDetail = lazy(() => import("@/pages/admin/vendors/[id]"));
 const AdminVendorEdit = lazy(() => import("@/pages/admin/vendors/edit/[id]"));
 const AdminDeals = lazy(() => import("@/pages/admin/deals"));
+const AdminDealEdit = lazy(() => import("@/pages/admin/deals/edit/[id]"));
 const AdminUsers = lazy(() => import("@/pages/admin/users"));
 const AdminAnalytics = lazy(() => import("@/pages/admin/analytics"));
 
@@ -355,6 +356,14 @@ function Router() {
         )}
       </Route>
       
+      <Route path="/admin/deals/edit/:id">
+        {(params) => (
+          <Suspense fallback={<LoadingFallback />}>
+            <AuthenticatedRoute component={AdminDealEdit} params={params} />
+          </Suspense>
+        )}
+      </Route>
+
       <Route path="/admin/deals">
         {(params) => (
           <Suspense fallback={<LoadingFallback />}>
