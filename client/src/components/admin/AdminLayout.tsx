@@ -78,8 +78,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: "Vendors", path: "/admin/vendors", icon: <Building className="h-5 w-5" /> },
     { name: "Users", path: "/admin/users", icon: <Users className="h-5 w-5" /> },
     { name: "Deals", path: "/admin/deals", icon: <Tag className="h-5 w-5" /> },
-    // Analytics and Settings pages don't exist yet, so removed from menu
-    // { name: "Analytics", path: "/admin/analytics", icon: <LineChart className="h-5 w-5" /> },
+    { name: "Analytics", path: "/admin/analytics", icon: <LineChart className="h-5 w-5" /> },
+    // Settings page doesn't exist yet
     // { name: "Settings", path: "/admin/settings", icon: <Settings className="h-5 w-5" /> },
   ];
 
