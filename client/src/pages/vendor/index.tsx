@@ -191,12 +191,14 @@ export default function VendorDashboard() {
       )}
 
       <Tabs defaultValue="deals" className="w-full">
-        <TabsList className="mb-6">
-          <TabsTrigger value="deals">My Deals</TabsTrigger>
-          <TabsTrigger value="redemptions">Verify Redemptions</TabsTrigger>
-          <TabsTrigger value="business">Business Profile</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto pb-1 mb-6">
+          <TabsList className="min-w-[500px] w-full">
+            <TabsTrigger value="deals">My Deals</TabsTrigger>
+            <TabsTrigger value="redemptions">Verify Redemptions</TabsTrigger>
+            <TabsTrigger value="business">Business Profile</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          </TabsList>
+        </div>
         
         <TabsContent value="deals" className="space-y-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-2 mb-4">
@@ -263,9 +265,9 @@ export default function VendorDashboard() {
               </div>
             </div>
             
-            <div className="overflow-x-auto -mx-6 sm:mx-0">
-              <div className="min-w-[800px] px-6 sm:px-0 sm:min-w-full">
-                <table className="w-full border-collapse mb-6">
+            <div className="overflow-x-auto border rounded-md">
+              <div className="min-w-[700px]">
+                <table className="w-full border-collapse mb-0">
                   <thead>
                     <tr className="border-b border-gray-200">
                       <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Deal</th>
@@ -417,10 +419,10 @@ export default function VendorDashboard() {
         </TabsContent>
         
         <TabsContent value="business">
-          <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <div className="flex justify-between items-start mb-6">
+          <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
               <h2 className="text-xl font-semibold">Business Profile</h2>
-              <Button variant="outline">
+              <Button variant="outline" className="w-full sm:w-auto">
                 <FileText className="h-4 w-4 mr-2" /> Edit Profile
               </Button>
             </div>
