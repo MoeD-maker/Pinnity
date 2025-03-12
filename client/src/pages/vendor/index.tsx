@@ -338,9 +338,9 @@ export default function VendorDashboard() {
 
             <Separator className="my-6" />
 
-            <div className="max-w-md mx-auto">
-              <div className="mb-6">
-                <h3 className="font-medium mb-4">Customer Verification</h3>
+            <div className="max-w-full sm:max-w-md mx-auto mt-4 sm:mt-6">
+              <div className="mb-4 sm:mb-6">
+                <h3 className="font-medium mb-3 sm:mb-4">Customer Verification</h3>
                   
                 {/* Step 1 */}
                 <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
@@ -493,9 +493,9 @@ export default function VendorDashboard() {
         </TabsContent>
         
         <TabsContent value="analytics">
-          <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <h2 className="text-xl font-semibold mb-4">Performance Analytics</h2>
-            <p className="text-gray-500 mb-6">Track the performance of your deals over time</p>
+          <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border">
+            <h2 className="text-xl font-semibold mb-2 sm:mb-4">Performance Analytics</h2>
+            <p className="text-gray-500 mb-4 sm:mb-6">Track the performance of your deals over time</p>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               <Card>
@@ -607,12 +607,12 @@ function EmptyState({
   disabled?: boolean;
 }) {
   return (
-    <div className="bg-white p-8 rounded-lg border border-dashed border-gray-300 text-center">
-      <Store className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-      <h3 className="text-lg font-medium mb-2">{title}</h3>
-      <p className="text-gray-500 mb-4">{description}</p>
+    <div className="bg-white p-4 sm:p-8 rounded-lg border border-dashed border-gray-300 text-center">
+      <Store className="h-10 sm:h-12 w-10 sm:w-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
+      <h3 className="text-lg font-medium mb-1 sm:mb-2">{title}</h3>
+      <p className="text-gray-500 mb-3 sm:mb-4 text-sm sm:text-base">{description}</p>
       <Button 
-        className="bg-[#00796B] hover:bg-[#004D40]"
+        className="bg-[#00796B] hover:bg-[#004D40] w-full sm:w-auto"
         onClick={onClick}
         disabled={disabled}
       >
@@ -684,11 +684,11 @@ function DealCard({ deal }: { deal: any }) {
           </div>
         </div>
       </CardContent>
-      <CardFooter className="border-t pt-4 flex justify-between">
-        <Button variant="outline" size="sm">
+      <CardFooter className="border-t pt-4 flex flex-col sm:flex-row gap-2 sm:justify-between">
+        <Button variant="outline" size="sm" className="w-full sm:w-auto justify-center">
           <FileText className="h-4 w-4 mr-2" /> Edit
         </Button>
-        <Button size="sm" variant="ghost" className="text-gray-500">
+        <Button size="sm" variant="ghost" className="text-gray-500 w-full sm:w-auto justify-center">
           <Settings className="h-4 w-4 mr-2" /> Manage
         </Button>
       </CardFooter>
@@ -718,26 +718,28 @@ function VerificationRequirements({ business }: { business: any }) {
       <CardContent>
         <div className="space-y-4">
           {documents.map(doc => (
-            <div key={doc.id} className="flex items-center">
-              <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center ${
-                doc.status === 'completed' ? 'text-green-500' : 'text-gray-300'
-              }`}>
-                {doc.status === 'completed' ? (
-                  <CheckCircle className="w-5 h-5" />
-                ) : (
-                  <Circle className="w-5 h-5" />
-                )}
+            <div key={doc.id} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0">
+              <div className="flex items-center">
+                <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center ${
+                  doc.status === 'completed' ? 'text-green-500' : 'text-gray-300'
+                }`}>
+                  {doc.status === 'completed' ? (
+                    <CheckCircle className="w-5 h-5" />
+                  ) : (
+                    <Circle className="w-5 h-5" />
+                  )}
+                </div>
+                <div className="ml-4 flex-1">
+                  <p className="text-sm font-medium">{doc.name}</p>
+                </div>
               </div>
-              <div className="ml-4 flex-1">
-                <p className="text-sm font-medium">{doc.name}</p>
-              </div>
-              <div>
+              <div className="pl-9 sm:pl-0">
                 {doc.status === 'completed' ? (
                   <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                     Submitted
                   </Badge>
                 ) : (
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto">
                     Upload
                   </Button>
                 )}
@@ -746,9 +748,9 @@ function VerificationRequirements({ business }: { business: any }) {
           ))}
         </div>
       </CardContent>
-      <CardFooter className="border-t pt-6 flex justify-between">
-        <div className="flex items-center text-sm text-gray-500">
-          <Clock className="w-4 h-4 mr-2" />
+      <CardFooter className="border-t pt-4 sm:pt-6">
+        <div className="flex items-start sm:items-center text-xs sm:text-sm text-gray-500">
+          <Clock className="w-4 h-4 mr-2 mt-0.5 sm:mt-0 flex-shrink-0" />
           <span>Estimated approval: 1-2 business days after all documents are submitted</span>
         </div>
       </CardFooter>
