@@ -192,17 +192,17 @@ export default function VendorDashboard() {
 
       <Tabs defaultValue="deals" className="w-full">
         <div className="overflow-x-auto pb-1 mb-4 sm:mb-6 scrollbar-hide -mx-4 sm:mx-0 px-4 sm:px-0">
-          <TabsList className="min-w-[500px] w-full">
-            <TabsTrigger value="deals" className="text-xs sm:text-sm py-1.5 sm:py-2">My Deals</TabsTrigger>
-            <TabsTrigger value="redemptions" className="text-xs sm:text-sm py-1.5 sm:py-2">Verify Redemptions</TabsTrigger>
-            <TabsTrigger value="business" className="text-xs sm:text-sm py-1.5 sm:py-2">Business Profile</TabsTrigger>
-            <TabsTrigger value="analytics" className="text-xs sm:text-sm py-1.5 sm:py-2">Analytics</TabsTrigger>
+          <TabsList className="w-full">
+            <TabsTrigger value="deals" className="flex-1 text-center px-2 sm:px-4 text-xs sm:text-sm py-1.5 sm:py-2">My Deals</TabsTrigger>
+            <TabsTrigger value="redemptions" className="flex-1 text-center px-2 sm:px-4 text-xs sm:text-sm py-1.5 sm:py-2">Verify Redemptions</TabsTrigger>
+            <TabsTrigger value="business" className="flex-1 text-center px-2 sm:px-4 text-xs sm:text-sm py-1.5 sm:py-2">Business Profile</TabsTrigger>
+            <TabsTrigger value="analytics" className="flex-1 text-center px-2 sm:px-4 text-xs sm:text-sm py-1.5 sm:py-2">Analytics</TabsTrigger>
           </TabsList>
         </div>
         
         <TabsContent value="deals" className="space-y-6">
-          <div className="flex-responsive justify-between items-start sm:items-center gap-3 sm:gap-2 mb-4">
-            <h2 className="text-xl font-semibold">Your Deals</h2>
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
+            <h2 className="text-xl font-semibold truncate max-w-full sm:max-w-[230px]">Your Deals</h2>
             <div className="flex gap-2 w-full sm:w-auto">
               <Button variant="outline" size="sm" className="w-full sm:w-auto">
                 <Settings className="h-4 w-4 mr-2" /> Filter
@@ -213,7 +213,7 @@ export default function VendorDashboard() {
                 onClick={handleCreateDeal}
                 size="sm"
               >
-                <PlusCircle className="mr-2 h-4 w-4" /> Create New Deal
+                <PlusCircle className="mr-2 h-4 w-4" /> Create Deal
               </Button>
             </div>
           </div>
@@ -420,15 +420,15 @@ export default function VendorDashboard() {
         
         <TabsContent value="business">
           <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border">
-            <div className="flex-responsive sm:justify-between sm:items-center gap-3 mb-6">
-              <h2 className="text-xl font-semibold">Business Profile</h2>
-              <Button variant="outline" className="w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 sm:mb-6">
+              <h2 className="text-xl font-semibold truncate max-w-full sm:max-w-[230px]">Business Profile</h2>
+              <Button variant="outline" className="w-full sm:w-auto mt-1 sm:mt-0">
                 <FileText className="h-4 w-4 mr-2" /> Edit Profile
               </Button>
             </div>
             
-            <div className="flex flex-col md:flex-row gap-6">
-              <div className="md:w-1/3">
+            <div className="flex flex-col sm:flex-col md:flex-row gap-4 sm:gap-6">
+              <div className="w-full md:w-1/3">
                 <div className="aspect-square rounded-lg bg-gray-100 overflow-hidden">
                   {business?.imageUrl ? (
                     <img 
@@ -718,7 +718,7 @@ function VerificationRequirements({ business }: { business: any }) {
         <Progress value={progressPercentage} className="h-2 mt-2 sm:mt-3" />
       </CardHeader>
       <CardContent className="px-4 sm:px-6 py-2 sm:py-3">
-        <div className="space-y-3 sm:space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
           {documents.map(doc => (
             <div key={doc.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
               <div className="flex items-center">
