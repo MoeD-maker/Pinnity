@@ -239,20 +239,20 @@ export default function VendorDashboard() {
           <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border">
             <h2 className="text-xl font-semibold mb-2 sm:mb-4">Verify Redemption</h2>
             
-            <div className="flex-responsive justify-between sm:items-center gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
               <div className="relative w-full max-w-full sm:max-w-md">
                 <input
                   type="search"
                   placeholder="Search deals by title or category..."
-                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:ring-[#00796B] focus:border-[#00796B]"
+                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:ring-[#00796B] focus:border-[#00796B] text-sm"
                 />
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Search className="h-4 w-4 text-gray-400" />
                 </div>
               </div>
-              <div className="w-full sm:w-auto sm:ml-4">
+              <div className="w-full sm:w-auto mt-2 sm:mt-0">
                 <Select defaultValue="active">
-                  <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectTrigger className="w-full sm:w-[180px] text-sm">
                     <SelectValue placeholder="Filter by status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -523,13 +523,13 @@ export default function VendorDashboard() {
               </h3>
               
               {business?.id ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                   <div>
                     <Card>
-                      <CardHeader>
+                      <CardHeader className="p-4 sm:p-6">
                         <CardTitle className="text-base">Rating Summary</CardTitle>
                       </CardHeader>
-                      <CardContent>
+                      <CardContent className="p-4 sm:p-6 pt-0">
                         <BusinessRatingSummary businessId={business.id} />
                       </CardContent>
                     </Card>
@@ -537,11 +537,11 @@ export default function VendorDashboard() {
                   
                   <div>
                     <Card>
-                      <CardHeader>
+                      <CardHeader className="p-4 sm:p-6">
                         <CardTitle className="text-base">Recent Reviews</CardTitle>
                       </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4 max-h-96 overflow-y-auto">
+                      <CardContent className="p-4 sm:p-6 pt-0">
+                        <div className="space-y-3 sm:space-y-4 max-h-64 sm:max-h-96 overflow-y-auto">
                           {/* We'll display the most recent ratings here */}
                           <p className="text-sm text-gray-500">No reviews available yet</p>
                         </div>
@@ -644,9 +644,9 @@ function DealCard({ deal }: { deal: any }) {
   }
   
   return (
-    <Card className="overflow-hidden h-full flex flex-col">
+    <Card className="overflow-hidden h-full flex flex-col shadow-sm hover:shadow transition-shadow duration-200">
       {deal.imageUrl && (
-        <div className="h-36 sm:h-48 w-full relative overflow-hidden">
+        <div className="h-32 sm:h-36 md:h-48 w-full relative overflow-hidden">
           <img 
             src={deal.imageUrl} 
             alt={deal.title} 
@@ -667,31 +667,31 @@ function DealCard({ deal }: { deal: any }) {
           )}
         </div>
       )}
-      <CardHeader className="pb-0 pt-3 sm:pt-4 sm:pb-1 px-3 sm:px-6">
-        <CardTitle className="text-base sm:text-lg line-clamp-1">{deal.title}</CardTitle>
-        <CardDescription className="text-xs sm:text-sm">
+      <CardHeader className="pb-0 pt-3 sm:pt-4 sm:pb-1 px-3 sm:px-4 md:px-6">
+        <CardTitle className="text-sm sm:text-base md:text-lg line-clamp-1 truncate">{deal.title}</CardTitle>
+        <CardDescription className="text-xs sm:text-sm truncate">
           {new Date(deal.startDate).toLocaleDateString()} - {new Date(deal.endDate).toLocaleDateString()}
         </CardDescription>
       </CardHeader>
-      <CardContent className="pt-2 pb-3 px-3 sm:px-6 flex-grow">
+      <CardContent className="pt-2 pb-2 sm:pb-3 px-3 sm:px-4 md:px-6 flex-grow">
         <p className="text-xs sm:text-sm text-gray-500 mb-2 line-clamp-2">{deal.description}</p>
         <div className="flex space-x-3 sm:space-x-4 text-xs sm:text-sm mt-2">
           <div className="flex items-center">
             <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
-            <span>{deal.viewCount || 0} views</span>
+            <span className="whitespace-nowrap">{deal.viewCount || 0} views</span>
           </div>
           <div className="flex items-center">
             <PackageOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
-            <span>{deal.redemptionCount || 0} used</span>
+            <span className="whitespace-nowrap">{deal.redemptionCount || 0} used</span>
           </div>
         </div>
       </CardContent>
-      <CardFooter className="border-t pt-3 sm:pt-4 px-3 sm:px-6 flex flex-row gap-2 justify-between">
-        <Button variant="outline" size="sm" className="text-xs h-8 sm:h-9 px-2.5 sm:px-3">
-          <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" /> Edit
+      <CardFooter className="border-t pt-2 sm:pt-3 pb-2 sm:pb-3 px-3 sm:px-4 md:px-6 flex flex-row gap-2 justify-between">
+        <Button variant="outline" size="sm" className="text-xs h-7 sm:h-8 px-2 sm:px-3 whitespace-nowrap">
+          <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" /> Edit
         </Button>
-        <Button size="sm" variant="ghost" className="text-xs h-8 sm:h-9 text-gray-500 px-2.5 sm:px-3">
-          <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" /> Manage
+        <Button size="sm" variant="ghost" className="text-xs h-7 sm:h-8 text-gray-500 px-2 sm:px-3 whitespace-nowrap">
+          <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" /> Manage
         </Button>
       </CardFooter>
     </Card>
