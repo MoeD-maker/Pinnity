@@ -109,7 +109,7 @@ export default function VendorDashboard() {
   const isBusinessApproved = business?.verificationStatus === 'verified';
 
   return (
-    <div className="w-full max-w-[1200px] mx-auto px-3 sm:px-4 py-4 sm:py-6 mb-12 sm:mb-24">
+    <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 py-4 sm:py-6 mb-12 sm:mb-24 overflow-x-hidden">
       {/* Welcome and approval status banner */}
       <header className="mb-6 sm:mb-8">
         <div className="flex flex-col sm:flex-row justify-between sm:items-start mb-4 sm:mb-2 gap-3 sm:gap-0">
@@ -191,7 +191,7 @@ export default function VendorDashboard() {
       )}
 
       <Tabs defaultValue="deals" className="w-full">
-        <div className="overflow-x-auto pb-1 mb-4 sm:mb-6 scrollbar-hide">
+        <div className="overflow-x-auto pb-1 mb-4 sm:mb-6 scrollbar-hide -mx-4 sm:mx-0 px-4 sm:px-0">
           <TabsList className="min-w-[500px] w-full">
             <TabsTrigger value="deals" className="text-xs sm:text-sm py-1.5 sm:py-2">My Deals</TabsTrigger>
             <TabsTrigger value="redemptions" className="text-xs sm:text-sm py-1.5 sm:py-2">Verify Redemptions</TabsTrigger>
@@ -265,17 +265,17 @@ export default function VendorDashboard() {
               </div>
             </div>
             
-            <div className="overflow-x-auto border rounded-md">
-              <div className="min-w-[700px]">
+            <div className="overflow-x-auto border rounded-md scrollbar-hide -mx-4 sm:mx-0 px-4 sm:px-0 py-1">
+              <div className="min-w-[700px] w-full">
                 <table className="w-full border-collapse mb-0">
                   <thead>
                     <tr className="border-b border-gray-200">
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Deal</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Type</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Date Range</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Redemption PIN</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Redemptions</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500"></th>
+                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-500">Deal</th>
+                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-500">Type</th>
+                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-500">Date Range</th>
+                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-500">Redemption PIN</th>
+                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-500">Redemptions</th>
+                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-500"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -288,16 +288,16 @@ export default function VendorDashboard() {
                     
                     return (
                       <tr key={deal.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-4 text-sm">
+                        <td className="px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm">
                           <div className="font-medium">{deal.title}</div>
                         </td>
-                        <td className="px-4 py-4 text-sm">{deal.dealType?.replace('_', ' ') || '-'}</td>
-                        <td className="px-4 py-4 text-sm">
+                        <td className="px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm">{deal.dealType?.replace('_', ' ') || '-'}</td>
+                        <td className="px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm">
                           {format(new Date(deal.startDate), 'MM/dd/yyyy')} - {format(new Date(deal.endDate), 'MM/dd/yyyy')}
                         </td>
-                        <td className="px-4 py-4">
+                        <td className="px-3 sm:px-4 py-3 sm:py-4">
                           <div className="flex items-center space-x-2">
-                            <span className="font-mono text-base font-bold">{deal.redemptionCode}</span>
+                            <span className="font-mono text-xs sm:text-sm font-bold">{deal.redemptionCode}</span>
                             <Button 
                               variant="ghost" 
                               size="sm" 
@@ -310,15 +310,15 @@ export default function VendorDashboard() {
                                 });
                               }}
                             >
-                              <Copy className="h-3.5 w-3.5" />
+                              <Copy className="h-3 sm:h-3.5 w-3 sm:w-3.5" />
                             </Button>
                           </div>
                         </td>
-                        <td className="px-4 py-4 text-sm">
+                        <td className="px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm">
                           <span>{deal.redemptionCount || 0}/{deal.totalRedemptions || '∞'}</span>
                         </td>
-                        <td className="px-4 py-4 text-right">
-                          <Badge className={statusClass}>
+                        <td className="px-3 sm:px-4 py-3 sm:py-4 text-right">
+                          <Badge className={`${statusClass} text-xs`}>
                             {isActive ? 'Active' : isUpcoming ? 'Upcoming' : 'Expired'}
                           </Badge>
                         </td>
