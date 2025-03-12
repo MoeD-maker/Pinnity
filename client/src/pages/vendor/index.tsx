@@ -191,12 +191,12 @@ export default function VendorDashboard() {
       )}
 
       <Tabs defaultValue="deals" className="w-full">
-        <div className="overflow-x-auto pb-1 mb-6">
+        <div className="overflow-x-auto pb-1 mb-4 sm:mb-6 scrollbar-hide">
           <TabsList className="min-w-[500px] w-full">
-            <TabsTrigger value="deals">My Deals</TabsTrigger>
-            <TabsTrigger value="redemptions">Verify Redemptions</TabsTrigger>
-            <TabsTrigger value="business">Business Profile</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="deals" className="text-xs sm:text-sm py-1.5 sm:py-2">My Deals</TabsTrigger>
+            <TabsTrigger value="redemptions" className="text-xs sm:text-sm py-1.5 sm:py-2">Verify Redemptions</TabsTrigger>
+            <TabsTrigger value="business" className="text-xs sm:text-sm py-1.5 sm:py-2">Business Profile</TabsTrigger>
+            <TabsTrigger value="analytics" className="text-xs sm:text-sm py-1.5 sm:py-2">Analytics</TabsTrigger>
           </TabsList>
         </div>
         
@@ -580,14 +580,16 @@ function Circle(props: React.SVGProps<SVGSVGElement>) {
 
 function StatCard({ title, value, description, icon }: { title: string; value: number; description: string; icon: React.ReactNode }) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-gray-500">{title}</CardTitle>
-        {icon}
+    <Card className="overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 pt-3 sm:pt-4 px-3 sm:px-5">
+        <CardTitle className="text-xs sm:text-sm font-medium text-gray-500">{title}</CardTitle>
+        <div className="flex-shrink-0">
+          {icon}
+        </div>
       </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        <p className="text-xs text-gray-500 mt-1">{description}</p>
+      <CardContent className="px-3 sm:px-5 pb-3 sm:pb-4">
+        <div className="text-xl sm:text-2xl font-bold">{value}</div>
+        <p className="text-xs text-gray-500 mt-0.5 sm:mt-1 line-clamp-1">{description}</p>
       </CardContent>
     </Card>
   );
@@ -644,52 +646,52 @@ function DealCard({ deal }: { deal: any }) {
   return (
     <Card className="overflow-hidden h-full flex flex-col">
       {deal.imageUrl && (
-        <div className="h-48 w-full relative overflow-hidden">
+        <div className="h-36 sm:h-48 w-full relative overflow-hidden">
           <img 
             src={deal.imageUrl} 
             alt={deal.title} 
             className="object-cover w-full h-full"
           />
           <div className="absolute top-2 right-2">
-            <Badge className={`${statusColors[status]}`}>
+            <Badge className={`${statusColors[status]} text-xs sm:text-sm px-2 py-0.5 sm:px-2.5 sm:py-1`}>
               {statusLabel}
             </Badge>
           </div>
           {isPending && (
             <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-              <div className="bg-white/90 px-4 py-2 rounded-md flex items-center">
-                <Clock className="h-4 w-4 text-yellow-600 mr-2" />
-                <span className="text-sm font-medium">Awaiting Approval</span>
+              <div className="bg-white/90 px-3 sm:px-4 py-1.5 sm:py-2 rounded-md flex items-center">
+                <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-yellow-600 mr-1.5 sm:mr-2" />
+                <span className="text-xs sm:text-sm font-medium">Awaiting Approval</span>
               </div>
             </div>
           )}
         </div>
       )}
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg">{deal.title}</CardTitle>
-        <CardDescription>
+      <CardHeader className="pb-0 pt-3 sm:pt-4 sm:pb-1 px-3 sm:px-6">
+        <CardTitle className="text-base sm:text-lg line-clamp-1">{deal.title}</CardTitle>
+        <CardDescription className="text-xs sm:text-sm">
           {new Date(deal.startDate).toLocaleDateString()} - {new Date(deal.endDate).toLocaleDateString()}
         </CardDescription>
       </CardHeader>
-      <CardContent className="pb-4 flex-grow">
-        <p className="text-sm text-gray-500 mb-2 line-clamp-2">{deal.description}</p>
-        <div className="flex space-x-4 text-sm mt-2">
+      <CardContent className="pt-2 pb-3 px-3 sm:px-6 flex-grow">
+        <p className="text-xs sm:text-sm text-gray-500 mb-2 line-clamp-2">{deal.description}</p>
+        <div className="flex space-x-3 sm:space-x-4 text-xs sm:text-sm mt-2">
           <div className="flex items-center">
-            <BarChart3 className="h-4 w-4 mr-1" />
+            <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
             <span>{deal.viewCount || 0} views</span>
           </div>
           <div className="flex items-center">
-            <PackageOpen className="h-4 w-4 mr-1" />
+            <PackageOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
             <span>{deal.redemptionCount || 0} used</span>
           </div>
         </div>
       </CardContent>
-      <CardFooter className="border-t pt-4 flex flex-col sm:flex-row gap-2 sm:justify-between">
-        <Button variant="outline" size="sm" className="w-full sm:w-auto justify-center">
-          <FileText className="h-4 w-4 mr-2" /> Edit
+      <CardFooter className="border-t pt-3 sm:pt-4 px-3 sm:px-6 flex flex-row gap-2 justify-between">
+        <Button variant="outline" size="sm" className="text-xs h-8 sm:h-9 px-2.5 sm:px-3">
+          <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" /> Edit
         </Button>
-        <Button size="sm" variant="ghost" className="text-gray-500 w-full sm:w-auto justify-center">
-          <Settings className="h-4 w-4 mr-2" /> Manage
+        <Button size="sm" variant="ghost" className="text-xs h-8 sm:h-9 text-gray-500 px-2.5 sm:px-3">
+          <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" /> Manage
         </Button>
       </CardFooter>
     </Card>
@@ -707,39 +709,39 @@ function VerificationRequirements({ business }: { business: any }) {
   const progressPercentage = (completedCount / documents.length) * 100;
 
   return (
-    <Card className="mb-8">
-      <CardHeader>
-        <CardTitle>Complete Your Verification</CardTitle>
-        <CardDescription>
+    <Card className="mb-6 sm:mb-8">
+      <CardHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4">
+        <CardTitle className="text-lg sm:text-xl">Complete Your Verification</CardTitle>
+        <CardDescription className="text-xs sm:text-sm mt-1">
           Submit the required documents to verify your business
         </CardDescription>
-        <Progress value={progressPercentage} className="h-2 mt-2" />
+        <Progress value={progressPercentage} className="h-2 mt-2 sm:mt-3" />
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
+      <CardContent className="px-4 sm:px-6 py-2 sm:py-3">
+        <div className="space-y-3 sm:space-y-4">
           {documents.map(doc => (
-            <div key={doc.id} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0">
+            <div key={doc.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
               <div className="flex items-center">
-                <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center ${
+                <div className={`flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center ${
                   doc.status === 'completed' ? 'text-green-500' : 'text-gray-300'
                 }`}>
                   {doc.status === 'completed' ? (
-                    <CheckCircle className="w-5 h-5" />
+                    <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                   ) : (
-                    <Circle className="w-5 h-5" />
+                    <Circle className="w-4 h-4 sm:w-5 sm:h-5" />
                   )}
                 </div>
-                <div className="ml-4 flex-1">
-                  <p className="text-sm font-medium">{doc.name}</p>
+                <div className="ml-3 sm:ml-4 flex-1">
+                  <p className="text-xs sm:text-sm font-medium">{doc.name}</p>
                 </div>
               </div>
-              <div className="pl-9 sm:pl-0">
+              <div className="pl-7 sm:pl-0 mt-1 sm:mt-0">
                 {doc.status === 'completed' ? (
-                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs py-0.5 px-2">
                     Submitted
                   </Badge>
                 ) : (
-                  <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                  <Button variant="outline" size="sm" className="h-7 sm:h-8 text-xs w-full sm:w-auto px-2 sm:px-3">
                     Upload
                   </Button>
                 )}
@@ -748,9 +750,9 @@ function VerificationRequirements({ business }: { business: any }) {
           ))}
         </div>
       </CardContent>
-      <CardFooter className="border-t pt-4 sm:pt-6">
-        <div className="flex items-start sm:items-center text-xs sm:text-sm text-gray-500">
-          <Clock className="w-4 h-4 mr-2 mt-0.5 sm:mt-0 flex-shrink-0" />
+      <CardFooter className="border-t px-4 sm:px-6 pt-3 sm:pt-4 pb-4 sm:pb-5">
+        <div className="flex items-start sm:items-center text-xs text-gray-500">
+          <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 mt-0.5 sm:mt-0 flex-shrink-0" />
           <span>Estimated approval: 1-2 business days after all documents are submitted</span>
         </div>
       </CardFooter>
