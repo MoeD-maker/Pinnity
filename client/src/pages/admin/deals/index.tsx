@@ -76,7 +76,7 @@ interface Deal {
 
 export default function DealsPage() {
   const queryClient = useQueryClient();
-  const [_, navigate] = useLocation();
+  const [location, setLocation] = useLocation();
   const [filter, setFilter] = useState({
     status: "pending",
     category: "all",
@@ -684,7 +684,7 @@ export default function DealsPage() {
                               
                               <DropdownMenuItem 
                                 className="cursor-pointer"
-                                onClick={() => navigate(`/admin/deals/edit/${deal.id}`)}
+                                onClick={() => setLocation(`/admin/deals/edit/${deal.id}`)}
                               >
                                 <Edit className="mr-2 h-4 w-4" />
                                 <span>Edit Deal</span>
@@ -997,6 +997,18 @@ export default function DealsPage() {
             </div>
           )}
           <DialogFooter className="space-x-2">
+            {selectedDealForDetail && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setLocation(`/admin/deals/edit/${selectedDealForDetail.id}`);
+                  setDealDetailDialogOpen(false);
+                }}
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Edit Deal
+              </Button>
+            )}
             {selectedDealForDetail && selectedDealForDetail.status === "pending" && (
               <>
                 <Button 
