@@ -227,7 +227,7 @@ export default function VendorDashboard() {
               disabled={!isBusinessApproved}
             />
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            <div className="card-grid">
               {deals.map((deal) => (
                 <DealCard key={deal.id} deal={deal} />
               ))}
@@ -239,7 +239,7 @@ export default function VendorDashboard() {
           <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border">
             <h2 className="text-xl font-semibold mb-2 sm:mb-4">Verify Redemption</h2>
             
-            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
+            <div className="flex-responsive justify-between sm:items-center gap-4 mb-6">
               <div className="relative w-full max-w-full sm:max-w-md">
                 <input
                   type="search"
@@ -265,9 +265,9 @@ export default function VendorDashboard() {
               </div>
             </div>
             
-            <div className="overflow-x-auto border rounded-md scrollbar-hide -mx-4 sm:mx-0 px-4 sm:px-0 py-1">
+            <div className="overflow-x-auto border rounded-md scrollbar-hide table-responsive py-1">
               <div className="min-w-[700px] w-full">
-                <table className="w-full border-collapse mb-0">
+                <table className="w-full border-collapse mb-0 table-fixed-mobile">
                   <thead>
                     <tr className="border-b border-gray-200">
                       <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-500">Deal</th>
@@ -420,7 +420,7 @@ export default function VendorDashboard() {
         
         <TabsContent value="business">
           <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
+            <div className="flex-responsive sm:justify-between sm:items-center gap-3 mb-6">
               <h2 className="text-xl font-semibold">Business Profile</h2>
               <Button variant="outline" className="w-full sm:w-auto">
                 <FileText className="h-4 w-4 mr-2" /> Edit Profile
@@ -497,7 +497,7 @@ export default function VendorDashboard() {
             <h2 className="text-xl font-semibold mb-2 sm:mb-4">Performance Analytics</h2>
             <p className="text-gray-500 mb-4 sm:mb-6">Track the performance of your deals over time</p>
             
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Deal Views - Last 30 Days</CardTitle>
@@ -741,7 +741,7 @@ function VerificationRequirements({ business }: { business: any }) {
                     Submitted
                   </Badge>
                 ) : (
-                  <Button variant="outline" size="sm" className="h-7 sm:h-8 text-xs w-full sm:w-auto px-2 sm:px-3">
+                  <Button variant="outline" size="sm" className="h-7 sm:h-8 text-xs w-full sm:w-auto px-2 sm:px-3 text-nowrap">
                     Upload
                   </Button>
                 )}
