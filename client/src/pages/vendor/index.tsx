@@ -109,10 +109,10 @@ export default function VendorDashboard() {
   const isBusinessApproved = business?.verificationStatus === 'verified';
 
   return (
-    <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 py-4 sm:py-6 mb-12 sm:mb-24 overflow-x-hidden">
+    <div className="w-full max-w-[1200px] mx-auto container-responsive mb-12 sm:mb-24 overflow-x-hidden">
       {/* Welcome and approval status banner */}
       <header className="mb-6 sm:mb-8">
-        <div className="flex flex-col sm:flex-row justify-between sm:items-start mb-4 sm:mb-2 gap-3 sm:gap-0">
+        <div className="flex-responsive justify-between sm:items-start mb-4 sm:mb-2 gap-3 sm:gap-0">
           <div>
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Welcome, {business?.businessName || user?.firstName}</h1>
             <p className="text-gray-500 mt-1">Manage your deals and business profile</p>
@@ -201,7 +201,7 @@ export default function VendorDashboard() {
         </div>
         
         <TabsContent value="deals" className="space-y-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-2 mb-4">
+          <div className="flex-responsive justify-between items-start sm:items-center gap-3 sm:gap-2 mb-4">
             <h2 className="text-xl font-semibold">Your Deals</h2>
             <div className="flex gap-2 w-full sm:w-auto">
               <Button variant="outline" size="sm" className="w-full sm:w-auto">

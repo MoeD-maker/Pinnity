@@ -24,3 +24,42 @@
     position: relative;
   }
 }
+
+/* Mobile Responsiveness Enhancements */
+@layer utilities {
+  /* Table responsive styles */
+  .table-responsive {
+    @apply w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0;
+  }
+  
+  .table-responsive table {
+    @apply min-w-full;
+  }
+  
+  /* Card grid responsiveness */
+  .card-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6;
+  }
+  
+  /* Responsive padding */
+  .container-responsive {
+    @apply px-4 sm:px-6 py-4 sm:py-6;
+  }
+  
+  /* Flex direction helpers */
+  .flex-responsive {
+    @apply flex flex-col sm:flex-row;
+  }
+  
+  /* Fix table layout on mobile */
+  @media (max-width: 640px) {
+    .table-fixed-mobile th,
+    .table-fixed-mobile td {
+      @apply whitespace-nowrap text-xs;
+    }
+    
+    .truncate-mobile {
+      @apply max-w-[120px] truncate;
+    }
+  }
+}
