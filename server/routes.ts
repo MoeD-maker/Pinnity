@@ -444,6 +444,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/deals/:id", authenticate, async (req: Request, res: Response) => {
+    try {
+      const dealId = parseInt(req.params.id);
+      if (isNaN(dealId)) {
+        return res.status(400).json({ message: "Invalid deal ID" });
+      }
+      
+      // Get the deal to check ownership
+      const existingDeal = await storage.getDeal(dealId);
+      if (!existingDeal) {
+        return res.status(404).json({ message: "Deal not found" });
+      }
+      
+      // Verify that the authenticated user is authorized to edit this deal
+      // Allow admins and the business owner of the deal
+      if (req.user?.userType !== 'admin') {
+        // For business users, check if they own the business associated with the deal
+        if (req.user?.userType === 'business') {
+          const business = await storage.getBusinessByUserId(req.user.userId);
+          if (!business || business.id !== existingDeal.business.id) {
+            return res.status(403).json({ message: "You are not authorized to edit this deal" });
+          }
+        } else {
+          return res.status(403).json({ message: "You are not authorized to edit deals" });
+        }
+      }
+      
+      const dealData = req.body;
+      
+      // Don't allow changing the businessId
+      if (dealData.businessId && dealData.businessId !== existingDeal.businessId) {
+        return res.status(400).json({ message: "Cannot change the business associated with a deal" });
+      }
+      
+      // Remove businessId from update data to ensure it's not changed
+      delete dealData.businessId;
+      
+      console.log("Updating deal with data:", dealData);
+      const updatedDeal = await storage.updateDeal(dealId, dealData);
+      
+      return res.status(200).json(updatedDeal);
+    } catch (error) {
+      console.error("Update deal error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // User favorites routes
   app.get("/api/user/:userId/favorites", authenticate, checkOwnership('userId'), async (req: Request, res: Response) => {
     try {
