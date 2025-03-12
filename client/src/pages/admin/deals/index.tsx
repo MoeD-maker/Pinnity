@@ -538,6 +538,7 @@ export default function DealsPage() {
                     <TableHead>Type</TableHead>
                     <TableHead>Submitted</TableHead>
                     <TableHead>Duration</TableHead>
+                    <TableHead>Redemptions</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
@@ -603,6 +604,12 @@ export default function DealsPage() {
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {Math.ceil((new Date(deal.endDate).getTime() - new Date(deal.startDate).getTime()) / (1000 * 60 * 60 * 24))} days
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1 text-sm">
+                          <Bookmark className="h-3 w-3 text-muted-foreground" />
+                          <span>{deal.redemptionCount || 0}</span>
                         </div>
                       </TableCell>
                       <TableCell>{getStatusBadge(deal.status)}</TableCell>
