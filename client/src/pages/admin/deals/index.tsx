@@ -96,205 +96,39 @@ export default function DealsPage() {
   const { data: deals = [], isLoading } = useQuery({
     queryKey: ['admin', 'deals'],
     queryFn: async () => {
-      // This would be an API call in a real application
-      // Mock data for demonstration
-      const mockDeals: Deal[] = [
-        {
-          id: 1,
-          title: "50% Off Your First Coffee",
-          description: "Get 50% off your first coffee purchase. Valid for new customers only.",
-          category: "Food & Beverage",
-          startDate: "2023-07-01",
-          endDate: "2023-07-31",
-          submissionDate: "2023-06-15",
-          dealType: "percentage",
-          discount: "50%",
-          status: "pending",
-          businessId: 1,
-          business: {
-            id: 1,
-            businessName: "Coffee Corner",
-            businessCategory: "Food & Beverage",
-            address: "123 Main St, Anytown, USA",
-            phone: "555-123-4567",
-            email: "info@coffeecorner.com",
-            status: "approved",
-            verificationStatus: "verified"
-          },
-          redemptionCount: 0,
-          viewCount: 0,
-          revisionCount: 0,
-          lastUpdated: "2023-06-15"
-        },
-        {
-          id: 2,
-          title: "Buy One Get One Free - Summer Collection",
-          description: "Purchase any item from our summer collection and get another item of equal or lesser value for free.",
-          category: "Retail",
-          startDate: "2023-07-15",
-          endDate: "2023-08-15",
-          submissionDate: "2023-06-20",
-          dealType: "bogo",
-          status: "pending",
-          businessId: 2,
-          business: {
-            id: 2,
-            businessName: "Urban Threads",
-            businessCategory: "Retail",
-            address: "456 Fashion Ave, Style City, SC 20002",
-            phone: "555-234-5678",
-            email: "support@urbanthreads.com",
-            status: "approved",
-            verificationStatus: "verified"
-          },
-          redemptionCount: 0,
-          viewCount: 0,
-          revisionCount: 0,
-          lastUpdated: "2023-06-20"
-        },
-        {
-          id: 3,
-          title: "Free Appetizer with Any Entree",
-          description: "Receive a free appetizer when you purchase any entree. Valid for dine-in only.",
-          category: "Food & Beverage",
-          startDate: "2023-07-01",
-          endDate: "2023-09-30",
-          submissionDate: "2023-06-18",
-          dealType: "freebie",
-          status: "approved",
-          businessId: 3,
-          business: {
-            id: 3,
-            businessName: "Bistro Delight",
-            businessCategory: "Food & Beverage",
-            address: "789 Gourmet Blvd, Taste City, TC 30003",
-            phone: "555-345-6789",
-            email: "reservations@bistrodelight.com",
-            status: "approved",
-            verificationStatus: "verified"
-          },
-          redemptionCount: 45,
-          viewCount: 320,
-          revisionCount: 1,
-          lastUpdated: "2023-06-22"
-        },
-        {
-          id: 4,
-          title: "20% Off All Electronics",
-          description: "Save 20% on all electronics in our store. Cannot be combined with other offers.",
-          category: "Electronics",
-          startDate: "2023-07-01",
-          endDate: "2023-07-15",
-          submissionDate: "2023-06-22",
-          dealType: "percentage",
-          discount: "20%",
-          status: "rejected",
-          businessId: 4,
-          business: {
-            id: 4,
-            businessName: "Tech Haven",
-            businessCategory: "Electronics",
-            address: "101 Circuit Dr, Digital City, DC 40004",
-            phone: "555-456-7890",
-            email: "info@techhaven.com",
-            status: "approved",
-            verificationStatus: "verified"
-          },
-          redemptionCount: 0,
-          viewCount: 0,
-          revisionCount: 0,
-          lastUpdated: "2023-06-23"
-        },
-        {
-          id: 5,
-          title: "Free One-Week Trial Membership",
-          description: "Try our gym for free for one week. Includes access to all facilities and classes.",
-          category: "Health & Fitness",
-          startDate: "2023-07-01",
-          endDate: "2023-12-31",
-          submissionDate: "2023-06-25",
-          dealType: "freebie",
-          status: "pending",
-          businessId: 5,
-          business: {
-            id: 5,
-            businessName: "Fitness First",
-            businessCategory: "Health & Fitness",
-            address: "202 Muscle Rd, Fit Town, FT 50005",
-            phone: "555-567-8901",
-            email: "member@fitnessfirst.com",
-            status: "approved",
-            verificationStatus: "verified"
-          },
-          redemptionCount: 0,
-          viewCount: 0,
-          revisionCount: 0,
-          lastUpdated: "2023-06-25"
-        },
-        {
-          id: 6,
-          title: "Summer Reading Sale - 30% Off All Books",
-          description: "Get 30% off all books in our store. Perfect for your summer reading list!",
-          category: "Books & Media",
-          startDate: "2023-07-01",
-          endDate: "2023-08-31",
-          submissionDate: "2023-06-26",
-          dealType: "percentage",
-          discount: "30%",
-          status: "approved",
-          businessId: 7,
-          business: {
-            id: 7,
-            businessName: "Bookworm's Haven",
-            businessCategory: "Books & Media",
-            address: "404 Reader Ln, Story City, SC 70007",
-            phone: "555-789-0123",
-            email: "books@bookworm.com",
-            status: "approved",
-            verificationStatus: "verified"
-          },
-          redemptionCount: 12,
-          viewCount: 89,
-          revisionCount: 0,
-          lastUpdated: "2023-06-28"
-        },
-        {
-          id: 7,
-          title: "Free Pet Grooming with Annual Checkup",
-          description: "Schedule an annual vet checkup and receive a free pet grooming session.",
-          category: "Pets",
-          startDate: "2023-07-01",
-          endDate: "2023-09-30",
-          submissionDate: "2023-06-27",
-          dealType: "freebie",
-          status: "pending",
-          businessId: 6,
-          business: {
-            id: 6,
-            businessName: "Pet Paradise",
-            businessCategory: "Pets",
-            address: "303 Paw Path, Animal City, AC 60006",
-            phone: "555-678-9012",
-            email: "care@petparadise.com",
-            status: "approved",
-            verificationStatus: "verified"
-          },
-          redemptionCount: 0,
-          viewCount: 0,
-          revisionCount: 0,
-          lastUpdated: "2023-06-27"
+      try {
+        // Get deals with pending status first
+        const response = await apiRequest('/api/deals');
+        
+        if (!response) {
+          return [];
         }
-      ];
-      return mockDeals;
+        
+        // Map the response to match our expected deal structure
+        // Converting createdAt to submissionDate for display
+        const dealData = response.map((deal: any) => ({
+          ...deal,
+          submissionDate: deal.createdAt,
+          lastUpdated: deal.createdAt
+        }));
+        
+        return dealData;
+      } catch (error) {
+        console.error('Error fetching deals:', error);
+        return [];
+      }
     }
   });
 
   // Mutation for approving deals
   const approveDealMutation = useMutation({
     mutationFn: async (dealId: number) => {
-      // This would be an API call in a real application
-      console.log(`Approving deal ${dealId}`);
-      return { success: true };
+      // Use the real API endpoint to update the deal status
+      const response = await apiRequest(`/api/deals/${dealId}/status`, {
+        method: 'PUT',
+        data: { status: 'approved' }
+      });
+      return response;
     },
     onSuccess: () => {
       // Invalidate queries to refetch data
@@ -305,9 +139,15 @@ export default function DealsPage() {
   // Mutation for rejecting deals
   const rejectDealMutation = useMutation({
     mutationFn: async ({ dealId, reason }: { dealId: number, reason: string }) => {
-      // This would be an API call in a real application
-      console.log(`Rejecting deal ${dealId} with reason: ${reason}`);
-      return { success: true };
+      // Use real API to update deal status to rejected
+      const response = await apiRequest(`/api/deals/${dealId}/status`, {
+        method: 'PUT',
+        data: { 
+          status: 'rejected',
+          feedback: reason
+        }
+      });
+      return response;
     },
     onSuccess: () => {
       // Close dialog and reset form
