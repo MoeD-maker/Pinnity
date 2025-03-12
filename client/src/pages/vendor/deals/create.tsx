@@ -131,8 +131,6 @@ export default function CreateDealPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [business, setBusiness] = useState<any>(null);
-  const [businessLoading, setBusinessLoading] = useState(true);
-  const [businessError, setBusinessError] = useState<string | null>(null);
   
   // Image upload related state
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -262,55 +260,31 @@ export default function CreateDealPage() {
   useEffect(() => {
     const fetchBusinessData = async () => {
       if (user?.id) {
-        setBusinessLoading(true);
-        setBusinessError(null);
         try {
-          // Use the apiRequest helper which handles auth tokens automatically
-          console.log('Fetching business data for user:', user.id);
-          const data = await apiRequest(`/api/business/user/${user.id}`);
+          const data = await fetch(`/api/business/user/${user.id}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          }).then(res => {
+            if (!res.ok) throw new Error('Failed to load business data');
+            return res.json();
+          });
           
           console.log('Loaded business data:', data);
-          
-          // More detailed logging for diagnosis
-          if (data === null || data === undefined) {
-            console.error('Business data is null or undefined');
-          } else if (typeof data !== 'object') {
-            console.error('Business data is not an object, received:', typeof data);
-          } else if (!('id' in data)) {
-            console.error('Business data is missing ID property. Keys:', Object.keys(data));
-          }
-          
-          if (data && data.id) {
-            console.log('Setting business data with ID:', data.id);
-            setBusiness(data);
-          } else {
-            const errorMsg = "No valid business data found. Please ensure your business profile is complete.";
-            console.error(errorMsg);
-            setBusinessError(errorMsg);
-            toast({
-              title: "Business data incomplete",
-              description: "Please complete your business profile before creating deals",
-              variant: "destructive"
-            });
-          }
+          setBusiness(data);
         } catch (error) {
           console.error('Error loading business data:', error);
-          setBusinessError(error instanceof Error ? error.message : "Unknown error loading business data");
           toast({
             title: "Error loading business data",
             description: "Please try again or contact support",
             variant: "destructive"
           });
-        } finally {
-          setBusinessLoading(false);
         }
-      } else {
-        console.error('No user ID available for fetching business data');
       }
     };
     
     fetchBusinessData();
-  }, [user, toast]);
+  }, [user]);
 
   // Initialize terms when component mounts
   useEffect(() => {
@@ -494,72 +468,42 @@ export default function CreateDealPage() {
         <h1 className="text-2xl font-bold">Create New Deal</h1>
       </div>
       
-      {businessLoading ? (
-        <Card className="mb-8">
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center justify-center p-6 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00796B] mb-4"></div>
-              <h3 className="text-lg font-medium mb-2">Loading Business Data</h3>
-              <p className="text-sm text-gray-500">Please wait while we fetch your business information...</p>
+      {/* Progress bar */}
+      <div className="mb-8">
+        <Progress value={progress} className="h-2" />
+        <div className="flex justify-between mt-2">
+          {steps.map((step, index) => (
+            <div key={step.id} className="text-center">
+              <div className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-1",
+                index < currentStep 
+                  ? "bg-[#00796B] text-white" 
+                  : index === currentStep 
+                    ? "border-2 border-[#00796B] text-[#00796B]" 
+                    : "border border-gray-300 text-gray-400"
+              )}>
+                {index < currentStep ? 
+                  <CheckCircle className="h-5 w-5" /> : 
+                  (index + 1)
+                }
+              </div>
+              <div className={cn(
+                "text-xs",
+                index <= currentStep ? "text-[#00796B] font-medium" : "text-gray-400"
+              )}>
+                {step.title}
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      ) : businessError ? (
-        <Card className="mb-8">
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center justify-center p-6 text-center">
-              <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
-              <h3 className="text-lg font-medium mb-2">Business Data Error</h3>
-              <p className="text-sm text-gray-500 mb-4">{businessError}</p>
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setLocation('/vendor/profile');
-                }}
-              >
-                Go to Business Profile
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          {/* Progress bar */}
-          <div className="mb-8">
-            <Progress value={progress} className="h-2" />
-            <div className="flex justify-between mt-2">
-              {steps.map((step, index) => (
-                <div key={step.id} className="text-center">
-                  <div className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-1",
-                    index < currentStep 
-                      ? "bg-[#00796B] text-white" 
-                      : index === currentStep 
-                        ? "border-2 border-[#00796B] text-[#00796B]" 
-                        : "border border-gray-300 text-gray-400"
-                  )}>
-                    {index < currentStep ? 
-                      <CheckCircle className="h-5 w-5" /> : 
-                      (index + 1)
-                    }
-                  </div>
-                  <div className={cn(
-                    "text-xs",
-                    index <= currentStep ? "text-[#00796B] font-medium" : "text-gray-400"
-                  )}>
-                    {step.title}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>{steps[currentStep].title}</CardTitle>
-              <CardDescription>{steps[currentStep].description}</CardDescription>
-            </CardHeader>
-            <CardContent>
+          ))}
+        </div>
+      </div>
+      
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>{steps[currentStep].title}</CardTitle>
+          <CardDescription>{steps[currentStep].description}</CardDescription>
+        </CardHeader>
+        <CardContent>
           {/* Step 1: Deal Basics */}
           {currentStep === 0 && (
             <div className="space-y-6">
