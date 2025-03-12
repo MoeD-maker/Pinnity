@@ -330,16 +330,48 @@ export default function CreateDealPage() {
       // Get form values
       const values = form.getValues();
       
-      // TODO: Submit to API endpoint
-      console.log('Submitting deal:', values);
+      // Convert dates to ISO string format
+      const dealData = {
+        ...values,
+        startDate: values.startDate?.toISOString(),
+        endDate: values.endDate?.toISOString(),
+        businessId: business?.id, // Ensure the business ID is included
+        status: 'pending', // Set initial status as pending
+        createdAt: new Date().toISOString(),
+        viewCount: 0,
+        saveCount: 0,
+        redemptionCount: 0
+      };
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Submit to API endpoint
+      console.log('Submitting deal:', dealData);
+      const response = await fetch('/api/deals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}` 
+        },
+        body: JSON.stringify(dealData)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create deal');
+      }
+      
+      // Get the created deal
+      const deal = await response.json();
+      console.log('Deal created successfully:', deal);
       
       // Redirect to success page or deals list
       setLocation('/vendor');
     } catch (error) {
       console.error('Error submitting deal:', error);
+      toast({
+        title: "Error creating deal",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
     } finally {
       setSubmitting(false);
     }
