@@ -45,10 +45,50 @@ export default function VendorDashboard() {
   });
 
   // Notifications for demo purposes
-  const [notifications] = useState([
-    { id: 1, type: 'approval', message: 'Your business profile has been approved!', read: false },
-    { id: 2, type: 'deal', message: 'Your "Summer Sale" deal is expiring in 3 days', read: true }
+  const [notifications, setNotifications] = useState<Array<{
+    id: number;
+    type: string;
+    message: string;
+    read: boolean;
+    createdAt?: Date;
+  }>>([
+    { 
+      id: 1, 
+      type: 'approval', 
+      message: 'Your business profile has been approved!', 
+      read: false,
+      createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000) // Random date in the last 30 days for demo
+    },
+    { 
+      id: 2, 
+      type: 'deal', 
+      message: 'Your "Summer Sale" deal is expiring in 3 days', 
+      read: true,
+      createdAt: new Date() // Today
+    }
   ]);
+
+  // Filter out approval notifications that are older than 24 hours
+  useEffect(() => {
+    const now = new Date();
+    const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+    
+    // Filter notifications - remove approval notifications older than 24 hours
+    const filteredNotifications = notifications.filter(notification => {
+      // If it's an approval notification, check its age
+      if (notification.type === 'approval' && notification.createdAt) {
+        const timeDiff = now.getTime() - new Date(notification.createdAt).getTime();
+        return timeDiff <= ONE_DAY_MS; // Keep if less than 24 hours old
+      }
+      // Keep all other notification types
+      return true;
+    });
+    
+    // Only update if there are notifications to be removed to prevent infinite loop
+    if (filteredNotifications.length !== notifications.length) {
+      setNotifications(filteredNotifications);
+    }
+  }, []); // Run once on component mount
 
   useEffect(() => {
     async function fetchBusinessData() {
