@@ -270,10 +270,23 @@ export default function CreateDealPage() {
           const data = await apiRequest(`/api/business/user/${user.id}`);
           
           console.log('Loaded business data:', data);
+          
+          // More detailed logging for diagnosis
+          if (data === null || data === undefined) {
+            console.error('Business data is null or undefined');
+          } else if (typeof data !== 'object') {
+            console.error('Business data is not an object, received:', typeof data);
+          } else if (!('id' in data)) {
+            console.error('Business data is missing ID property. Keys:', Object.keys(data));
+          }
+          
           if (data && data.id) {
+            console.log('Setting business data with ID:', data.id);
             setBusiness(data);
           } else {
-            setBusinessError("No valid business data found. Please ensure your business profile is complete.");
+            const errorMsg = "No valid business data found. Please ensure your business profile is complete.";
+            console.error(errorMsg);
+            setBusinessError(errorMsg);
             toast({
               title: "Business data incomplete",
               description: "Please complete your business profile before creating deals",
@@ -291,6 +304,8 @@ export default function CreateDealPage() {
         } finally {
           setBusinessLoading(false);
         }
+      } else {
+        console.error('No user ID available for fetching business data');
       }
     };
     
@@ -539,12 +554,12 @@ export default function CreateDealPage() {
             </div>
           </div>
           
-          <Card className="mb-8">>
-        <CardHeader>
-          <CardTitle>{steps[currentStep].title}</CardTitle>
-          <CardDescription>{steps[currentStep].description}</CardDescription>
-        </CardHeader>
-        <CardContent>
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>{steps[currentStep].title}</CardTitle>
+              <CardDescription>{steps[currentStep].description}</CardDescription>
+            </CardHeader>
+            <CardContent>
           {/* Step 1: Deal Basics */}
           {currentStep === 0 && (
             <div className="space-y-6">
