@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -124,9 +126,11 @@ const steps = [
 
 export default function CreateDealPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [currentStep, setCurrentStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [business, setBusiness] = useState<any>(null);
   
   // Image upload related state
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -252,6 +256,36 @@ export default function CreateDealPage() {
   // Watch form values for UI updates
   const watchedValues = form.watch();
   
+  // Fetch business data when component mounts
+  useEffect(() => {
+    const fetchBusinessData = async () => {
+      if (user?.id) {
+        try {
+          const data = await fetch(`/api/business/user/${user.id}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          }).then(res => {
+            if (!res.ok) throw new Error('Failed to load business data');
+            return res.json();
+          });
+          
+          console.log('Loaded business data:', data);
+          setBusiness(data);
+        } catch (error) {
+          console.error('Error loading business data:', error);
+          toast({
+            title: "Error loading business data",
+            description: "Please try again or contact support",
+            variant: "destructive"
+          });
+        }
+      }
+    };
+    
+    fetchBusinessData();
+  }, [user]);
+
   // Initialize terms when component mounts
   useEffect(() => {
     updateCombinedTerms();

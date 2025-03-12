@@ -410,11 +410,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/deals", async (req: Request, res: Response) => {
+  app.post("/api/deals", authenticate, async (req: Request, res: Response) => {
     try {
-      // In a real app, verify that the authenticated user is a business owner
+      // Verify that the authenticated user is a business owner
+      if (!req.user || req.user.userType !== 'business') {
+        return res.status(403).json({ message: "Only business accounts can create deals" });
+      }
       
       const dealData = req.body;
+      
+      // Ensure the business exists
+      const business = await storage.getBusinessByUserId(req.user.userId);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+      
+      // Set the business ID from the verified user's business
+      dealData.businessId = business.id;
+      
+      // Set initial status to pending
+      dealData.status = 'pending';
+      
+      console.log("Creating deal with data:", dealData);
       const deal = await storage.createDeal(dealData);
       
       return res.status(201).json(deal);
