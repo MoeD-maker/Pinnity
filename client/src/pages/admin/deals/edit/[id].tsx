@@ -136,10 +136,7 @@ export default function EditDealPage() {
     async function fetchDeal() {
       try {
         setLoading(true);
-        const response = await apiRequest({
-          url: `/api/deals/${dealId}`,
-          method: 'GET'
-        });
+        const response = await apiRequest(`/api/deals/${dealId}`);
 
         if (response) {
           // Format dates for form
@@ -235,8 +232,7 @@ export default function EditDealPage() {
       data.terms = previewTerms;
 
       // Submit to API
-      await apiRequest({
-        url: `/api/deals/${dealId}`,
+      await apiRequest(`/api/deals/${dealId}`, {
         method: 'PUT',
         data
       });
