@@ -33,8 +33,10 @@ import {
   MessageSquare,
   History,
   Calendar as CalendarIcon,
-  Bookmark
+  Bookmark,
+  Edit
 } from 'lucide-react';
+import { useLocation } from 'wouter';
 import ViewDetailsLink from '@/components/admin/ViewDetailsLink';
 import { apiRequest } from "@/lib/queryClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -74,6 +76,7 @@ interface Deal {
 
 export default function DealsPage() {
   const queryClient = useQueryClient();
+  const [_, navigate] = useLocation();
   const [filter, setFilter] = useState({
     status: "pending",
     category: "all",
@@ -677,6 +680,14 @@ export default function DealsPage() {
                               <DropdownMenuItem className="cursor-pointer">
                                 <History className="mr-2 h-4 w-4" />
                                 <span>View History</span>
+                              </DropdownMenuItem>
+                              
+                              <DropdownMenuItem 
+                                className="cursor-pointer"
+                                onClick={() => navigate(`/admin/deals/edit/${deal.id}`)}
+                              >
+                                <Edit className="mr-2 h-4 w-4" />
+                                <span>Edit Deal</span>
                               </DropdownMenuItem>
                               
                               <DropdownMenuItem className="cursor-pointer">
