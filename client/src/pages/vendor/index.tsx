@@ -137,6 +137,10 @@ export default function VendorDashboard() {
   const handleCreateDeal = () => {
     setLocation('/vendor/deals/create');
   };
+  
+  const handleSimpleCreateDeal = () => {
+    setLocation('/vendor/deals/simple-create');
+  };
 
   if (loading) {
     return (
@@ -157,13 +161,23 @@ export default function VendorDashboard() {
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Welcome, {business?.businessName || user?.firstName}</h1>
             <p className="text-gray-500 mt-1">Manage your deals and business profile</p>
           </div>
-          <Button 
-            className="bg-[#00796B] hover:bg-[#004D40] sm:mt-0 w-full sm:w-auto"
-            disabled={!isBusinessApproved}
-            onClick={handleCreateDeal}
-          >
-            <PlusCircle className="mr-2 h-4 w-4" /> Create Deal
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button 
+              className="bg-[#00796B] hover:bg-[#004D40] sm:mt-0 w-full sm:w-auto"
+              disabled={!isBusinessApproved}
+              onClick={handleCreateDeal}
+            >
+              <PlusCircle className="mr-2 h-4 w-4" /> Create Deal
+            </Button>
+            <Button 
+              variant="outline"
+              disabled={!isBusinessApproved}
+              onClick={handleSimpleCreateDeal}
+              className="w-full sm:w-auto"
+            >
+              <PlusCircle className="mr-2 h-4 w-4" /> Simple Create
+            </Button>
+          </div>
         </div>
 
         {/* Approval status banner */}
@@ -255,6 +269,15 @@ export default function VendorDashboard() {
               >
                 <PlusCircle className="mr-2 h-4 w-4" /> Create Deal
               </Button>
+              <Button 
+                variant="outline"
+                size="sm"
+                disabled={!isBusinessApproved}
+                onClick={handleSimpleCreateDeal}
+                className="w-full sm:w-auto"
+              >
+                <PlusCircle className="mr-2 h-4 w-4" /> Simple
+              </Button>
             </div>
           </div>
           
@@ -265,6 +288,7 @@ export default function VendorDashboard() {
               actionText="Create Deal"
               onClick={handleCreateDeal}
               disabled={!isBusinessApproved}
+              onSimpleCreateClick={handleSimpleCreateDeal}
             />
           ) : (
             <div className="card-grid">
@@ -640,26 +664,41 @@ function EmptyState({
   description, 
   actionText, 
   onClick, 
-  disabled = false 
+  disabled = false,
+  onSimpleCreateClick
 }: { 
   title: string; 
   description: string; 
   actionText: string;
   onClick?: () => void;
   disabled?: boolean;
+  onSimpleCreateClick?: () => void;
 }) {
   return (
     <div className="bg-white p-4 sm:p-8 rounded-lg border border-dashed border-gray-300 text-center">
       <Store className="h-10 sm:h-12 w-10 sm:w-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
       <h3 className="text-lg font-medium mb-1 sm:mb-2">{title}</h3>
       <p className="text-gray-500 mb-3 sm:mb-4 text-sm sm:text-base">{description}</p>
-      <Button 
-        className="bg-[#00796B] hover:bg-[#004D40] w-full sm:w-auto"
-        onClick={onClick}
-        disabled={disabled}
-      >
-        <PlusCircle className="mr-2 h-4 w-4" /> {actionText}
-      </Button>
+      <div className="flex flex-col sm:flex-row gap-2 justify-center">
+        <Button 
+          className="bg-[#00796B] hover:bg-[#004D40] w-full sm:w-auto"
+          onClick={onClick}
+          disabled={disabled}
+        >
+          <PlusCircle className="mr-2 h-4 w-4" /> {actionText}
+        </Button>
+        
+        {onSimpleCreateClick && (
+          <Button 
+            variant="outline"
+            onClick={onSimpleCreateClick}
+            disabled={disabled}
+            className="w-full sm:w-auto"
+          >
+            <PlusCircle className="mr-2 h-4 w-4" /> Simple Create
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
