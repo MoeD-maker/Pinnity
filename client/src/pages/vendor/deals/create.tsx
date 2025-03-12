@@ -364,40 +364,40 @@ export default function CreateDealPage() {
       // Get form values
       const values = form.getValues();
       
+      if (!business?.id) {
+        throw new Error("Business information not available. Please try again or contact support.");
+      }
+      
       // Convert dates to ISO string format
       const dealData = {
         ...values,
         startDate: values.startDate?.toISOString(),
         endDate: values.endDate?.toISOString(),
-        businessId: business?.id, // Ensure the business ID is included
-        status: 'pending', // Set initial status as pending
-        createdAt: new Date().toISOString(),
+        businessId: business.id, // Ensure the business ID is included
+        // Let the server set the status to pending
         viewCount: 0,
         saveCount: 0,
         redemptionCount: 0
       };
       
-      // Submit to API endpoint
+      // Submit to API endpoint using our API client which adds auth headers
       console.log('Submitting deal:', dealData);
-      const response = await fetch('/api/deals', {
+      
+      // Use the apiRequest helper which handles auth tokens automatically
+      const deal = await apiRequest('/api/deals', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}` 
-        },
-        body: JSON.stringify(dealData)
+        data: dealData
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create deal');
-      }
-      
-      // Get the created deal
-      const deal = await response.json();
       console.log('Deal created successfully:', deal);
       
-      // Redirect to success page or deals list
+      toast({
+        title: "Deal created successfully",
+        description: "Your deal has been submitted for approval",
+        variant: "default"
+      });
+      
+      // Redirect to the vendor dashboard
       setLocation('/vendor');
     } catch (error) {
       console.error('Error submitting deal:', error);

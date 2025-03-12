@@ -1,8 +1,13 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
-// Function to get token from storage
+// Function to get token from storage - supporting both new and legacy storage keys
 const getToken = (): string | null => {
-  return localStorage.getItem('pinnity_auth_token');
+  // Try the standard token key first
+  const token = localStorage.getItem('pinnity_auth_token');
+  if (token) return token;
+  
+  // Backward compatibility - try the 'token' key
+  return localStorage.getItem('token');
 };
 
 async function throwIfResNotOk(res: Response) {
