@@ -435,7 +435,7 @@ export default function VendorsPage() {
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-10">
                     <div className="flex flex-col items-center justify-center">
-                      <Buildings className="h-12 w-12 text-muted-foreground mb-3" />
+                      <Building className="h-12 w-12 text-muted-foreground mb-3" />
                       <p className="text-muted-foreground">No vendors found</p>
                       {searchQuery && (
                         <Button 
