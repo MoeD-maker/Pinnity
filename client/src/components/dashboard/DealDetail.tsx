@@ -232,6 +232,11 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                   >
                     Redeem Now
                   </Button>
+                  
+                  <div className="mt-4 text-xs sm:text-sm text-muted-foreground">
+                    <h4 className="font-medium mb-1">Additional instructions:</h4>
+                    <p>Please inform the vendor you have a Pinnity coupon before asking for the bill</p>
+                  </div>
                 </div>
               </TabsContent>
               
@@ -293,12 +298,10 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                       Redeem Now
                     </Button>
                     
-                    {deal.redemptionInstructions && (
-                      <div className="mt-4 text-xs sm:text-sm text-muted-foreground">
-                        <h4 className="font-medium mb-1">Additional instructions:</h4>
-                        <p>{deal.redemptionInstructions}</p>
-                      </div>
-                    )}
+                    <div className="mt-4 text-xs sm:text-sm text-muted-foreground">
+                      <h4 className="font-medium mb-1">Additional instructions:</h4>
+                      <p>Please inform the vendor you have a Pinnity coupon before asking for the bill</p>
+                    </div>
                   </div>
                 </div>
               </TabsContent>
