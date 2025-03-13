@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800px" height="600px" viewBox="0 0 800 600" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Funny Shop</title>
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <rect fill="#FCF4E8" x="0" y="0" width="800" height="600"></rect>
+        <g transform="translate(100, 50)">
+            <!-- Shop Building -->
+            <rect fill="#FF9800" x="50" y="150" width="500" height="300" rx="10"></rect>
+            <rect fill="#FFFFFF" x="75" y="175" width="450" height="275" rx="5"></rect>
+            
+            <!-- Shop Roof -->
+            <path d="M0,150 L600,150 L300,50 Z" fill="#00796B"></path>
+            
+            <!-- Shop Sign -->
+            <rect fill="#00796B" x="150" y="100" width="300" height="80" rx="5"></rect>
+            <text font-family="Arial-BoldMT, Arial" font-size="32" font-weight="bold" fill="#FFFFFF">
+                <tspan x="215" y="150">ZIAD'S SHOP</tspan>
+            </text>
+            
+            <!-- Shop Door -->
+            <rect fill="#00796B" x="250" y="300" width="100" height="150" rx="5"></rect>
+            <circle fill="#FFD700" cx="330" cy="375" r="8"></circle>
+            
+            <!-- Shop Window -->
+            <rect fill="#B3E5FC" x="100" y="200" width="120" height="100" rx="5"></rect>
+            <rect fill="#B3E5FC" x="380" y="200" width="120" height="100" rx="5"></rect>
+            
+            <!-- Sale Sign -->
+            <g transform="translate(390, 220)">
+                <rect fill="#FF5252" x="0" y="0" width="100" height="60" rx="30"></rect>
+                <text font-family="Arial-BoldMT, Arial" font-size="24" font-weight="bold" fill="#FFFFFF">
+                    <tspan x="13" y="38">20% OFF</tspan>
+                </text>
+            </g>
+            
+            <!-- Funny Character -->
+            <g transform="translate(120, 230)">
+                <!-- Face -->
+                <circle fill="#FFEB3B" cx="40" cy="40" r="35"></circle>
+                <!-- Eyes -->
+                <circle fill="#FFFFFF" cx="25" cy="30" r="10"></circle>
+                <circle fill="#FFFFFF" cx="55" cy="30" r="10"></circle>
+                <circle fill="#000000" cx="25" cy="30" r="5"></circle>
+                <circle fill="#000000" cx="55" cy="30" r="5"></circle>
+                <!-- Mouth -->
+                <path d="M20,55 Q40,75 60,55" stroke="#000000" stroke-width="3" fill="none"></path>
+                <!-- Shopping Bag -->
+                <rect fill="#795548" x="15" y="85" width="50" height="40"></rect>
+                <path d="M15,85 C15,65 65,65 65,85" stroke="#795548" stroke-width="4" fill="none"></path>
+            </g>
+        </g>
+    </g>
+</svg>
