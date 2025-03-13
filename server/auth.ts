@@ -2,9 +2,17 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { User } from '../shared/schema';
 
-// Secret key for JWT signing - in a real app, this would be in environment variables
-const JWT_SECRET = 'pinnity-app-secret-key-should-be-in-env';
-const JWT_EXPIRY = '7d'; // Token expires in 7 days
+// Use environment variables for JWT configuration with proper typing
+const JWT_SECRET_STRING = process.env.JWT_SECRET || 'default-secret-key-for-development-only-do-not-use-in-production';
+// Convert string to Buffer for JWT compatibility
+const JWT_SECRET = Buffer.from(JWT_SECRET_STRING, 'utf-8'); 
+const JWT_EXPIRY = process.env.JWT_EXPIRY || '1d';
+
+// Add validation on startup for production environments
+if (process.env.NODE_ENV === 'production' && (!JWT_SECRET_STRING || JWT_SECRET_STRING.length < 32)) {
+  console.error('ERROR: JWT_SECRET not set or too short. Set a strong secret in .env');
+  process.exit(1);
+}
 
 export interface JwtPayload {
   userId: number;
@@ -22,6 +30,7 @@ export function generateToken(user: User): string {
     email: user.email
   };
   
+  // Using Buffer as secret should resolve typing issues
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY });
 }
 
@@ -30,7 +39,7 @@ export function generateToken(user: User): string {
  */
 export function verifyToken(token: string): JwtPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as JwtPayload;
+    return jwt.verify(token, JWT_SECRET as jwt.Secret) as JwtPayload;
   } catch (error) {
     console.error('JWT verification failed:', error);
     return null;
