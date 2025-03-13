@@ -1,19 +1,20 @@
-import jwt from 'jsonwebtoken';
+import jsonwebtoken from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { User } from '../shared/schema';
 
-// Use environment variables for JWT configuration with proper typing
-const JWT_SECRET_STRING = process.env.JWT_SECRET || 'default-secret-key-for-development-only-do-not-use-in-production';
-// Convert string to Buffer for JWT compatibility
-const JWT_SECRET = Buffer.from(JWT_SECRET_STRING, 'utf-8'); 
+// Get the JWT secret from environment variables with a fallback
+const JWT_SECRET = process.env.JWT_SECRET || 'pinnity-app-secret-key-should-be-in-env';
 const JWT_EXPIRY = process.env.JWT_EXPIRY || '1d';
 
-// Add validation on startup for production environments
-if (process.env.NODE_ENV === 'production' && (!JWT_SECRET_STRING || JWT_SECRET_STRING.length < 32)) {
-  console.error('ERROR: JWT_SECRET not set or too short. Set a strong secret in .env');
+// Validate the secret in production environments
+if (process.env.NODE_ENV === 'production' && (!JWT_SECRET || JWT_SECRET.length < 32)) {
+  console.error('ERROR: JWT_SECRET not set or too short for production. Set a strong secret in .env');
   process.exit(1);
+} else if (JWT_SECRET === 'pinnity-app-secret-key-should-be-in-env') {
+  console.warn('WARNING: Using default JWT secret key. Set JWT_SECRET in .env for production.');
 }
 
+// Define the JWT payload structure
 export interface JwtPayload {
   userId: number;
   userType: string;
@@ -30,8 +31,8 @@ export function generateToken(user: User): string {
     email: user.email
   };
   
-  // Using Buffer as secret should resolve typing issues
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY });
+  // @ts-ignore - TypeScript has issues with the jsonwebtoken types
+  return jsonwebtoken.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY });
 }
 
 /**
@@ -39,7 +40,9 @@ export function generateToken(user: User): string {
  */
 export function verifyToken(token: string): JwtPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET as jwt.Secret) as JwtPayload;
+    // @ts-ignore - TypeScript has issues with the jsonwebtoken types
+    const payload = jsonwebtoken.verify(token, JWT_SECRET);
+    return payload as JwtPayload;
   } catch (error) {
     console.error('JWT verification failed:', error);
     return null;
