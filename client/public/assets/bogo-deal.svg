@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800px" height="600px" viewBox="0 0 800 600" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>BOGO Deal</title>
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <rect fill="#F5F5F5" x="0" y="0" width="800" height="600"></rect>
+        <g transform="translate(100, 50)">
+            <!-- Background -->
+            <rect fill="#00796B" x="50" y="100" width="500" height="350" rx="20"></rect>
+            
+            <!-- BOGO Main Banner -->
+            <rect fill="#FFFFFF" x="100" y="140" width="400" height="100" rx="10"></rect>
+            <text font-family="Arial-BoldMT, Arial" font-size="60" font-weight="bold" fill="#FF9800">
+                <tspan x="170" y="210">BOGO</tspan>
+            </text>
+            
+            <!-- Subtitle Text -->
+            <rect fill="#FFFFFF" x="120" y="250" width="360" height="50" rx="8"></rect>
+            <text font-family="Arial, Arial" font-size="24" font-weight="normal" fill="#00796B">
+                <tspan x="135" y="283">BUY ONE, GET ONE FREE</tspan>
+            </text>
+            
+            <!-- Product Illustrations -->
+            <g transform="translate(150, 320)">
+                <!-- Product 1 -->
+                <circle fill="#FFD700" cx="70" cy="70" r="50"></circle>
+                <text font-family="Arial-BoldMT, Arial" font-size="18" font-weight="bold" fill="#000000">
+                    <tspan x="55" y="76">$</tspan>
+                </text>
+                
+                <!-- Plus Sign -->
+                <rect fill="#FFFFFF" x="140" y="60" width="40" height="10" rx="2"></rect>
+                <rect fill="#FFFFFF" x="155" y="45" width="10" height="40" rx="2"></rect>
+                
+                <!-- Product 2 -->
+                <circle fill="#FFD700" cx="230" cy="70" r="50" stroke="#FF5252" stroke-width="5" stroke-dasharray="10,5"></circle>
+                <text font-family="Arial-BoldMT, Arial" font-size="24" font-weight="bold" fill="#FF5252">
+                    <tspan x="212" y="78">FREE</tspan>
+                </text>
+            </g>
+            
+            <!-- Decorative Elements -->
+            <circle fill="#FF9800" opacity="0.2" cx="100" cy="150" r="30"></circle>
+            <circle fill="#FF9800" opacity="0.2" cx="500" cy="150" r="30"></circle>
+            <circle fill="#FF9800" opacity="0.2" cx="100" cy="400" r="30"></circle>
+            <circle fill="#FF9800" opacity="0.2" cx="500" cy="400" r="30"></circle>
+            
+            <!-- Limited Time Badge -->
+            <g transform="translate(420, 320)">
+                <circle fill="#FF5252" cx="40" cy="40" r="40"></circle>
+                <text font-family="Arial-BoldMT, Arial" font-size="14" font-weight="bold" fill="#FFFFFF" text-anchor="middle">
+                    <tspan x="40" y="35">LIMITED</tspan>
+                    <tspan x="40" y="55">TIME</tspan>
+                </text>
+            </g>
+        </g>
+    </g>
+</svg>
