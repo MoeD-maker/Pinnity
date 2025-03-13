@@ -105,29 +105,28 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
           <DealDetailSkeleton />
         ) : deal ? (
           <>
-            {/* Add close class with right margin to prevent overlap */}
-            <div className="absolute top-4 right-4 flex items-center space-x-2">
-              <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={() => addToFavorites.mutate()} 
-                className="h-7 w-7 sm:h-8 sm:w-8 bg-white rounded-full"
-              >
-                <Heart className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </Button>
-            </div>
-            
+            {/* Moved action buttons to header row for better spacing */}            
             <DialogHeader>
               <div className="flex justify-between items-center mb-2">
                 <Badge className="text-xs sm:text-sm">{deal.category}</Badge>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={handleShare} 
-                  className="h-7 w-7 sm:h-8 sm:w-8"
-                >
-                  <Share2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                </Button>
+                <div className="flex items-center space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => addToFavorites.mutate()} 
+                    className="h-7 w-7 sm:h-8 sm:w-8 bg-white rounded-full"
+                  >
+                    <Heart className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={handleShare} 
+                    className="h-7 w-7 sm:h-8 sm:w-8"
+                  >
+                    <Share2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  </Button>
+                </div>
               </div>
               <DialogTitle className="text-xl sm:text-2xl">{deal.title}</DialogTitle>
               <DialogDescription className="text-sm sm:text-base font-medium">
@@ -224,6 +223,16 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                     </p>
                   </div>
                 )}
+                
+                {/* Add Redeem Now button to details tab */}
+                <div className="mt-6 flex flex-col items-center">
+                  <Button 
+                    className="bg-[#00796B] hover:bg-[#00695C] w-full max-w-xs"
+                    onClick={() => setShowRedemptionDialog(true)}
+                  >
+                    Redeem Now
+                  </Button>
+                </div>
               </TabsContent>
               
               <TabsContent value="redeem" className="mt-6 pb-4">
@@ -281,7 +290,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                       className="bg-[#00796B] hover:bg-[#00695C] w-full max-w-xs"
                       onClick={() => setShowRedemptionDialog(true)}
                     >
-                      Enter Redemption Code
+                      Redeem Now
                     </Button>
                     
                     {deal.redemptionInstructions && (

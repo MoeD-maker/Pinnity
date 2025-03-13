@@ -98,7 +98,7 @@ export default function RedemptionDialog({
         <DialogHeader>
           <DialogTitle>Redeem Deal</DialogTitle>
           <DialogDescription>
-            Enter the redemption code from {businessName} to validate your deal.
+            Enter the redemption code provided by {businessName} to validate your deal.
           </DialogDescription>
         </DialogHeader>
 
