@@ -24,6 +24,7 @@ console.log("App.tsx module loading");
 // Lazy-loaded pages for better performance
 const Favorites = lazy(() => import("@/pages/favorites"));
 const Profile = lazy(() => import("@/pages/profile"));
+const Settings = lazy(() => import("@/pages/settings"));
 const Explore = lazy(() => import("@/pages/explore"));
 const Map = lazy(() => import("@/pages/map"));
 
@@ -201,14 +202,14 @@ function AuthenticatedRoute({ component: Component, ...rest }: any) {
       console.log("Authenticated user type:", userType, "at path:", path);
       
       // Vendor trying to access non-vendor routes
-      if (userType === 'business' && !path.startsWith('/vendor') && path !== '/profile') {
+      if (userType === 'business' && !path.startsWith('/vendor') && path !== '/profile' && path !== '/settings') {
         console.log("Business user redirected to /vendor");
         setLocation('/vendor');
         return;
       }
       
       // Admin trying to access non-admin routes
-      if (userType === 'admin' && !path.startsWith('/admin') && path !== '/profile') {
+      if (userType === 'admin' && !path.startsWith('/admin') && path !== '/profile' && path !== '/settings') {
         console.log("Admin user redirected to /admin");
         setLocation('/admin');
         return;
@@ -303,6 +304,14 @@ function Router() {
         {(params) => (
           <Suspense fallback={<LoadingFallback />}>
             <AuthenticatedRoute component={Profile} params={params} />
+          </Suspense>
+        )}
+      </Route>
+      
+      <Route path="/settings">
+        {(params) => (
+          <Suspense fallback={<LoadingFallback />}>
+            <AuthenticatedRoute component={Settings} params={params} />
           </Suspense>
         )}
       </Route>

@@ -130,6 +130,13 @@ export default function MainLayout({ children }: MainLayoutProps) {
                         {item.label}
                       </div>
                     ))}
+                    <div 
+                      className="flex items-center gap-3 px-2 py-2 rounded-md text-sm text-muted-foreground hover:bg-muted"
+                      onClick={() => navigate('/settings')}
+                    >
+                      <Settings className="w-5 h-5" />
+                      Settings
+                    </div>
                     <button 
                       className="flex items-center gap-3 px-2 py-2 rounded-md text-sm text-muted-foreground hover:bg-muted mt-4"
                       onClick={handleLogout}
@@ -175,6 +182,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/favorites')}>
                   Favorites
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/settings')}>
+                  Settings
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
