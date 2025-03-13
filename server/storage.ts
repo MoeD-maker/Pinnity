@@ -12,6 +12,8 @@ import {
   type RedemptionRating, type InsertRedemptionRating, type RatingData
 } from "@shared/schema";
 import bcrypt from 'bcryptjs';
+import { db } from './db';
+import { eq, and, desc, sql } from 'drizzle-orm';
 
 export interface IStorage {
   // User methods
@@ -1467,4 +1469,833 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
+  }
+
+  async getUserWithBusiness(userId: number): Promise<(User & { business?: Business }) | undefined> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      return undefined;
+    }
+
+    if (user.userType === "business") {
+      const business = await this.getBusinessByUserId(userId);
+      return {
+        ...user,
+        business
+      };
+    }
+
+    return user;
+  }
+
+  async createIndividualUser(userData: Omit<InsertUser, "userType" | "username">): Promise<User> {
+    // Generate username from email
+    const username = userData.email.split('@')[0];
+    
+    const [user] = await db.insert(users)
+      .values({
+        ...userData,
+        username,
+        userType: userData.userType || "individual",
+        password: hashPassword(userData.password)
+      })
+      .returning();
+    
+    return user;
+  }
+
+  async createBusinessUser(userData: Omit<InsertUser, "userType" | "username">, businessData: Omit<InsertBusiness, "userId">): Promise<User & { business: Business }> {
+    // Start a transaction
+    return await db.transaction(async (tx) => {
+      // Create the user first
+      const [user] = await tx.insert(users)
+        .values({
+          ...userData,
+          username: userData.email.split('@')[0],
+          userType: "business",
+          password: hashPassword(userData.password)
+        })
+        .returning();
+      
+      // Then create the business
+      const [business] = await tx.insert(businesses)
+        .values({
+          ...businessData,
+          userId: user.id
+        })
+        .returning();
+      
+      return {
+        ...user,
+        business
+      };
+    });
+  }
+
+  private async createBusiness(businessData: Omit<InsertBusiness, "id">): Promise<Business> {
+    const [business] = await db.insert(businesses)
+      .values(businessData)
+      .returning();
+    
+    return business;
+  }
+
+  async verifyLogin(email: string, password: string): Promise<User | null> {
+    const user = await this.getUserByEmail(email);
+    
+    if (!user) {
+      return null;
+    }
+    
+    if (bcrypt.compareSync(password, user.password)) {
+      return user;
+    }
+    
+    return null;
+  }
+
+  async updateUser(userId: number, userData: Partial<Omit<InsertUser, "id" | "password">>): Promise<User> {
+    const [updatedUser] = await db.update(users)
+      .set(userData)
+      .where(eq(users.id, userId))
+      .returning();
+    
+    if (!updatedUser) {
+      throw new Error("User not found");
+    }
+    
+    return updatedUser;
+  }
+
+  async changePassword(userId: number, currentPassword: string, newPassword: string): Promise<boolean> {
+    const user = await this.getUser(userId);
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    if (!bcrypt.compareSync(currentPassword, user.password)) {
+      throw new Error("Current password is incorrect");
+    }
+    
+    await db.update(users)
+      .set({ password: hashPassword(newPassword) })
+      .where(eq(users.id, userId));
+    
+    return true;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
+  }
+
+  async adminCreateUser(userData: Omit<InsertUser, "id">, password: string): Promise<User> {
+    // Generate username from email if not provided
+    const username = userData.username || userData.email.split('@')[0];
+    
+    const [user] = await db.insert(users)
+      .values({
+        ...userData,
+        username,
+        password: hashPassword(password)
+      })
+      .returning();
+    
+    return user;
+  }
+
+  async adminUpdateUser(userId: number, userData: Partial<Omit<InsertUser, "id">>): Promise<User> {
+    // If password is provided, hash it
+    if (userData.password) {
+      userData.password = hashPassword(userData.password);
+    }
+    
+    const [updatedUser] = await db.update(users)
+      .set(userData)
+      .where(eq(users.id, userId))
+      .returning();
+    
+    if (!updatedUser) {
+      throw new Error("User not found");
+    }
+    
+    return updatedUser;
+  }
+
+  async adminDeleteUser(userId: number): Promise<boolean> {
+    // Check if user exists
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Start a transaction to delete the user and related data
+    await db.transaction(async (tx) => {
+      // If it's a business user, delete the business first
+      if (user.userType === "business") {
+        const business = await this.getBusinessByUserId(userId);
+        if (business) {
+          // Delete related business data first
+          await tx.delete(businessHours).where(eq(businessHours.businessId, business.id));
+          await tx.delete(businessSocial).where(eq(businessSocial.businessId, business.id));
+          await tx.delete(businessDocuments).where(eq(businessDocuments.businessId, business.id));
+          
+          // Get all deals by this business
+          const businessDeals = await tx.select({ id: deals.id })
+            .from(deals)
+            .where(eq(deals.businessId, business.id));
+          
+          // Delete deal-related data
+          for (const deal of businessDeals) {
+            await tx.delete(dealApprovals).where(eq(dealApprovals.dealId, deal.id));
+            await tx.delete(dealRedemptions).where(eq(dealRedemptions.dealId, deal.id));
+            await tx.delete(userFavorites).where(eq(userFavorites.dealId, deal.id));
+          }
+          
+          // Delete deals
+          await tx.delete(deals).where(eq(deals.businessId, business.id));
+          
+          // Finally delete the business
+          await tx.delete(businesses).where(eq(businesses.id, business.id));
+        }
+      }
+      
+      // Delete user-related data
+      await tx.delete(userNotificationPreferences).where(eq(userNotificationPreferences.userId, userId));
+      await tx.delete(userFavorites).where(eq(userFavorites.userId, userId));
+      await tx.delete(dealRedemptions).where(eq(dealRedemptions.userId, userId));
+      await tx.delete(redemptionRatings).where(eq(redemptionRatings.userId, userId));
+      
+      // Delete the user
+      await tx.delete(users).where(eq(users.id, userId));
+    });
+    
+    return true;
+  }
+
+  async adminCreateBusinessUser(userData: Omit<InsertUser, "id">, businessData: Omit<InsertBusiness, "id" | "userId">): Promise<User & { business: Business }> {
+    // Create business user
+    return this.createBusinessUser(userData, businessData);
+  }
+
+  async getAllBusinesses(): Promise<(Business & { user: User })[]> {
+    return await db.select()
+      .from(businesses)
+      .innerJoin(users, eq(businesses.userId, users.id))
+      .then(rows => rows.map(row => ({
+        ...row.businesses,
+        user: row.users
+      })));
+  }
+
+  async getBusiness(id: number): Promise<Business | undefined> {
+    const [business] = await db.select().from(businesses).where(eq(businesses.id, id));
+    return business || undefined;
+  }
+
+  async getBusinessByUserId(userId: number): Promise<Business | undefined> {
+    const [business] = await db.select().from(businesses).where(eq(businesses.userId, userId));
+    return business || undefined;
+  }
+
+  async updateBusiness(id: number, businessData: Partial<Omit<InsertBusiness, "id" | "userId">>): Promise<Business> {
+    const [updatedBusiness] = await db.update(businesses)
+      .set(businessData)
+      .where(eq(businesses.id, id))
+      .returning();
+    
+    if (!updatedBusiness) {
+      throw new Error("Business not found");
+    }
+    
+    return updatedBusiness;
+  }
+
+  async updateBusinessVerificationStatus(id: number, status: string, feedback?: string): Promise<Business> {
+    const [updatedBusiness] = await db.update(businesses)
+      .set({ 
+        verificationStatus: status,
+        verificationFeedback: feedback 
+      })
+      .where(eq(businesses.id, id))
+      .returning();
+    
+    if (!updatedBusiness) {
+      throw new Error("Business not found");
+    }
+    
+    return updatedBusiness;
+  }
+
+  async getBusinessHours(businessId: number): Promise<BusinessHours[]> {
+    return await db.select()
+      .from(businessHours)
+      .where(eq(businessHours.businessId, businessId));
+  }
+
+  async addBusinessHours(businessHoursData: Omit<InsertBusinessHours, "id">): Promise<BusinessHours> {
+    const [addedHours] = await db.insert(businessHours)
+      .values(businessHoursData)
+      .returning();
+    
+    return addedHours;
+  }
+
+  async updateBusinessHours(id: number, businessHoursData: Partial<Omit<InsertBusinessHours, "id" | "businessId">>): Promise<BusinessHours> {
+    const [updatedHours] = await db.update(businessHours)
+      .set(businessHoursData)
+      .where(eq(businessHours.id, id))
+      .returning();
+    
+    if (!updatedHours) {
+      throw new Error("Business hours not found");
+    }
+    
+    return updatedHours;
+  }
+
+  async deleteBusinessHours(id: number): Promise<void> {
+    await db.delete(businessHours).where(eq(businessHours.id, id));
+  }
+
+  async getBusinessSocialLinks(businessId: number): Promise<BusinessSocial[]> {
+    return await db.select()
+      .from(businessSocial)
+      .where(eq(businessSocial.businessId, businessId));
+  }
+
+  async addBusinessSocialLink(socialLinkData: Omit<InsertBusinessSocial, "id">): Promise<BusinessSocial> {
+    const [addedLink] = await db.insert(businessSocial)
+      .values(socialLinkData)
+      .returning();
+    
+    return addedLink;
+  }
+
+  async updateBusinessSocialLink(id: number, socialLinkData: Partial<Omit<InsertBusinessSocial, "id" | "businessId">>): Promise<BusinessSocial> {
+    const [updatedLink] = await db.update(businessSocial)
+      .set(socialLinkData)
+      .where(eq(businessSocial.id, id))
+      .returning();
+    
+    if (!updatedLink) {
+      throw new Error("Social media link not found");
+    }
+    
+    return updatedLink;
+  }
+
+  async deleteBusinessSocialLink(id: number): Promise<void> {
+    await db.delete(businessSocial).where(eq(businessSocial.id, id));
+  }
+
+  async getBusinessDocuments(businessId: number): Promise<BusinessDocument[]> {
+    return await db.select()
+      .from(businessDocuments)
+      .where(eq(businessDocuments.businessId, businessId));
+  }
+
+  async addBusinessDocument(documentData: Omit<InsertBusinessDocument, "id" | "submittedAt">): Promise<BusinessDocument> {
+    const [addedDocument] = await db.insert(businessDocuments)
+      .values({
+        ...documentData,
+        submittedAt: new Date()
+      })
+      .returning();
+    
+    return addedDocument;
+  }
+
+  async updateBusinessDocumentStatus(id: number, status: string, feedback?: string): Promise<BusinessDocument> {
+    const [updatedDocument] = await db.update(businessDocuments)
+      .set({ 
+        status,
+        feedback
+      })
+      .where(eq(businessDocuments.id, id))
+      .returning();
+    
+    if (!updatedDocument) {
+      throw new Error("Document not found");
+    }
+    
+    return updatedDocument;
+  }
+
+  async getDeals(): Promise<(Deal & { business: Business })[]> {
+    return await db.select()
+      .from(deals)
+      .innerJoin(businesses, eq(deals.businessId, businesses.id))
+      .then(rows => rows.map(row => ({
+        ...row.deals,
+        business: row.businesses
+      })));
+  }
+
+  async getDeal(id: number): Promise<(Deal & { business: Business }) | undefined> {
+    const result = await db.select()
+      .from(deals)
+      .innerJoin(businesses, eq(deals.businessId, businesses.id))
+      .where(eq(deals.id, id));
+    
+    if (result.length === 0) {
+      return undefined;
+    }
+    
+    return {
+      ...result[0].deals,
+      business: result[0].businesses
+    };
+  }
+
+  async getDealsByBusiness(businessId: number): Promise<Deal[]> {
+    return await db.select()
+      .from(deals)
+      .where(eq(deals.businessId, businessId));
+  }
+
+  async getFeaturedDeals(limit = 10): Promise<(Deal & { business: Business })[]> {
+    return await db.select()
+      .from(deals)
+      .innerJoin(businesses, eq(deals.businessId, businesses.id))
+      .where(eq(deals.featured, true))
+      .orderBy(desc(deals.createdAt))
+      .limit(limit)
+      .then(rows => rows.map(row => ({
+        ...row.deals,
+        business: row.businesses
+      })));
+  }
+
+  async createDeal(dealData: Omit<InsertDeal, "id" | "createdAt">): Promise<Deal> {
+    const [addedDeal] = await db.insert(deals)
+      .values({
+        ...dealData,
+        createdAt: new Date()
+      })
+      .returning();
+    
+    return addedDeal;
+  }
+
+  async updateDeal(id: number, dealData: Partial<Omit<InsertDeal, "id" | "businessId">>): Promise<Deal> {
+    const [updatedDeal] = await db.update(deals)
+      .set(dealData)
+      .where(eq(deals.id, id))
+      .returning();
+    
+    if (!updatedDeal) {
+      throw new Error("Deal not found");
+    }
+    
+    return updatedDeal;
+  }
+
+  async deleteDeal(id: number): Promise<void> {
+    await db.transaction(async (tx) => {
+      // Delete deal-related data first
+      await tx.delete(dealApprovals).where(eq(dealApprovals.dealId, id));
+      await tx.delete(dealRedemptions).where(eq(dealRedemptions.dealId, id));
+      await tx.delete(userFavorites).where(eq(userFavorites.dealId, id));
+      await tx.delete(redemptionRatings).where(eq(redemptionRatings.dealId, id));
+      
+      // Then delete the deal
+      await tx.delete(deals).where(eq(deals.id, id));
+    });
+  }
+
+  async updateDealStatus(id: number, status: string): Promise<Deal> {
+    const [updatedDeal] = await db.update(deals)
+      .set({ status })
+      .where(eq(deals.id, id))
+      .returning();
+    
+    if (!updatedDeal) {
+      throw new Error("Deal not found");
+    }
+    
+    return updatedDeal;
+  }
+
+  async duplicateDeal(dealId: number): Promise<Deal> {
+    const originalDeal = await db.select().from(deals).where(eq(deals.id, dealId)).then(rows => rows[0]);
+    
+    if (!originalDeal) {
+      throw new Error("Deal not found");
+    }
+    
+    const [newDeal] = await db.insert(deals)
+      .values({
+        ...originalDeal,
+        id: undefined, // Let the database assign a new ID
+        title: `${originalDeal.title} (Copy)`,
+        createdAt: new Date(),
+        viewCount: 0,
+        redemptionCount: 0,
+        savedCount: 0
+      })
+      .returning();
+    
+    return newDeal;
+  }
+
+  async incrementDealViews(dealId: number): Promise<Deal> {
+    const [updatedDeal] = await db.update(deals)
+      .set({
+        viewCount: sql`${deals.viewCount} + 1`
+      })
+      .where(eq(deals.id, dealId))
+      .returning();
+    
+    if (!updatedDeal) {
+      throw new Error("Deal not found");
+    }
+    
+    return updatedDeal;
+  }
+
+  async incrementDealSaves(dealId: number): Promise<Deal> {
+    const [updatedDeal] = await db.update(deals)
+      .set({
+        savedCount: sql`${deals.savedCount} + 1`
+      })
+      .where(eq(deals.id, dealId))
+      .returning();
+    
+    if (!updatedDeal) {
+      throw new Error("Deal not found");
+    }
+    
+    return updatedDeal;
+  }
+
+  async incrementDealRedemptions(dealId: number): Promise<Deal> {
+    const [updatedDeal] = await db.update(deals)
+      .set({
+        redemptionCount: sql`${deals.redemptionCount} + 1`
+      })
+      .where(eq(deals.id, dealId))
+      .returning();
+    
+    if (!updatedDeal) {
+      throw new Error("Deal not found");
+    }
+    
+    return updatedDeal;
+  }
+
+  async getDealsByStatus(status: string): Promise<(Deal & { business: Business })[]> {
+    return await db.select()
+      .from(deals)
+      .innerJoin(businesses, eq(deals.businessId, businesses.id))
+      .where(eq(deals.status, status))
+      .then(rows => rows.map(row => ({
+        ...row.deals,
+        business: row.businesses
+      })));
+  }
+
+  async createDealApproval(approvalData: Omit<InsertDealApproval, "id" | "submittedAt">): Promise<DealApproval> {
+    const [addedApproval] = await db.insert(dealApprovals)
+      .values({
+        ...approvalData,
+        submittedAt: new Date()
+      })
+      .returning();
+    
+    return addedApproval;
+  }
+
+  async getDealApproval(dealId: number): Promise<DealApproval | undefined> {
+    const [approval] = await db.select()
+      .from(dealApprovals)
+      .where(eq(dealApprovals.dealId, dealId))
+      .orderBy(desc(dealApprovals.submittedAt))
+      .limit(1);
+    
+    return approval || undefined;
+  }
+
+  async getDealApprovalHistory(dealId: number): Promise<DealApproval[]> {
+    return await db.select()
+      .from(dealApprovals)
+      .where(eq(dealApprovals.dealId, dealId))
+      .orderBy(desc(dealApprovals.submittedAt));
+  }
+
+  async updateDealApproval(id: number, status: string, reviewerId?: number, feedback?: string): Promise<DealApproval> {
+    const [updatedApproval] = await db.update(dealApprovals)
+      .set({
+        status,
+        reviewerId,
+        feedback,
+        reviewedAt: new Date()
+      })
+      .where(eq(dealApprovals.id, id))
+      .returning();
+    
+    if (!updatedApproval) {
+      throw new Error("Approval record not found");
+    }
+    
+    return updatedApproval;
+  }
+
+  async getDealRedemptions(dealId: number): Promise<DealRedemption[]> {
+    return await db.select()
+      .from(dealRedemptions)
+      .where(eq(dealRedemptions.dealId, dealId));
+  }
+
+  async verifyRedemptionCode(dealId: number, code: string): Promise<boolean> {
+    const deal = await this.getDeal(dealId);
+    
+    if (!deal) {
+      throw new Error("Deal not found");
+    }
+    
+    // Check if the code matches the deal's redemption code
+    return deal.redemptionCode === code;
+  }
+
+  async getUserFavorites(userId: number): Promise<(UserFavorite & { deal: Deal & { business: Business } })[]> {
+    const favorites = await db.select()
+      .from(userFavorites)
+      .where(eq(userFavorites.userId, userId));
+    
+    const result: (UserFavorite & { deal: Deal & { business: Business } })[] = [];
+    
+    for (const favorite of favorites) {
+      const dealWithBusiness = await this.getDeal(favorite.dealId);
+      
+      if (dealWithBusiness) {
+        result.push({
+          ...favorite,
+          deal: dealWithBusiness
+        });
+      }
+    }
+    
+    return result;
+  }
+
+  async addUserFavorite(userId: number, dealId: number): Promise<UserFavorite> {
+    // Check if user already has this deal as a favorite
+    const existing = await db.select()
+      .from(userFavorites)
+      .where(and(
+        eq(userFavorites.userId, userId),
+        eq(userFavorites.dealId, dealId)
+      ));
+    
+    if (existing.length > 0) {
+      return existing[0];
+    }
+    
+    const [addedFavorite] = await db.insert(userFavorites)
+      .values({
+        userId,
+        dealId,
+        createdAt: new Date()
+      })
+      .returning();
+    
+    // Increment saved count on the deal
+    await this.incrementDealSaves(dealId);
+    
+    return addedFavorite;
+  }
+
+  async removeUserFavorite(userId: number, dealId: number): Promise<void> {
+    await db.delete(userFavorites)
+      .where(and(
+        eq(userFavorites.userId, userId),
+        eq(userFavorites.dealId, dealId)
+      ));
+  }
+
+  async getUserRedemptions(userId: number): Promise<(DealRedemption & { deal: Deal & { business: Business } })[]> {
+    const redemptions = await db.select()
+      .from(dealRedemptions)
+      .where(eq(dealRedemptions.userId, userId));
+    
+    const result: (DealRedemption & { deal: Deal & { business: Business } })[] = [];
+    
+    for (const redemption of redemptions) {
+      const dealWithBusiness = await this.getDeal(redemption.dealId);
+      
+      if (dealWithBusiness) {
+        result.push({
+          ...redemption,
+          deal: dealWithBusiness
+        });
+      }
+    }
+    
+    return result;
+  }
+
+  async createRedemption(userId: number, dealId: number): Promise<DealRedemption> {
+    const [addedRedemption] = await db.insert(dealRedemptions)
+      .values({
+        userId,
+        dealId,
+        status: "redeemed",
+        redemptionCode: Math.random().toString(36).substring(2, 10).toUpperCase(),
+        redeemedAt: new Date()
+      })
+      .returning();
+    
+    // Increment redemption count on the deal
+    await this.incrementDealRedemptions(dealId);
+    
+    return addedRedemption;
+  }
+
+  async updateRedemptionStatus(id: number, status: string): Promise<DealRedemption> {
+    const [updatedRedemption] = await db.update(dealRedemptions)
+      .set({ status })
+      .where(eq(dealRedemptions.id, id))
+      .returning();
+    
+    if (!updatedRedemption) {
+      throw new Error("Redemption not found");
+    }
+    
+    return updatedRedemption;
+  }
+
+  async getUserNotificationPreferences(userId: number): Promise<UserNotificationPreferences | undefined> {
+    const [preferences] = await db.select()
+      .from(userNotificationPreferences)
+      .where(eq(userNotificationPreferences.userId, userId));
+    
+    return preferences || undefined;
+  }
+
+  async updateUserNotificationPreferences(userId: number, preferencesData: Partial<Omit<InsertUserNotificationPreferences, "id" | "userId">>): Promise<UserNotificationPreferences> {
+    let preferences = await this.getUserNotificationPreferences(userId);
+    
+    if (!preferences) {
+      // Create preferences if they don't exist
+      const [newPreferences] = await db.insert(userNotificationPreferences)
+        .values({
+          userId,
+          dealAlerts: preferencesData.dealAlerts ?? false,
+          expiringDeals: preferencesData.expiringDeals ?? false,
+          newBusinesses: preferencesData.newBusinesses ?? false,
+          specialPromotions: preferencesData.specialPromotions ?? false,
+          emailNotifications: preferencesData.emailNotifications ?? false,
+          pushNotifications: preferencesData.pushNotifications ?? false
+        })
+        .returning();
+      
+      return newPreferences;
+    }
+    
+    // Update existing preferences
+    const [updatedPreferences] = await db.update(userNotificationPreferences)
+      .set(preferencesData)
+      .where(eq(userNotificationPreferences.id, preferences.id))
+      .returning();
+    
+    return updatedPreferences;
+  }
+
+  async createRedemptionRating(redemptionId: number, userId: number, dealId: number, businessId: number, ratingData: RatingData): Promise<RedemptionRating> {
+    const [addedRating] = await db.insert(redemptionRatings)
+      .values({
+        redemptionId,
+        userId,
+        dealId,
+        businessId,
+        rating: ratingData.rating,
+        comment: ratingData.comment,
+        experienceQuality: ratingData.experienceQuality,
+        valueForMoney: ratingData.valueForMoney,
+        wouldRecommend: ratingData.wouldRecommend,
+        createdAt: new Date()
+      })
+      .returning();
+    
+    return addedRating;
+  }
+
+  async getRedemptionRating(redemptionId: number): Promise<RedemptionRating | undefined> {
+    const [rating] = await db.select()
+      .from(redemptionRatings)
+      .where(eq(redemptionRatings.redemptionId, redemptionId));
+    
+    return rating || undefined;
+  }
+
+  async getUserRatings(userId: number): Promise<(RedemptionRating & { deal: Deal, business: Business })[]> {
+    const ratings = await db.select()
+      .from(redemptionRatings)
+      .where(eq(redemptionRatings.userId, userId));
+    
+    const result: (RedemptionRating & { deal: Deal, business: Business })[] = [];
+    
+    for (const rating of ratings) {
+      const [deal] = await db.select().from(deals).where(eq(deals.id, rating.dealId));
+      const [business] = await db.select().from(businesses).where(eq(businesses.id, rating.businessId));
+      
+      if (deal && business) {
+        result.push({
+          ...rating,
+          deal,
+          business
+        });
+      }
+    }
+    
+    return result;
+  }
+
+  async getBusinessRatings(businessId: number): Promise<RedemptionRating[]> {
+    return await db.select()
+      .from(redemptionRatings)
+      .where(eq(redemptionRatings.businessId, businessId));
+  }
+
+  async getBusinessRatingSummary(businessId: number): Promise<{ averageRating: number, totalRatings: number, ratingCounts: Record<number, number> }> {
+    const ratings = await this.getBusinessRatings(businessId);
+    
+    if (ratings.length === 0) {
+      return {
+        averageRating: 0,
+        totalRatings: 0,
+        ratingCounts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+      };
+    }
+    
+    // Calculate average rating
+    const sum = ratings.reduce((acc, rating) => acc + rating.rating, 0);
+    const averageRating = sum / ratings.length;
+    
+    // Count ratings by value
+    const ratingCounts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    
+    for (const rating of ratings) {
+      ratingCounts[rating.rating] = (ratingCounts[rating.rating] || 0) + 1;
+    }
+    
+    return {
+      averageRating,
+      totalRatings: ratings.length,
+      ratingCounts
+    };
+  }
+}
+
+// Use the DatabaseStorage implementation
+export const storage = new DatabaseStorage();
