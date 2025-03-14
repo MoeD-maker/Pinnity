@@ -62,10 +62,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const checkAuthStatus = async () => {
       try {
         setIsLoading(true);
+        console.log('Checking authentication status...');
+        
+        // First, get a CSRF token so we can make authenticated requests
+        try {
+          console.log('Fetching CSRF token...');
+          const csrfResponse = await fetch('/api/csrf-token', { credentials: 'include' });
+          const csrfData = await csrfResponse.json();
+          console.log('CSRF token obtained for session:', csrfData.csrfToken ? 'Yes' : 'No');
+        } catch (csrfErr) {
+          console.error('Error fetching CSRF token:', csrfErr);
+          // Continue anyway - we may still be able to use existing tokens
+        }
         
         // Check for stored user ID
         const storedUserId = getUserId();
         const storedUserType = localStorage.getItem(USER_TYPE_KEY);
+        console.log('Stored user ID:', storedUserId ? 'Present' : 'Not found');
         
         // Also check for legacy storage (backward compatibility)
         let legacyUserId = null;
@@ -77,6 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           // If found in legacy storage, migrate to new storage keys
           if (legacyUserId && legacyUserType) {
+            console.log('Found legacy user data, migrating...');
             saveUserData(legacyUserId, legacyUserType);
             // Clean up legacy storage
             localStorage.removeItem('userId');
@@ -90,12 +104,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (userId) {
           try {
+            console.log('Attempting to fetch user data with ID:', userId);
             // Our JWT token is in a secure HTTP-only cookie
             // so we just need to make the request and the browser will 
             // automatically include the cookie
             const userData = await apiRequest(`/api/user/${userId}`);
             
             if (userData) {
+              console.log('User data received successfully');
               setUser(userData);
               
               // Make sure we have the user ID and type stored
@@ -107,18 +123,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               const path = window.location.pathname;
               if (path === '/' || path === '/auth') {
                 if (userData.userType === 'admin' || userType === 'admin') {
+                  console.log('Redirecting to admin dashboard');
                   setLocation('/admin');
                 } else if (userData.userType === 'business' || userType === 'business') {
+                  console.log('Redirecting to vendor dashboard');
                   setLocation('/vendor');
+                } else {
+                  console.log('User is individual type, keeping on homepage');
                 }
                 // Keep individual users on the homepage if that's where they are
               }
+            } else {
+              console.warn('No user data returned from API');
             }
           } catch (err) {
             console.error('Error fetching user data:', err);
             // If this fails, user is not authenticated
             removeUserData();
           }
+        } else {
+          console.log('No user ID found in storage, user is not logged in');
         }
       } catch (err) {
         console.error('Auth status check failed:', err);
@@ -135,7 +159,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       setError(null);
 
+      // First, get a CSRF token
+      console.log('Fetching CSRF token before login...');
+      try {
+        const csrfResponse = await fetch('/api/csrf-token', { credentials: 'include' });
+        const csrfData = await csrfResponse.json();
+        console.log('CSRF token obtained successfully:', csrfData.csrfToken ? 'Yes' : 'No');
+        // The fetchWithCSRF function will use this token automatically
+        resetCSRFToken(); // Clear any existing token
+      } catch (csrfErr) {
+        console.error('Error fetching CSRF token:', csrfErr);
+        // Continue with login anyway, but it will likely fail
+      }
+
       // Use CSRF-protected API call
+      console.log('Attempting login with credentials...');
       const response = await apiPost<{
         message: string;
         userId: number;
@@ -143,12 +181,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }>('/api/auth/login', { email, password, rememberMe });
 
       if (response && response.userId) {
+        console.log('Login successful, user ID:', response.userId);
         // Store user ID and type in localStorage for client-side reference
         // The actual authentication token is in a secure HTTP-only cookie
         saveUserData(response.userId.toString(), response.userType);
         
         // Fetch complete user data
+        console.log('Fetching complete user data...');
         const userData = await apiRequest(`/api/user/${response.userId}`);
+        console.log('User data received:', userData ? 'Yes' : 'No');
         setUser(userData);
 
         // Redirect based on user type
