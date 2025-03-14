@@ -2,16 +2,16 @@ import jsonwebtoken from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { User } from '../shared/schema';
 
-// Get the JWT secret from environment variables with a fallback
-const JWT_SECRET = process.env.JWT_SECRET || 'pinnity-app-secret-key-should-be-in-env';
+// Use the JWT secret from environment variables with a fallback for development
+const JWT_SECRET = process.env.JWT_SECRET || 'this-is-a-very-secure-secret-key-for-pinnity-app-jwt-authentication-2025';
 const JWT_EXPIRY = process.env.JWT_EXPIRY || '1d';
 
-// Validate the secret in production environments
-if (process.env.NODE_ENV === 'production' && (!JWT_SECRET || JWT_SECRET.length < 32)) {
-  console.error('ERROR: JWT_SECRET not set or too short for production. Set a strong secret in .env');
+// Add validation for the JWT secret
+if (process.env.NODE_ENV === 'production' && (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32)) {
+  console.error('ERROR: JWT_SECRET not set or too short in production environment. Set a strong secret in .env');
   process.exit(1);
-} else if (JWT_SECRET === 'pinnity-app-secret-key-should-be-in-env') {
-  console.warn('WARNING: Using default JWT secret key. Set JWT_SECRET in .env for production.');
+} else if (JWT_SECRET.length < 32) {
+  console.warn('WARNING: JWT_SECRET is too short. For better security, set a longer secret key in .env');
 }
 
 // Define the JWT payload structure
