@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { extractTokenFromHeader, JwtPayload } from './auth';
+import { securityRateLimiter, apiRateLimiter } from './middleware/rateLimit';
 
 // Extend Express Request interface to include user
 declare global {
@@ -13,36 +14,73 @@ declare global {
 /**
  * Authentication middleware
  * Verifies JWT token and attaches user data to the request
+ * Includes enhanced security with rate limiting for failed attempts
  */
 export function authenticate(req: Request, res: Response, next: NextFunction) {
   try {
     const token = extractTokenFromHeader(req.headers.authorization);
     
     if (!token) {
-      return res.status(401).json({ error: 'Authentication required' });
+      // Track failed auth attempts for security monitoring
+      return securityRateLimiter(req, res, () => {
+        return res.status(401).json({ 
+          error: 'Authentication required',
+          code: 'auth_required'
+        });
+      });
+    }
+    
+    // Check token expiration if available in payload
+    if (token.exp) {
+      const currentTime = Math.floor(Date.now() / 1000);
+      if (token.exp < currentTime) {
+        return res.status(401).json({ 
+          error: 'Token expired', 
+          code: 'token_expired',
+          expiredAt: new Date(token.exp * 1000).toISOString()
+        });
+      }
     }
     
     // Attach user info to request
     req.user = token;
     next();
   } catch (error) {
-    console.error('Authentication error:', error);
-    return res.status(401).json({ error: 'Authentication failed' });
+    // Use security rate limiter to protect against brute force attacks
+    return securityRateLimiter(req, res, () => {
+      console.error('Authentication error:', error);
+      return res.status(401).json({ 
+        error: 'Authentication failed',
+        code: 'auth_failed'
+      });
+    });
   }
 }
 
 /**
  * Role-based authorization middleware
  * Ensures the authenticated user has the required role
+ * Provides detailed error responses and security logging
  */
 export function authorize(roles: string[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.status(401).json({ error: 'Authentication required' });
+      return res.status(401).json({ 
+        error: 'Authentication required',
+        code: 'auth_required'
+      });
     }
     
     if (!roles.includes(req.user.userType)) {
-      return res.status(403).json({ error: 'Access denied: Insufficient permissions' });
+      // Log potential privilege escalation attempts
+      console.warn(`Access violation: User ${req.user.userId} (${req.user.userType}) tried to access resource requiring roles: ${roles.join(', ')}`);
+      
+      return res.status(403).json({ 
+        error: 'Access denied: Insufficient permissions',
+        code: 'insufficient_permissions', 
+        requiredRoles: roles,
+        userRole: req.user.userType
+      });
     }
     
     next();
@@ -52,11 +90,15 @@ export function authorize(roles: string[]) {
 /**
  * Resource ownership middleware
  * Ensures the authenticated user owns the requested resource
+ * Enhanced with detailed security logging and validation
  */
 export function checkOwnership(idParam: string = 'id', userIdField: string = 'userId') {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.status(401).json({ error: 'Authentication required' });
+      return res.status(401).json({ 
+        error: 'Authentication required',
+        code: 'auth_required'
+      });
     }
     
     // Admin users bypass ownership check
@@ -66,10 +108,72 @@ export function checkOwnership(idParam: string = 'id', userIdField: string = 'us
     
     // If the resource belongs to the user, or if it's the user's own profile
     const resourceId = req.params[idParam];
-    if (resourceId && (String(req.user.userId) === resourceId || req.body[userIdField] === req.user.userId)) {
+    if (!resourceId) {
+      return res.status(400).json({ 
+        error: 'Missing resource identifier',
+        code: 'missing_resource_id',
+        param: idParam
+      });
+    }
+    
+    if (String(req.user.userId) === resourceId || req.body[userIdField] === req.user.userId) {
       return next();
     }
     
-    return res.status(403).json({ error: 'Access denied: You do not own this resource' });
+    // Log potential unauthorized access attempts
+    console.warn(`Ownership violation: User ${req.user.userId} tried to access resource ${idParam}=${resourceId}`);
+    
+    return res.status(403).json({ 
+      error: 'Access denied: You do not own this resource',
+      code: 'ownership_violation'
+    });
   };
+}
+
+/**
+ * Security headers middleware
+ * Adds security-related HTTP headers to all responses
+ */
+export function securityHeaders(req: Request, res: Response, next: NextFunction) {
+  // Content Security Policy
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https:;"
+  );
+  
+  // Prevent MIME type sniffing
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  
+  // Clickjacking protection
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  
+  // XSS protection (some browsers)
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  
+  // HSTS (HTTP Strict Transport Security)
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader(
+      'Strict-Transport-Security',
+      'max-age=31536000; includeSubDomains; preload'
+    );
+  }
+  
+  // Referrer Policy
+  res.setHeader('Referrer-Policy', 'same-origin');
+  
+  // Permissions Policy (formerly Feature Policy)
+  res.setHeader(
+    'Permissions-Policy',
+    'camera=(), microphone=(), geolocation=(self), payment=()'
+  );
+  
+  next();
+}
+
+/**
+ * API rate limiting middleware
+ * Protects API endpoints from abuse and DoS attacks
+ */
+export function rateLimitAPI(req: Request, res: Response, next: NextFunction) {
+  return apiRateLimiter(req, res, next);
 }

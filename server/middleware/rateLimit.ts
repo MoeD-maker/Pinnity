@@ -1,12 +1,11 @@
+import { Request, Response, NextFunction } from "express";
+import rateLimit from "express-rate-limit";
+
 /**
  * Rate limiting middleware for protecting against brute force attacks
  * Implements different rate limits for different types of endpoints
  */
 
-import rateLimit from 'express-rate-limit';
-import { Request, Response, NextFunction } from 'express';
-
-// Type definition for the rate limit options with enhanced security features
 interface SecurityRateLimitOptions {
   windowMs: number;
   max: number;
@@ -26,41 +25,19 @@ interface SecurityRateLimitOptions {
  * Provides detailed error messages and increments retry-after headers
  */
 const securityRateLimitHandler = (req: Request, res: Response, _next: NextFunction, options: any) => {
-  // Get the retry after time in seconds
-  const retryAfterSeconds = Math.ceil(options.windowMs / 1000);
+  const retryAfter = Math.ceil(options.windowMs / 1000);
   
-  // Set proper headers
-  res.setHeader('Retry-After', String(retryAfterSeconds));
-  
-  // Create traceable request ID for security monitoring
-  const requestId = req.id || `rate-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
-  
-  // Log security event with useful metadata for monitoring
-  console.warn(`[SECURITY] [${requestId}] Rate limit exceeded:`, {
-    ip: req.ip,
-    path: req.path,
-    method: req.method,
-    userAgent: req.headers['user-agent'],
-    retryAfterSeconds,
+  // Send detailed error response with clear information on limits
+  res.status(options.statusCode).json({
+    message: "Too many requests, please try again later.",
+    error: "rate_limit_exceeded",
+    retryAfter: retryAfter,
+    limit: options.max,
     windowMs: options.windowMs
   });
   
-  // Extract user ID for additional security monitoring if authenticated
-  let userId = null;
-  if (req.user && 'userId' in req.user) {
-    userId = (req.user as any).userId;
-  }
-  
-  // Send response with appropriate status and message
-  res.status(options.statusCode || 429).json({
-    success: false,
-    message: options.message || 'Too many requests, please try again later.',
-    type: 'rate_limit_error',
-    requestId,
-    retryAfter: retryAfterSeconds,
-    route: req.path,
-    ...(userId ? { userId } : {})
-  });
+  // Log rate limit violation for security monitoring
+  console.warn(`Rate limit exceeded for IP: ${req.ip}, path: ${req.path}, user-agent: ${req.get('user-agent')}`);
 };
 
 /**
@@ -70,13 +47,13 @@ const securityRateLimitHandler = (req: Request, res: Response, _next: NextFuncti
  */
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 requests per window
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  skipSuccessfulRequests: false, // Count successful requests (prevents timing attacks)
-  message: 'Too many authentication attempts from this IP, please try again after 15 minutes',
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: "Too many authentication attempts from this IP. Please try again in 15 minutes.",
+  handler: securityRateLimitHandler,
   statusCode: 429,
-  handler: securityRateLimitHandler
+  skipSuccessfulRequests: false
 });
 
 /**
@@ -86,20 +63,17 @@ export const authRateLimiter = rateLimit({
  */
 export const accountSecurityRateLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 10, // 10 requests per window
+  max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: true, // Only count failed attempts
-  message: 'Too many account security operations, please try again after 1 hour',
+  message: "Too many account security operations. Please try again in 1 hour.",
+  handler: securityRateLimitHandler,
   statusCode: 429,
-  // Use user ID for rate limiting if authenticated, otherwise use IP
+  skipSuccessfulRequests: true,
   keyGenerator: (req: Request): string => {
-    if (req.user && 'userId' in req.user) {
-      return `user-${(req.user as any).userId}`;
-    }
-    return req.ip;
-  },
-  handler: securityRateLimitHandler
+    // Rate limit by user ID if available, or fallback to IP
+    return req.user?.userId?.toString() || req.ip;
+  }
 });
 
 /**
@@ -109,12 +83,13 @@ export const accountSecurityRateLimiter = rateLimit({
  */
 export const apiRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // 100 requests per window
+  max: 100,
   standardHeaders: true,
   legacyHeaders: false,
-  message: 'Too many requests from this IP, please try again after 15 minutes',
+  message: "Too many requests from this IP. Please try again in 15 minutes.",
+  handler: securityRateLimitHandler,
   statusCode: 429,
-  handler: securityRateLimitHandler
+  skipSuccessfulRequests: true
 });
 
 /**
@@ -124,20 +99,17 @@ export const apiRateLimiter = rateLimit({
  */
 export const adminRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200, // 200 requests per window
+  max: 200,
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: false,
-  message: 'Rate limit exceeded for admin operations, please try again later',
+  message: "Too many admin requests. Please try again in 15 minutes.",
+  handler: securityRateLimitHandler,
   statusCode: 429,
-  // Use admin ID for rate limiting instead of IP to allow multiple admins on same network
+  skipSuccessfulRequests: true,
   keyGenerator: (req: Request): string => {
-    if (req.user && 'userId' in req.user) {
-      return `admin-${(req.user as any).userId}`;
-    }
-    return req.ip;
-  },
-  handler: securityRateLimitHandler
+    // Rate limit by admin user ID if available, or fallback to IP
+    return req.user?.userId?.toString() || req.ip;
+  }
 });
 
 /**
@@ -147,12 +119,13 @@ export const adminRateLimiter = rateLimit({
  */
 export const publicApiRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 300, // 300 requests per window
+  max: 300,
   standardHeaders: true,
   legacyHeaders: false,
-  message: 'Rate limit exceeded for public API, please try again later',
+  message: "Too many requests from this IP. Please try again in 15 minutes.",
+  handler: securityRateLimitHandler,
   statusCode: 429,
-  handler: securityRateLimitHandler
+  skipSuccessfulRequests: true
 });
 
 /**
@@ -162,41 +135,21 @@ export const publicApiRateLimiter = rateLimit({
  */
 export const securityRateLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 20, // 20 failed requests per window
+  max: 20, // 20 failed requests
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: true, // Only count failed attempts
-  message: 'Security violation detected. Your IP has been temporarily blocked due to suspicious activity.',
+  skipSuccessfulRequests: true, // Only count failed requests
   statusCode: 429,
   handler: (req: Request, res: Response, _next: NextFunction, options: any) => {
-    // Get the retry after time in seconds
-    const retryAfterSeconds = Math.ceil(options.windowMs / 1000);
+    const retryAfter = Math.ceil(options.windowMs / 1000);
     
-    // Set proper headers
-    res.setHeader('Retry-After', String(retryAfterSeconds));
-    
-    // Create traceable request ID for security monitoring
-    const requestId = req.id || `sec-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
-    
-    // Log potential attack with enhanced details for security teams
-    console.error(`[SECURITY] [${requestId}] Potential attack detected:`, {
-      ip: req.ip,
-      path: req.path,
-      method: req.method,
-      userAgent: req.headers['user-agent'],
-      referer: req.headers.referer,
-      retryAfterSeconds,
-      forwardedFor: req.headers['x-forwarded-for'],
-      host: req.headers.host
+    res.status(options.statusCode).json({
+      message: "Security limit exceeded. Your IP has been temporarily blocked due to suspicious activity.",
+      error: "security_limit_exceeded",
+      retryAfter: retryAfter
     });
     
-    // Send response with appropriate status and message
-    res.status(429).json({
-      success: false,
-      message: options.message,
-      type: 'security_violation',
-      requestId,
-      retryAfter: retryAfterSeconds
-    });
+    // Log potential security breach for investigation
+    console.error(`SECURITY ALERT: Possible attack detected from IP: ${req.ip}, path: ${req.path}, user-agent: ${req.get('user-agent')}`);
   }
 });

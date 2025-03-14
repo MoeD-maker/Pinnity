@@ -108,7 +108,7 @@ export function businessRoutes(app: Express): void {
   });
 
   // Update business verification status
-  app.put("/api/business/:id/verification", authenticate, adminRateLimiter, async (req: Request, res: Response) => {
+  app.put("/api/business/:id/verification", authenticate, adminRateLimiter, validateBusinessVerification, async (req: Request, res: Response) => {
     try {
       const businessId = parseInt(req.params.id);
       if (isNaN(businessId)) {
@@ -154,7 +154,7 @@ export function businessRoutes(app: Express): void {
   });
 
   // Add business hours
-  app.post("/api/business/hours", authenticate, apiRateLimiter, async (req: Request, res: Response) => {
+  app.post("/api/business/hours", authenticate, apiRateLimiter, validateBusinessHours, async (req: Request, res: Response) => {
     try {
       // Verify the authenticated user is a business owner or admin
       if (req.user?.userType !== 'business' && req.user?.userType !== 'admin') {
@@ -183,7 +183,7 @@ export function businessRoutes(app: Express): void {
   });
 
   // Update business hours
-  app.put("/api/business/hours/:id", authenticate, apiRateLimiter, async (req: Request, res: Response) => {
+  app.put("/api/business/hours/:id", authenticate, apiRateLimiter, validateBusinessHours, async (req: Request, res: Response) => {
     try {
       const hoursId = parseInt(req.params.id);
       if (isNaN(hoursId)) {
