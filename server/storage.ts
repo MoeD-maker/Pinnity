@@ -1505,7 +1505,7 @@ export class DatabaseStorage implements IStorage {
       .values({
         ...userData,
         username,
-        userType: userData.userType || "individual",
+        userType: "individual",
         password: hashPassword(userData.password)
       })
       .returning();
