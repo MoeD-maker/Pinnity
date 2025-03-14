@@ -94,6 +94,7 @@ export const userNotificationPreferences = pgTable("user_notification_preference
 export const dealApprovals = pgTable("deal_approvals", {
   id: serial("id").primaryKey(),
   dealId: integer("deal_id").notNull().references(() => deals.id),
+  submitterId: integer("submitter_id").notNull().references(() => users.id), // User ID of the person submitting the deal for approval
   status: text("status").notNull().default("pending"), // "pending", "approved", "rejected"
   reviewerId: integer("reviewer_id"), // Optional: admin/reviewer user ID 
   feedback: text("feedback"), // Feedback from reviewer, especially for rejections
