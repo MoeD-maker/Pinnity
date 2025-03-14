@@ -37,17 +37,42 @@ app.use(express.urlencoded({
 // Enable secure cookie parsing with a secret
 // Using a strong secret helps prevent cookie tampering
 const COOKIE_SECRET = process.env.COOKIE_SECRET || 'pinnity-secure-cookie-aee723bf-d5b5-4fe9-8fe2-91979de0c7-dev';
+
+// Validate cookie secret in production
+if (process.env.NODE_ENV === 'production' && (!process.env.COOKIE_SECRET || process.env.COOKIE_SECRET.length < 32)) {
+  console.error('ERROR: COOKIE_SECRET not set or too short in production environment. Set a strong secret in .env');
+  process.exit(1);
+}
+
 app.use(cookieParser(COOKIE_SECRET));
+
+// Set secure headers globally
+app.use((req, res, next) => {
+  // Security headers
+  res.setHeader('X-Content-Type-Options', 'nosniff'); // Prevent MIME type sniffing
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN'); // Protect against clickjacking
+  res.setHeader('X-XSS-Protection', '1; mode=block'); // Enable browser XSS filtering
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains'); // Force HTTPS 
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private'); // Prevent caching of sensitive data
+  res.setHeader('Pragma', 'no-cache'); // Legacy cache control
+  
+  // No informative server identity
+  res.removeHeader('X-Powered-By');
+  
+  next();
+});
 
 // CSRF protection for non-GET requests
 const csrfProtection = csurf({ 
   cookie: {
-    httpOnly: true, // Prevent JavaScript access to cookie
-    sameSite: 'strict', // Prevents the cookie from being sent in cross-site requests
-    secure: process.env.NODE_ENV === 'production', // Send cookie only over HTTPS in production
-    maxAge: 3600, // Session expiration in seconds (1 hour)
-    path: '/' // Ensure cookie is available for all paths
-  }
+    httpOnly: true,        // Prevent JavaScript access to cookie
+    sameSite: 'strict',    // Prevents the cookie from being sent in cross-site requests
+    secure: process.env.NODE_ENV === 'production',  // Send cookie only over HTTPS in production
+    maxAge: 3600,          // Session expiration in seconds (1 hour)
+    path: '/',             // Ensure cookie is available for all paths
+    signed: true           // Sign the cookie to detect tampering
+  },
+  ignoreMethods: ['GET', 'HEAD', 'OPTIONS'], // Only protect state-changing methods
 });
 
 app.use((req, res, next) => {
@@ -80,10 +105,27 @@ app.use((req, res, next) => {
   next();
 });
 
-// Apply CSRF protection to state-changing routes
+// Apply CSRF protection to all state-changing routes
+// Auth routes - user registration, login
 app.use('/api/auth/*', csrfProtection);
+
+// User profile routes - personal data, settings
 app.use('/api/user/*', csrfProtection);
+
+// Business routes - business management, update
+app.use('/api/business/*', csrfProtection);
+
+// Admin routes - user management, approval workflows
+app.use('/api/admin/*', csrfProtection);
+
+// Deal routes - create, update, approval
 app.use('/api/deals', csrfProtection);
+app.use('/api/deals/*', csrfProtection);
+
+// Additional protection for sensitive operations
+app.post('/api/*', csrfProtection); // All POST operations
+app.put('/api/*', csrfProtection);  // All PUT operations
+app.delete('/api/*', csrfProtection); // All DELETE operations
 
 // Generate a unique request ID for error correlation
 app.use((req: Request, _res: Response, next: NextFunction) => {
@@ -99,7 +141,7 @@ app.get('/api/csrf-token', csrfProtection, (req: Request, res: Response) => {
 (async () => {
   const server = await registerRoutes(app);
 
-  // Global error handler
+  // Global error handler with enhanced security error responses
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     // Determine status code
     const status = err.status || err.statusCode || 500;
@@ -110,27 +152,73 @@ app.get('/api/csrf-token', csrfProtection, (req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
     };
 
-    // For 4xx client errors, include the specific error message
-    if (status >= 400 && status < 500) {
+    // Special handling for security-related errors
+    if (err.code === 'EBADCSRFTOKEN') {
+      // CSRF token validation failed
+      errorResponse.message = "Security validation failed. Please refresh the page and try again.";
+      errorResponse.type = "security_error";
+      errorResponse.code = "csrf_token_invalid";
+      
+      // Log potential CSRF attack attempts with IP information for investigation
+      console.warn(`[SECURITY] [${req.id}] CSRF validation failed:`, {
+        ip: req.ip,
+        path: req.path,
+        method: req.method,
+        headers: req.headers,
+        // Don't log the full body as it may contain sensitive information
+        bodySize: req.body ? JSON.stringify(req.body).length : 0
+      });
+      
+      return res.status(403).json(errorResponse);
+    } 
+    // Handle JWT/authentication errors
+    else if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError' || err.name === 'NotBeforeError') {
+      errorResponse.message = "Your session has expired. Please log in again.";
+      errorResponse.type = "auth_error";
+      errorResponse.code = err.name === 'TokenExpiredError' ? "token_expired" : "token_invalid";
+      
+      return res.status(401).json(errorResponse);
+    }
+    // Rate limiting errors
+    else if (err.type === 'too-many-requests') {
+      errorResponse.message = "Too many requests. Please try again later.";
+      errorResponse.type = "rate_limit_error";
+      
+      return res.status(429).json(errorResponse);
+    }
+    // Validation errors - safe to return details
+    else if (err.name === 'ValidationError' || err.name === 'ZodError') {
+      errorResponse.message = err.message || "Validation failed";
+      errorResponse.type = "validation_error";
+      errorResponse.details = err.errors || err.issues || [];
+      
+      return res.status(400).json(errorResponse);
+    }
+    // Regular error categorization
+    else if (status >= 400 && status < 500) {
+      // For 4xx client errors, include the specific error message
       errorResponse.message = err.message || "Client Error";
+      errorResponse.type = "client_error";
     } else {
       // For 5xx server errors, use a generic message for security
       errorResponse.message = "Internal Server Error";
-      
-      // Add additional info for CSRF errors since they're common
-      if (err.code === 'EBADCSRFTOKEN') {
-        errorResponse.message = "Invalid CSRF token. Please refresh the page and try again.";
-      }
+      errorResponse.type = "server_error";
     }
 
     // Log detailed error information for debugging
-    console.error(`[ERROR] [${req.id}] ${req.method} ${req.path}:`, {
+    // In production, avoid logging sensitive data
+    const isProd = process.env.NODE_ENV === 'production';
+    const errorLog = {
+      requestId: req.id,
       statusCode: status,
       errorName: err.name,
       errorMessage: err.message,
-      errorStack: err.stack,
-      body: req.body
-    });
+      errorStack: isProd ? undefined : err.stack,
+      // Avoid logging full body in production to prevent sensitive data exposure
+      body: isProd ? 'body-hidden-in-production' : req.body
+    };
+    
+    console.error(`[ERROR] [${req.id}] ${req.method} ${req.path}:`, errorLog);
 
     // Send appropriate response to client
     res.status(status).json(errorResponse);
