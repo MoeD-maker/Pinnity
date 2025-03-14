@@ -1,8 +1,8 @@
 /**
- * API utilities for handling CSRF protection and common API tasks
+ * API Utilities
+ * Provides abstracted fetch utilities with CSRF protection for all state-changing requests
  */
 
-// Store CSRF token in memory
 let csrfToken: string | null = null;
 
 /**
@@ -10,28 +10,38 @@ let csrfToken: string | null = null;
  * Gets a CSRF token if needed and injects it into request headers
  */
 export async function fetchWithCSRF(url: string, options: RequestInit = {}): Promise<Response> {
-  // Get CSRF token if we don't have one
   if (!csrfToken) {
+    // Fetch a new CSRF token
     try {
-      const response = await fetch('/api/csrf-token');
-      if (!response.ok) {
-        throw new Error('Failed to fetch CSRF token');
-      }
+      const response = await fetch('/api/csrf-token', { credentials: 'include' });
       const data = await response.json();
       csrfToken = data.csrfToken;
-    } catch (error) {
-      console.error('Error fetching CSRF token:', error);
-      // Continue without CSRF token - server will reject if needed
+    } catch (err) {
+      console.error('Failed to fetch CSRF token:', err);
+      // Continue with the request anyway
     }
   }
+
+  // Set up headers with CSRF token
+  const headers = new Headers(options.headers || {});
   
-  // Add token to headers
-  const headers = {
-    ...options.headers,
-    'CSRF-Token': csrfToken || '',
+  if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  if (csrfToken) {
+    headers.set('CSRF-Token', csrfToken);
+  }
+
+  // Build final options with credentials and headers
+  const finalOptions = {
+    ...options,
+    credentials: 'include' as RequestCredential,
+    headers,
   };
-  
-  return fetch(url, { ...options, headers, credentials: 'same-origin' });
+
+  // Make the request
+  return fetch(url, finalOptions);
 }
 
 /**
@@ -47,17 +57,14 @@ export function resetCSRFToken(): void {
 export async function apiPost<T>(url: string, data?: any): Promise<T> {
   const response = await fetchWithCSRF(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
     body: data ? JSON.stringify(data) : undefined,
   });
-  
+
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(errorText || `API error: ${response.status}`);
+    throw new Error(errorText || `API request failed: ${response.status}`);
   }
-  
+
   return response.json();
 }
 
@@ -67,17 +74,14 @@ export async function apiPost<T>(url: string, data?: any): Promise<T> {
 export async function apiPut<T>(url: string, data?: any): Promise<T> {
   const response = await fetchWithCSRF(url, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
     body: data ? JSON.stringify(data) : undefined,
   });
-  
+
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(errorText || `API error: ${response.status}`);
+    throw new Error(errorText || `API request failed: ${response.status}`);
   }
-  
+
   return response.json();
 }
 
@@ -88,12 +92,12 @@ export async function apiDelete<T>(url: string): Promise<T> {
   const response = await fetchWithCSRF(url, {
     method: 'DELETE',
   });
-  
+
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(errorText || `API error: ${response.status}`);
+    throw new Error(errorText || `API request failed: ${response.status}`);
   }
-  
+
   return response.json();
 }
 
@@ -103,14 +107,15 @@ export async function apiDelete<T>(url: string): Promise<T> {
 export async function uploadFormData<T>(url: string, formData: FormData): Promise<T> {
   const response = await fetchWithCSRF(url, {
     method: 'POST',
-    // Don't set Content-Type with FormData - browser sets it with boundary
     body: formData,
+    // Don't manually set Content-Type header for FormData
+    // The browser will automatically set it with the correct boundary
   });
-  
+
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(errorText || `API error: ${response.status}`);
+    throw new Error(errorText || `Upload failed: ${response.status}`);
   }
-  
+
   return response.json();
 }

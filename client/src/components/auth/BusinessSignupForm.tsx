@@ -38,8 +38,10 @@ export default function BusinessSignupForm() {
       confirmPassword: "",
       phone: "",
       address: "",
-      termsAccepted: false,
+      // This will be properly validated during form submission
+      termsAccepted: false as unknown as true,
     },
+    mode: "onChange",
   });
 
   // Watch password field to calculate strength
@@ -70,8 +72,15 @@ export default function BusinessSignupForm() {
         }
       });
       
-      // Use CSRF-protected upload
-      const result = await uploadFormData('/api/auth/register/business', formData);
+      // Use CSRF-protected upload with proper typing
+      type RegistrationResponse = {
+        message: string;
+        userId: number;
+        userType: string;
+        token: string;
+      };
+      
+      const result = await uploadFormData<RegistrationResponse>('/api/auth/register/business', formData);
       
       toast({
         title: "Business account created",

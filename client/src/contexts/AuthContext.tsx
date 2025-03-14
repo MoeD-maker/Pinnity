@@ -136,10 +136,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       setError(null);
 
-      const response = await apiRequest('/api/auth/login', {
-        method: 'POST',
-        data: { email, password, rememberMe }
-      });
+      // Use CSRF-protected API call
+      const response = await apiPost<{
+        message: string;
+        userId: number;
+        userType: string;
+        token: string;
+      }>('/api/auth/login', { email, password, rememberMe });
 
       if (response && response.token) {
         // Store JWT token
@@ -180,7 +183,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       
       // In a real app with server-side session management, you'd make a request to invalidate the session
-      // await apiRequest('/api/auth/logout', { method: 'POST' });
+      // await apiPost('/api/auth/logout');
       
       // Clear user data
       setUser(null);
@@ -191,6 +194,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Also remove legacy storage items
       localStorage.removeItem('userId');
       localStorage.removeItem('userType');
+      
+      // Reset CSRF token
+      resetCSRFToken();
       
       // Redirect to login
       setLocation('/auth');
