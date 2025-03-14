@@ -5,6 +5,7 @@ import { loginUserSchema, insertUserSchema, insertDealSchema, ratingSchema } fro
 import { z } from "zod";
 import { generateToken } from "./auth";
 import { authenticate, authorize, checkOwnership } from "./middleware";
+import { getUploadMiddleware } from "./uploadMiddleware";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/health", (_req: Request, res: Response) => {
