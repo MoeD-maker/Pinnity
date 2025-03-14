@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, CookieOptions } from "express";
 import { storage } from "../storage";
 import { z } from "zod";
 import { generateToken } from "../auth";
@@ -57,10 +57,17 @@ export function authRoutes(app: Express): void {
         
         // Set secure HTTP-only cookie with the token
         // If rememberMe is true, set a longer expiration
-        const cookieOptions = rememberMe 
+        const cookieOptions: CookieOptions = rememberMe 
           ? { maxAge: 30 * 24 * 60 * 60 * 1000 } // 30 days
           : { maxAge: 24 * 60 * 60 * 1000 }; // 1 day
-          
+        
+        // In development, we need to ensure sameSite is not 'strict' for testing across subdomains
+        if (process.env.NODE_ENV === 'development') {
+          cookieOptions.sameSite = 'lax';
+          cookieOptions.secure = false; // Allow HTTP in development
+        }
+        
+        console.log('Setting auth cookie with options:', cookieOptions);
         setAuthCookie(res, 'auth_token', token, cookieOptions);
         
         console.log(`Successful login for user ID: ${user.id}, Type: ${user.userType}`);
@@ -106,7 +113,16 @@ export function authRoutes(app: Express): void {
         const token = generateToken(user);
         
         // Set secure HTTP-only cookie with the token
-        setAuthCookie(res, 'auth_token', token);
+        const cookieOptions = { maxAge: 24 * 60 * 60 * 1000 }; // 1 day
+        
+        // In development, we need to ensure sameSite is not 'strict' for testing across subdomains
+        if (process.env.NODE_ENV === 'development') {
+          cookieOptions.sameSite = 'lax';
+          cookieOptions.secure = false; // Allow HTTP in development
+        }
+        
+        console.log('Setting auth cookie with options:', cookieOptions);
+        setAuthCookie(res, 'auth_token', token, cookieOptions);
         
         // Return success with user info (token is in HTTP-only cookie)
         return res.status(201).json({ 
@@ -203,7 +219,16 @@ export function authRoutes(app: Express): void {
         const token = generateToken(user);
         
         // Set secure HTTP-only cookie with the token
-        setAuthCookie(res, 'auth_token', token);
+        const cookieOptions = { maxAge: 24 * 60 * 60 * 1000 }; // 1 day
+        
+        // In development, we need to ensure sameSite is not 'strict' for testing across subdomains
+        if (process.env.NODE_ENV === 'development') {
+          cookieOptions.sameSite = 'lax';
+          cookieOptions.secure = false; // Allow HTTP in development
+        }
+        
+        console.log('Setting auth cookie with options:', cookieOptions);
+        setAuthCookie(res, 'auth_token', token, cookieOptions);
         
         // Return success with user info (token is in HTTP-only cookie)
         return res.status(201).json({ 
