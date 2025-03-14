@@ -7,6 +7,8 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+import { fetchWithCSRF } from './api';
+
 export async function apiRequest(
   url: string,
   options?: {
@@ -20,20 +22,11 @@ export async function apiRequest(
     
     console.log(`Making ${method} request to ${url}`, data);
     
-    // Create headers
-    const headers: Record<string, string> = {};
-    
-    // Add content-type header for requests with data
-    if (data) {
-      headers["Content-Type"] = "application/json";
-    }
-    
-    // Make the request with credentials to include cookies
-    const res = await fetch(url, {
+    // Use fetchWithCSRF to ensure CSRF protection for all API calls
+    const res = await fetchWithCSRF(url, {
       method,
-      headers,
       body: data ? JSON.stringify(data) : undefined,
-      credentials: "include", // Include cookies in the request
+      // Headers and credentials are handled by fetchWithCSRF
     });
 
     await throwIfResNotOk(res);
@@ -56,8 +49,10 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
-      credentials: "include", // Include cookies in the request
+    // Use fetchWithCSRF to ensure CSRF protection for all query requests
+    const res = await fetchWithCSRF(queryKey[0] as string, {
+      method: 'GET',
+      // Credentials and headers are handled by fetchWithCSRF
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

@@ -119,9 +119,12 @@ export function comparePassword(password: string, hashedPassword: string): boole
  * Provides a secure method to extract the token from HTTP-only cookies
  */
 export function extractTokenFromCookies(cookies: Record<string, string>): JwtPayload | null {
+  console.log('Extracting token from cookies:', Object.keys(cookies));
+  
   // Check if the auth cookie exists
   const token = cookies['auth_token'];
   if (!token) {
+    console.log('No auth_token cookie found in request');
     return null;
   }
   
@@ -142,7 +145,13 @@ export function extractTokenFromCookies(cookies: Record<string, string>): JwtPay
     }
     
     // Verify the token
-    return verifyToken(token);
+    const payload = verifyToken(token);
+    if (payload) {
+      console.log('Successfully verified token from cookie, user:', payload.userId);
+    } else {
+      console.log('Token verification failed');
+    }
+    return payload;
   } catch (error) {
     console.error('Error processing auth cookie:', error);
     return null;
