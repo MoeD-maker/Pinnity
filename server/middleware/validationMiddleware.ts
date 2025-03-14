@@ -121,8 +121,19 @@ export const validate = (schema: AnyZodObject, options: ValidationOptions = {}) 
     const config = { ...defaultOptions, ...options };
     
     try {
+      // Ensure req.body exists, otherwise create an empty object
+      // This handles cases where body-parser might not have run or failed
+      if (req.body === undefined) {
+        req.body = {};
+        console.warn('Request body is undefined. Creating empty object.');
+      }
+      
       // Apply pre-validation processing
-      let data = { ...req.body };
+      let data = req.body;
+      
+      // Log for debugging
+      console.log(`Validating request for ${req.method} ${req.path}:`, 
+        typeof data === 'object' ? (JSON.stringify(data, null, 2).substring(0, 200) + (JSON.stringify(data).length > 200 ? '...' : '')) : `${typeof data}`);
       
       // Check for excessively large input
       if (config.maxInputSize && isValueTooLarge(data, config.maxInputSize)) {
@@ -139,11 +150,21 @@ export const validate = (schema: AnyZodObject, options: ValidationOptions = {}) 
         data = sanitizeValue(data);
       }
       
-      // Validate against schema
-      const validatedData = await schema.parseAsync(data);
+      // Prepare validation object
+      const toValidate = {};
+      // Allow schema to validate different parts of the request
+      if (req.body) toValidate['body'] = data;
+      if (req.query) toValidate['query'] = req.query;
+      if (req.params) toValidate['params'] = req.params;
       
-      // Replace request body with validated data
-      req.body = validatedData;
+      // Validate against schema
+      const validatedData = await schema.parseAsync(toValidate);
+      
+      // Replace request parts with validated data
+      if (validatedData.body) req.body = validatedData.body;
+      if (validatedData.query) req.query = validatedData.query;
+      if (validatedData.params) req.params = validatedData.params;
+      
       next();
     } catch (error) {
       if (config.logErrors) {

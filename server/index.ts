@@ -40,6 +40,10 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 const app = express();
+
+// Trust proxy - required for rate limiting in Replit environment
+app.set('trust proxy', 1);
+
 // Secure parsing of JSON payloads with size limits
 app.use(express.json({ 
   limit: '1mb',  // Prevent large payload attacks
