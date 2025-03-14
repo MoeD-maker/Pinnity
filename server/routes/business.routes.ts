@@ -2,6 +2,12 @@ import type { Express, Request, Response } from "express";
 import { storage } from "../storage";
 import { authenticate, checkOwnership } from "../middleware";
 import { ratingSchema } from "@shared/schema";
+import { apiRateLimiter, adminRateLimiter } from "../middleware/rateLimit";
+import { 
+  validateBusinessProfile, 
+  validateBusinessHours, 
+  validateBusinessVerification 
+} from "../middleware/businessValidation";
 
 /**
  * Business routes for business management and related operations
@@ -64,7 +70,7 @@ export function businessRoutes(app: Express): void {
   });
 
   // Update business
-  app.put("/api/business/:id", authenticate, async (req: Request, res: Response) => {
+  app.put("/api/business/:id", authenticate, apiRateLimiter, validateBusinessProfile, async (req: Request, res: Response) => {
     try {
       const businessId = parseInt(req.params.id);
       if (isNaN(businessId)) {
@@ -102,7 +108,7 @@ export function businessRoutes(app: Express): void {
   });
 
   // Update business verification status
-  app.put("/api/business/:id/verification", authenticate, async (req: Request, res: Response) => {
+  app.put("/api/business/:id/verification", authenticate, adminRateLimiter, async (req: Request, res: Response) => {
     try {
       const businessId = parseInt(req.params.id);
       if (isNaN(businessId)) {
@@ -148,7 +154,7 @@ export function businessRoutes(app: Express): void {
   });
 
   // Add business hours
-  app.post("/api/business/hours", authenticate, async (req: Request, res: Response) => {
+  app.post("/api/business/hours", authenticate, apiRateLimiter, async (req: Request, res: Response) => {
     try {
       // Verify the authenticated user is a business owner or admin
       if (req.user?.userType !== 'business' && req.user?.userType !== 'admin') {
@@ -177,7 +183,7 @@ export function businessRoutes(app: Express): void {
   });
 
   // Update business hours
-  app.put("/api/business/hours/:id", authenticate, async (req: Request, res: Response) => {
+  app.put("/api/business/hours/:id", authenticate, apiRateLimiter, async (req: Request, res: Response) => {
     try {
       const hoursId = parseInt(req.params.id);
       if (isNaN(hoursId)) {
@@ -219,7 +225,7 @@ export function businessRoutes(app: Express): void {
   });
 
   // Delete business hours
-  app.delete("/api/business/hours/:id", authenticate, async (req: Request, res: Response) => {
+  app.delete("/api/business/hours/:id", authenticate, apiRateLimiter, async (req: Request, res: Response) => {
     try {
       const hoursId = parseInt(req.params.id);
       if (isNaN(hoursId)) {
