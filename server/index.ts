@@ -22,16 +22,31 @@ type Request = express.Request;
 dotenv.config();
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+// Secure parsing of JSON payloads with size limits
+app.use(express.json({ 
+  limit: '1mb',  // Prevent large payload attacks
+  strict: true   // Reject payloads that are not valid JSON
+}));
+
+// Process form data with appropriate limits
+app.use(express.urlencoded({ 
+  extended: false,
+  limit: '1mb'   // Prevent large payload attacks
+}));
+
+// Enable secure cookie parsing with a secret
+// Using a strong secret helps prevent cookie tampering
+const COOKIE_SECRET = process.env.COOKIE_SECRET || 'pinnity-secure-cookie-aee723bf-d5b5-4fe9-8fe2-91979de0c7-dev';
+app.use(cookieParser(COOKIE_SECRET));
 
 // CSRF protection for non-GET requests
 const csrfProtection = csurf({ 
   cookie: {
-    httpOnly: true,
-    sameSite: 'strict',
-    secure: process.env.NODE_ENV === 'production'
+    httpOnly: true, // Prevent JavaScript access to cookie
+    sameSite: 'strict', // Prevents the cookie from being sent in cross-site requests
+    secure: process.env.NODE_ENV === 'production', // Send cookie only over HTTPS in production
+    maxAge: 3600, // Session expiration in seconds (1 hour)
+    path: '/' // Ensure cookie is available for all paths
   }
 });
 
