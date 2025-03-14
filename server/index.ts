@@ -75,6 +75,22 @@ const csrfProtection = csurf({
   ignoreMethods: ['GET', 'HEAD', 'OPTIONS'], // Only protect state-changing methods
 });
 
+import { 
+  sanitizeLogData, 
+  shouldLogPath, 
+  shouldLogResponseByVerbosity, 
+  truncateLogLine,
+  defaultSanitizerConfig
+} from './utils/logSanitizer';
+
+// Create configurable log environment
+const LOG_CONFIG = {
+  // Control log verbosity: 0=minimal, 1=basic, 2=detailed, 3=debug
+  verbosityLevel: process.env.LOG_VERBOSITY ? parseInt(process.env.LOG_VERBOSITY) : defaultSanitizerConfig.verbosityLevel,
+  // Max length of log lines
+  maxLogLineLength: process.env.MAX_LOG_LINE_LENGTH ? parseInt(process.env.MAX_LOG_LINE_LENGTH) : 1000
+};
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -88,17 +104,45 @@ app.use((req, res, next) => {
 
   res.on("finish", () => {
     const duration = Date.now() - start;
+    
+    // Only log API requests
     if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+      // Determine if this path should be logged based on sensitivity
+      const shouldLog = shouldLogPath(path) && 
+        shouldLogResponseByVerbosity(res.statusCode, LOG_CONFIG.verbosityLevel);
+      
+      if (shouldLog) {
+        // Create basic log line
+        let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+        
+        // Add sanitized response data if available and path is not in the no-log list
+        if (capturedJsonResponse) {
+          // Deeply sanitize the response data
+          const sanitizedResponse = sanitizeLogData(capturedJsonResponse);
+          
+          // For 4xx/5xx errors, always include response for debugging
+          // For 2xx/3xx, only include if verbosity level is high enough
+          const includeResponse = 
+            res.statusCode >= 400 || 
+            LOG_CONFIG.verbosityLevel >= 2;
+          
+          if (includeResponse) {
+            logLine += ` :: ${JSON.stringify(sanitizedResponse)}`;
+          }
+        }
+        
+        // Truncate very long log lines
+        logLine = truncateLogLine(logLine, LOG_CONFIG.maxLogLineLength);
+        
+        // Log with appropriate severity based on status code
+        if (res.statusCode >= 500) {
+          console.error(`[API ERROR] ${logLine}`);
+        } else if (res.statusCode >= 400) {
+          console.warn(`[API WARN] ${logLine}`);
+        } else {
+          log(logLine);
+        }
       }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
     }
   });
 

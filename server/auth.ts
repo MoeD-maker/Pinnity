@@ -47,6 +47,13 @@ export interface JwtPayload {
   userId: number;
   userType: string;
   email: string;
+  // Standard JWT claims that may be present
+  exp?: number;    // Expiration time
+  iat?: number;    // Issued at time
+  sub?: string;    // Subject (user ID)
+  iss?: string;    // Issuer
+  aud?: string;    // Audience
+  jti?: string;    // JWT ID
 }
 
 /**
