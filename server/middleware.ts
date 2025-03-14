@@ -20,7 +20,7 @@ declare global {
 export function authenticate(req: Request, res: Response, next: NextFunction) {
   try {
     // First try to get token from cookies (preferred, more secure method)
-    let token = extractTokenFromCookies(req.cookies);
+    let token = extractTokenFromCookies(req.cookies, req.signedCookies);
     
     // Fall back to Authorization header for backward compatibility
     if (!token && req.headers.authorization) {
