@@ -1,9 +1,22 @@
-import express, { type Request, Response, NextFunction } from "express";
+import express, { Response, NextFunction } from "express";
 import { registerRoutes } from "./routes/index";
 import { setupVite, serveStatic, log } from "./vite";
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import csurf from 'csurf';
+
+// Extend Express Request type to include request ID and CSRF token
+declare global {
+  namespace Express {
+    interface Request {
+      id?: string;
+      csrfToken(): string;
+    }
+  }
+}
+
+// Define our Request type
+type Request = express.Request;
 
 // Load environment variables from .env file
 dotenv.config();
@@ -57,6 +70,12 @@ app.use('/api/auth/*', csrfProtection);
 app.use('/api/user/*', csrfProtection);
 app.use('/api/deals', csrfProtection);
 
+// Generate a unique request ID for error correlation
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  req.id = `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  next();
+});
+
 // Add a route to get a CSRF token
 app.get('/api/csrf-token', csrfProtection, (req: Request, res: Response) => {
   res.json({ csrfToken: req.csrfToken() });
@@ -65,12 +84,41 @@ app.get('/api/csrf-token', csrfProtection, (req: Request, res: Response) => {
 (async () => {
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  // Global error handler
+  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
+    // Determine status code
     const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    
+    // Create response object with request ID for correlation
+    const errorResponse: any = {
+      requestId: req.id,
+      timestamp: new Date().toISOString(),
+    };
 
-    res.status(status).json({ message });
-    throw err;
+    // For 4xx client errors, include the specific error message
+    if (status >= 400 && status < 500) {
+      errorResponse.message = err.message || "Client Error";
+    } else {
+      // For 5xx server errors, use a generic message for security
+      errorResponse.message = "Internal Server Error";
+      
+      // Add additional info for CSRF errors since they're common
+      if (err.code === 'EBADCSRFTOKEN') {
+        errorResponse.message = "Invalid CSRF token. Please refresh the page and try again.";
+      }
+    }
+
+    // Log detailed error information for debugging
+    console.error(`[ERROR] [${req.id}] ${req.method} ${req.path}:`, {
+      statusCode: status,
+      errorName: err.name,
+      errorMessage: err.message,
+      errorStack: err.stack,
+      body: req.body
+    });
+
+    // Send appropriate response to client
+    res.status(status).json(errorResponse);
   });
 
   // importantly only setup vite in development and after
