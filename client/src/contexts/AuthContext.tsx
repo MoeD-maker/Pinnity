@@ -3,22 +3,27 @@ import { useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
 import { apiPost, resetCSRFToken } from '@/lib/api';
 
-// JWT token utilities
-const TOKEN_KEY = 'pinnity_auth_token';
+// Cookie-based authentication
+// Since we're using secure HTTP-only cookies, we only need to keep track of auth status client-side
+// Without storing the actual token in localStorage
+const USER_ID_KEY = 'pinnity_user_id';
+const USER_TYPE_KEY = 'pinnity_user_type';
 
-// Function to get token from storage
-const getToken = (): string | null => {
-  return localStorage.getItem(TOKEN_KEY);
+// Function to get user ID from storage
+const getUserId = (): string | null => {
+  return localStorage.getItem(USER_ID_KEY);
 };
 
-// Function to save token to storage
-const saveToken = (token: string): void => {
-  localStorage.setItem(TOKEN_KEY, token);
+// Function to save user ID to storage
+const saveUserId = (userId: string, userType: string): void => {
+  localStorage.setItem(USER_ID_KEY, userId);
+  localStorage.setItem(USER_TYPE_KEY, userType);
 };
 
-// Function to remove token from storage
-const removeToken = (): void => {
-  localStorage.removeItem(TOKEN_KEY);
+// Function to remove user data from storage
+const removeUserData = (): void => {
+  localStorage.removeItem(USER_ID_KEY);
+  localStorage.removeItem(USER_TYPE_KEY);
 };
 
 // Define the User type based on your schema
@@ -55,51 +60,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         setIsLoading(true);
         
-        // Check for JWT token
-        const token = getToken();
+        // Check for stored user ID
+        let storedUserId = getUserId();
+        let storedUserType = localStorage.getItem(USER_TYPE_KEY);
         
-        // Also check for stored userId (backward compatibility)
-        let storedUserId = localStorage.getItem('userId');
-        let storedUserType = localStorage.getItem('userType');
-        
-        // If we have a token but no stored user ID, we need to decode the JWT token
-        // This is just a temporary fix until we fully update the app to use JWT
-        if (token && !storedUserId) {
-          // This is a basic implementation - in production, we'd use a proper JWT decoder
-          try {
-            const base64Url = token.split('.')[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-            
-            const payload = JSON.parse(jsonPayload);
-            if (payload.userId) {
-              localStorage.setItem('userId', payload.userId.toString());
-              localStorage.setItem('userType', payload.userType);
-              // Update our local variables with the values from the token
-              storedUserType = payload.userType;
-              storedUserId = payload.userId.toString();
-            }
-          } catch (e) {
-            console.error('Error decoding token:', e);
+        // Also check for legacy storage (backward compatibility)
+        if (!storedUserId) {
+          storedUserId = localStorage.getItem('userId');
+          storedUserType = localStorage.getItem('userType');
+          
+          // If found in legacy storage, migrate to new storage keys
+          if (storedUserId && storedUserType) {
+            saveUserId(storedUserId, storedUserType);
+            // Clean up legacy storage
+            localStorage.removeItem('userId');
+            localStorage.removeItem('userType');
           }
         }
         
-        if (token || storedUserId) {
+        if (storedUserId) {
           try {
-            // If we have a token, the API request will include it in the header
-            // If we have a userId but no token, try to fetch user data anyway
-            const userId = storedUserId || '';
-            const userData = await apiRequest(`/api/user/${userId}`);
+            // Our JWT token is in a secure HTTP-only cookie
+            // so we just need to make the request and the browser will 
+            // automatically include the cookie
+            const userData = await apiRequest(`/api/user/${storedUserId}`);
             
             if (userData) {
               setUser(userData);
               
-              // If we have user data but no token, store the userId for backward compatibility
-              if (!token && userData.id) {
-                localStorage.setItem('userId', userData.id.toString());
-                localStorage.setItem('userType', userData.userType);
+              // Make sure we have the user ID and type stored
+              if (userData.id) {
+                saveUserId(userData.id.toString(), userData.userType);
               }
               
               // If we're on the root path or auth page, redirect based on user type 
@@ -116,9 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } catch (err) {
             console.error('Error fetching user data:', err);
             // If this fails, user is not authenticated
-            removeToken();
-            localStorage.removeItem('userId');
-            localStorage.removeItem('userType');
+            removeUserData();
           }
         }
       } catch (err) {

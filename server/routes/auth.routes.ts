@@ -7,6 +7,7 @@ import fs from 'fs';
 import { validate } from "../middleware/validationMiddleware";
 import { authSchemas } from "../schemas";
 import { authRateLimiter, securityRateLimiter } from "../middleware/rateLimit";
+import { setAuthCookie } from "../utils/cookieUtils";
 
 /**
  * Authentication routes for login and registration
@@ -33,12 +34,14 @@ export function authRoutes(app: Express): void {
         // Generate JWT token
         const token = generateToken(user);
         
-        // Return success with token
+        // Set secure HTTP-only cookie with the token
+        setAuthCookie(res, 'auth_token', token);
+        
+        // Return success with user info (token is in HTTP-only cookie)
         return res.status(200).json({ 
           message: "Login successful",
           userId: user.id,
-          userType: user.userType,
-          token
+          userType: user.userType
         });
       } catch (error) {
         console.error("Login error:", error);
@@ -74,12 +77,14 @@ export function authRoutes(app: Express): void {
         // Generate JWT token
         const token = generateToken(user);
         
-        // Return success with token
+        // Set secure HTTP-only cookie with the token
+        setAuthCookie(res, 'auth_token', token);
+        
+        // Return success with user info (token is in HTTP-only cookie)
         return res.status(201).json({ 
           message: "User registered successfully",
           userId: user.id,
-          userType: user.userType,
-          token
+          userType: user.userType
         });
       } catch (error) {
         if (error instanceof Error) {
@@ -169,12 +174,14 @@ export function authRoutes(app: Express): void {
         // Generate JWT token
         const token = generateToken(user);
         
-        // Return success with token
+        // Set secure HTTP-only cookie with the token
+        setAuthCookie(res, 'auth_token', token);
+        
+        // Return success with user info (token is in HTTP-only cookie)
         return res.status(201).json({ 
           message: "Business registered successfully",
           userId: user.id,
-          userType: user.userType,
-          token
+          userType: user.userType
         });
       } catch (error) {
         // Clean up any uploaded files in case of error
