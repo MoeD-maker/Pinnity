@@ -13,6 +13,23 @@ import { setAuthCookie } from "../utils/cookieUtils";
  * Authentication routes for login and registration
  */
 export function authRoutes(app: Express): void {
+  // Logout route
+  app.post("/api/auth/logout", (req: Request, res: Response) => {
+    try {
+      // Clear the auth cookie
+      res.clearCookie('auth_token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        sameSite: 'strict'
+      });
+      
+      return res.status(200).json({ message: "Logged out successfully" });
+    } catch (error) {
+      console.error("Logout error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
   // Login route
   app.post(
     "/api/auth/login", 

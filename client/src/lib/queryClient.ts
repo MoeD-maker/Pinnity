@@ -1,15 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
-// Function to get token from storage - supporting both new and legacy storage keys
-const getToken = (): string | null => {
-  // Try the standard token key first
-  const token = localStorage.getItem('pinnity_auth_token');
-  if (token) return token;
-  
-  // Backward compatibility - try the 'token' key
-  return localStorage.getItem('token');
-};
-
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -30,10 +20,7 @@ export async function apiRequest(
     
     console.log(`Making ${method} request to ${url}`, data);
     
-    // Get token if it exists
-    const token = getToken();
-    
-    // Create headers with token if it exists
+    // Create headers
     const headers: Record<string, string> = {};
     
     // Add content-type header for requests with data
@@ -41,16 +28,12 @@ export async function apiRequest(
       headers["Content-Type"] = "application/json";
     }
     
-    // Add authorization header if we have a token
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-    
+    // Make the request with credentials to include cookies
     const res = await fetch(url, {
       method,
       headers,
       body: data ? JSON.stringify(data) : undefined,
-      credentials: "include",
+      credentials: "include", // Include cookies in the request
     });
 
     await throwIfResNotOk(res);
@@ -73,20 +56,8 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    // Get token if it exists
-    const token = getToken();
-    
-    // Create headers
-    const headers: Record<string, string> = {};
-    
-    // Add authorization header if we have a token
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-    
     const res = await fetch(queryKey[0] as string, {
-      headers,
-      credentials: "include",
+      credentials: "include", // Include cookies in the request
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

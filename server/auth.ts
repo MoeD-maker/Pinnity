@@ -115,8 +115,44 @@ export function comparePassword(password: string, hashedPassword: string): boole
 }
 
 /**
+ * Extract and verify token from cookies
+ * Provides a secure method to extract the token from HTTP-only cookies
+ */
+export function extractTokenFromCookies(cookies: Record<string, string>): JwtPayload | null {
+  // Check if the auth cookie exists
+  const token = cookies['auth_token'];
+  if (!token) {
+    return null;
+  }
+  
+  try {
+    // Sanitize the token - ensure it only contains valid JWT characters
+    // JWT tokens are Base64Url encoded and should only contain these characters
+    const jwtRegex = /^[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.[A-Za-z0-9-_.+/=]*$/;
+    
+    if (!jwtRegex.test(token)) {
+      console.warn('Invalid JWT token format detected in cookie');
+      return null;
+    }
+    
+    // Check token length to prevent DoS attacks with extremely long tokens
+    if (token.length > 800) { // Typical JWTs are 500-700 chars
+      console.warn('JWT token in cookie exceeds maximum allowed length');
+      return null;
+    }
+    
+    // Verify the token
+    return verifyToken(token);
+  } catch (error) {
+    console.error('Error processing auth cookie:', error);
+    return null;
+  }
+}
+
+/**
  * Extract and verify token from Authorization header
  * Includes additional security checks and sanitization
+ * @deprecated Use extractTokenFromCookies instead for improved security
  */
 export function extractTokenFromHeader(authHeader: string | undefined): JwtPayload | null {
   // Check if header exists and has the correct format
@@ -147,8 +183,6 @@ export function extractTokenFromHeader(authHeader: string | undefined): JwtPaylo
       console.warn('JWT token exceeds maximum allowed length');
       return null;
     }
-    
-    // Additional timing-safe comparison could be added here if needed
     
     // Verify the token
     return verifyToken(token);

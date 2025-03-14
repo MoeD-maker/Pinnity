@@ -61,29 +61,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(true);
         
         // Check for stored user ID
-        let storedUserId = getUserId();
-        let storedUserType = localStorage.getItem(USER_TYPE_KEY);
+        const storedUserId = getUserId();
+        const storedUserType = localStorage.getItem(USER_TYPE_KEY);
         
         // Also check for legacy storage (backward compatibility)
+        let legacyUserId = null;
+        let legacyUserType = null;
+        
         if (!storedUserId) {
-          storedUserId = localStorage.getItem('userId');
-          storedUserType = localStorage.getItem('userType');
+          legacyUserId = localStorage.getItem('userId');
+          legacyUserType = localStorage.getItem('userType');
           
           // If found in legacy storage, migrate to new storage keys
-          if (storedUserId && storedUserType) {
-            saveUserId(storedUserId, storedUserType);
+          if (legacyUserId && legacyUserType) {
+            saveUserId(legacyUserId, legacyUserType);
             // Clean up legacy storage
             localStorage.removeItem('userId');
             localStorage.removeItem('userType');
           }
         }
         
-        if (storedUserId) {
+        // Use either the new storage or the legacy storage
+        const userId = storedUserId || legacyUserId;
+        const userType = storedUserType || legacyUserType;
+        
+        if (userId) {
           try {
             // Our JWT token is in a secure HTTP-only cookie
             // so we just need to make the request and the browser will 
             // automatically include the cookie
-            const userData = await apiRequest(`/api/user/${storedUserId}`);
+            const userData = await apiRequest(`/api/user/${userId}`);
             
             if (userData) {
               setUser(userData);
@@ -96,9 +103,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               // If we're on the root path or auth page, redirect based on user type 
               const path = window.location.pathname;
               if (path === '/' || path === '/auth') {
-                if (userData.userType === 'admin' || storedUserType === 'admin') {
+                if (userData.userType === 'admin' || userType === 'admin') {
                   setLocation('/admin');
-                } else if (userData.userType === 'business' || storedUserType === 'business') {
+                } else if (userData.userType === 'business' || userType === 'business') {
                   setLocation('/vendor');
                 }
                 // Keep individual users on the homepage if that's where they are
@@ -130,18 +137,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         message: string;
         userId: number;
         userType: string;
-        token: string;
       }>('/api/auth/login', { email, password, rememberMe });
 
-      if (response && response.token) {
-        // Store JWT token
-        saveToken(response.token);
-        
-        // For backward compatibility, also store user ID and type
-        if (response.userId) {
-          localStorage.setItem('userId', response.userId.toString());
-          localStorage.setItem('userType', response.userType);
-        }
+      if (response && response.userId) {
+        // Store user ID and type in localStorage for client-side reference
+        // The actual authentication token is in a secure HTTP-only cookie
+        saveUserId(response.userId.toString(), response.userType);
         
         // Fetch complete user data
         const userData = await apiRequest(`/api/user/${response.userId}`);
@@ -171,16 +172,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true);
       
-      // In a real app with server-side session management, you'd make a request to invalidate the session
-      // await apiPost('/api/auth/logout');
+      // Make a request to invalidate the session and clear the secure HTTP-only cookie
+      await apiPost('/api/auth/logout');
       
-      // Clear user data
+      // Clear user data from state
       setUser(null);
       
-      // Remove JWT token
-      removeToken();
+      // Remove client-side storage
+      removeUserData();
       
-      // Also remove legacy storage items
+      // Also remove legacy storage items (for backward compatibility)
       localStorage.removeItem('userId');
       localStorage.removeItem('userType');
       
