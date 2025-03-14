@@ -43,14 +43,39 @@ export default function LoginForm() {
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
     try {
+      console.log('Login form submission with:', { email: data.email, rememberMe: data.rememberMe });
+      
+      // Attempt to login
       await login(data.email, data.password, data.rememberMe);
       
+      console.log('Login successful, showing success toast');
       toast({
         title: "Success",
         description: "You have successfully logged in",
       });
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Login form submission error:", error);
+      
+      // Show a more specific error message if possible
+      let errorMessage = "An unexpected error occurred. Please try again.";
+      
+      if (error instanceof Error) {
+        // Handle specific error messages
+        if (error.message.includes('CSRF')) {
+          errorMessage = "Security validation failed. Please refresh the page and try again.";
+        } else if (error.message.includes('401') || error.message.includes('Invalid')) {
+          errorMessage = "Invalid email or password. Please check your credentials.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast({
+        title: "Login failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      
       // Error is already handled by the auth context and shown via the useEffect above
     } finally {
       setIsSubmitting(false);

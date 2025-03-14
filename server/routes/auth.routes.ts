@@ -7,7 +7,8 @@ import fs from 'fs';
 import { validate } from "../middleware/validationMiddleware";
 import { authSchemas } from "../schemas";
 import { authRateLimiter, securityRateLimiter } from "../middleware/rateLimit";
-import { setAuthCookie } from "../utils/cookieUtils";
+import { setAuthCookie, clearCookie } from "../utils/cookieUtils";
+import { withCustomAge } from "../utils/cookieConfig";
 
 /**
  * Authentication routes for login and registration
@@ -16,13 +17,9 @@ export function authRoutes(app: Express): void {
   // Logout route
   app.post("/api/auth/logout", (req: Request, res: Response) => {
     try {
-      // Clear the auth cookie
-      res.clearCookie('auth_token', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        path: '/',
-        sameSite: 'strict'
-      });
+      console.log('Processing logout request');
+      // Use the helper function to clear the auth cookie
+      clearCookie(res, 'auth_token');
       
       return res.status(200).json({ message: "Logged out successfully" });
     } catch (error) {
@@ -55,17 +52,14 @@ export function authRoutes(app: Express): void {
         // Generate JWT token
         const token = generateToken(user);
         
-        // Set secure HTTP-only cookie with the token
+        // Set secure HTTP-only cookie with the token using withCustomAge helper
         // If rememberMe is true, set a longer expiration
-        const cookieOptions: CookieOptions = rememberMe 
-          ? { maxAge: 30 * 24 * 60 * 60 * 1000 } // 30 days
-          : { maxAge: 24 * 60 * 60 * 1000 }; // 1 day
-        
-        // In development, we need to ensure sameSite is not 'strict' for testing across subdomains
-        if (process.env.NODE_ENV === 'development') {
-          cookieOptions.sameSite = 'lax';
-          cookieOptions.secure = false; // Allow HTTP in development
-        }
+        const maxAge = rememberMe
+          ? 30 * 24 * 60 * 60 * 1000 // 30 days
+          : 24 * 60 * 60 * 1000;    // 1 day
+          
+        // Use the withCustomAge helper which properly sets all properties
+        const cookieOptions = withCustomAge({}, maxAge);
         
         console.log('Setting auth cookie with options:', cookieOptions);
         setAuthCookie(res, 'auth_token', token, cookieOptions);
