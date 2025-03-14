@@ -1,5 +1,6 @@
-import { AnyZodObject, ZodError } from 'zod';
 import { Request, Response, NextFunction } from 'express';
+import { AnyZodObject, ZodError } from 'zod';
+import { fromZodError } from 'zod-validation-error';
 
 /**
  * Middleware factory that validates request data against a Zod schema
@@ -10,32 +11,44 @@ import { Request, Response, NextFunction } from 'express';
 export const validate = (schema: AnyZodObject) => 
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // Parse and validate request data against the schema
-      await schema.parseAsync({
-        body: req.body,
-        query: req.query,
-        params: req.params
-      });
+      // Extract and validate different parts of the request according to the schema
+      const dataToValidate: Record<string, any> = {};
       
-      // If validation passes, continue to the next middleware/route handler
-      return next();
+      if (schema.shape.body) {
+        dataToValidate.body = req.body;
+      }
+      
+      if (schema.shape.params) {
+        dataToValidate.params = req.params;
+      }
+      
+      if (schema.shape.query) {
+        dataToValidate.query = req.query;
+      }
+      
+      // Validate all parts of the request
+      await schema.parseAsync(dataToValidate);
+      
+      next();
     } catch (error) {
-      // Format ZodError for better client response
+      // Handle Zod validation errors
       if (error instanceof ZodError) {
-        return res.status(400).json({ 
+        // Generate a well-formatted error response
+        const validationError = fromZodError(error);
+        
+        // Return a 400 Bad Request with detailed validation errors
+        return res.status(400).json({
+          success: false,
           message: 'Validation error',
-          errors: error.errors.map(err => ({
-            path: err.path.join('.'),
-            message: err.message
-          }))
+          errors: validationError.details.map(detail => ({
+            path: detail.path,
+            message: detail.message
+          })),
+          requestId: req.id // Include request ID for correlation
         });
       }
       
-      // Handle any other errors
-      console.error('Validation middleware error:', error);
-      return res.status(400).json({ 
-        message: 'Invalid request data',
-        error: error instanceof Error ? error.message : 'Unknown validation error'
-      });
+      // For non-validation errors, pass to the next error handler
+      next(error);
     }
   };
