@@ -151,7 +151,7 @@ export const validate = (schema: AnyZodObject, options: ValidationOptions = {}) 
       }
       
       // Prepare validation object
-      const toValidate = {};
+      const toValidate: Record<string, any> = {};
       // Allow schema to validate different parts of the request
       if (req.body) toValidate['body'] = data;
       if (req.query) toValidate['query'] = req.query;
@@ -161,9 +161,16 @@ export const validate = (schema: AnyZodObject, options: ValidationOptions = {}) 
       const validatedData = await schema.parseAsync(toValidate);
       
       // Replace request parts with validated data
-      if (validatedData.body) req.body = validatedData.body;
-      if (validatedData.query) req.query = validatedData.query;
-      if (validatedData.params) req.params = validatedData.params;
+      // Type assertion for validatedData since we know the schema structure
+      const validatedResult = validatedData as {
+        body?: any;
+        query?: any;
+        params?: any;
+      };
+      
+      if (validatedResult.body) req.body = validatedResult.body;
+      if (validatedResult.query) req.query = validatedResult.query;
+      if (validatedResult.params) req.params = validatedResult.params;
       
       next();
     } catch (error) {

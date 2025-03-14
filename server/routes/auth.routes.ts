@@ -38,13 +38,17 @@ export function authRoutes(app: Express): void {
     validate(authSchemas.login),
     async (req: Request, res: Response) => {
       try {
+        // Log the validated request body
+        console.log("Login attempt with validated data:", JSON.stringify(req.body, null, 2));
+        
         // Request is already validated by middleware
-        const { email, password } = req.body;
+        const { email, password, rememberMe } = req.body;
         
         // Verify credentials
         const user = await storage.verifyLogin(email, password);
         
         if (!user) {
+          console.warn(`Failed login attempt for email: ${email}`);
           return res.status(401).json({ message: "Invalid email or password" });
         }
         
@@ -52,7 +56,14 @@ export function authRoutes(app: Express): void {
         const token = generateToken(user);
         
         // Set secure HTTP-only cookie with the token
-        setAuthCookie(res, 'auth_token', token);
+        // If rememberMe is true, set a longer expiration
+        const cookieOptions = rememberMe 
+          ? { maxAge: 30 * 24 * 60 * 60 * 1000 } // 30 days
+          : { maxAge: 24 * 60 * 60 * 1000 }; // 1 day
+          
+        setAuthCookie(res, 'auth_token', token, cookieOptions);
+        
+        console.log(`Successful login for user ID: ${user.id}, Type: ${user.userType}`);
         
         // Return success with user info (token is in HTTP-only cookie)
         return res.status(200).json({ 

@@ -1,29 +1,32 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
-import { apiPost, resetCSRFToken } from '@/lib/api';
+import { apiPost, resetCSRFToken, fetchWithCSRF } from '@/lib/api';
 
 // Cookie-based authentication
 // Since we're using secure HTTP-only cookies, we only need to keep track of auth status client-side
 // Without storing the actual token in localStorage
 const USER_ID_KEY = 'pinnity_user_id';
 const USER_TYPE_KEY = 'pinnity_user_type';
+const AUTH_STATUS_KEY = 'pinnity_auth_status';
 
 // Function to get user ID from storage
 const getUserId = (): string | null => {
   return localStorage.getItem(USER_ID_KEY);
 };
 
-// Function to save user ID to storage
-const saveUserId = (userId: string, userType: string): void => {
+// Function to save user data to storage
+const saveUserData = (userId: string, userType: string): void => {
   localStorage.setItem(USER_ID_KEY, userId);
   localStorage.setItem(USER_TYPE_KEY, userType);
+  localStorage.setItem(AUTH_STATUS_KEY, 'authenticated');
 };
 
 // Function to remove user data from storage
 const removeUserData = (): void => {
   localStorage.removeItem(USER_ID_KEY);
   localStorage.removeItem(USER_TYPE_KEY);
+  localStorage.removeItem(AUTH_STATUS_KEY);
 };
 
 // Define the User type based on your schema
@@ -74,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           // If found in legacy storage, migrate to new storage keys
           if (legacyUserId && legacyUserType) {
-            saveUserId(legacyUserId, legacyUserType);
+            saveUserData(legacyUserId, legacyUserType);
             // Clean up legacy storage
             localStorage.removeItem('userId');
             localStorage.removeItem('userType');
@@ -97,7 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               
               // Make sure we have the user ID and type stored
               if (userData.id) {
-                saveUserId(userData.id.toString(), userData.userType);
+                saveUserData(userData.id.toString(), userData.userType);
               }
               
               // If we're on the root path or auth page, redirect based on user type 
@@ -142,7 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response && response.userId) {
         // Store user ID and type in localStorage for client-side reference
         // The actual authentication token is in a secure HTTP-only cookie
-        saveUserId(response.userId.toString(), response.userType);
+        saveUserData(response.userId.toString(), response.userType);
         
         // Fetch complete user data
         const userData = await apiRequest(`/api/user/${response.userId}`);
