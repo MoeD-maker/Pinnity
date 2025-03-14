@@ -307,7 +307,8 @@ const secureFileFilter = async (req: Request, file: Express.Multer.File, cb: Fil
     const sizeValidation = validateFileSize(file);
     if (!sizeValidation.valid) {
       logFileUpload(req, file, false, sizeValidation.error?.message || 'File too large');
-      return cb(sizeValidation.error);
+      // Ensure we always pass a valid Error to the callback
+      return cb(sizeValidation.error || new FileValidationError('File too large', UploadErrorCode.FILE_TOO_LARGE));
     }
     
     // Step 4: Sanitize filename to prevent path traversal and injection attacks
@@ -326,7 +327,8 @@ const secureFileFilter = async (req: Request, file: Express.Multer.File, cb: Fil
   } catch (error) {
     // Handle unexpected errors
     console.error(`Unexpected error in file filter for ${file.originalname}:`, error);
-    logFileUpload(req, file, false, `Unexpected error: ${error.message}`);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logFileUpload(req, file, false, `Unexpected error: ${errorMessage}`);
     cb(new FileValidationError('Error processing file', UploadErrorCode.PROCESSING_ERROR));
   }
 };
@@ -405,7 +407,8 @@ export function validateFileContentMiddleware() {
         fs.unlinkSync(req.file.path);
       }
       
-      logFileUpload(req, req.file, false, `Validation error: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logFileUpload(req, req.file, false, `Validation error: ${errorMessage}`);
       res.status(500).json({
         error: {
           code: UploadErrorCode.PROCESSING_ERROR,

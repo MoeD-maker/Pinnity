@@ -3,10 +3,15 @@
  * Validates our secure file upload implementation
  */
 
-const fs = require('fs');
-const path = require('path');
-const https = require('https');
-const { Buffer } = require('buffer');
+import fs from 'fs';
+import path from 'path';
+import https from 'https';
+import { Buffer } from 'buffer';
+import { fileURLToPath } from 'url';
+
+// Get current directory in ESM context
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Create test directories
 const TEST_DIR = path.join(__dirname, 'test-files');
@@ -218,3 +223,6 @@ async function runTests() {
 
 // Execute tests
 runTests();
+
+// Export functions for use in other modules
+export { createTestFiles, downloadFile, createTestForm };
