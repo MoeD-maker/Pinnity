@@ -192,9 +192,7 @@ export function dealRoutes(app: Express): void {
       const approval = await storage.createDealApproval({
         dealId,
         submitterId: req.user!.userId,
-        status: 'pending',
-        feedback: null,
-        reviewerId: null
+        status: 'pending'
       });
       
       return res.status(201).json(approval);
@@ -303,9 +301,7 @@ export function dealRoutes(app: Express): void {
       await storage.createDealApproval({
         dealId: newDeal.id,
         submitterId: req.user!.userId,
-        status: 'pending',
-        feedback: null,
-        reviewerId: null
+        status: 'pending'
       });
       
       return res.status(201).json(newDeal);
