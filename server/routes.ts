@@ -6,6 +6,7 @@ import { z } from "zod";
 import { generateToken } from "./auth";
 import { authenticate, authorize, checkOwnership } from "./middleware";
 import { getUploadMiddleware } from "./uploadMiddleware";
+import fs from 'fs';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/health", (_req: Request, res: Response) => {
@@ -191,9 +192,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Business user registration
-  app.post("/api/auth/register/business", async (req: Request, res: Response) => {
+  app.post("/api/auth/register/business", 
+    getUploadMiddleware().fields([
+      { name: 'governmentId', maxCount: 1 },
+      { name: 'proofOfAddress', maxCount: 1 },
+      { name: 'proofOfBusiness', maxCount: 1 }
+    ]),
+    async (req: Request, res: Response) => {
     try {
-      // Handle file uploads and form data
+      // Handle form data
       const businessName = req.body.businessName;
       const businessCategory = req.body.businessCategory;
       const firstName = req.body.firstName;
@@ -209,15 +216,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           !email || !password || !phone || !address || !termsAccepted) {
         return res.status(400).json({ message: "Missing required fields" });
       }
+
+      // Type assertion for multer files
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
       
-      // Check for file uploads (would normally process files here)
-      const governmentIdFile = req.body.governmentId || (req.files ? req.files['governmentId'] : null);
-      const proofOfAddressFile = req.body.proofOfAddress || (req.files ? req.files['proofOfAddress'] : null);
-      const proofOfBusinessFile = req.body.proofOfBusiness || (req.files ? req.files['proofOfBusiness'] : null);
-      
-      if (!governmentIdFile || !proofOfAddressFile || !proofOfBusinessFile) {
+      // Check for all required file uploads
+      if (!files.governmentId?.[0] || !files.proofOfAddress?.[0] || !files.proofOfBusiness?.[0]) {
         return res.status(400).json({ message: "Missing required document uploads" });
       }
+
+      // Get file paths/URLs
+      const governmentIdPath = files.governmentId[0].path;
+      const proofOfAddressPath = files.proofOfAddress[0].path;
+      const proofOfBusinessPath = files.proofOfBusiness[0].path;
       
       // Create user with business
       const user = await storage.createBusinessUser(
@@ -232,9 +243,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         {
           businessName,
           businessCategory,
-          governmentId: "path/to/governmentId.pdf", // In a real app, store actual file paths
-          proofOfAddress: "path/to/proofOfAddress.pdf",
-          proofOfBusiness: "path/to/proofOfBusiness.pdf",
+          governmentId: governmentIdPath,
+          proofOfAddress: proofOfAddressPath,
+          proofOfBusiness: proofOfBusinessPath,
           verificationStatus: "pending"
         }
       );
@@ -250,6 +261,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         token
       });
     } catch (error) {
+      // Clean up any uploaded files in case of error
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      if (files) {
+        Object.values(files).forEach(fileArray => {
+          fileArray.forEach(file => {
+            if (file.path && fs.existsSync(file.path)) {
+              fs.unlinkSync(file.path);
+            }
+          });
+        });
+      }
+
       if (error instanceof Error) {
         return res.status(400).json({ message: error.message });
       }
