@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { extractTokenFromHeader, JwtPayload } from './auth';
+import { extractTokenFromHeader, extractTokenFromCookies, JwtPayload } from './auth';
 import { securityRateLimiter, apiRateLimiter } from './middleware/rateLimit';
 import { applyCookieSecurityHeaders } from './utils/cookieUtils';
 
@@ -19,7 +19,14 @@ declare global {
  */
 export function authenticate(req: Request, res: Response, next: NextFunction) {
   try {
-    const token = extractTokenFromHeader(req.headers.authorization);
+    // First try to get token from cookies (preferred, more secure method)
+    let token = extractTokenFromCookies(req.cookies);
+    
+    // Fall back to Authorization header for backward compatibility
+    if (!token && req.headers.authorization) {
+      console.warn('Using deprecated Authorization header for authentication');
+      token = extractTokenFromHeader(req.headers.authorization);
+    }
     
     if (!token) {
       // Track failed auth attempts for security monitoring
