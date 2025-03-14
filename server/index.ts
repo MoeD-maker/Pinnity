@@ -4,6 +4,12 @@ import { setupVite, serveStatic, log } from "./vite";
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import csurf from 'csurf';
+import { 
+  validateEnvironment, 
+  getRequiredEnv, 
+  getOptionalEnv,
+  getEnvironmentDiagnostics 
+} from './utils/environmentValidator';
 
 // Extend Express Request type to include request ID and CSRF token
 declare global {
@@ -21,6 +27,16 @@ type Request = express.Request;
 // Load environment variables from .env file
 dotenv.config();
 
+// Validate all required environment variables at startup
+// This will exit the application if required variables are missing in production
+console.log('🔒 Validating environment configuration...');
+validateEnvironment(process.env.NODE_ENV === 'production');
+
+// Log sanitized environment configuration for startup diagnostics
+if (process.env.NODE_ENV !== 'production') {
+  console.log(getEnvironmentDiagnostics());
+}
+
 const app = express();
 // Secure parsing of JSON payloads with size limits
 app.use(express.json({ 
@@ -34,15 +50,9 @@ app.use(express.urlencoded({
   limit: '1mb'   // Prevent large payload attacks
 }));
 
-// Enable secure cookie parsing with a secret
-// Using a strong secret helps prevent cookie tampering
-const COOKIE_SECRET = process.env.COOKIE_SECRET || 'pinnity-secure-cookie-aee723bf-d5b5-4fe9-8fe2-91979de0c7-dev';
-
-// Validate cookie secret in production
-if (process.env.NODE_ENV === 'production' && (!process.env.COOKIE_SECRET || process.env.COOKIE_SECRET.length < 32)) {
-  console.error('ERROR: COOKIE_SECRET not set or too short in production environment. Set a strong secret in .env');
-  process.exit(1);
-}
+// Get cookie secret from environment with validation
+// This will throw an error if not available in production
+const COOKIE_SECRET = getRequiredEnv('COOKIE_SECRET');
 
 app.use(cookieParser(COOKIE_SECRET));
 

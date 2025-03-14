@@ -2,45 +2,13 @@ import jsonwebtoken from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { User } from '../shared/schema';
 import crypto from 'crypto';
+import { getRequiredEnv, getOptionalEnv } from './utils/environmentValidator';
 
-// Environment variable validation
-const validateEnvironmentVariables = () => {
-  // Check JWT Secret - critical for security
-  const JWT_SECRET = process.env.JWT_SECRET;
-  if (process.env.NODE_ENV === 'production') {
-    if (!JWT_SECRET || JWT_SECRET.length < 32) {
-      console.error('ERROR: JWT_SECRET not set or too short in production environment. Set a strong secret in .env (min 32 characters)');
-      process.exit(1);
-    }
-
-    // Analyze entropy of the secret to detect weak keys
-    const entropy = crypto.createHash('sha256').update(JWT_SECRET).digest('hex');
-    const uniqueChars = new Set(JWT_SECRET).size;
-    if (uniqueChars < 12) {
-      console.warn('WARNING: JWT_SECRET has low character variety. Use a mix of numbers, special characters, and both upper and lowercase letters.');
-    }
-  }
-
-  // Check JWT expiry
-  const JWT_EXPIRY = process.env.JWT_EXPIRY;
-  if (!JWT_EXPIRY) {
-    console.warn('WARNING: JWT_EXPIRY not set. Using default of 1 day.');
-  }
-
-  // Check cookie secret
-  const COOKIE_SECRET = process.env.COOKIE_SECRET;
-  if (process.env.NODE_ENV === 'production' && (!COOKIE_SECRET || COOKIE_SECRET.length < 32)) {
-    console.error('ERROR: COOKIE_SECRET not set or too short in production environment. Set a strong secret in .env (min 32 characters)');
-    process.exit(1);
-  }
-};
-
-// Run validation on startup
-validateEnvironmentVariables();
-
-// Use the JWT secret from environment variables with a fallback for development
-const JWT_SECRET = process.env.JWT_SECRET || 'this-is-a-very-secure-secret-key-for-pinnity-app-jwt-authentication-2025';
-const JWT_EXPIRY = process.env.JWT_EXPIRY || '1d';
+// Use the environment validator to get required values
+// These will throw errors if not available in production
+// In development, they can use defaults but will log warnings
+const JWT_SECRET = getRequiredEnv('JWT_SECRET');
+const JWT_EXPIRY = getOptionalEnv('JWT_EXPIRY', '1d');
 
 // Define the JWT payload structure
 export interface JwtPayload {
