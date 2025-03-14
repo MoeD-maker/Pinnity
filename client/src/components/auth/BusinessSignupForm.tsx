@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiRequest } from "@/lib/queryClient";
+import { uploadFormData } from "@/lib/api";
 import { Loader2 } from "lucide-react";
 
 export default function BusinessSignupForm() {
@@ -69,23 +70,23 @@ export default function BusinessSignupForm() {
         }
       });
       
-      // Use fetch directly for FormData
-      const response = await fetch('/api/auth/register/business', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
+      // Use CSRF-protected upload
+      const result = await uploadFormData('/api/auth/register/business', formData);
       
       toast({
         title: "Business account created",
         description: "Your business account has been created successfully",
       });
-      // Redirect to login or dashboard
-      // window.location.href = "/auth";
+      
+      // Store token in localStorage for login persistence
+      if (result.token) {
+        localStorage.setItem('token', result.token);
+        // Redirect to dashboard
+        window.location.href = "/";
+      } else {
+        // Redirect to login page
+        window.location.href = "/auth";
+      }
     } catch (error) {
       console.error("Business registration error:", error);
       toast({

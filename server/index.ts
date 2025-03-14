@@ -2,6 +2,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
+import csurf from 'csurf';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -9,6 +11,16 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
+
+// CSRF protection for non-GET requests
+const csrfProtection = csurf({ 
+  cookie: {
+    httpOnly: true,
+    sameSite: 'strict',
+    secure: process.env.NODE_ENV === 'production'
+  }
+});
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -38,6 +50,16 @@ app.use((req, res, next) => {
   });
 
   next();
+});
+
+// Apply CSRF protection to state-changing routes
+app.use('/api/auth/*', csrfProtection);
+app.use('/api/user/*', csrfProtection);
+app.use('/api/deals', csrfProtection);
+
+// Add a route to get a CSRF token
+app.get('/api/csrf-token', csrfProtection, (req: Request, res: Response) => {
+  res.json({ csrfToken: req.csrfToken() });
 });
 
 (async () => {

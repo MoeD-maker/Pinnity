@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
+import { apiPost, resetCSRFToken } from '@/lib/api';
 
 // JWT token utilities
 const TOKEN_KEY = 'pinnity_auth_token';
