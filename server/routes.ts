@@ -7,17 +7,14 @@ import { generateToken } from "./auth";
 import { authenticate, authorize, checkOwnership } from "./middleware";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Diagnostic endpoint for environment information
-  app.get("/api/environment", (_req: Request, res: Response) => {
-    const safeEnv = {
-      NODE_ENV: process.env.NODE_ENV || 'development',
-      REPL_ID: process.env.REPL_ID || null,
-      REPL_OWNER: process.env.REPL_OWNER || null,
-      REPLIT_DEV_DOMAIN: process.env.REPLIT_DEV_DOMAIN || null,
-      APP_URL: process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'http://localhost:5000'
+  app.get("/api/health", (_req: Request, res: Response) => {
+    // Only return what clients need to know
+    const environmentInfo = {
+      status: "ok",
+      environment: process.env.NODE_ENV || 'development'
     };
     
-    res.json(safeEnv);
+    res.json(environmentInfo);
   });
   
   // Admin routes
