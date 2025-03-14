@@ -6,6 +6,7 @@ import { getUploadMiddleware } from "../uploadMiddleware";
 import fs from 'fs';
 import { validate } from "../middleware/validationMiddleware";
 import { authSchemas } from "../schemas";
+import { authRateLimiter, securityRateLimiter } from "../middleware/rateLimit";
 
 /**
  * Authentication routes for login and registration
@@ -14,6 +15,8 @@ export function authRoutes(app: Express): void {
   // Login route
   app.post(
     "/api/auth/login", 
+    authRateLimiter, // Apply rate limiting to login endpoint
+    securityRateLimiter, // Apply security rate limiting to detect brute force attacks
     validate(authSchemas.login),
     async (req: Request, res: Response) => {
       try {
@@ -47,6 +50,7 @@ export function authRoutes(app: Express): void {
   // Individual user registration
   app.post(
     "/api/auth/register/individual", 
+    authRateLimiter, // Apply rate limiting to registration endpoint
     validate(authSchemas.individualRegistration),
     async (req: Request, res: Response) => {
       try {
@@ -91,6 +95,7 @@ export function authRoutes(app: Express): void {
   // We cannot use the standard validation middleware here because of the file uploads
   app.post(
     "/api/auth/register/business", 
+    authRateLimiter, // Apply rate limiting to business registration endpoint
     getUploadMiddleware().fields([
       { name: 'governmentId', maxCount: 1 },
       { name: 'proofOfAddress', maxCount: 1 },

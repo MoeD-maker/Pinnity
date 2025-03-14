@@ -143,6 +143,12 @@ app.get('/api/csrf-token', csrfProtection, (req: Request, res: Response) => {
 
   // Global error handler with enhanced security error responses
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
+    // Check if response has already been sent
+    if (res.headersSent) {
+      console.error(`[ERROR] [${req.id}] Headers already sent, cannot send error response`);
+      return;
+    }
+    
     // Determine status code
     const status = err.status || err.statusCode || 500;
     
@@ -152,6 +158,9 @@ app.get('/api/csrf-token', csrfProtection, (req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
     };
 
+    // Set traceId for operational monitoring (could be integrated with APM tools)
+    const traceId = `t-${req.id || Date.now().toString(36)}-${Math.random().toString(36).substring(2, 10)}`;
+    
     // Special handling for security-related errors
     if (err.code === 'EBADCSRFTOKEN') {
       // CSRF token validation failed
@@ -160,12 +169,13 @@ app.get('/api/csrf-token', csrfProtection, (req: Request, res: Response) => {
       errorResponse.code = "csrf_token_invalid";
       
       // Log potential CSRF attack attempts with IP information for investigation
-      console.warn(`[SECURITY] [${req.id}] CSRF validation failed:`, {
+      console.warn(`[SECURITY] [${req.id}] [${traceId}] CSRF validation failed:`, {
         ip: req.ip,
         path: req.path,
         method: req.method,
-        headers: req.headers,
-        // Don't log the full body as it may contain sensitive information
+        userAgent: req.headers['user-agent'],
+        referer: req.headers.referer,
+        // Don't log the full headers or body as they may contain sensitive information
         bodySize: req.body ? JSON.stringify(req.body).length : 0
       });
       
@@ -177,12 +187,32 @@ app.get('/api/csrf-token', csrfProtection, (req: Request, res: Response) => {
       errorResponse.type = "auth_error";
       errorResponse.code = err.name === 'TokenExpiredError' ? "token_expired" : "token_invalid";
       
+      // Log auth errors with medium severity
+      console.warn(`[AUTH] [${req.id}] [${traceId}] Token validation error:`, {
+        errorType: err.name,
+        path: req.path,
+        method: req.method,
+        ip: req.ip
+      });
+      
       return res.status(401).json(errorResponse);
     }
     // Rate limiting errors
     else if (err.type === 'too-many-requests') {
       errorResponse.message = "Too many requests. Please try again later.";
       errorResponse.type = "rate_limit_error";
+      errorResponse.retryAfter = err.retryAfter || 60; // Seconds until retry is allowed
+      
+      console.warn(`[RATE_LIMIT] [${req.id}] [${traceId}] Rate limit exceeded:`, {
+        ip: req.ip,
+        path: req.path,
+        method: req.method
+      });
+      
+      // Set standard retry-after header if available
+      if (err.retryAfter) {
+        res.setHeader('Retry-After', String(err.retryAfter));
+      }
       
       return res.status(429).json(errorResponse);
     }
@@ -190,19 +220,80 @@ app.get('/api/csrf-token', csrfProtection, (req: Request, res: Response) => {
     else if (err.name === 'ValidationError' || err.name === 'ZodError') {
       errorResponse.message = err.message || "Validation failed";
       errorResponse.type = "validation_error";
-      errorResponse.details = err.errors || err.issues || [];
+      
+      // Sanitize validation errors to ensure no sensitive data is exposed
+      const safeErrors = (err.errors || err.issues || []).map((e: any) => ({
+        path: e.path,
+        message: e.message,
+        // Don't include the actual invalid value as it might contain PII or sensitive data
+        type: e.type || e.code
+      }));
+      
+      errorResponse.details = safeErrors;
+      
+      console.info(`[VALIDATION] [${req.id}] [${traceId}] Validation error:`, {
+        path: req.path,
+        method: req.method,
+        errorCount: safeErrors.length
+      });
+      
+      return res.status(400).json(errorResponse);
+    }
+    // Database-related errors
+    else if (err.code && (
+      // PostgreSQL error codes
+      (typeof err.code === 'string' && err.code.startsWith('23')) || 
+      // SQLite error codes
+      (typeof err.code === 'string' && err.code.startsWith('SQLITE_')) ||
+      // Constraint violations and other DB errors
+      err.name === 'SequelizeError' || 
+      err.name === 'DBError' ||
+      err.name === 'PrismaClientKnownRequestError'
+    )) {
+      // Map database errors to appropriate responses without leaking schema details
+      errorResponse.message = "Data operation failed";
+      errorResponse.type = "data_error";
+      
+      // For unique constraint violations, give a more specific message
+      if (err.code === '23505' || 
+          (typeof err.code === 'string' && err.code.includes('unique'))) {
+        errorResponse.message = "This record already exists";
+        errorResponse.code = "duplicate_record";
+      }
+      
+      console.error(`[DATABASE] [${req.id}] [${traceId}] Database error:`, {
+        code: err.code,
+        errorName: err.name,
+        // Don't log the full error message as it might contain table names or other schema info
+        severity: err.severity || 'ERROR',
+        constraint: err.constraint ? '[REDACTED]' : undefined
+      });
       
       return res.status(400).json(errorResponse);
     }
     // Regular error categorization
     else if (status >= 400 && status < 500) {
-      // For 4xx client errors, include the specific error message
-      errorResponse.message = err.message || "Client Error";
+      // For 4xx client errors, include a sanitized version of the error message
+      // Strip any potential stack traces or sensitive info from error messages
+      const safeMessage = err.message ? 
+        err.message.split('\n')[0].substring(0, 200) : "Client Error";
+      
+      errorResponse.message = safeMessage;
       errorResponse.type = "client_error";
+      // Optionally include an error code if available
+      if (err.code) {
+        errorResponse.code = typeof err.code === 'string' ? 
+          err.code.replace(/[^a-z0-9_]/gi, '_').toLowerCase() : 'unknown_error';
+      }
     } else {
       // For 5xx server errors, use a generic message for security
       errorResponse.message = "Internal Server Error";
       errorResponse.type = "server_error";
+      
+      // In production, include a support reference ID
+      if (process.env.NODE_ENV === 'production') {
+        errorResponse.supportReference = traceId;
+      }
     }
 
     // Log detailed error information for debugging
@@ -210,19 +301,80 @@ app.get('/api/csrf-token', csrfProtection, (req: Request, res: Response) => {
     const isProd = process.env.NODE_ENV === 'production';
     const errorLog = {
       requestId: req.id,
+      traceId,
       statusCode: status,
+      url: req.originalUrl || req.url,
+      method: req.method,
       errorName: err.name,
+      errorCode: err.code,
       errorMessage: err.message,
+      // Only include stack traces in development
       errorStack: isProd ? undefined : err.stack,
+      // Safely capture query parameters without logging sensitive values
+      query: isProd ? '[REDACTED IN PRODUCTION]' : safelyRedactQueryParams(req.query),
       // Avoid logging full body in production to prevent sensitive data exposure
-      body: isProd ? 'body-hidden-in-production' : req.body
+      body: isProd ? '[REDACTED IN PRODUCTION]' : safelyRedactRequestBody(req.body),
+      // Include user ID if authenticated (helps with debugging user-specific issues)
+      userId: req.user?.userId
     };
     
-    console.error(`[ERROR] [${req.id}] ${req.method} ${req.path}:`, errorLog);
+    // Use error severity levels appropriately
+    if (status >= 500) {
+      console.error(`[ERROR] [${req.id}] [${traceId}] Server error:`, errorLog);
+    } else {
+      console.warn(`[WARN] [${req.id}] [${traceId}] Client error:`, errorLog);
+    }
 
     // Send appropriate response to client
     res.status(status).json(errorResponse);
   });
+  
+  /**
+   * Safely redact sensitive information from query parameters
+   * @param query Request query object
+   * @returns Redacted query object safe for logging
+   */
+  function safelyRedactQueryParams(query: any): any {
+    if (!query) return {};
+    
+    const sensitiveKeys = ['password', 'token', 'key', 'secret', 'auth', 'credential', 'pwd'];
+    const redactedQuery: Record<string, any> = {};
+    
+    for (const key in query) {
+      if (sensitiveKeys.some(sensitive => key.toLowerCase().includes(sensitive))) {
+        redactedQuery[key] = '[REDACTED]';
+      } else {
+        redactedQuery[key] = query[key];
+      }
+    }
+    
+    return redactedQuery;
+  }
+  
+  /**
+   * Safely redact sensitive information from request body
+   * @param body Request body object
+   * @returns Redacted body object safe for logging
+   */
+  function safelyRedactRequestBody(body: any): any {
+    if (!body) return {};
+    if (typeof body !== 'object') return body;
+    
+    const sensitiveKeys = ['password', 'token', 'key', 'secret', 'auth', 'credential', 'pwd', 'credit', 'card'];
+    const redactedBody: Record<string, any> = {};
+    
+    for (const key in body) {
+      if (sensitiveKeys.some(sensitive => key.toLowerCase().includes(sensitive))) {
+        redactedBody[key] = '[REDACTED]';
+      } else if (typeof body[key] === 'object' && body[key] !== null) {
+        redactedBody[key] = safelyRedactRequestBody(body[key]);
+      } else {
+        redactedBody[key] = body[key];
+      }
+    }
+    
+    return redactedBody;
+  }
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route

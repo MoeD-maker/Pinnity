@@ -3,6 +3,7 @@ import { storage } from "../storage";
 import { authenticate, checkOwnership } from "../middleware";
 import { validate } from "../middleware/validationMiddleware";
 import { userSchemas, authSchemas, ratingSchemas } from "../schemas";
+import { accountSecurityRateLimiter, apiRateLimiter } from "../middleware/rateLimit";
 
 /**
  * User routes for profile, favorites, redemptions, and preferences
@@ -66,6 +67,7 @@ export function userRoutes(app: Express): void {
     "/api/user/:id/change-password", 
     authenticate, 
     checkOwnership('id'),
+    accountSecurityRateLimiter, // Apply account security rate limiting for password change
     validate(authSchemas.passwordChange),
     async (req: Request, res: Response) => {
       try {
