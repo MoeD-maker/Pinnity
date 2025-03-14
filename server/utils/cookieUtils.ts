@@ -52,8 +52,14 @@ export function setAuthCookie(
   options: CookieOptions = {}
 ): void {
   const cookieOptions = { ...authCookieConfig, ...options };
+  console.log('Setting auth cookie with final options:', cookieOptions);
   logCookieOperation(name, 'set');
   res.cookie(name, value, cookieOptions);
+  
+  // Log headers for debugging
+  setTimeout(() => {
+    console.log('Response headers after setting cookie:', res.getHeaders());
+  }, 0);
 }
 
 /**

@@ -38,7 +38,8 @@ export const authCookieConfig: CookieOptions = {
   ...baseCookieConfig,
   maxAge: 24 * 60 * 60 * 1000,      // 24 hours
   httpOnly: true,                    // Critical - prevent JS access to auth tokens
-  sameSite: 'strict',                // Highest security for auth cookies
+  sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',  // Adjust for development
+  secure: process.env.NODE_ENV === 'production',   // Only require HTTPS in production
 };
 
 /**
@@ -146,7 +147,8 @@ export function withCustomAge(baseConfig: CookieOptions, maxAgeMs: number): Cook
  * @param operation Operation being performed (set, clear, etc.)
  */
 export function logCookieOperation(name: string, operation: 'set' | 'clear' | 'read'): void {
-  if (process.env.NODE_ENV !== 'production' && process.env.LOG_COOKIE_OPERATIONS === 'true') {
-    console.log(`Cookie operation: ${operation} ${name}`);
+  // Always log in development to help with debugging
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`Cookie operation: ${operation} ${name} (NODE_ENV: ${process.env.NODE_ENV || 'not set'})`);
   }
 }
