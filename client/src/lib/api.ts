@@ -36,7 +36,7 @@ export async function fetchWithCSRF(url: string, options: RequestInit = {}): Pro
   // Build final options with credentials and headers
   const finalOptions = {
     ...options,
-    credentials: 'include' as RequestCredential,
+    credentials: 'include' as RequestCredentials,
     headers,
   };
 

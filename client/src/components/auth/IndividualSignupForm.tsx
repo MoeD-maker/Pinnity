@@ -9,7 +9,7 @@ import PasswordStrengthIndicator from "./PasswordStrengthIndicator";
 import { calculatePasswordStrength } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { apiRequest } from "@/lib/queryClient";
+import { apiPost } from "@/lib/api";
 import { Loader2 } from "lucide-react";
 
 export default function IndividualSignupForm() {
@@ -32,8 +32,10 @@ export default function IndividualSignupForm() {
       confirmPassword: "",
       phone: "",
       address: "",
-      termsAccepted: false,
+      // Cast to satisfy the type constraint from the zod schema
+      termsAccepted: false as unknown as true,
     },
+    mode: "onChange",
   });
 
   // Watch password field to calculate strength
@@ -47,15 +49,30 @@ export default function IndividualSignupForm() {
   const onSubmit = async (data: IndividualSignupFormValues) => {
     setIsLoading(true);
     try {
-      const response = await apiRequest("POST", "/api/auth/register/individual", data);
+      // Define the expected response type
+      type RegistrationResponse = {
+        message: string;
+        userId: number;
+        userType: string;
+        token: string;
+      };
       
-      if (response.ok) {
-        toast({
-          title: "Account created",
-          description: "Your account has been created successfully",
-        });
-        // Redirect to login or dashboard
-        // window.location.href = "/auth";
+      // Use CSRF-protected API call
+      const response = await apiPost<RegistrationResponse>('/api/auth/register/individual', data);
+      
+      toast({
+        title: "Account created",
+        description: "Your account has been created successfully",
+      });
+      
+      // Store token in localStorage for login persistence
+      if (response.token) {
+        localStorage.setItem('token', response.token);
+        // Redirect to dashboard
+        window.location.href = "/";
+      } else {
+        // Redirect to login page
+        window.location.href = "/auth";
       }
     } catch (error) {
       console.error("Registration error:", error);
