@@ -16,21 +16,18 @@
  */
 
 import { CookieOptions } from 'express';
-import { getRequiredEnv } from './environmentValidator';
-
-// The environment the application is running in
-const NODE_ENV = process.env.NODE_ENV || 'development';
+import { getRequiredEnv, getOptionalEnv } from './environmentValidator';
 
 /**
  * Base cookie configuration with secure defaults
  * All cookies should inherit from this base configuration
  */
 export const baseCookieConfig: CookieOptions = {
-  httpOnly: true,     // Prevents JavaScript access to cookies
-  secure: true,       // Cookies only sent over HTTPS
-  sameSite: 'strict', // Restricts cookies to same-site requests
-  path: '/',          // Cookie available for the entire domain
-  signed: true,       // Sign cookies to prevent tampering
+  httpOnly: true,                    // Prevents JavaScript access (mitigates XSS)
+  secure: process.env.NODE_ENV === 'production', // Only HTTPS in production
+  sameSite: getSameSitePolicy(),     // Default strict SameSite
+  path: '/',                         // Available across all paths
+  signed: true,                      // Sign cookies to prevent tampering
 };
 
 /**
@@ -39,7 +36,9 @@ export const baseCookieConfig: CookieOptions = {
  */
 export const authCookieConfig: CookieOptions = {
   ...baseCookieConfig,
-  maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
+  maxAge: 24 * 60 * 60 * 1000,      // 24 hours
+  httpOnly: true,                    // Critical - prevent JS access to auth tokens
+  sameSite: 'strict',                // Highest security for auth cookies
 };
 
 /**
@@ -48,9 +47,10 @@ export const authCookieConfig: CookieOptions = {
  */
 export const csrfCookieConfig: CookieOptions = {
   ...baseCookieConfig,
-  // CSRF cookies need to be accessed by JavaScript for token validation
-  httpOnly: false,
-  maxAge: 3 * 60 * 60 * 1000, // 3 hours in milliseconds
+  maxAge: 2 * 60 * 60 * 1000,        // 2 hours
+  sameSite: 'lax',                   // Lax allows limited cross-site usage for usability
+  // Note: CSRF protection actually requires the cookie to be readable by JS,
+  // so typically httpOnly would be set to false for this cookie only
 };
 
 /**
@@ -59,7 +59,7 @@ export const csrfCookieConfig: CookieOptions = {
  */
 export const sessionCookieConfig: CookieOptions = {
   ...baseCookieConfig,
-  maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
+  maxAge: 7 * 24 * 60 * 60 * 1000,  // 1 week
 };
 
 /**
@@ -68,7 +68,8 @@ export const sessionCookieConfig: CookieOptions = {
  */
 export const transientCookieConfig: CookieOptions = {
   ...baseCookieConfig,
-  maxAge: 10 * 60 * 1000, // 10 minutes in milliseconds
+  maxAge: 5 * 60 * 1000,            // 5 minutes
+  signed: false,                     // Often not necessary for transient cookies
 };
 
 /**
@@ -77,8 +78,9 @@ export const transientCookieConfig: CookieOptions = {
  */
 export const preferenceCookieConfig: CookieOptions = {
   ...baseCookieConfig,
-  httpOnly: false, // Accessible by JavaScript for UI customization
-  maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
+  maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
+  httpOnly: false,                   // Allow JS access to preferences
+  signed: false,                     // Often not necessary for preferences
 };
 
 /**
@@ -96,8 +98,19 @@ export function getExpirationDate(maxAgeMs: number): Date {
  * @returns SameSite value for cookie configuration
  */
 export function getSameSitePolicy(strict: boolean = true): 'strict' | 'lax' | 'none' {
-  // In all environments, prefer 'strict' for maximum security
-  return strict ? 'strict' : 'lax';
+  // For production, use strict by default
+  if (process.env.NODE_ENV === 'production') {
+    return strict ? 'strict' : 'lax';
+  }
+  
+  // For development, match the development environment
+  const forcePolicy = process.env.COOKIE_SAME_SITE_POLICY as 'strict' | 'lax' | 'none' | undefined;
+  if (forcePolicy && ['strict', 'lax', 'none'].includes(forcePolicy)) {
+    return forcePolicy as 'strict' | 'lax' | 'none';
+  }
+  
+  // Default based on development vs production
+  return process.env.NODE_ENV === 'production' ? 'strict' : 'lax';
 }
 
 /**
@@ -105,8 +118,11 @@ export function getSameSitePolicy(strict: boolean = true): 'strict' | 'lax' | 'n
  * @returns Domain restriction for cookies or undefined to use current domain
  */
 export function getCookieDomain(): string | undefined {
-  // In production, you might want to set a specific domain
-  // For development, using the default (undefined) is usually sufficient
+  if (process.env.NODE_ENV === 'production') {
+    return process.env.COOKIE_DOMAIN || undefined;
+  }
+  
+  // For local development, usually best to not set a domain
   return undefined;
 }
 
@@ -120,7 +136,7 @@ export function withCustomAge(baseConfig: CookieOptions, maxAgeMs: number): Cook
   return {
     ...baseConfig,
     maxAge: maxAgeMs,
-    expires: getExpirationDate(maxAgeMs),
+    expires: getExpirationDate(maxAgeMs)
   };
 }
 
@@ -130,7 +146,7 @@ export function withCustomAge(baseConfig: CookieOptions, maxAgeMs: number): Cook
  * @param operation Operation being performed (set, clear, etc.)
  */
 export function logCookieOperation(name: string, operation: 'set' | 'clear' | 'read'): void {
-  if (NODE_ENV === 'development') {
-    console.debug(`Cookie ${operation}: ${name}`);
+  if (process.env.NODE_ENV !== 'production' && process.env.LOG_COOKIE_OPERATIONS === 'true') {
+    console.log(`Cookie operation: ${operation} ${name}`);
   }
 }

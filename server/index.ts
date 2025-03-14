@@ -4,6 +4,8 @@ import { setupVite, serveStatic, log } from "./vite";
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import csurf from 'csurf';
+import { securityHeaders } from './middleware';
+import { applyCookieSecurityHeaders } from './utils/cookieUtils';
 import { 
   validateEnvironment, 
   getRequiredEnv, 
@@ -56,31 +58,26 @@ const COOKIE_SECRET = getRequiredEnv('COOKIE_SECRET');
 
 app.use(cookieParser(COOKIE_SECRET));
 
-// Set secure headers globally
+// Apply comprehensive security headers
+app.use(securityHeaders);
+
+// Apply cookie-specific security headers for all responses
 app.use((req, res, next) => {
-  // Security headers
-  res.setHeader('X-Content-Type-Options', 'nosniff'); // Prevent MIME type sniffing
-  res.setHeader('X-Frame-Options', 'SAMEORIGIN'); // Protect against clickjacking
-  res.setHeader('X-XSS-Protection', '1; mode=block'); // Enable browser XSS filtering
-  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains'); // Force HTTPS 
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private'); // Prevent caching of sensitive data
-  res.setHeader('Pragma', 'no-cache'); // Legacy cache control
-  
-  // No informative server identity
-  res.removeHeader('X-Powered-By');
-  
+  applyCookieSecurityHeaders(res);
   next();
 });
+
+// Import centralized cookie configuration
+import { csrfCookieConfig } from './utils/cookieConfig';
 
 // CSRF protection for non-GET requests
 const csrfProtection = csurf({ 
   cookie: {
-    httpOnly: true,        // Prevent JavaScript access to cookie
-    sameSite: 'strict',    // Prevents the cookie from being sent in cross-site requests
-    secure: process.env.NODE_ENV === 'production',  // Send cookie only over HTTPS in production
-    maxAge: 3600,          // Session expiration in seconds (1 hour)
-    path: '/',             // Ensure cookie is available for all paths
-    signed: true           // Sign the cookie to detect tampering
+    ...csrfCookieConfig,
+    // Override httpOnly setting to allow JavaScript access for CSRF token
+    httpOnly: false,
+    // Convert maxAge from milliseconds to seconds for csurf
+    maxAge: Math.floor(csrfCookieConfig.maxAge ? csrfCookieConfig.maxAge / 1000 : 3600),
   },
   ignoreMethods: ['GET', 'HEAD', 'OPTIONS'], // Only protect state-changing methods
 });

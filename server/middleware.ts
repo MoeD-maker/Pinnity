@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { extractTokenFromHeader, JwtPayload } from './auth';
 import { securityRateLimiter, apiRateLimiter } from './middleware/rateLimit';
+import { applyCookieSecurityHeaders } from './utils/cookieUtils';
 
 // Extend Express Request interface to include user
 declare global {

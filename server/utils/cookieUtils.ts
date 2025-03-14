@@ -5,12 +5,12 @@
  * These utilities ensure consistent cookie handling with proper security attributes.
  */
 
-import { Request, Response } from 'express';
+import { Request, Response, CookieOptions } from 'express';
 import { 
   baseCookieConfig, 
   authCookieConfig, 
-  csrfCookieConfig,
-  sessionCookieConfig,
+  csrfCookieConfig, 
+  sessionCookieConfig, 
   transientCookieConfig,
   logCookieOperation
 } from './cookieConfig';
@@ -26,11 +26,16 @@ export function setSecureCookie(
   res: Response, 
   name: string, 
   value: string, 
-  options = baseCookieConfig
+  options: CookieOptions = {}
 ): void {
-  // Apply secure cookie settings
-  res.cookie(name, value, options);
+  const cookieOptions = { ...baseCookieConfig, ...options };
   logCookieOperation(name, 'set');
+  
+  if (cookieOptions.signed) {
+    res.cookie(name, value, cookieOptions);
+  } else {
+    res.cookie(name, value, cookieOptions);
+  }
 }
 
 /**
@@ -43,10 +48,12 @@ export function setSecureCookie(
 export function setAuthCookie(
   res: Response,
   name: string,
-  value: string, 
-  options = {}
+  value: string,
+  options: CookieOptions = {}
 ): void {
-  setSecureCookie(res, name, value, { ...authCookieConfig, ...options });
+  const cookieOptions = { ...authCookieConfig, ...options };
+  logCookieOperation(name, 'set');
+  res.cookie(name, value, cookieOptions);
 }
 
 /**
@@ -60,9 +67,11 @@ export function setCsrfCookie(
   res: Response,
   name: string,
   value: string,
-  options = {}
+  options: CookieOptions = {}
 ): void {
-  setSecureCookie(res, name, value, { ...csrfCookieConfig, ...options });
+  const cookieOptions = { ...csrfCookieConfig, ...options };
+  logCookieOperation(name, 'set');
+  res.cookie(name, value, cookieOptions);
 }
 
 /**
@@ -76,9 +85,11 @@ export function setSessionCookie(
   res: Response,
   name: string,
   value: string,
-  options = {}
+  options: CookieOptions = {}
 ): void {
-  setSecureCookie(res, name, value, { ...sessionCookieConfig, ...options });
+  const cookieOptions = { ...sessionCookieConfig, ...options };
+  logCookieOperation(name, 'set');
+  res.cookie(name, value, cookieOptions);
 }
 
 /**
@@ -92,9 +103,11 @@ export function setTransientCookie(
   res: Response,
   name: string,
   value: string,
-  options = {}
+  options: CookieOptions = {}
 ): void {
-  setSecureCookie(res, name, value, { ...transientCookieConfig, ...options });
+  const cookieOptions = { ...transientCookieConfig, ...options };
+  logCookieOperation(name, 'set');
+  res.cookie(name, value, cookieOptions);
 }
 
 /**
@@ -106,10 +119,18 @@ export function setTransientCookie(
 export function clearCookie(
   res: Response,
   name: string,
-  options = { path: '/' }
+  options: CookieOptions = {}
 ): void {
-  res.clearCookie(name, options);
   logCookieOperation(name, 'clear');
+  
+  // Set an expired cookie with the same path/domain to ensure proper clearing
+  const clearOptions: CookieOptions = {
+    ...options,
+    expires: new Date(0),     // Set to epoch time to expire immediately
+    maxAge: 0                  // Set max age to 0 for immediate expiration
+  };
+  
+  res.clearCookie(name, clearOptions);
 }
 
 /**
@@ -124,9 +145,13 @@ export function getCookie(
   name: string, 
   signed: boolean = true
 ): string | undefined {
-  const value = signed ? req.signedCookies[name] : req.cookies[name];
   logCookieOperation(name, 'read');
-  return value;
+  
+  if (signed) {
+    return req.signedCookies[name];
+  } else {
+    return req.cookies[name];
+  }
 }
 
 /**
@@ -137,36 +162,23 @@ export function getCookie(
  * @returns Object with validation results
  */
 export function validateCookieSecurity(
-  name: string,
   cookieHeader: string
-): { 
-  isSecure: boolean; 
-  hasHttpOnly: boolean; 
-  hasSameSite: boolean; 
-  issues: string[] 
+): {
+  secure: boolean;
+  httpOnly: boolean;
+  sameSiteStrict: boolean;
+  hasExpiry: boolean;
 } {
-  const result = {
-    isSecure: cookieHeader.includes('Secure'),
-    hasHttpOnly: cookieHeader.includes('HttpOnly'),
-    hasSameSite: /SameSite=(Strict|Lax|None)/.test(cookieHeader),
-    issues: [] as string[]
+  const validationResults = {
+    secure: cookieHeader.toLowerCase().includes('secure'),
+    httpOnly: cookieHeader.toLowerCase().includes('httponly'),
+    sameSiteStrict: cookieHeader.toLowerCase().includes('samesite=strict'),
+    hasExpiry: 
+      cookieHeader.toLowerCase().includes('expires=') || 
+      cookieHeader.toLowerCase().includes('max-age=')
   };
-
-  if (!result.isSecure) {
-    result.issues.push(`Cookie '${name}' missing Secure flag`);
-  }
   
-  if (!result.hasHttpOnly) {
-    result.issues.push(`Cookie '${name}' missing HttpOnly flag`);
-  }
-  
-  if (!result.hasSameSite) {
-    result.issues.push(`Cookie '${name}' missing SameSite attribute`);
-  } else if (cookieHeader.includes('SameSite=None') && !cookieHeader.includes('Secure')) {
-    result.issues.push(`Cookie '${name}' has SameSite=None but missing Secure flag`);
-  }
-
-  return result;
+  return validationResults;
 }
 
 /**
@@ -174,19 +186,15 @@ export function validateCookieSecurity(
  * @param res Express response object
  */
 export function applyCookieSecurityHeaders(res: Response): void {
-  // Prevent cookies from being observed by third parties with Fetch Metadata
-  res.setHeader('Sec-Fetch-Site', 'same-origin');
+  // Apply security headers that support cookie security
+  res.setHeader('X-Content-Type-Options', 'nosniff');
   
-  // Ensure proper Content-Type to prevent MIME sniffing attacks
-  if (!res.get('Content-Type')) {
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  }
-  
-  // Add Content-Security-Policy header if not already set
-  if (!res.get('Content-Security-Policy')) {
+  // Production-only security headers
+  if (process.env.NODE_ENV === 'production') {
+    // Strict HSTS in production
     res.setHeader(
-      'Content-Security-Policy', 
-      "default-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self'; style-src 'self';"
+      'Strict-Transport-Security',
+      'max-age=63072000; includeSubDomains; preload'
     );
   }
 }
