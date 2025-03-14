@@ -10,8 +10,8 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
-  phone: text("phone"),
-  address: text("address"),
+  phone: text("phone").notNull(),
+  address: text("address").notNull(),
   userType: text("user_type").notNull(), // "individual" or "business"
   created_at: text("created_at").notNull().default(new Date().toISOString()),
 });

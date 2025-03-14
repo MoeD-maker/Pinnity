@@ -52,8 +52,8 @@ export function authRoutes(app: Express): void {
         email: z.string().email(),
         password: z.string().min(8),
         confirmPassword: z.string(),
-        phone: z.string().optional(),
-        address: z.string().optional(),
+        phone: z.string().min(1, { message: "Phone number is required" }),
+        address: z.string().min(1, { message: "Address is required" }),
         termsAccepted: z.literal(true)
       }).refine((data) => data.password === data.confirmPassword, {
         message: "Passwords don't match",
@@ -63,11 +63,22 @@ export function authRoutes(app: Express): void {
       // Validate request body
       const validatedData = individualSchema.parse(req.body);
       
-      // Remove fields not needed for user creation
+      // Remove fields not needed for user creation and ensure required fields
       const { confirmPassword, termsAccepted, ...userData } = validatedData;
       
+      // After Zod validation, phone and address are guaranteed to exist
+      // Explicitly define user data with required fields to satisfy TypeScript
+      const userToCreate = {
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        email: userData.email,
+        password: userData.password,
+        phone: userData.phone,     // This is now guaranteed to exist after validation
+        address: userData.address  // This is now guaranteed to exist after validation
+      };
+      
       // Create the user
-      const user = await storage.createIndividualUser(userData);
+      const user = await storage.createIndividualUser(userToCreate);
       
       // Generate JWT token
       const token = generateToken(user);
