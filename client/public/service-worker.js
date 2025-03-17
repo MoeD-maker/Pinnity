@@ -1,4 +1,7 @@
 // Service Worker for Pinnity PWA
+// Import localforage for offline data storage
+importScripts('/localforage.min.js');
+
 const CACHE_NAME = 'pinnity-cache-v1';
 const OFFLINE_PAGE = '/offline.html';
 const CACHE_ASSETS = [
