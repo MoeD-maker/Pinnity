@@ -1,8 +1,20 @@
+#!/usr/bin/env node
+
 /**
- * Secret Generator Utility (JavaScript version)
+ * Secret Generator Utility
  * 
  * This utility generates cryptographically strong secrets for use in environment variables.
- * It should be used to generate values for JWT_SECRET, COOKIE_SECRET, and CSRF_SECRET.
+ * Run this script to generate secure random secrets for your application.
+ * 
+ * Usage:
+ *   node ./scripts/generate-secrets.js
+ * 
+ * The script will generate:
+ *   - JWT_SECRET
+ *   - COOKIE_SECRET
+ *   - CSRF_SECRET
+ * 
+ * Copy the generated values to your .env file and NEVER commit them to version control.
  */
 
 import crypto from 'crypto';
@@ -10,12 +22,19 @@ import crypto from 'crypto';
 /**
  * Generate a cryptographically secure random string
  * @param {number} length Length of the generated string
- * @param {string} encoding Encoding to use (hex, base64, etc.)
+ * @param {BufferEncoding} encoding Encoding to use (hex, base64, etc.)
  * @returns {string} Secure random string
  */
 function generateSecureSecret(length = 64, encoding = 'base64') {
+  // Calculate number of bytes needed, accounting for encoding expansion
+  const bytesNeeded = Math.ceil(
+    encoding === 'base64' 
+      ? length * 0.75  // Base64 expands by ~4/3
+      : length * 0.5   // Hex expands by 2
+  );
+  
   // Generate random bytes
-  const randomBytes = crypto.randomBytes(Math.ceil(length * 0.75)); // Account for base64 expansion
+  const randomBytes = crypto.randomBytes(bytesNeeded);
   
   // Convert to the specified encoding
   const randomString = randomBytes.toString(encoding);
@@ -30,7 +49,7 @@ function generateSecureSecret(length = 64, encoding = 'base64') {
  * @returns {number} Entropy value in bits per character
  */
 function calculateEntropy(value) {
-  if (!value) return 0;
+  if (!value || value.length === 0) return 0;
   
   const len = value.length;
   const charCounts = {};
@@ -56,54 +75,59 @@ function calculateEntropy(value) {
  * @returns {Object} Object containing generated secrets
  */
 function generateApplicationSecrets() {
-  // Generate secrets with different lengths for security
-  const jwtSecret = generateSecureSecret(64);
-  const cookieSecret = generateSecureSecret(64);
-  const csrfSecret = generateSecureSecret(64);
+  // Generate secrets with sufficient length and entropy
+  const jwtSecret = generateSecureSecret(64, 'base64');
+  const cookieSecret = generateSecureSecret(64, 'base64');
+  const csrfSecret = generateSecureSecret(64, 'base64');
 
   return {
-    jwtSecret,
-    cookieSecret,
-    csrfSecret,
+    JWT_SECRET: jwtSecret,
+    COOKIE_SECRET: cookieSecret,
+    CSRF_SECRET: csrfSecret,
   };
 }
 
 /**
- * Format secrets for use in a .env file
- * @param {Object} secrets Object containing secrets
- * @returns {string} Formatted string for .env file
+ * Run the secrets generator
  */
-function formatForEnvFile(secrets) {
-  const lines = Object.entries(secrets).map(([key, value]) => {
-    // Convert camelCase to UPPER_SNAKE_CASE for environment variables
-    const envVarName = key
-      .replace(/([A-Z])/g, '_$1')
-      .toUpperCase();
+function run() {
+  console.log('\n=== Pinnity Secure Secret Generator ===\n');
+  
+  const secrets = generateApplicationSecrets();
+  
+  console.log('Generated secure secrets for your application:\n');
+  
+  // Display secrets with entropy information
+  Object.entries(secrets).forEach(([name, value]) => {
+    const entropy = calculateEntropy(value);
     
-    return `${envVarName}=${value}`;
+    console.log(`${name}:`);
+    console.log(`  Value: ${value}`);
+    console.log(`  Length: ${value.length} characters`);
+    console.log(`  Entropy: ${entropy.toFixed(2)} bits per character`);
+    console.log('');
   });
   
-  return lines.join('\n');
+  // Show formatted .env file contents
+  console.log('=== Add these to your .env file ===\n');
+  
+  Object.entries(secrets).forEach(([name, value]) => {
+    console.log(`${name}=${value}`);
+  });
+  
+  console.log('\nIMPORTANT SECURITY NOTES:');
+  console.log('- Keep these secrets secure and never commit them to version control');
+  console.log('- Store them in a secure password manager or secret management system');
+  console.log('- Rotate these secrets periodically (e.g., every 90-180 days)');
+  console.log('- Use different secrets for different environments (dev/staging/production)');
 }
 
-// Generate the secrets
-const secrets = generateApplicationSecrets();
+// Run the script
+run();
 
-console.log('\n=== Generated Secure Secrets ===\n');
-
-Object.entries(secrets).forEach(([name, value]) => {
-  const entropy = calculateEntropy(value);
-  const envVarName = name
-    .replace(/([A-Z])/g, '_$1')
-    .toUpperCase();
-  
-  console.log(`${envVarName}:`);
-  console.log(`  Value: ${value}`);
-  console.log(`  Length: ${value.length} characters`);
-  console.log(`  Entropy: ${entropy.toFixed(2)} bits per character`);
-  console.log('');
-});
-
-console.log('=== For .env File ===\n');
-console.log(formatForEnvFile(secrets));
-console.log('\nIMPORTANT: Keep these secrets secure and never commit them to version control!');
+// Export functions for use in other modules
+export {
+  generateSecureSecret,
+  calculateEntropy,
+  generateApplicationSecrets
+};
