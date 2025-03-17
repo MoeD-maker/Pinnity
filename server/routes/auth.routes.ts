@@ -9,13 +9,20 @@ import { authSchemas } from "../schemas";
 import { authRateLimiter, securityRateLimiter } from "../middleware/rateLimit";
 import { setAuthCookie, clearCookie } from "../utils/cookieUtils";
 import { withCustomAge } from "../utils/cookieConfig";
+import { 
+  createVersionedRoutes, 
+  versionHeadersMiddleware
+} from "../../src/utils/routeVersioning";
 
 /**
  * Authentication routes for login and registration
  */
 export function authRoutes(app: Express): void {
-  // Logout route
-  app.post("/api/auth/logout", (req: Request, res: Response) => {
+  // Create versioned and legacy routes for logout
+  const [versionedLogoutPath, legacyLogoutPath] = createVersionedRoutes('/auth/logout');
+  
+  // Versioned route (primary)
+  app.post(versionedLogoutPath, versionHeadersMiddleware(), (req: Request, res: Response) => {
     try {
       console.log('Processing logout request');
       // Use the helper function to clear the auth cookie
@@ -27,9 +34,27 @@ export function authRoutes(app: Express): void {
       return res.status(500).json({ message: "Internal server error" });
     }
   });
-  // Login route
+  
+  // Legacy route (for backward compatibility)
+  app.post(legacyLogoutPath, versionHeadersMiddleware(), (req: Request, res: Response) => {
+    try {
+      console.log('Processing logout request (legacy route)');
+      // Use the helper function to clear the auth cookie
+      clearCookie(res, 'auth_token');
+      
+      return res.status(200).json({ message: "Logged out successfully" });
+    } catch (error) {
+      console.error("Logout error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  // Create versioned and legacy routes for login
+  const [versionedLoginPath, legacyLoginPath] = createVersionedRoutes('/auth/login');
+  
+  // Versioned route (primary)
   app.post(
-    "/api/auth/login", 
+    versionedLoginPath, 
+    versionHeadersMiddleware(),
     authRateLimiter, // Apply rate limiting to login endpoint
     securityRateLimiter, // Apply security rate limiting to detect brute force attacks
     validate(authSchemas.login),
@@ -37,6 +62,59 @@ export function authRoutes(app: Express): void {
       try {
         // Log the validated request body
         console.log("Login attempt with validated data:", JSON.stringify(req.body, null, 2));
+        
+        // Request is already validated by middleware
+        const { email, password, rememberMe } = req.body;
+        
+        // Verify credentials
+        const user = await storage.verifyLogin(email, password);
+        
+        if (!user) {
+          console.warn(`Failed login attempt for email: ${email}`);
+          return res.status(401).json({ message: "Invalid email or password" });
+        }
+        
+        // Generate JWT token
+        const token = generateToken(user);
+        
+        // Set secure HTTP-only cookie with the token using withCustomAge helper
+        // If rememberMe is true, set a longer expiration
+        const maxAge = rememberMe
+          ? 30 * 24 * 60 * 60 * 1000 // 30 days
+          : 24 * 60 * 60 * 1000;    // 1 day
+          
+        // Use the withCustomAge helper which properly sets all properties
+        const cookieOptions = withCustomAge({}, maxAge);
+        
+        console.log('Setting auth cookie with options:', cookieOptions);
+        setAuthCookie(res, 'auth_token', token, cookieOptions);
+        
+        console.log(`Successful login for user ID: ${user.id}, Type: ${user.userType}`);
+        
+        // Return success with user info (token is in HTTP-only cookie)
+        return res.status(200).json({ 
+          message: "Login successful",
+          userId: user.id,
+          userType: user.userType
+        });
+      } catch (error) {
+        console.error("Login error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+  
+  // Legacy route (for backward compatibility)
+  app.post(
+    legacyLoginPath, 
+    versionHeadersMiddleware(),
+    authRateLimiter, 
+    securityRateLimiter, 
+    validate(authSchemas.login),
+    async (req: Request, res: Response) => {
+      try {
+        // Log the validated request body
+        console.log("Login attempt with validated data (legacy route):", JSON.stringify(req.body, null, 2));
         
         // Request is already validated by middleware
         const { email, password, rememberMe } = req.body;
