@@ -1,13 +1,28 @@
 import type { Express, Request, Response } from "express";
 import { storage } from "../storage";
 import { authenticate, authorize } from "../middleware";
+import { createVersionedRoutes } from "../../src/utils/routeVersioning";
 
 /**
  * Admin routes for user and business management
  */
 export function adminRoutes(app: Express): void {
-  // Get all users
-  app.get("/api/admin/users", authenticate, authorize(['admin']), async (_req: Request, res: Response) => {
+  // Create versioned route paths
+  const [vUsersPath, lUsersPath] = createVersionedRoutes('/admin/users');
+  
+  // Get all users - versioned route
+  app.get(vUsersPath, authenticate, authorize(['admin']), async (_req: Request, res: Response) => {
+    try {
+      const users = await storage.getAllUsers();
+      return res.status(200).json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      return res.status(500).json({ message: "Error fetching users" });
+    }
+  });
+  
+  // Get all users - legacy route
+  app.get(lUsersPath, authenticate, authorize(['admin']), async (_req: Request, res: Response) => {
     try {
       const users = await storage.getAllUsers();
       return res.status(200).json(users);
