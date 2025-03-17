@@ -32,8 +32,34 @@ export function adminRoutes(app: Express): void {
     }
   });
   
-  // Create a user
-  app.post("/api/admin/users", authenticate, authorize(['admin']), async (req: Request, res: Response) => {
+  // Create versioned route paths for POST users
+  const [vCreateUserPath, lCreateUserPath] = createVersionedRoutes('/admin/users');
+  
+  // Create a user - versioned route
+  app.post(vCreateUserPath, authenticate, authorize(['admin']), async (req: Request, res: Response) => {
+    try {
+      const userData = req.body;
+      
+      if (!userData.password) {
+        return res.status(400).json({ message: "Password is required" });
+      }
+      
+      const password = userData.password;
+      delete userData.password;
+      
+      const user = await storage.adminCreateUser(userData, password);
+      return res.status(201).json(user);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: "Error creating user" });
+    }
+  });
+  
+  // Create a user - legacy route
+  app.post(lCreateUserPath, authenticate, authorize(['admin']), async (req: Request, res: Response) => {
     try {
       const userData = req.body;
       
