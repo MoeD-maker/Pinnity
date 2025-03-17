@@ -49,7 +49,6 @@ export function authRoutes(app: Express): void {
       return res.status(500).json({ message: "Internal server error" });
     }
   });
-
   // Create versioned and legacy routes for login
   const [versionedLoginPath, legacyLoginPath] = createVersionedRoutes('/auth/login');
   
@@ -141,7 +140,7 @@ export function authRoutes(app: Express): void {
         // Use the withCustomAge helper which properly sets all properties
         const cookieOptions = withCustomAge({}, maxAge);
         
-        console.log('Setting auth cookie with options (legacy route):', cookieOptions);
+        console.log('Setting auth cookie with options:', cookieOptions);
         setAuthCookie(res, 'auth_token', token, cookieOptions);
         
         console.log(`Successful login for user ID: ${user.id}, Type: ${user.userType}`);
@@ -190,7 +189,7 @@ export function authRoutes(app: Express): void {
         // Generate JWT token
         const token = generateToken(user);
         
-        // Set secure HTTP-only cookie with the token using helper
+        // Set secure HTTP-only cookie with the token using withCustomAge helper
         const cookieOptions = withCustomAge({}, 24 * 60 * 60 * 1000); // 1 day
         
         console.log('Setting auth cookie with options:', cookieOptions);
@@ -240,7 +239,7 @@ export function authRoutes(app: Express): void {
         // Generate JWT token
         const token = generateToken(user);
         
-        // Set secure HTTP-only cookie with the token using helper
+        // Set secure HTTP-only cookie with the token using withCustomAge helper
         const cookieOptions = withCustomAge({}, 24 * 60 * 60 * 1000); // 1 day
         
         console.log('Setting auth cookie with options (legacy route):', cookieOptions);
@@ -344,7 +343,7 @@ export function authRoutes(app: Express): void {
         // Generate JWT token
         const token = generateToken(user);
         
-        // Set secure HTTP-only cookie with the token using helper
+        // Set secure HTTP-only cookie with the token using withCustomAge helper
         const cookieOptions = withCustomAge({}, 24 * 60 * 60 * 1000); // 1 day
         
         console.log('Setting auth cookie with options:', cookieOptions);
@@ -432,7 +431,7 @@ export function authRoutes(app: Express): void {
         const proofOfAddressPath = files.proofOfAddress[0].path;
         const proofOfBusinessPath = files.proofOfBusiness[0].path;
         
-        // Create user with business (via legacy route)
+        // Create user with business
         const user = await storage.createBusinessUser(
           {
             firstName,
@@ -455,7 +454,7 @@ export function authRoutes(app: Express): void {
         // Generate JWT token
         const token = generateToken(user);
         
-        // Set secure HTTP-only cookie with the token using helper
+        // Set secure HTTP-only cookie with the token using withCustomAge helper
         const cookieOptions = withCustomAge({}, 24 * 60 * 60 * 1000); // 1 day
         
         console.log('Setting auth cookie with options (legacy route):', cookieOptions);

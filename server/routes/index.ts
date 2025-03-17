@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { adminRoutes } from './admin.routes';
+import { adminRoutes } from './admin.routes.fixed';
 import { authRoutes } from './auth.routes.fixed';
 import { userRoutes } from './user.routes.fixed';
 import { dealRoutes } from './deal.routes';
