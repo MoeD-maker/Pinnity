@@ -28,7 +28,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(versionedHealthPath, (_req: Request, res: Response) => {
     // Return status with version information
     const environmentInfo = {
-      health: "ok",
+      status: "ok",
       ...getVersionAndEnvInfo()
     };
     
@@ -39,7 +39,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(legacyHealthPath, (_req: Request, res: Response) => {
     // Return status with version information
     const environmentInfo = {
-      health: "ok",
+      status: "ok",
       ...getVersionAndEnvInfo()
     };
     

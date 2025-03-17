@@ -224,7 +224,7 @@ export function getVersionAndEnvInfo() {
     nodeEnv: process.env.NODE_ENV || 'development',
     appName: 'Pinnity API Server',
     apiVersion: versionInfo.version,
-    status: versionInfo.status
+    versionStatus: versionInfo.status
   };
   
   return envInfo;
