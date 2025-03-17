@@ -25,7 +25,7 @@ const initializePWA = async () => {
   console.log("Service Worker Registration Starting");
   try {
     // Dynamically import the service worker registration
-    const { register } = await import('./serviceWorkerRegistration');
+    const { register, syncOfflineActions } = await import('./serviceWorkerRegistration');
     
     // Register the service worker for PWA capabilities
     if ('serviceWorker' in navigator) {
@@ -39,6 +39,28 @@ const initializePWA = async () => {
           window.dispatchEvent(new CustomEvent('pwaUpdate', { 
             detail: { registration } 
           }));
+        },
+        onOffline: () => {
+          console.log('App has gone offline');
+          window.dispatchEvent(new CustomEvent('offlineStatusChanged', { 
+            detail: { isOffline: true } 
+          }));
+        },
+        onOnline: () => {
+          console.log('App is back online, syncing data...');
+          syncOfflineActions();
+          window.dispatchEvent(new CustomEvent('offlineStatusChanged', { 
+            detail: { isOffline: false } 
+          }));
+        },
+        onMessage: (event) => {
+          // Handle messages from service worker
+          console.log('Message from service worker:', event.data);
+          if (event.data.type === 'FAVORITES_SYNCED' || event.data.type === 'REDEMPTIONS_SYNCED') {
+            window.dispatchEvent(new CustomEvent('syncCompleted', { 
+              detail: event.data 
+            }));
+          }
         }
       });
     } else {
@@ -68,15 +90,21 @@ window.addEventListener('offline', () => {
   }));
 });
 
-// Disable service worker in development to prevent blank screens
+// In development, we can choose to either use the service worker for testing
+// or disable it to prevent caching issues
 if (import.meta.env.DEV) {
-  if ('serviceWorker' in navigator) {
+  // For testing PWA functionality in development, set this to false
+  const DISABLE_SERVICE_WORKER_IN_DEV = false;
+  
+  if (DISABLE_SERVICE_WORKER_IN_DEV && 'serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations().then(registrations => {
       for (const registration of registrations) {
         registration.unregister();
         console.log('Service worker unregistered in development mode');
       }
     });
+  } else if (!DISABLE_SERVICE_WORKER_IN_DEV) {
+    console.log('Service worker enabled in development mode for testing');
   }
 }
 

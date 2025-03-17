@@ -15,28 +15,36 @@ const CACHE_ASSETS = [
   '/logo512.png',
   '/static/js/main.chunk.js',
   '/static/js/vendors.chunk.js',
-  '/static/css/main.chunk.css'
+  '/static/css/main.chunk.css',
+  '/localforage.min.js'
 ];
 
-// Install event - cache assets
+// Install event - cache assets and initialize localforage
 self.addEventListener('install', (event) => {
   console.log('[Service Worker] Installing Service Worker', event);
+  
+  // Initialize localforage if available
+  console.log('[Service Worker] LocalForage availability check:', typeof localforage !== 'undefined');
+  if (typeof localforage !== 'undefined') {
+    localforage.config({
+      name: 'Pinnity Offline Storage',
+      storeName: 'offline_data'
+    });
+    console.log('[Service Worker] LocalForage initialized successfully');
+  } else {
+    console.error('[Service Worker] LocalForage failed to load!');
+  }
+  
+  // Cache assets
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('[Service Worker] Caching app shell');
-        // Create and cache offline page
+        // Use dedicated offline page
         return fetch(OFFLINE_PAGE)
           .catch(() => {
-            return new Response(
-              '<html><head><title>Offline - Pinnity</title><meta name="viewport" content="width=device-width, initial-scale=1"></head>' +
-              '<body style="margin:0;padding:20px;font-family:sans-serif;text-align:center;background-color:#f5f5f5;">' +
-              '<div style="background-color:white;border-radius:10px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,0.1);max-width:500px;margin:40px auto;">' +
-              '<h2 style="color:#00796B;margin-top:0;">You\'re offline</h2>' +
-              '<p>Please check your internet connection and try again.</p>' +
-              '<div style="background-color:#00796B;color:white;padding:12px 20px;border-radius:4px;display:inline-block;cursor:pointer;margin-top:10px;" onclick="window.location.reload()">Try Again</div>' +
-              '</div></body></html>'
-            );
+            console.log('[Service Worker] Offline page not found, falling back to cache');
+            return caches.match(OFFLINE_PAGE);
           })
           .then((offlineResponse) => {
             if (offlineResponse.type === 'basic') {
