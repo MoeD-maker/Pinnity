@@ -92,20 +92,23 @@ window.addEventListener('offline', () => {
 
 // In development, we can choose to either use the service worker for testing
 // or disable it to prevent caching issues
-if (import.meta.env.DEV) {
-  // For testing PWA functionality in development, set this to false
-  const DISABLE_SERVICE_WORKER_IN_DEV = false;
-  
-  if (DISABLE_SERVICE_WORKER_IN_DEV && 'serviceWorker' in navigator) {
+// For Vite apps, we can check for development mode in a different way
+const isDevelopment = location.hostname === 'localhost' || location.hostname.includes('replit');
+
+// For testing PWA functionality in development, set this to false
+const DISABLE_SERVICE_WORKER_IN_DEV = false;
+
+if (isDevelopment && DISABLE_SERVICE_WORKER_IN_DEV) {
+  if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations().then(registrations => {
       for (const registration of registrations) {
         registration.unregister();
         console.log('Service worker unregistered in development mode');
       }
     });
-  } else if (!DISABLE_SERVICE_WORKER_IN_DEV) {
-    console.log('Service worker enabled in development mode for testing');
   }
+} else if (isDevelopment && !DISABLE_SERVICE_WORKER_IN_DEV) {
+  console.log('Service worker enabled in development mode for testing');
 }
 
 // Try with a basic initial render
