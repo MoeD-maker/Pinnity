@@ -149,8 +149,10 @@ const envSchema = {
   
   // Infrastructure-related schemas
   DATABASE_URL: z.string()
-    .url('DATABASE_URL must be a valid URL')
-    .includes('postgres', 'DATABASE_URL must be a PostgreSQL connection string'),
+    .url({ message: 'DATABASE_URL must be a valid URL' })
+    .refine(val => val.includes('postgres'), { 
+      message: 'DATABASE_URL must be a PostgreSQL connection string'
+    }),
   
   PORT: z.coerce.number()
     .int()

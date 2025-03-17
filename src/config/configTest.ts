@@ -40,8 +40,22 @@ function testConfigurationSystem(): void {
       'cookieSecret',
       'csrfSecret',
       'databaseUrl'
-    ].some(key => publicConfigString.includes(key) && 
-           publicConfigString.includes(config.security[key as keyof typeof config.security] || ''));
+    ].some(key => {
+      // Check if the key exists in publicConfig string
+      if (publicConfigString.includes(key)) {
+        // Get the value safely based on where it should be in the config
+        let sensitiveValue = '';
+        if (key === 'databaseUrl') {
+          sensitiveValue = config.infrastructure.databaseUrl;
+        } else {
+          sensitiveValue = String(config.security[key as keyof typeof config.security] || '');
+        }
+        
+        // Check if this sensitive value appears in the public config
+        return publicConfigString.includes(sensitiveValue);
+      }
+      return false;
+    });
     
     if (containsSensitiveValues) {
       console.error('✗ Public config contains sensitive values!');
