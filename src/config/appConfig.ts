@@ -16,7 +16,7 @@
  */
 
 import { z } from 'zod';
-import crypto from 'crypto';
+import { calculateEntropy } from './generateSecrets';
 
 /**
  * Environment type
@@ -90,127 +90,105 @@ interface PublicAppConfig {
  * @returns Entropy value (bits per character)
  */
 function calculateStringEntropy(value: string): number {
-  if (!value) return 0;
-  
-  const len = value.length;
-  const charCounts: Record<string, number> = {};
-  
-  // Count occurrences of each character
-  for (let i = 0; i < len; i++) {
-    const char = value[i];
-    charCounts[char] = (charCounts[char] || 0) + 1;
-  }
-  
-  // Calculate entropy using Shannon's entropy formula
-  let entropy = 0;
-  for (const char in charCounts) {
-    const probability = charCounts[char] / len;
-    entropy -= probability * Math.log2(probability);
-  }
-  
-  return entropy;
+  // Defer to the implementation in generateSecrets.ts
+  return calculateEntropy(value);
 }
 
 /**
  * Environment variable validation schemas
  */
-const envSchema = {
-  // Security-related schemas
-  JWT_SECRET: z.string()
-    .min(32, 'JWT_SECRET must be at least 32 characters long')
-    .refine(
-      (val) => calculateStringEntropy(val) > 3.5,
-      'JWT_SECRET has insufficient entropy. Use a strong random value.'
-    ),
+const schemas = {
+  // Core environment
+  env: z.enum(['development', 'test', 'production']).default('development'),
   
-  COOKIE_SECRET: z.string()
-    .min(32, 'COOKIE_SECRET must be at least 32 characters long')
-    .refine(
-      (val) => calculateStringEntropy(val) > 3.5,
-      'COOKIE_SECRET has insufficient entropy. Use a strong random value.'
-    ),
+  // Security settings
+  jwtSecret: z.string()
+    .min(32, { message: 'JWT_SECRET must be at least 32 characters long' })
+    .refine(val => calculateStringEntropy(val) > 5, { 
+      message: 'JWT_SECRET has insufficient entropy (needs > 5 bits/char)' 
+    }),
   
-  CSRF_SECRET: z.string()
-    .min(32, 'CSRF_SECRET must be at least 32 characters long')
-    .refine(
-      (val) => calculateStringEntropy(val) > 3.5,
-      'CSRF_SECRET has insufficient entropy. Use a strong random value.'
-    ),
-    
-  BCRYPT_ROUNDS: z.coerce.number()
+  cookieSecret: z.string()
+    .min(32, { message: 'COOKIE_SECRET must be at least 32 characters long' })
+    .refine(val => calculateStringEntropy(val) > 5, { 
+      message: 'COOKIE_SECRET has insufficient entropy (needs > 5 bits/char)' 
+    }),
+  
+  csrfSecret: z.string()
+    .min(32, { message: 'CSRF_SECRET must be at least 32 characters long' })
+    .refine(val => calculateStringEntropy(val) > 5, { 
+      message: 'CSRF_SECRET has insufficient entropy (needs > 5 bits/char)' 
+    }),
+  
+  bcryptRounds: z.coerce.number()
     .int()
-    .min(10, 'BCRYPT_ROUNDS should be at least 10 for security')
-    .max(14, 'BCRYPT_ROUNDS should not exceed 14 for performance reasons')
-    .default(12),
+    .min(8, { message: 'BCRYPT_ROUNDS should be at least 8 for security' })
+    .max(14, { message: 'BCRYPT_ROUNDS should not exceed 14 to avoid performance issues' })
+    .default(10),
   
-  JWT_EXPIRES_IN: z.string()
-    .regex(/^[0-9]+(s|m|h|d)$/, 'JWT_EXPIRES_IN must be in format like 24h, 30m, 60s')
-    .default('24h'),
+  jwtExpiresIn: z.string()
+    .regex(/^[0-9]+[smhdy]$/, { 
+      message: 'JWT_EXPIRES_IN must be in format like 15m, 24h, 7d, 30d' 
+    })
+    .default('1d'),
   
-  // Infrastructure-related schemas
-  DATABASE_URL: z.string()
+  // Infrastructure settings
+  databaseUrl: z.string()
     .url({ message: 'DATABASE_URL must be a valid URL' })
-    .refine(val => val.includes('postgres'), { 
+    .refine(url => url.startsWith('postgres://') || url.startsWith('postgresql://'), {
       message: 'DATABASE_URL must be a PostgreSQL connection string'
     }),
   
-  PORT: z.coerce.number()
+  port: z.coerce.number()
     .int()
-    .min(1, 'PORT must be a positive integer')
-    .max(65535, 'PORT must be a valid port number')
-    .default(3000),
+    .min(1)
+    .max(65535)
+    .default(5000),
   
-  HOST: z.string()
-    .default('0.0.0.0'),
+  host: z.string().default('0.0.0.0'),
   
-  TRUST_PROXY: z.coerce.boolean()
-    .default(false),
+  trustProxy: z.coerce.boolean().default(false),
   
-  // Rate-limiting schemas
-  RATE_LIMIT_WINDOW: z.coerce.number()
+  // Rate limiting settings
+  rateLimitWindow: z.coerce.number()
     .int()
-    .min(1, 'RATE_LIMIT_WINDOW must be a positive integer')
-    .default(15 * 60 * 1000), // 15 minutes in ms
+    .min(1000) // At least 1 second
+    .default(900000), // 15 minutes
   
-  RATE_LIMIT_MAX: z.coerce.number()
+  rateLimitMax: z.coerce.number()
     .int()
-    .min(1, 'RATE_LIMIT_MAX must be a positive integer')
+    .min(10)
     .default(100),
   
-  // Feature-related schemas
-  DEAL_EXPIRATION_NOTIFICATION_HOURS: z.coerce.number()
+  // Feature settings
+  dealExpirationNotificationHours: z.coerce.number()
     .int()
-    .min(1, 'DEAL_EXPIRATION_NOTIFICATION_HOURS must be a positive integer')
+    .min(1)
     .default(48),
   
-  MAX_DEAL_IMAGES_PER_BUSINESS: z.coerce.number()
+  maxDealImagesPerBusiness: z.coerce.number()
     .int()
-    .min(1, 'MAX_DEAL_IMAGES_PER_BUSINESS must be a positive integer')
+    .min(1)
     .default(10),
   
-  MAX_BUSINESS_DOCUMENTS_COUNT: z.coerce.number()
+  maxBusinessDocumentsCount: z.coerce.number()
     .int()
-    .min(1, 'MAX_BUSINESS_DOCUMENTS_COUNT must be a positive integer')
+    .min(1)
     .default(5),
   
-  MAX_FILE_UPLOAD_SIZE: z.coerce.number()
+  maxFileUploadSize: z.coerce.number()
     .int()
-    .min(1, 'MAX_FILE_UPLOAD_SIZE must be a positive integer')
-    .default(5 * 1024 * 1024), // 5MB in bytes
+    .min(1024) // At least 1KB
+    .default(5 * 1024 * 1024), // 5MB
   
-  ALLOWED_FILE_TYPES: z.string()
-    .default('jpg,jpeg,png,pdf')
-    .transform(val => val.split(',').map(t => t.trim())),
+  allowedFileTypes: z.string()
+    .transform(val => val.split(',').map(t => t.trim()))
+    .default('jpg,jpeg,png,pdf'),
   
-  // Development-related schemas
-  ENABLE_DEBUG_LOGGING: z.coerce.boolean()
-    .default(false),
-  
-  MOCK_AUTH_ENABLED: z.coerce.boolean()
-    .default(false),
-  
-  SLOW_NETWORK_SIMULATION: z.coerce.boolean()
-    .default(false),
+  // Development settings
+  enableDebugLogging: z.coerce.boolean().default(false),
+  mockAuthEnabled: z.coerce.boolean().default(false),
+  slowNetworkSimulation: z.coerce.boolean().default(false),
 };
 
 /**
@@ -228,167 +206,175 @@ interface EnvVarConfig {
 /**
  * Environment variable validation configuration
  */
-const ENV_VAR_CONFIG: EnvVarConfig[] = [
-  // Security-related configs
+const ENV_CONFIG: EnvVarConfig[] = [
+  // Core environment
+  {
+    key: 'NODE_ENV',
+    schema: schemas.env,
+    isSecret: false,
+    isRequired: false,
+    requireInProduction: false,
+    description: 'Application environment (development, test, production)'
+  },
+  
+  // Security settings
   {
     key: 'JWT_SECRET',
-    schema: envSchema.JWT_SECRET,
+    schema: schemas.jwtSecret,
     isSecret: true,
     isRequired: true,
     requireInProduction: true,
-    description: 'Secret key for signing JWT tokens',
+    description: 'Secret key for JWT token signing'
   },
   {
     key: 'COOKIE_SECRET',
-    schema: envSchema.COOKIE_SECRET,
+    schema: schemas.cookieSecret,
     isSecret: true,
     isRequired: true,
     requireInProduction: true,
-    description: 'Secret key for signing cookies',
+    description: 'Secret key for cookie signing'
   },
   {
     key: 'CSRF_SECRET',
-    schema: envSchema.CSRF_SECRET,
+    schema: schemas.csrfSecret,
     isSecret: true,
     isRequired: true,
     requireInProduction: true,
-    description: 'Secret key for CSRF protection',
+    description: 'Secret key for CSRF token generation'
   },
   {
     key: 'BCRYPT_ROUNDS',
-    schema: envSchema.BCRYPT_ROUNDS,
+    schema: schemas.bcryptRounds,
     isSecret: false,
     isRequired: false,
     requireInProduction: false,
-    description: 'Number of rounds for bcrypt password hashing',
+    description: 'Number of bcrypt hashing rounds'
   },
   {
     key: 'JWT_EXPIRES_IN',
-    schema: envSchema.JWT_EXPIRES_IN,
+    schema: schemas.jwtExpiresIn,
     isSecret: false,
     isRequired: false,
     requireInProduction: false,
-    description: 'JWT token expiration time (e.g., 24h, 30m)',
+    description: 'JWT token expiration time'
   },
-  
-  // Infrastructure-related configs
-  {
-    key: 'DATABASE_URL',
-    schema: envSchema.DATABASE_URL,
-    isSecret: true,
-    isRequired: true,
-    requireInProduction: true,
-    description: 'PostgreSQL database connection URL',
-  },
-  {
-    key: 'PORT',
-    schema: envSchema.PORT,
-    isSecret: false,
-    isRequired: false,
-    requireInProduction: false,
-    description: 'Port to run the application server',
-  },
-  {
-    key: 'HOST',
-    schema: envSchema.HOST,
-    isSecret: false,
-    isRequired: false,
-    requireInProduction: false,
-    description: 'Host address to bind the server',
-  },
-  {
-    key: 'TRUST_PROXY',
-    schema: envSchema.TRUST_PROXY,
-    isSecret: false,
-    isRequired: false,
-    requireInProduction: false,
-    description: 'Whether to trust proxy headers',
-  },
-  
-  // Rate limiting configs
   {
     key: 'RATE_LIMIT_WINDOW',
-    schema: envSchema.RATE_LIMIT_WINDOW,
+    schema: schemas.rateLimitWindow,
     isSecret: false,
     isRequired: false,
     requireInProduction: false,
-    description: 'Rate limiting window in milliseconds',
+    description: 'Rate limiting time window in milliseconds'
   },
   {
     key: 'RATE_LIMIT_MAX',
-    schema: envSchema.RATE_LIMIT_MAX,
+    schema: schemas.rateLimitMax,
     isSecret: false,
     isRequired: false,
     requireInProduction: false,
-    description: 'Maximum number of requests in rate limit window',
+    description: 'Maximum requests per rate limit window'
   },
   
-  // Feature-related configs
+  // Infrastructure settings
   {
-    key: 'DEAL_EXPIRATION_NOTIFICATION_HOURS',
-    schema: envSchema.DEAL_EXPIRATION_NOTIFICATION_HOURS,
+    key: 'DATABASE_URL',
+    schema: schemas.databaseUrl,
+    isSecret: true,
+    isRequired: true,
+    requireInProduction: true,
+    description: 'PostgreSQL database connection URL'
+  },
+  {
+    key: 'PORT',
+    schema: schemas.port,
     isSecret: false,
     isRequired: false,
     requireInProduction: false,
-    description: 'Hours before deal expiration to send notification',
+    description: 'HTTP server port'
+  },
+  {
+    key: 'HOST',
+    schema: schemas.host,
+    isSecret: false,
+    isRequired: false,
+    requireInProduction: false,
+    description: 'HTTP server host'
+  },
+  {
+    key: 'TRUST_PROXY',
+    schema: schemas.trustProxy,
+    isSecret: false,
+    isRequired: false,
+    requireInProduction: false,
+    description: 'Whether to trust proxy headers'
+  },
+  
+  // Feature settings
+  {
+    key: 'DEAL_EXPIRATION_NOTIFICATION_HOURS',
+    schema: schemas.dealExpirationNotificationHours,
+    isSecret: false,
+    isRequired: false,
+    requireInProduction: false,
+    description: 'Hours before deal expiration to send notification'
   },
   {
     key: 'MAX_DEAL_IMAGES_PER_BUSINESS',
-    schema: envSchema.MAX_DEAL_IMAGES_PER_BUSINESS,
+    schema: schemas.maxDealImagesPerBusiness,
     isSecret: false,
     isRequired: false,
     requireInProduction: false,
-    description: 'Maximum number of images per business deal',
+    description: 'Maximum number of images per business'
   },
   {
     key: 'MAX_BUSINESS_DOCUMENTS_COUNT',
-    schema: envSchema.MAX_BUSINESS_DOCUMENTS_COUNT,
+    schema: schemas.maxBusinessDocumentsCount,
     isSecret: false,
     isRequired: false,
     requireInProduction: false,
-    description: 'Maximum number of documents per business',
+    description: 'Maximum number of documents per business'
   },
   {
     key: 'MAX_FILE_UPLOAD_SIZE',
-    schema: envSchema.MAX_FILE_UPLOAD_SIZE,
+    schema: schemas.maxFileUploadSize,
     isSecret: false,
     isRequired: false,
     requireInProduction: false,
-    description: 'Maximum file upload size in bytes',
+    description: 'Maximum file upload size in bytes'
   },
   {
     key: 'ALLOWED_FILE_TYPES',
-    schema: envSchema.ALLOWED_FILE_TYPES,
+    schema: schemas.allowedFileTypes,
     isSecret: false,
     isRequired: false,
     requireInProduction: false,
-    description: 'Comma-separated list of allowed file types',
+    description: 'Comma-separated list of allowed file extensions'
   },
   
-  // Development-related configs
+  // Development settings
   {
     key: 'ENABLE_DEBUG_LOGGING',
-    schema: envSchema.ENABLE_DEBUG_LOGGING,
+    schema: schemas.enableDebugLogging,
     isSecret: false,
     isRequired: false,
     requireInProduction: false,
-    description: 'Enable debug logging',
+    description: 'Enable debug logging'
   },
   {
     key: 'MOCK_AUTH_ENABLED',
-    schema: envSchema.MOCK_AUTH_ENABLED,
+    schema: schemas.mockAuthEnabled,
     isSecret: false,
     isRequired: false,
     requireInProduction: false,
-    description: 'Enable mock authentication for development',
+    description: 'Enable mock authentication (for development only)'
   },
   {
     key: 'SLOW_NETWORK_SIMULATION',
-    schema: envSchema.SLOW_NETWORK_SIMULATION,
+    schema: schemas.slowNetworkSimulation,
     isSecret: false,
     isRequired: false,
     requireInProduction: false,
-    description: 'Simulate slow network for testing',
+    description: 'Simulate slow network conditions (for development only)'
   },
 ];
 
@@ -396,16 +382,14 @@ const ENV_VAR_CONFIG: EnvVarConfig[] = [
  * Get environment name with validation
  */
 function getEnvironment(): Environment {
-  const env = (process.env.NODE_ENV || 'development').toLowerCase();
-  switch (env) {
-    case 'development':
-    case 'test':
-    case 'production':
-      return env;
-    default:
-      console.warn(`Invalid NODE_ENV "${env}", falling back to "development"`);
-      return 'development';
+  const envName = process.env.NODE_ENV || 'development';
+  
+  if (envName !== 'development' && envName !== 'test' && envName !== 'production') {
+    console.warn(`Invalid NODE_ENV "${envName}", defaulting to "development"`);
+    return 'development';
   }
+  
+  return envName as Environment;
 }
 
 /**
@@ -415,50 +399,46 @@ function getEnvironment(): Environment {
  */
 function processEnvVar<T>(config: EnvVarConfig): T {
   const { key, schema, isRequired, requireInProduction, description } = config;
-  const env = getEnvironment();
-  const isProduction = env === 'production';
+  const isDevelopment = getEnvironment() !== 'production';
+  const value = process.env[key];
   
-  // Check if the variable is required in the current environment
-  const requiredInCurrentEnv = isRequired || (requireInProduction && isProduction);
+  if (!value) {
+    // Handle missing required values
+    if (isRequired && (requireInProduction || isDevelopment)) {
+      console.error(`Required environment variable ${key} is not set.`);
+      console.error(`Description: ${description}`);
+      
+      if (requireInProduction && !isDevelopment) {
+        console.error('This value is required in production. Exiting.');
+        process.exit(1);
+      }
+      
+      if (key === 'JWT_SECRET' && isDevelopment) {
+        // Generate a temporary JWT secret for development
+        console.warn(`WARNING: Using temporary JWT_SECRET for development mode. This would be an error in production.`);
+        process.env[key] = Buffer.from(Math.random().toString(36)).toString('base64').repeat(3);
+      }
+    }
+  }
   
   try {
-    // Parse and validate the environment variable
-    const result = schema.safeParse(process.env[key]);
-    
-    if (result.success) {
-      return result.data;
-    }
-    
-    // Handle validation errors
-    const errors = result.error.errors.map(err => `${key}: ${err.message}`).join('; ');
-    
-    if (requiredInCurrentEnv) {
-      console.error(`Configuration Error - ${description}: ${errors}`);
-      process.exit(1);
-    } else {
-      console.warn(`Configuration Warning - ${description}: ${errors}`);
-      // Return default value from schema
-      const defaultResult = schema.safeParse(undefined);
-      if (defaultResult.success) {
-        return defaultResult.data;
-      } else {
-        throw new Error(`No valid default for ${key}`);
-      }
-    }
+    // Attempt to parse and validate the value
+    return schema.parse(value) as T;
   } catch (error) {
-    // Handle unexpected errors during validation
-    if (requiredInCurrentEnv) {
-      console.error(`Fatal configuration error for ${key} (${description}): ${error}`);
-      process.exit(1);
-    } else {
-      console.warn(`Configuration warning for ${key} (${description}): ${error}`);
-      // Attempt to return a safe default
-      try {
-        return schema.parse(undefined);
-      } catch {
-        throw new Error(`Cannot determine safe default for ${key}`);
+    if (error instanceof z.ZodError) {
+      const errorMessages = error.errors.map(e => `  - ${e.path.join('.')}: ${e.message}`).join('\n');
+      console.error(`Invalid configuration for ${key}:\n${errorMessages}`);
+      
+      if (requireInProduction && !isDevelopment) {
+        console.error('This value must be valid in production. Exiting.');
+        process.exit(1);
       }
+    } else {
+      console.error(`Error processing configuration for ${key}:`, error);
     }
+    
+    // Return default value from schema as fallback
+    return schema.parse(undefined) as T;
   }
 }
 
@@ -466,64 +446,58 @@ function processEnvVar<T>(config: EnvVarConfig): T {
  * Load all configuration values with validation
  */
 function loadConfig(): AppConfig {
-  const env = getEnvironment();
+  console.log('🔒 Validating environment configuration...');
   
-  // Create a validated config object
+  // Determine environment first
+  const env = getEnvironment();
+  const isDevelopment = env === 'development';
+  const isTest = env === 'test';
+  const isProduction = env === 'production';
+  
+  // Process each environment variable
+  const envValues = new Map<string, any>();
+  
+  for (const config of ENV_CONFIG) {
+    const value = processEnvVar(config);
+    envValues.set(config.key, value);
+  }
+  
+  // Build configuration object
   const config: AppConfig = {
     env,
-    isDevelopment: env === 'development',
-    isTest: env === 'test',
-    isProduction: env === 'production',
-    
+    isDevelopment,
+    isTest,
+    isProduction,
     security: {
-      jwtSecret: processEnvVar<string>(ENV_VAR_CONFIG.find(c => c.key === 'JWT_SECRET')!),
-      cookieSecret: processEnvVar<string>(ENV_VAR_CONFIG.find(c => c.key === 'COOKIE_SECRET')!),
-      csrfSecret: processEnvVar<string>(ENV_VAR_CONFIG.find(c => c.key === 'CSRF_SECRET')!),
-      bcryptRounds: processEnvVar<number>(ENV_VAR_CONFIG.find(c => c.key === 'BCRYPT_ROUNDS')!),
-      jwtExpiresIn: processEnvVar<string>(ENV_VAR_CONFIG.find(c => c.key === 'JWT_EXPIRES_IN')!),
-      rateLimitWindow: processEnvVar<number>(ENV_VAR_CONFIG.find(c => c.key === 'RATE_LIMIT_WINDOW')!),
-      rateLimitMax: processEnvVar<number>(ENV_VAR_CONFIG.find(c => c.key === 'RATE_LIMIT_MAX')!),
+      jwtSecret: envValues.get('JWT_SECRET'),
+      cookieSecret: envValues.get('COOKIE_SECRET'),
+      csrfSecret: envValues.get('CSRF_SECRET'),
+      bcryptRounds: envValues.get('BCRYPT_ROUNDS'),
+      jwtExpiresIn: envValues.get('JWT_EXPIRES_IN'),
+      rateLimitWindow: envValues.get('RATE_LIMIT_WINDOW'),
+      rateLimitMax: envValues.get('RATE_LIMIT_MAX'),
     },
-    
     infrastructure: {
-      databaseUrl: processEnvVar<string>(ENV_VAR_CONFIG.find(c => c.key === 'DATABASE_URL')!),
-      port: processEnvVar<number>(ENV_VAR_CONFIG.find(c => c.key === 'PORT')!),
-      host: processEnvVar<string>(ENV_VAR_CONFIG.find(c => c.key === 'HOST')!),
-      trustProxy: processEnvVar<boolean>(ENV_VAR_CONFIG.find(c => c.key === 'TRUST_PROXY')!),
+      databaseUrl: envValues.get('DATABASE_URL'),
+      port: envValues.get('PORT'),
+      host: envValues.get('HOST'),
+      trustProxy: envValues.get('TRUST_PROXY'),
     },
-    
     features: {
-      dealExpirationNotificationHours: processEnvVar<number>(
-        ENV_VAR_CONFIG.find(c => c.key === 'DEAL_EXPIRATION_NOTIFICATION_HOURS')!
-      ),
-      maxDealImagesPerBusiness: processEnvVar<number>(
-        ENV_VAR_CONFIG.find(c => c.key === 'MAX_DEAL_IMAGES_PER_BUSINESS')!
-      ),
-      maxBusinessDocumentsCount: processEnvVar<number>(
-        ENV_VAR_CONFIG.find(c => c.key === 'MAX_BUSINESS_DOCUMENTS_COUNT')!
-      ),
-      maxFileUploadSize: processEnvVar<number>(
-        ENV_VAR_CONFIG.find(c => c.key === 'MAX_FILE_UPLOAD_SIZE')!
-      ),
-      allowedFileTypes: processEnvVar<string[]>(
-        ENV_VAR_CONFIG.find(c => c.key === 'ALLOWED_FILE_TYPES')!
-      ),
+      dealExpirationNotificationHours: envValues.get('DEAL_EXPIRATION_NOTIFICATION_HOURS'),
+      maxDealImagesPerBusiness: envValues.get('MAX_DEAL_IMAGES_PER_BUSINESS'),
+      maxBusinessDocumentsCount: envValues.get('MAX_BUSINESS_DOCUMENTS_COUNT'),
+      maxFileUploadSize: envValues.get('MAX_FILE_UPLOAD_SIZE'),
+      allowedFileTypes: envValues.get('ALLOWED_FILE_TYPES'),
     },
-    
     development: {
-      enableDebugLogging: processEnvVar<boolean>(
-        ENV_VAR_CONFIG.find(c => c.key === 'ENABLE_DEBUG_LOGGING')!
-      ),
-      mockAuthEnabled: processEnvVar<boolean>(
-        ENV_VAR_CONFIG.find(c => c.key === 'MOCK_AUTH_ENABLED')!
-      ),
-      slowNetworkSimulation: processEnvVar<boolean>(
-        ENV_VAR_CONFIG.find(c => c.key === 'SLOW_NETWORK_SIMULATION')!
-      ),
+      enableDebugLogging: envValues.get('ENABLE_DEBUG_LOGGING'),
+      mockAuthEnabled: isDevelopment && envValues.get('MOCK_AUTH_ENABLED'),
+      slowNetworkSimulation: isDevelopment && envValues.get('SLOW_NETWORK_SIMULATION'),
     },
   };
   
-  // Make all properties deeply readonly using Object.freeze
+  // Return the immutable configuration
   return deepFreeze(config);
 }
 
@@ -533,18 +507,20 @@ function loadConfig(): AppConfig {
  * @returns Frozen object
  */
 function deepFreeze<T>(obj: T): Readonly<T> {
-  // Get property names and freeze each one
+  // Freeze properties
+  Object.freeze(obj);
+  
+  // Freeze nested objects recursively
   Object.getOwnPropertyNames(obj).forEach(prop => {
     const value = (obj as any)[prop];
-    
-    // If value is object and not null, recursively freeze it
-    if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    if (value !== null && 
+        (typeof value === 'object' || typeof value === 'function') &&
+        !Object.isFrozen(value)) {
       deepFreeze(value);
     }
   });
   
-  // Freeze the object itself
-  return Object.freeze(obj);
+  return obj;
 }
 
 /**
@@ -553,64 +529,101 @@ function deepFreeze<T>(obj: T): Readonly<T> {
  * @returns Public configuration without sensitive values
  */
 function createPublicConfig(config: AppConfig): PublicAppConfig {
-  const { infrastructure, ...rest } = config;
+  const { infrastructure, ...restConfig } = config;
+  
+  // Create a new infrastructure object without databaseUrl
   const { databaseUrl, ...publicInfrastructure } = infrastructure;
   
+  // Return public configuration
   return {
-    ...rest,
+    ...restConfig,
     infrastructure: publicInfrastructure,
   };
 }
-
-// Load the full application configuration
-const appConfig = loadConfig();
-
-// Create a public view of the configuration
-const publicConfig = createPublicConfig(appConfig);
 
 /**
  * Generate a safe, redacted version of the config for logging
  * Replaces all secret values with '****'
  */
 function getRedactedConfigForLogging(): Record<string, any> {
-  // Deep clone the config to avoid modifying it
-  const redactedConfig = JSON.parse(JSON.stringify(appConfig));
+  const config = getConfig();
+  const redacted: Record<string, any> = {};
   
-  // Redact security section
-  redactedConfig.security = {
-    ...redactedConfig.security,
-    jwtSecret: '****',
-    cookieSecret: '****',
-    csrfSecret: '****',
-  };
+  // Helper function to redact secrets recursively
+  function redactSecrets(obj: any, path: string[] = []): any {
+    const result: Record<string, any> = {};
+    
+    for (const key in obj) {
+      const newPath = [...path, key];
+      const fullPath = newPath.join('.');
+      
+      // Check if this is a secret field
+      const isSecret = ENV_CONFIG.some(
+        cfg => cfg.isSecret && fullPath.endsWith(cfg.key.toLowerCase())
+      );
+      
+      if (typeof obj[key] === 'object' && obj[key] !== null) {
+        // Recursively handle objects
+        result[key] = redactSecrets(obj[key], newPath);
+      } else if (isSecret && typeof obj[key] === 'string') {
+        // Redact secret values
+        const value = obj[key] as string;
+        if (value.length <= 4) {
+          result[key] = '●●●●';
+        } else {
+          result[key] = `●●●● (length: ${value.length})`;
+        }
+      } else {
+        // Pass through non-secret values
+        result[key] = obj[key];
+      }
+    }
+    
+    return result;
+  }
   
-  // Redact database URL
-  redactedConfig.infrastructure.databaseUrl = '****';
-  
-  return redactedConfig;
+  return redactSecrets(config);
 }
 
 /**
  * Log the application configuration (with sensitive values redacted)
  */
 export function logAppConfig() {
-  if (appConfig.development.enableDebugLogging) {
-    console.info('Application configuration loaded:', getRedactedConfigForLogging());
-  } else {
-    console.info('Application configuration loaded successfully');
+  const redactedConfig = getRedactedConfigForLogging();
+  
+  console.log('Environment Configuration:');
+  
+  // Log core environment
+  console.log(`- NODE_ENV: ${redactedConfig.env}`);
+  
+  // Log security settings with redaction
+  for (const config of ENV_CONFIG) {
+    if (config.key !== 'NODE_ENV') {
+      const value = process.env[config.key];
+      
+      if (value) {
+        const displayValue = config.isSecret
+          ? value.length <= 4
+            ? '●●●●'
+            : `●●●● (length: ${value.length})`
+          : value;
+          
+        console.log(`- ${config.key}: ${displayValue}`);
+      }
+    }
   }
 }
 
-/**
- * ACCESS TO CONFIGURATION
- */
+// Create and cache the configuration on module load
+const config = loadConfig();
+const publicConfig = createPublicConfig(config);
 
 /**
  * Get full configuration (including sensitive values)
  * Only to be used within trusted server-side code
  */
 export function getConfig(): Readonly<AppConfig> {
-  return appConfig;
+  return config;
 }
 
 /**
@@ -621,5 +634,5 @@ export function getPublicConfig(): Readonly<PublicAppConfig> {
   return publicConfig;
 }
 
-// Export public config as default for easy importing
-export default publicConfig;
+// Default export for convenient importing
+export default { getConfig, getPublicConfig, logAppConfig };

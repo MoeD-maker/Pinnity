@@ -18,14 +18,21 @@ import crypto from 'crypto';
  * @param encoding Encoding to use (hex, base64, etc.)
  * @returns Secure random string
  */
-function generateSecureSecret(length: number = 64, encoding: BufferEncoding = 'base64'): string {
+export function generateSecureSecret(length: number = 64, encoding: BufferEncoding = 'base64'): string {
+  // Calculate number of bytes needed, accounting for encoding expansion
+  const bytesNeeded = Math.ceil(
+    encoding === 'base64' 
+      ? length * 0.75  // Base64 expands by ~4/3
+      : length * 0.5   // Hex expands by 2
+  );
+  
   // Generate random bytes
-  const randomBytes = crypto.randomBytes(Math.ceil(length * 0.75)); // Account for base64 expansion
+  const randomBytes = crypto.randomBytes(bytesNeeded);
   
   // Convert to the specified encoding
   const randomString = randomBytes.toString(encoding);
   
-  // Trim to the desired length
+  // Trim to the desired length and sanitize if needed
   return randomString.slice(0, length);
 }
 
@@ -34,8 +41,8 @@ function generateSecureSecret(length: number = 64, encoding: BufferEncoding = 'b
  * @param value String to analyze
  * @returns Entropy value in bits per character
  */
-function calculateEntropy(value: string): number {
-  if (!value) return 0;
+export function calculateEntropy(value: string): number {
+  if (!value || value.length === 0) return 0;
   
   const len = value.length;
   const charCounts: Record<string, number> = {};
@@ -60,15 +67,27 @@ function calculateEntropy(value: string): number {
  * Generate a set of secrets for the application
  * @returns Object containing generated secrets
  */
-function generateApplicationSecrets(): {
+export function generateApplicationSecrets(): {
   jwtSecret: string;
   cookieSecret: string;
   csrfSecret: string;
 } {
-  // Generate secrets with different lengths for security
-  const jwtSecret = generateSecureSecret(64);
-  const cookieSecret = generateSecureSecret(64);
-  const csrfSecret = generateSecureSecret(64);
+  // Generate secrets with sufficient length and entropy
+  const jwtSecret = generateSecureSecret(64, 'base64');
+  const cookieSecret = generateSecureSecret(64, 'base64');
+  const csrfSecret = generateSecureSecret(64, 'base64');
+
+  // Verify the entropy of each secret
+  const jwtEntropy = calculateEntropy(jwtSecret);
+  const cookieEntropy = calculateEntropy(cookieSecret);
+  const csrfEntropy = calculateEntropy(csrfSecret);
+  
+  // Log entropy information if running directly
+  if (require.main === module) {
+    console.log(`JWT Secret Entropy: ${jwtEntropy.toFixed(2)} bits per character`);
+    console.log(`Cookie Secret Entropy: ${cookieEntropy.toFixed(2)} bits per character`);
+    console.log(`CSRF Secret Entropy: ${csrfEntropy.toFixed(2)} bits per character`);
+  }
 
   return {
     jwtSecret,
@@ -82,7 +101,7 @@ function generateApplicationSecrets(): {
  * @param secrets Object containing secrets
  * @returns Formatted string for .env file
  */
-function formatForEnvFile(secrets: Record<string, string>): string {
+export function formatForEnvFile(secrets: Record<string, string>): string {
   const lines = Object.entries(secrets).map(([key, value]) => {
     // Convert camelCase to UPPER_SNAKE_CASE for environment variables
     const envVarName = key
@@ -95,7 +114,7 @@ function formatForEnvFile(secrets: Record<string, string>): string {
   return lines.join('\n');
 }
 
-// Script execution
+// Run as a standalone script if called directly
 if (require.main === module) {
   const secrets = generateApplicationSecrets();
   
@@ -118,11 +137,3 @@ if (require.main === module) {
   console.log(formatForEnvFile(secrets));
   console.log('\nIMPORTANT: Keep these secrets secure and never commit them to version control!');
 }
-
-// Export the functions for use in other scripts
-export {
-  generateSecureSecret,
-  calculateEntropy,
-  generateApplicationSecrets,
-  formatForEnvFile,
-};

@@ -10,29 +10,56 @@
  * To run this test: npx ts-node ./src/config/configTest.ts
  */
 
-import { getConfig, getPublicConfig, logAppConfig } from './appConfig';
+import { getConfig, getPublicConfig } from './appConfig';
+import { getConfigValue, isSecretPath } from './configUtils';
+import { getRequiredEnv, getOptionalEnv } from './integration';
 
 /**
  * Test configuration validation and loading
  */
-function testConfigurationSystem(): void {
-  console.log('=== Testing Configuration System ===\n');
-  
+export function testConfigurationSystem(): void {
   try {
-    console.log('1. Loading application configuration...');
-    logAppConfig();
+    console.log('=== Configuration System Tests ===\n');
     
-    // Get the full configuration (with sensitive values)
+    // Test basic configuration loading
+    console.log('1. Testing basic configuration loading...');
     const config = getConfig();
     
-    console.log('\n2. Checking configuration access...');
-    console.log('✓ Full config accessed successfully');
+    if (!config) {
+      throw new Error('Failed to load configuration');
+    }
     
-    // Get the public configuration (without sensitive values)
+    console.log('✓ Configuration loaded successfully');
+    console.log(`  Environment: ${config.env}`);
+    console.log(`  Development mode: ${config.isDevelopment ? 'Yes' : 'No'}`);
+    
+    // Test configuration value access
+    console.log('\n2. Testing configuration access methods...');
+    
+    // Test direct config access
+    const directPortValue = config.infrastructure.port;
+    console.log(`  Direct access - Port: ${directPortValue}`);
+    
+    // Test getConfigValue utility
+    const utilityPortValue = getConfigValue<number>('infrastructure.port');
+    console.log(`  getConfigValue - Port: ${utilityPortValue}`);
+    
+    // Test compatibility functions
+    const compatPortValue = Number(getOptionalEnv('PORT', '3000'));
+    console.log(`  getOptionalEnv - Port: ${compatPortValue}`);
+    
+    if (directPortValue !== utilityPortValue || utilityPortValue !== compatPortValue) {
+      console.error('✗ Configuration access methods returned inconsistent values!');
+    } else {
+      console.log('✓ All configuration access methods work consistently');
+    }
+    
+    // Test public vs. private configuration
+    console.log('\n3. Testing public vs. private configuration...');
     const publicConfig = getPublicConfig();
     
-    console.log('\n3. Testing public vs. private configuration...');
-    const publicConfigString = JSON.stringify(publicConfig, null, 2);
+    // Convert to string for simple comparison
+    const publicConfigString = JSON.stringify(publicConfig);
     
     // Verify sensitive values are not present in public config
     const containsSensitiveValues = [
@@ -46,7 +73,7 @@ function testConfigurationSystem(): void {
         // Get the value safely based on where it should be in the config
         let sensitiveValue = '';
         if (key === 'databaseUrl') {
-          sensitiveValue = config.infrastructure.databaseUrl;
+          sensitiveValue = String(config.infrastructure.databaseUrl || '');
         } else {
           sensitiveValue = String(config.security[key as keyof typeof config.security] || '');
         }
@@ -122,5 +149,3 @@ function testConfigurationSystem(): void {
 if (require.main === module) {
   testConfigurationSystem();
 }
-
-export { testConfigurationSystem };

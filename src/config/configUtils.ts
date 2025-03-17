@@ -8,6 +8,16 @@
 import { getConfig } from './appConfig';
 
 /**
+ * Secret paths that should be redacted in logs
+ */
+const SECRET_PATHS = [
+  'security.jwtSecret',
+  'security.cookieSecret', 
+  'security.csrfSecret',
+  'infrastructure.databaseUrl'
+];
+
+/**
  * Get a configuration value, with fallback to environment variable
  * This provides a backward-compatible way to access configuration
  * 
@@ -18,52 +28,33 @@ import { getConfig } from './appConfig';
  */
 export function getConfigValue<T>(path: string, envVarName?: string, defaultValue?: T): T {
   try {
-    // Get the full configuration
+    // First try to get from configuration
     const config = getConfig();
+    const pathParts = path.split('.');
     
-    // Navigate through the path to get the value
-    const value = path.split('.').reduce((obj: any, key: string) => {
-      return obj && obj[key] !== undefined ? obj[key] : undefined;
-    }, config);
+    let value: any = config;
+    for (const part of pathParts) {
+      if (value === undefined || value === null) {
+        break;
+      }
+      value = value[part as keyof typeof value];
+    }
     
-    // If value exists in config, return it
-    if (value !== undefined) {
+    if (value !== undefined && value !== null) {
       return value as T;
     }
     
-    // Fall back to environment variable if provided
+    // If not found in config, try environment variable
     if (envVarName && process.env[envVarName] !== undefined) {
-      // Attempt to convert to appropriate type based on defaultValue
-      const envValue = process.env[envVarName];
-      
-      if (defaultValue === undefined) {
-        return envValue as unknown as T;
-      }
-      
-      // Type conversion based on defaultValue
-      switch (typeof defaultValue) {
-        case 'number':
-          return Number(envValue) as unknown as T;
-        case 'boolean':
-          return (envValue === 'true' || envValue === '1') as unknown as T;
-        default:
-          return envValue as unknown as T;
-      }
+      return process.env[envVarName] as unknown as T;
     }
     
-    // Return default value if provided
-    if (defaultValue !== undefined) {
-      return defaultValue;
-    }
-    
-    // If no value found and no default provided, throw error
-    throw new Error(`Configuration value not found for path: ${path}`);
-    
+    // Fall back to default value
+    return defaultValue as T;
   } catch (error) {
-    if (defaultValue !== undefined) {
-      return defaultValue;
-    }
-    throw error;
+    // If any error occurs, return the default value
+    console.warn(`Error getting config value for ${path}: ${error}`);
+    return defaultValue as T;
   }
 }
 
@@ -80,9 +71,8 @@ export function redactIfSecret(value: string | undefined, isSecret: boolean): st
     if (value.length <= 4) {
       return '****';
     }
-    
-    // Show first and last character, mask the rest
-    return `${value.substring(0, 1)}${'*'.repeat(value.length - 2)}${value.substring(value.length - 1)}`;
+    // For longer values, show the first and last characters with asterisks in between
+    return `${value.charAt(0)}****${value.charAt(value.length - 1)} (length: ${value.length})`;
   }
   
   return value;
@@ -94,14 +84,7 @@ export function redactIfSecret(value: string | undefined, isSecret: boolean): st
  * @returns Whether the path leads to a sensitive value
  */
 export function isSecretPath(path: string): boolean {
-  const sensitivePathPrefixes = [
-    'security.jwtSecret',
-    'security.cookieSecret',
-    'security.csrfSecret',
-    'infrastructure.databaseUrl',
-  ];
-  
-  return sensitivePathPrefixes.some(prefix => path === prefix || path.startsWith(`${prefix}.`));
+  return SECRET_PATHS.includes(path);
 }
 
 /**
@@ -110,10 +93,6 @@ export function isSecretPath(path: string): boolean {
  * @returns Redacted or safe value for logging
  */
 export function getRedactedConfigValue(path: string): string {
-  try {
-    const value = getConfigValue<any>(path);
-    return redactIfSecret(String(value), isSecretPath(path));
-  } catch (error) {
-    return '[not set]';
-  }
+  const value = getConfigValue<string>(path);
+  return redactIfSecret(value, isSecretPath(path));
 }

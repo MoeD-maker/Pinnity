@@ -5,6 +5,9 @@
  * It re-exports everything from the various configuration modules for easy access.
  */
 
+// Import functions for local use
+import { logAppConfig as _logAppConfig } from './appConfig';
+
 // Export the main configuration API
 export { 
   default as config,
@@ -45,8 +48,11 @@ export { testConfigurationSystem } from './configTest';
  */
 export function initializeConfig(): void {
   // Log that config is loaded (with redacted secrets)
-  logAppConfig();
+  _logAppConfig();
 }
+
+// Import these functions directly to use in the default export
+import { getConfig, getPublicConfig } from './appConfig';
 
 // Default export for easy importing
 export default {

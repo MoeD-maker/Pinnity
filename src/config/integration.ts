@@ -6,8 +6,22 @@
  * using environment variables to using the structured configuration system.
  */
 
-import { getConfig } from './appConfig';
-import { getConfigValue } from './configUtils';
+import { getConfigValue, isSecretPath } from './configUtils';
+
+/**
+ * Secret environment variable names that should be redacted in logs
+ */
+const SECRET_ENV_VARS = [
+  'JWT_SECRET',
+  'COOKIE_SECRET',
+  'CSRF_SECRET',
+  'DATABASE_URL',
+  'API_KEY',
+  'PASSWORD',
+  'TOKEN',
+  'SECRET',
+  'PRIVATE'
+];
 
 /**
  * Compatibility wrapper for environmentValidator.getRequiredEnv
@@ -17,64 +31,19 @@ import { getConfigValue } from './configUtils';
  * @returns The configuration value
  */
 export function getRequiredEnv(key: string, defaultValue?: string): string {
-  // Map common environment variables to config paths
-  const configPathMap: Record<string, string> = {
-    'JWT_SECRET': 'security.jwtSecret',
-    'COOKIE_SECRET': 'security.cookieSecret',
-    'CSRF_SECRET': 'security.csrfSecret',
-    'DATABASE_URL': 'infrastructure.databaseUrl',
-    'PORT': 'infrastructure.port',
-    'HOST': 'infrastructure.host',
-    'BCRYPT_ROUNDS': 'security.bcryptRounds',
-    'JWT_EXPIRES_IN': 'security.jwtExpiresIn',
-  };
+  // Convert from ENV_VAR to config path format
+  // e.g., JWT_SECRET -> security.jwtSecret
+  const configPath = convertEnvVarToConfigPath(key);
   
-  const config = getConfig();
-  const isProduction = config.isProduction;
+  // Try to get from config first
+  const configValue = getConfigValue<string>(configPath, key, defaultValue);
   
-  try {
-    // Check if this environment variable has a mapping to the config system
-    if (configPathMap[key]) {
-      const value = getConfigValue<string>(configPathMap[key], key);
-      if (value) return value;
-    }
-    
-    // If not found in config, fall back to environment variable
-    const value = process.env[key];
-    
-    if (!value) {
-      // In production, required values must be set
-      if (isProduction) {
-        throw new Error(`Required environment variable ${key} is not set`);
-      }
-      
-      // In development, use default value if provided
-      if (defaultValue !== undefined) {
-        console.warn(`WARNING: Required environment variable ${key} is not set. Using default value. This would be an error in production.`);
-        return defaultValue;
-      }
-      
-      // No default, but not in production
-      console.warn(`WARNING: Required environment variable ${key} is not set. This would be an error in production.`);
-      return '';
-    }
-    
-    return value;
-  } catch (error) {
-    // If we're in production and a required value is missing, this is a fatal error
-    if (isProduction) {
-      console.error(`FATAL: Required environment variable ${key} is not set or is invalid.`);
-      process.exit(1);
-    }
-    
-    // In development, use default value if provided
-    if (defaultValue !== undefined) {
-      console.warn(`WARNING: Error accessing environment variable ${key}: ${error}. Using default value.`);
-      return defaultValue;
-    }
-    
-    throw error;
+  if (!configValue && process.env.NODE_ENV === 'production') {
+    console.error(`Required environment variable ${key} is not set in production mode!`);
+    process.exit(1);
   }
+  
+  return configValue || defaultValue || '';
 }
 
 /**
@@ -85,30 +54,11 @@ export function getRequiredEnv(key: string, defaultValue?: string): string {
  * @returns The environment variable value or default
  */
 export function getOptionalEnv(key: string, defaultValue: string): string {
-  // Map common environment variables to config paths
-  const configPathMap: Record<string, string> = {
-    'JWT_SECRET': 'security.jwtSecret',
-    'COOKIE_SECRET': 'security.cookieSecret',
-    'CSRF_SECRET': 'security.csrfSecret',
-    'DATABASE_URL': 'infrastructure.databaseUrl',
-    'PORT': 'infrastructure.port',
-    'HOST': 'infrastructure.host',
-    'BCRYPT_ROUNDS': 'security.bcryptRounds',
-    'JWT_EXPIRES_IN': 'security.jwtExpiresIn',
-  };
+  // Convert from ENV_VAR to config path format
+  const configPath = convertEnvVarToConfigPath(key);
   
-  try {
-    // Check if this environment variable has a mapping to the config system
-    if (configPathMap[key]) {
-      const value = getConfigValue<string>(configPathMap[key], key, defaultValue);
-      return value;
-    }
-    
-    // If not found in config, fall back to environment variable or default
-    return process.env[key] || defaultValue;
-  } catch (error) {
-    return defaultValue;
-  }
+  // Get from configuration system with fallback to env var and default
+  return getConfigValue<string>(configPath, key, defaultValue);
 }
 
 /**
@@ -118,20 +68,66 @@ export function getOptionalEnv(key: string, defaultValue: string): string {
  * @returns True if the value should be redacted in logs
  */
 export function shouldRedactEnvVar(key: string): boolean {
-  // Common sensitive environment variables
-  const sensitiveKeys = [
-    'JWT_SECRET',
-    'COOKIE_SECRET',
-    'CSRF_SECRET',
-    'DATABASE_URL',
-    'API_KEY',
-    'PASSWORD',
-    'SECRET',
-    'TOKEN',
-    'PRIVATE'
-  ];
+  // Check if it's in our list of sensitive env vars
+  if (SECRET_ENV_VARS.some(secret => key.includes(secret))) {
+    return true;
+  }
   
-  return sensitiveKeys.some(sensitiveKey => 
-    key === sensitiveKey || key.includes(sensitiveKey) || key.includes('PASSWORD')
-  );
+  // Check if the equivalent config path is a secret
+  const configPath = convertEnvVarToConfigPath(key);
+  return isSecretPath(configPath);
+}
+
+/**
+ * Convert from environment variable format to configuration path
+ * @param envVar Environment variable name (e.g., JWT_SECRET)
+ * @returns Configuration path (e.g., security.jwtSecret)
+ */
+function convertEnvVarToConfigPath(envVar: string): string {
+  // Map of known environment variables to their configuration paths
+  const envToConfigMap: Record<string, string> = {
+    'JWT_SECRET': 'security.jwtSecret',
+    'COOKIE_SECRET': 'security.cookieSecret',
+    'CSRF_SECRET': 'security.csrfSecret',
+    'BCRYPT_ROUNDS': 'security.bcryptRounds',
+    'JWT_EXPIRES_IN': 'security.jwtExpiresIn',
+    'DATABASE_URL': 'infrastructure.databaseUrl',
+    'PORT': 'infrastructure.port',
+    'HOST': 'infrastructure.host',
+    'TRUST_PROXY': 'infrastructure.trustProxy',
+    'RATE_LIMIT_WINDOW': 'security.rateLimitWindow',
+    'RATE_LIMIT_MAX': 'security.rateLimitMax',
+    'DEAL_EXPIRATION_NOTIFICATION_HOURS': 'features.dealExpirationNotificationHours',
+    'MAX_DEAL_IMAGES_PER_BUSINESS': 'features.maxDealImagesPerBusiness',
+    'MAX_BUSINESS_DOCUMENTS_COUNT': 'features.maxBusinessDocumentsCount',
+    'MAX_FILE_UPLOAD_SIZE': 'features.maxFileUploadSize',
+    'ALLOWED_FILE_TYPES': 'features.allowedFileTypes',
+    'ENABLE_DEBUG_LOGGING': 'development.enableDebugLogging',
+    'MOCK_AUTH_ENABLED': 'development.mockAuthEnabled',
+    'SLOW_NETWORK_SIMULATION': 'development.slowNetworkSimulation',
+  };
+  
+  // Return mapped path if it exists, otherwise use best guess
+  if (envToConfigMap[envVar]) {
+    return envToConfigMap[envVar];
+  }
+  
+  // For unknown variables, make a best guess at the configuration path
+  // Convert from SNAKE_CASE to camelCase and guess at the category
+  const camelCased = envVar.toLowerCase()
+    .replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+  
+  // Try to determine the appropriate config section
+  if (envVar.includes('SECRET') || envVar.includes('KEY') || envVar.includes('TOKEN') || 
+      envVar.includes('PASSWORD') || envVar.includes('AUTH') || envVar.includes('HASH')) {
+    return `security.${camelCased}`;
+  } else if (envVar.includes('PORT') || envVar.includes('HOST') || envVar.includes('URL') || 
+             envVar.includes('PATH') || envVar.includes('DIR')) {
+    return `infrastructure.${camelCased}`;
+  } else if (envVar.includes('ENABLE') || envVar.includes('DEBUG') || envVar.includes('LOG') || 
+             envVar.includes('MODE')) {
+    return `development.${camelCased}`;
+  } else {
+    return `features.${camelCased}`;
+  }
 }
