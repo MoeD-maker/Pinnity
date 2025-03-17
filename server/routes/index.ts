@@ -4,7 +4,7 @@ import { adminRoutes } from './admin.routes.fixed';
 import { authRoutes } from './auth.routes.fixed';
 import { userRoutes } from './user.routes.fixed';
 import { dealRoutes } from './deal.routes';
-import { businessRoutes } from './business.routes';
+import { businessRoutes } from './business.routes.fixed';
 import { Request, Response, NextFunction } from "express";
 import { 
   deprecationMiddleware, 

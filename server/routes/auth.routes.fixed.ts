@@ -8,7 +8,7 @@ import { validate } from "../middleware/validationMiddleware";
 import { authSchemas } from "../schemas";
 import { authRateLimiter, securityRateLimiter } from "../middleware/rateLimit";
 import { setAuthCookie, clearCookie } from "../utils/cookieUtils";
-import { withCustomAge } from "../utils/cookieConfig";
+import { withCustomAge, authCookieConfig } from "../utils/cookieConfig";
 import { 
   createVersionedRoutes, 
   versionHeadersMiddleware,
@@ -49,6 +49,7 @@ export function authRoutes(app: Express): void {
       return res.status(500).json({ message: "Internal server error" });
     }
   });
+  
   // Create versioned and legacy routes for login
   const [versionedLoginPath, legacyLoginPath] = createVersionedRoutes('/auth/login');
   
@@ -85,7 +86,7 @@ export function authRoutes(app: Express): void {
           : 24 * 60 * 60 * 1000;    // 1 day
           
         // Use the withCustomAge helper which properly sets all properties
-        const cookieOptions = withCustomAge({}, maxAge);
+        const cookieOptions = withCustomAge(authCookieConfig, maxAge);
         
         console.log('Setting auth cookie with options:', cookieOptions);
         setAuthCookie(res, 'auth_token', token, cookieOptions);
@@ -138,7 +139,7 @@ export function authRoutes(app: Express): void {
           : 24 * 60 * 60 * 1000;    // 1 day
           
         // Use the withCustomAge helper which properly sets all properties
-        const cookieOptions = withCustomAge({}, maxAge);
+        const cookieOptions = withCustomAge(authCookieConfig, maxAge);
         
         console.log('Setting auth cookie with options:', cookieOptions);
         setAuthCookie(res, 'auth_token', token, cookieOptions);
@@ -189,8 +190,8 @@ export function authRoutes(app: Express): void {
         // Generate JWT token
         const token = generateToken(user);
         
-        // Set secure HTTP-only cookie with the token using withCustomAge helper
-        const cookieOptions = withCustomAge({}, 24 * 60 * 60 * 1000); // 1 day
+        // Set secure HTTP-only cookie with the token using cookie config utilities
+        const cookieOptions = withCustomAge(authCookieConfig, 24 * 60 * 60 * 1000); // 1 day
         
         console.log('Setting auth cookie with options:', cookieOptions);
         setAuthCookie(res, 'auth_token', token, cookieOptions);
@@ -239,8 +240,8 @@ export function authRoutes(app: Express): void {
         // Generate JWT token
         const token = generateToken(user);
         
-        // Set secure HTTP-only cookie with the token using withCustomAge helper
-        const cookieOptions = withCustomAge({}, 24 * 60 * 60 * 1000); // 1 day
+        // Set secure HTTP-only cookie with the token using cookie config utilities
+        const cookieOptions = withCustomAge(authCookieConfig, 24 * 60 * 60 * 1000); // 1 day
         
         console.log('Setting auth cookie with options (legacy route):', cookieOptions);
         setAuthCookie(res, 'auth_token', token, cookieOptions);
@@ -343,8 +344,8 @@ export function authRoutes(app: Express): void {
         // Generate JWT token
         const token = generateToken(user);
         
-        // Set secure HTTP-only cookie with the token using withCustomAge helper
-        const cookieOptions = withCustomAge({}, 24 * 60 * 60 * 1000); // 1 day
+        // Set secure HTTP-only cookie with the token using cookie config utilities
+        const cookieOptions = withCustomAge(authCookieConfig, 24 * 60 * 60 * 1000); // 1 day
         
         console.log('Setting auth cookie with options:', cookieOptions);
         setAuthCookie(res, 'auth_token', token, cookieOptions);
@@ -454,8 +455,8 @@ export function authRoutes(app: Express): void {
         // Generate JWT token
         const token = generateToken(user);
         
-        // Set secure HTTP-only cookie with the token using withCustomAge helper
-        const cookieOptions = withCustomAge({}, 24 * 60 * 60 * 1000); // 1 day
+        // Set secure HTTP-only cookie with the token using cookie config utilities
+        const cookieOptions = withCustomAge(authCookieConfig, 24 * 60 * 60 * 1000); // 1 day
         
         console.log('Setting auth cookie with options (legacy route):', cookieOptions);
         setAuthCookie(res, 'auth_token', token, cookieOptions);
