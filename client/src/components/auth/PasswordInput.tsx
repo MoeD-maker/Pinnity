@@ -1,17 +1,45 @@
-import { forwardRef, useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { forwardRef, useState, useEffect } from "react";
+import { Eye, EyeOff, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface PasswordInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
   error?: string;
+  showRequirements?: boolean;
 }
 
 const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
-  ({ label, className, error, ...props }, ref) => {
+  ({ label, className, error, showRequirements = true, ...props }, ref) => {
     const [showPassword, setShowPassword] = useState(false);
     const [focused, setFocused] = useState(false);
-    const hasValue = props.value !== undefined && props.value !== "";
+    const [password, setPassword] = useState<string>("");
+    const hasValue = password.length > 0;
+
+    // Password requirements validation state
+    const [requirements, setRequirements] = useState({
+      length: false,
+      uppercase: false,
+      number: false,
+      special: false
+    });
+
+    // Update internal password state when the input changes
+    const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      setPassword(e.target.value);
+      if (props.onChange) {
+        props.onChange(e);
+      }
+    };
+
+    // Validate requirements whenever password changes
+    useEffect(() => {
+      setRequirements({
+        length: password.length >= 8,
+        uppercase: /[A-Z]/.test(password),
+        number: /[0-9]/.test(password),
+        special: /[^A-Za-z0-9]/.test(password)
+      });
+    }, [password]);
 
     const togglePasswordVisibility = () => {
       setShowPassword((prev) => !prev);
@@ -34,6 +62,8 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             placeholder=" "
+            onChange={handlePasswordChange}
+            value={props.value as string || ""}
             {...props}
           />
           <label
@@ -54,6 +84,55 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
           </button>
         </div>
         {error && <p className="text-xs text-red-500">{error}</p>}
+        
+        {/* Password requirements section */}
+        {showRequirements && (
+          <div className={`mt-2 text-xs rounded-md p-2 ${hasValue ? 'bg-gray-50' : 'bg-gray-50'}`}>
+            <p className="font-medium text-sm mb-1 text-gray-600">Password requirements:</p>
+            <ul className="space-y-1 pl-0.5">
+              <li className="flex items-center gap-1.5">
+                {requirements.length ? (
+                  <Check className="h-3.5 w-3.5 text-green-600" />
+                ) : (
+                  <X className="h-3.5 w-3.5 text-gray-400" />
+                )}
+                <span className={requirements.length ? "text-green-700" : "text-gray-500"}>
+                  At least 8 characters
+                </span>
+              </li>
+              <li className="flex items-center gap-1.5">
+                {requirements.uppercase ? (
+                  <Check className="h-3.5 w-3.5 text-green-600" />
+                ) : (
+                  <X className="h-3.5 w-3.5 text-gray-400" />
+                )}
+                <span className={requirements.uppercase ? "text-green-700" : "text-gray-500"}>
+                  At least one uppercase letter
+                </span>
+              </li>
+              <li className="flex items-center gap-1.5">
+                {requirements.number ? (
+                  <Check className="h-3.5 w-3.5 text-green-600" />
+                ) : (
+                  <X className="h-3.5 w-3.5 text-gray-400" />
+                )}
+                <span className={requirements.number ? "text-green-700" : "text-gray-500"}>
+                  At least one number
+                </span>
+              </li>
+              <li className="flex items-center gap-1.5">
+                {requirements.special ? (
+                  <Check className="h-3.5 w-3.5 text-green-600" />
+                ) : (
+                  <X className="h-3.5 w-3.5 text-gray-400" />
+                )}
+                <span className={requirements.special ? "text-green-700" : "text-gray-500"}>
+                  At least one special character
+                </span>
+              </li>
+            </ul>
+          </div>
+        )}
       </div>
     );
   }

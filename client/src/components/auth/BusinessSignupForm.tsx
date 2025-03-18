@@ -15,7 +15,11 @@ import { apiRequest } from "@/lib/queryClient";
 import { uploadFormData } from "@/lib/api";
 import { Loader2 } from "lucide-react";
 
-export default function BusinessSignupForm() {
+export interface BusinessSignupFormProps {
+  setUserType?: (type: "individual" | "business") => void;
+}
+
+export default function BusinessSignupForm({ setUserType }: BusinessSignupFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, feedback: "Password is required" });
   const { toast } = useToast();
@@ -119,6 +123,21 @@ export default function BusinessSignupForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      {/* Back button */}
+      {setUserType && (
+        <Button 
+          type="button" 
+          variant="ghost" 
+          onClick={() => setUserType("individual")}
+          className="mb-4 text-sm font-medium text-gray-600 hover:text-[#00796B] flex items-center gap-1.5"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+          Back to Individual Signup
+        </Button>
+      )}
+      
       <FormInput
         label="Business name"
         {...register("businessName")}
@@ -238,6 +257,19 @@ export default function BusinessSignupForm() {
           {errors.termsAccepted && (
             <p className="text-xs text-red-500 mt-1">{errors.termsAccepted.message}</p>
           )}
+        </div>
+      </div>
+
+      {/* Approval time notice */}
+      <div className="bg-blue-50 border border-blue-200 rounded-md p-4 flex items-start gap-3">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <div className="text-sm text-blue-800">
+          <p className="font-medium">Verification Process</p>
+          <p>Business accounts typically require 1-2 business days for verification and approval.</p>
         </div>
       </div>
 
