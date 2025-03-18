@@ -19,10 +19,23 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
     const hasValue = currentValue.length > 0;
 
     // Password requirements validation state
-    const lengthValid = hasValue && currentValue.length >= 8;
-    const uppercaseValid = hasValue && /[A-Z]/.test(currentValue);
-    const numberValid = hasValue && /[0-9]/.test(currentValue);
-    const specialValid = hasValue && /[^A-Za-z0-9]/.test(currentValue);
+    // Only show as valid if the user has entered something
+    const lengthValid = currentValue.length >= 8;
+    const uppercaseValid = /[A-Z]/.test(currentValue);
+    const numberValid = /[0-9]/.test(currentValue);
+    const specialValid = /[^A-Za-z0-9]/.test(currentValue);
+    
+    // Define the requirements array for simpler management
+    const requirements = [
+      { key: "length", text: "At least 8 characters", met: lengthValid },
+      { key: "uppercase", text: "At least one uppercase letter", met: uppercaseValid },
+      { key: "number", text: "At least one number", met: numberValid },
+      { key: "special", text: "At least one special character", met: specialValid }
+    ].map(req => ({
+      ...req,
+      // Only show as failed if the user has started typing
+      status: !hasValue ? 'neutral' : req.met ? 'valid' : 'invalid'
+    }));
 
     const togglePasswordVisibility = () => {
       setShowPassword((prev) => !prev);
@@ -82,46 +95,24 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
           <div className="mt-2 text-xs rounded-md p-2 bg-gray-50">
             <p className="font-medium text-sm mb-1 text-gray-600">Password requirements:</p>
             <ul className="space-y-1 pl-0.5">
-              <li className="flex items-center gap-1.5">
-                {lengthValid ? (
-                  <Check className="h-3.5 w-3.5 text-green-600" />
-                ) : (
-                  <X className="h-3.5 w-3.5 text-gray-400" />
-                )}
-                <span className={lengthValid ? "text-green-700" : "text-gray-500"}>
-                  At least 8 characters
-                </span>
-              </li>
-              <li className="flex items-center gap-1.5">
-                {uppercaseValid ? (
-                  <Check className="h-3.5 w-3.5 text-green-600" />
-                ) : (
-                  <X className="h-3.5 w-3.5 text-gray-400" />
-                )}
-                <span className={uppercaseValid ? "text-green-700" : "text-gray-500"}>
-                  At least one uppercase letter
-                </span>
-              </li>
-              <li className="flex items-center gap-1.5">
-                {numberValid ? (
-                  <Check className="h-3.5 w-3.5 text-green-600" />
-                ) : (
-                  <X className="h-3.5 w-3.5 text-gray-400" />
-                )}
-                <span className={numberValid ? "text-green-700" : "text-gray-500"}>
-                  At least one number
-                </span>
-              </li>
-              <li className="flex items-center gap-1.5">
-                {specialValid ? (
-                  <Check className="h-3.5 w-3.5 text-green-600" />
-                ) : (
-                  <X className="h-3.5 w-3.5 text-gray-400" />
-                )}
-                <span className={specialValid ? "text-green-700" : "text-gray-500"}>
-                  At least one special character
-                </span>
-              </li>
+              {requirements.map((requirement) => (
+                <li key={requirement.key} className="flex items-center gap-1.5">
+                  {requirement.status === 'valid' ? (
+                    <Check className="h-3.5 w-3.5 text-green-600" />
+                  ) : requirement.status === 'invalid' ? (
+                    <X className="h-3.5 w-3.5 text-red-500" />
+                  ) : (
+                    <X className="h-3.5 w-3.5 text-gray-400" />
+                  )}
+                  <span className={
+                    requirement.status === 'valid' ? "text-green-700" : 
+                    requirement.status === 'invalid' ? "text-red-500" :
+                    "text-gray-500"
+                  }>
+                    {requirement.text}
+                  </span>
+                </li>
+              ))}
             </ul>
           </div>
         )}
