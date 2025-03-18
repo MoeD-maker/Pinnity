@@ -117,12 +117,12 @@ export default function IndividualSignupForm() {
             onChange: onPasswordChange,
           })}
           error={errors.password?.message}
-          showRequirements={true}
         />
         
         <PasswordStrengthIndicator 
           score={passwordStrength.score} 
-          feedback={passwordStrength.feedback} 
+          feedback={passwordStrength.feedback}
+          password={watch("password") || ""}
         />
       </div>
 

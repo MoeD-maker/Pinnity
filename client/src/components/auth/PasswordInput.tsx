@@ -1,15 +1,14 @@
-import { forwardRef, useState, useEffect } from "react";
-import { Eye, EyeOff, Check, X } from "lucide-react";
+import { forwardRef, useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface PasswordInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
   error?: string;
-  showRequirements?: boolean;
 }
 
 const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
-  ({ label, className, error, showRequirements = true, onChange, ...props }, ref) => {
+  ({ label, className, error, onChange, ...props }, ref) => {
     const [showPassword, setShowPassword] = useState(false);
     const [focused, setFocused] = useState(false);
     const [passwordValue, setPasswordValue] = useState("");
@@ -17,12 +16,6 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
     // Get the current value from props to determine if we have a value
     const currentValue = props.value as string || "";
     const hasValue = currentValue.length > 0;
-
-    // Password requirements validation state
-    const lengthValid = hasValue && currentValue.length >= 8;
-    const uppercaseValid = hasValue && /[A-Z]/.test(currentValue);
-    const numberValid = hasValue && /[0-9]/.test(currentValue);
-    const specialValid = hasValue && /[^A-Za-z0-9]/.test(currentValue);
 
     const togglePasswordVisibility = () => {
       setShowPassword((prev) => !prev);
@@ -76,55 +69,6 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
           </button>
         </div>
         {error && <p className="text-xs text-red-500">{error}</p>}
-        
-        {/* Password requirements section */}
-        {showRequirements && (
-          <div className="mt-2 text-xs rounded-md p-2 bg-gray-50">
-            <p className="font-medium text-sm mb-1 text-gray-600">Password requirements:</p>
-            <ul className="space-y-1 pl-0.5">
-              <li className="flex items-center gap-1.5">
-                {lengthValid ? (
-                  <Check className="h-3.5 w-3.5 text-green-600" />
-                ) : (
-                  <X className="h-3.5 w-3.5 text-gray-400" />
-                )}
-                <span className={lengthValid ? "text-green-700" : "text-gray-500"}>
-                  At least 8 characters
-                </span>
-              </li>
-              <li className="flex items-center gap-1.5">
-                {uppercaseValid ? (
-                  <Check className="h-3.5 w-3.5 text-green-600" />
-                ) : (
-                  <X className="h-3.5 w-3.5 text-gray-400" />
-                )}
-                <span className={uppercaseValid ? "text-green-700" : "text-gray-500"}>
-                  At least one uppercase letter
-                </span>
-              </li>
-              <li className="flex items-center gap-1.5">
-                {numberValid ? (
-                  <Check className="h-3.5 w-3.5 text-green-600" />
-                ) : (
-                  <X className="h-3.5 w-3.5 text-gray-400" />
-                )}
-                <span className={numberValid ? "text-green-700" : "text-gray-500"}>
-                  At least one number
-                </span>
-              </li>
-              <li className="flex items-center gap-1.5">
-                {specialValid ? (
-                  <Check className="h-3.5 w-3.5 text-green-600" />
-                ) : (
-                  <X className="h-3.5 w-3.5 text-gray-400" />
-                )}
-                <span className={specialValid ? "text-green-700" : "text-gray-500"}>
-                  At least one special character
-                </span>
-              </li>
-            </ul>
-          </div>
-        )}
       </div>
     );
   }
