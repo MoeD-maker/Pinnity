@@ -21,6 +21,7 @@ export default function IndividualSignupForm() {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<IndividualSignupFormValues>({
     resolver: zodResolver(individualSignupSchema),
@@ -149,11 +150,11 @@ export default function IndividualSignupForm() {
         <div className="flex items-center h-5">
           <Checkbox 
             id="terms" 
-            checked={watch("termsAccepted")}
             onCheckedChange={(checked) => {
-              register("termsAccepted").onChange({
-                target: { name: "termsAccepted", value: checked }
-              } as React.ChangeEvent<HTMLInputElement>);
+              const checkValue = checked === true;
+              const target = { name: "termsAccepted", value: checkValue };
+              // Use setValue instead of manually creating a change event
+              setValue("termsAccepted", checkValue, { shouldValidate: true });
             }}
           />
         </div>

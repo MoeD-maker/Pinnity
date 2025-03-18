@@ -44,7 +44,7 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
       phone: "",
       address: "",
       // This will be properly validated during form submission
-      termsAccepted: false as unknown as true,
+      termsAccepted: false,
     },
     mode: "onChange",
   });
@@ -261,7 +261,11 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
         <div className="flex items-center h-5">
           <Checkbox 
             id="business-terms" 
-            {...register("termsAccepted")}
+            onCheckedChange={(checked) => {
+              register("termsAccepted").onChange({
+                target: { name: "termsAccepted", value: checked === true }
+              } as React.ChangeEvent<HTMLInputElement>);
+            }}
           />
         </div>
         <div className="ml-3 text-sm">
