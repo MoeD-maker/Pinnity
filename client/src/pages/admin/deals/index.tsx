@@ -183,7 +183,7 @@ export default function DealsPage() {
   const filteredDeals = React.useMemo(() => {
     if (!deals) return [];
     
-    return deals.filter(deal => {
+    return deals.filter((deal: Deal) => {
       // Filter by status
       if (filter.status !== "all" && deal.status !== filter.status) {
         return false;
@@ -234,7 +234,7 @@ export default function DealsPage() {
   // Toggle select all deals
   useEffect(() => {
     if (selectAll) {
-      setSelectedDeals(filteredDeals.map(d => d.id));
+      setSelectedDeals(filteredDeals.map((d: Deal) => d.id));
     } else {
       setSelectedDeals([]);
     }
@@ -268,13 +268,21 @@ export default function DealsPage() {
 
   // Get unique categories and businesses for filters
   const categories = React.useMemo(() => {
-    if (!deals) return [];
-    return Array.from(new Set(deals.map((d: Deal) => d.category)));
+    if (!deals) return [] as string[];
+    return Array.from(new Set(deals.map((d: Deal) => d.category))) as string[];
   }, [deals]);
 
   const businesses = React.useMemo(() => {
     if (!deals) return [];
-    return Array.from(new Set(deals.map((d: Deal) => d.business))).map((b: Business) => ({
+    // Extract unique businesses
+    const businessMap = new Map();
+    deals.forEach((d: Deal) => {
+      if (!businessMap.has(d.business.id)) {
+        businessMap.set(d.business.id, d.business);
+      }
+    });
+    // Convert to array of business objects
+    return Array.from(businessMap.values()).map((b: Business) => ({
       id: b.id,
       name: b.businessName
     }));
@@ -337,10 +345,10 @@ export default function DealsPage() {
   };
 
   // Counts by status
-  const pendingDealsCount = deals?.filter(d => d.status === "pending").length || 0;
-  const approvedDealsCount = deals?.filter(d => d.status === "approved").length || 0;
-  const rejectedDealsCount = deals?.filter(d => d.status === "rejected").length || 0;
-  const expiredDealsCount = deals?.filter(d => d.status === "expired").length || 0;
+  const pendingDealsCount = deals?.filter((d: Deal) => d.status === "pending").length || 0;
+  const approvedDealsCount = deals?.filter((d: Deal) => d.status === "approved").length || 0;
+  const rejectedDealsCount = deals?.filter((d: Deal) => d.status === "rejected").length || 0;
+  const expiredDealsCount = deals?.filter((d: Deal) => d.status === "expired").length || 0;
 
   if (isLoading) {
     return (
@@ -564,7 +572,7 @@ export default function DealsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredDeals.map((deal) => (
+                  {filteredDeals.map((deal: Deal) => (
                     <TableRow key={deal.id}>
                       <TableCell>
                         <Checkbox 
