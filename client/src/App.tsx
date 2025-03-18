@@ -54,25 +54,40 @@ const LoadingFallback = () => (
 // Network status alert component with auto-dismiss for online status
 function NetworkStatusAlert() {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [wasOffline, setWasOffline] = useState(!navigator.onLine); // Track previous state
   const [visible, setVisible] = useState(isOffline); // Only show initially if offline
   
   useEffect(() => {
     // Handle online/offline status changes
     const handleStatusChange = (status: boolean) => {
+      // Check if transitioning from offline to online
+      const isComingBackOnline = wasOffline && !status;
+      
+      // Update state
+      setWasOffline(isOffline);
       setIsOffline(status);
       setVisible(true);
       
       // Auto-hide after 5 seconds if back online
       if (!status) {
         setTimeout(() => setVisible(false), 5000);
+        
+        // If transitioning from offline to online, dispatch event
+        if (isComingBackOnline) {
+          console.log('Connection restored - dispatching connectionRestored event');
+          window.dispatchEvent(new CustomEvent('connectionRestored'));
+        }
       }
     };
     
     // Browser online/offline event listeners
     const handleOnline = () => {
+      // Always track transition from offline to online
+      if (isOffline) {
+        console.log('Connection restored - dispatching connectionRestored event');
+        window.dispatchEvent(new CustomEvent('connectionRestored'));
+      }
       handleStatusChange(false);
-      // Dispatch a custom event to trigger data refresh across the app
-      window.dispatchEvent(new CustomEvent('connectionRestored'));
     };
     const handleOffline = () => handleStatusChange(true);
     
@@ -80,11 +95,13 @@ function NetworkStatusAlert() {
     const handleStatusEvent = (e: Event) => {
       const customEvent = e as CustomEvent;
       if (customEvent.detail && customEvent.detail.hasOwnProperty('isOffline')) {
-        handleStatusChange(customEvent.detail.isOffline);
+        const newOfflineStatus = customEvent.detail.isOffline;
         // If connection is restored programmatically, also dispatch refresh event
-        if (!customEvent.detail.isOffline) {
+        if (isOffline && !newOfflineStatus) {
+          console.log('Connection programmatically restored - dispatching connectionRestored event');
           window.dispatchEvent(new CustomEvent('connectionRestored'));
         }
+        handleStatusChange(newOfflineStatus);
       }
     };
     
@@ -152,14 +169,14 @@ function useOfflineData() {
 
     // Set up event listeners
     const handleOnline = () => {
-      console.log('Connection restored - online');
+      console.log('Connection restored - online (useOfflineData)');
       setIsOffline(false);
-      // Dispatch a custom event to trigger data refresh across the app
-      window.dispatchEvent(new CustomEvent('connectionRestored'));
+      // Note: No need to dispatch connectionRestored here
+      // The NetworkStatusAlert component already handles this
     };
 
     const handleOffline = () => {
-      console.log('Connection lost - offline');
+      console.log('Connection lost - offline (useOfflineData)');
       setIsOffline(true);
     };
 

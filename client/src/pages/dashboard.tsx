@@ -25,7 +25,8 @@ import { isExpired } from '@/utils/dealReminders';
 import { 
   getCacheStatusFromResponse,
   getFreshCacheStatus,
-  listenForConnectionRestoration
+  listenForConnectionRestoration,
+  CacheStatus
 } from '@/utils/dealsCacheManager';
 
 // Use the barrel export for dashboard components
