@@ -1,53 +1,46 @@
-import { CheckCircle, Circle } from "lucide-react";
+import { Check } from "lucide-react";
 
 interface RegistrationStepperProps {
   steps: string[];
   currentStep: number;
-  className?: string;
 }
 
-export default function RegistrationStepper({ 
-  steps, 
-  currentStep, 
-  className = "" 
-}: RegistrationStepperProps) {
+export function RegistrationStepper({ steps, currentStep }: RegistrationStepperProps) {
   return (
-    <div className={`w-full mb-8 ${className}`}>
+    <div className="mb-8">
       <div className="flex items-center justify-between">
         {steps.map((step, index) => (
-          <div key={index} className="flex flex-col items-center">
-            <div className="flex items-center">
+          <div key={index} className="flex flex-col items-center relative w-full">
+            {/* Line connector */}
+            {index < steps.length - 1 && (
+              <div
+                className={`absolute top-5 w-full h-1 right-1/2 ${
+                  index < currentStep ? "bg-[#00796B]" : "bg-gray-200"
+                }`}
+              />
+            )}
+            
+            {/* Circle with number or checkmark */}
+            <div
+              className={`relative z-10 flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+                index < currentStep
+                  ? "border-[#00796B] bg-[#00796B] text-white"
+                  : index === currentStep
+                  ? "border-[#00796B] text-[#00796B]"
+                  : "border-gray-300 text-gray-400"
+              }`}
+            >
               {index < currentStep ? (
-                <div className="w-8 h-8 flex items-center justify-center rounded-full bg-[#00796B] text-white">
-                  <CheckCircle className="w-5 h-5" />
-                </div>
-              ) : index === currentStep ? (
-                <div className="w-8 h-8 flex items-center justify-center rounded-full border-2 border-[#00796B] text-[#00796B]">
-                  <span className="text-sm font-medium">{index + 1}</span>
-                </div>
+                <Check className="h-5 w-5" />
               ) : (
-                <div className="w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 text-gray-400">
-                  <span className="text-sm font-medium">{index + 1}</span>
-                </div>
-              )}
-              
-              {/* Connect with line if not last step */}
-              {index < steps.length - 1 && (
-                <div
-                  className={`h-1 w-10 md:w-20 ${
-                    index < currentStep ? "bg-[#00796B]" : "bg-gray-300"
-                  }`}
-                ></div>
+                <span className="text-sm font-medium">{index + 1}</span>
               )}
             </div>
             
-            <span 
-              className={`mt-2 text-xs md:text-sm ${
-                index === currentStep 
-                  ? "font-medium text-[#00796B]" 
-                  : index < currentStep 
-                    ? "font-medium text-gray-600" 
-                    : "text-gray-400"
+            {/* Step label */}
+            <span
+              className={`mt-2 text-xs font-medium ${
+                index <= currentStep ? "text-[#00796B]" : "text-gray-500"
               }`}
             >
               {step}
@@ -58,3 +51,5 @@ export default function RegistrationStepper({
     </div>
   );
 }
+
+export default RegistrationStepper;

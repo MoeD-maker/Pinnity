@@ -9,11 +9,13 @@ export interface PasswordInputProps extends React.InputHTMLAttributes<HTMLInputE
 }
 
 const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
-  ({ label, className, error, showRequirements = true, ...props }, ref) => {
+  ({ label, className, error, showRequirements = true, onChange, ...props }, ref) => {
     const [showPassword, setShowPassword] = useState(false);
     const [focused, setFocused] = useState(false);
-    const [password, setPassword] = useState<string>("");
-    const hasValue = password.length > 0;
+    
+    // Get the current value from props to determine if we have a value
+    const currentValue = props.value as string || "";
+    const hasValue = currentValue.length > 0;
 
     // Password requirements validation state
     const [requirements, setRequirements] = useState({
@@ -23,26 +25,27 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
       special: false
     });
 
-    // Update internal password state when the input changes
-    const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      setPassword(e.target.value);
-      if (props.onChange) {
-        props.onChange(e);
-      }
-    };
-
-    // Validate requirements whenever password changes
+    // Update requirements whenever the value changes
     useEffect(() => {
-      setRequirements({
-        length: password.length >= 8,
-        uppercase: /[A-Z]/.test(password),
-        number: /[0-9]/.test(password),
-        special: /[^A-Za-z0-9]/.test(password)
-      });
-    }, [password]);
+      if (typeof currentValue === 'string') {
+        setRequirements({
+          length: currentValue.length >= 8,
+          uppercase: /[A-Z]/.test(currentValue),
+          number: /[0-9]/.test(currentValue),
+          special: /[^A-Za-z0-9]/.test(currentValue)
+        });
+      }
+    }, [currentValue]);
 
     const togglePasswordVisibility = () => {
       setShowPassword((prev) => !prev);
+    };
+
+    // Handle input change, forwarding the event to the parent
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (onChange) {
+        onChange(e);
+      }
     };
 
     return (
@@ -62,8 +65,7 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             placeholder=" "
-            onChange={handlePasswordChange}
-            value={props.value as string || ""}
+            onChange={handleInputChange}
             {...props}
           />
           <label
