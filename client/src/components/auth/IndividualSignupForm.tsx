@@ -166,7 +166,22 @@ export default function IndividualSignupForm() {
             htmlFor="terms" 
             className={`${errors.termsAccepted ? "text-red-500" : "text-gray-500"}`}
           >
-            I agree to the <a href="#" className="text-[#00796B] hover:text-[#004D40]">Terms of Service</a> and <a href="#" className="text-[#00796B] hover:text-[#004D40]">Privacy Policy</a>
+            I agree to the{" "}
+            <button 
+              type="button"
+              onClick={() => setTermsModalOpen(true)} 
+              className="text-[#00796B] hover:text-[#004D40] hover:underline"
+            >
+              Terms of Service
+            </button>
+            {" "}and{" "}
+            <button 
+              type="button"
+              onClick={() => setPrivacyModalOpen(true)} 
+              className="text-[#00796B] hover:text-[#004D40] hover:underline"
+            >
+              Privacy Policy
+            </button>
           </label>
           {errors.termsAccepted && (
             <p className="text-xs text-red-500 mt-1">{errors.termsAccepted.message}</p>
@@ -188,6 +203,21 @@ export default function IndividualSignupForm() {
           "Create Account"
         )}
       </Button>
+
+      {/* Policy Modals */}
+      <PolicyModal
+        title="Terms of Service"
+        isOpen={termsModalOpen}
+        onClose={() => setTermsModalOpen(false)}
+        type="terms"
+      />
+
+      <PolicyModal
+        title="Privacy Policy"
+        isOpen={privacyModalOpen}
+        onClose={() => setPrivacyModalOpen(false)}
+        type="privacy"
+      />
     </form>
   );
 }
