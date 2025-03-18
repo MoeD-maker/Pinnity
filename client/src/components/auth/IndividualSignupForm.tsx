@@ -68,8 +68,8 @@ export default function IndividualSignupForm() {
       // Store token in localStorage for login persistence
       if (response.token) {
         localStorage.setItem('token', response.token);
-        // Redirect to dashboard
-        window.location.href = "/";
+        // Redirect to onboarding flow
+        window.location.href = `/onboarding/individual/${response.userId}`;
       } else {
         // Redirect to login page
         window.location.href = "/auth";

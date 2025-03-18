@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { ToastProvider } from "@/components/ui/toast";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth";
+import OnboardingPage from "@/pages/onboarding";
 import Dashboard from "@/pages/dashboard";
 import MainLayout from "@/components/layout/MainLayout";
 import TestLogin from "./test-login";
@@ -307,6 +308,7 @@ function Router() {
     <Switch>
       {/* Public routes - no authentication required */}
       <Route path="/auth" component={AuthPage}/>
+      <Route path="/onboarding/:userType/:userId" component={OnboardingPage}/>
       <Route path="/test-login" component={TestLogin}/>
       <Route path="/simple-explore" component={SimpleExplorePage}/>
       <Route path="/test-page" component={TestPage}/>

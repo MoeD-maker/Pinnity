@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { apiRequest } from "@/lib/queryClient";
 import { uploadFormData } from "@/lib/api";
 import { Loader2 } from "lucide-react";
+import RegistrationStepper from "@/components/onboarding/RegistrationStepper";
 
 export interface BusinessSignupFormProps {
   setUserType?: (type: "individual" | "business") => void;
@@ -94,8 +95,8 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
       // Store token in localStorage for login persistence
       if (result.token) {
         localStorage.setItem('token', result.token);
-        // Redirect to dashboard
-        window.location.href = "/";
+        // Redirect to onboarding flow
+        window.location.href = `/onboarding/business/${result.userId}`;
       } else {
         // Redirect to login page
         window.location.href = "/auth";
@@ -121,8 +122,22 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
     { value: "other", label: "Other" },
   ];
 
+  // Define registration steps for the stepper
+  const registrationSteps = [
+    "Account Type",
+    "Business Info",
+    "Verification",
+    "Review"
+  ];
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      {/* Registration progress stepper */}
+      <RegistrationStepper 
+        steps={registrationSteps} 
+        currentStep={1} 
+      />
+    
       {/* Back button */}
       {setUserType && (
         <Button 
