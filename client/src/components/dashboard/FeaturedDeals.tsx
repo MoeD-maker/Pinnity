@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Heart } from 'lucide-react';
+import { Heart, Database } from 'lucide-react';
 import { isExpired, isExpiringSoon } from '@/utils/dealReminders';
 import ExpiredBadge from '@/components/deals/ExpiredBadge';
 import ExpiringSoonBadge from '@/components/deals/ExpiringSoonBadge';
@@ -14,6 +14,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import CachedDataAlert from '@/components/ui/CachedDataAlert';
 
 // Feature Deal Favorite Button
 interface FeaturedDealFavoriteButtonProps {
@@ -142,9 +143,19 @@ interface FeaturedDealsProps {
   deals: (Deal & { business: any })[];
   isLoading: boolean;
   onSelect: (dealId: number) => void;
+  isCached?: boolean;
+  cacheDate?: string | number | Date;
+  onRefresh?: () => void;
 }
 
-export default function FeaturedDeals({ deals, isLoading, onSelect }: FeaturedDealsProps) {
+export default function FeaturedDeals({ 
+  deals, 
+  isLoading, 
+  onSelect,
+  isCached = false,
+  cacheDate,
+  onRefresh 
+}: FeaturedDealsProps) {
   if (isLoading) {
     return (
       <div className="flex overflow-x-auto gap-4 pb-4 px-0 max-w-[100vw] hide-scrollbar">
@@ -164,15 +175,24 @@ export default function FeaturedDeals({ deals, isLoading, onSelect }: FeaturedDe
   }
 
   return (
-    <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 px-0 sm:px-0 max-w-[100vw] -mx-2 px-2 sm:mx-0 sm:px-0">
-      {deals.map((deal) => (
-        <FeaturedDealCard 
-          key={deal.id} 
-          deal={deal} 
-          onSelect={() => onSelect(deal.id)} 
-        />
-      ))}
-    </div>
+    <>
+      <CachedDataAlert 
+        isCached={isCached} 
+        cachedDate={cacheDate} 
+        onRefresh={onRefresh}
+        className="mb-4"
+      />
+      <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 px-0 sm:px-0 max-w-[100vw] -mx-2 px-2 sm:mx-0 sm:px-0">
+        {deals.map((deal) => (
+          <FeaturedDealCard 
+            key={deal.id} 
+            deal={deal} 
+            onSelect={() => onSelect(deal.id)} 
+            isCached={isCached}
+          />
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -180,9 +200,10 @@ export default function FeaturedDeals({ deals, isLoading, onSelect }: FeaturedDe
 interface FeaturedDealCardProps {
   deal: Deal & { business: any };
   onSelect: () => void;
+  isCached?: boolean;
 }
 
-function FeaturedDealCard({ deal, onSelect }: FeaturedDealCardProps) {
+function FeaturedDealCard({ deal, onSelect, isCached = false }: FeaturedDealCardProps) {
   const { ref, inView } = useInView({
     triggerOnce: true,
     threshold: 0.1,
@@ -223,6 +244,16 @@ function FeaturedDealCard({ deal, onSelect }: FeaturedDealCardProps) {
           <div className="absolute top-2 left-2">
             <FeaturedDealFavoriteButton dealId={deal.id} />
           </div>
+          
+          {/* Cache indicator for featured deals */}
+          {isCached && (
+            <div className="absolute top-2 right-2">
+              <Badge variant="outline" className="bg-amber-100/90 text-amber-800 border-amber-200 text-xs flex gap-1 items-center px-2 py-0.5">
+                <Database className="h-3 w-3" />
+                <span>Cached</span>
+              </Badge>
+            </div>
+          )}
         </div>
       ) : (
         <div className="aspect-[4/3] bg-muted animate-pulse" />

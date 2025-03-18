@@ -78,19 +78,64 @@ export default function Dashboard() {
     }
   }, []);
 
+  // State for tracking cached data status
+  const [dealsCacheStatus, setDealsCacheStatus] = useState({
+    isCached: false,
+    cacheDate: null as null | number
+  });
+  
+  const [featuredDealsCacheStatus, setFeaturedDealsCacheStatus] = useState({
+    isCached: false,
+    cacheDate: null as null | number
+  });
+
   // Fetch all deals
-  const { data: deals, isLoading: isLoadingDeals } = useQuery({
+  const { data: deals, isLoading: isLoadingDeals, refetch: refetchDeals } = useQuery({
     queryKey: ['/api/deals'],
     queryFn: async () => {
-      return apiRequest('/api/deals');
+      try {
+        const response = await fetch('/api/deals');
+        
+        // Check if response is from cache
+        const isCached = response.headers.get('X-Is-Cached') === 'true';
+        const cacheDate = response.headers.get('X-Cache-Date');
+        
+        // Update cache status
+        setDealsCacheStatus({
+          isCached,
+          cacheDate: cacheDate ? parseInt(cacheDate, 10) : null
+        });
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Error fetching deals:', error);
+        throw error;
+      }
     },
   });
 
   // Fetch featured deals
-  const { data: featuredDeals, isLoading: isLoadingFeatured } = useQuery({
+  const { data: featuredDeals, isLoading: isLoadingFeatured, refetch: refetchFeaturedDeals } = useQuery({
     queryKey: ['/api/deals/featured'],
     queryFn: async () => {
-      return apiRequest('/api/deals/featured?limit=5');
+      try {
+        const response = await fetch('/api/deals/featured?limit=5');
+        
+        // Check if response is from cache
+        const isCached = response.headers.get('X-Is-Cached') === 'true';
+        const cacheDate = response.headers.get('X-Cache-Date');
+        
+        // Update cache status
+        setFeaturedDealsCacheStatus({
+          isCached,
+          cacheDate: cacheDate ? parseInt(cacheDate, 10) : null
+        });
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Error fetching featured deals:', error);
+        throw error;
+      }
     },
   });
 
@@ -293,6 +338,9 @@ export default function Dashboard() {
             })} 
             isLoading={isLoadingFeatured}
             onSelect={handleDealSelect}
+            isCached={featuredDealsCacheStatus.isCached}
+            cacheDate={featuredDealsCacheStatus.cacheDate}
+            onRefresh={() => refetchFeaturedDeals()}
           />
         </div>
       )}
@@ -325,6 +373,9 @@ export default function Dashboard() {
             deals={filteredDeals} 
             isLoading={isLoadingDeals}
             onSelect={handleDealSelect}
+            isCached={dealsCacheStatus.isCached}
+            cacheDate={dealsCacheStatus.cacheDate}
+            onRefresh={() => refetchDeals()}
           />
         ) : (
           <DealMap 

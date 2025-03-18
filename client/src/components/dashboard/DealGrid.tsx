@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Heart, MapPin, Calendar, Clock } from 'lucide-react';
+import { Heart, MapPin, Calendar, Clock, Database } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { isExpiringSoon, getExpirationText, isExpired } from '@/utils/dealReminders';
 import ExpiringSoonBadge from '@/components/deals/ExpiringSoonBadge';
@@ -13,6 +13,7 @@ import ExpiredBadge from '@/components/deals/ExpiredBadge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import CachedDataAlert from '@/components/ui/CachedDataAlert';
 
 // Use a looser type for the API response since it may not match the database schema exactly
 interface DealWithBusiness {
@@ -39,9 +40,19 @@ interface DealGridProps {
   deals: DealWithBusiness[];
   isLoading: boolean;
   onSelect: (dealId: number) => void;
+  isCached?: boolean;
+  cacheDate?: string | number | Date;
+  onRefresh?: () => void;
 }
 
-export default function DealGrid({ deals, isLoading, onSelect }: DealGridProps) {
+export default function DealGrid({ 
+  deals, 
+  isLoading, 
+  onSelect, 
+  isCached = false,
+  cacheDate,
+  onRefresh
+}: DealGridProps) {
   // For optimization, we could implement virtualization for large lists
 
   if (isLoading) {
@@ -64,24 +75,34 @@ export default function DealGrid({ deals, isLoading, onSelect }: DealGridProps) 
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full pb-16">
-      {deals.map((deal) => (
-        <DealCard 
-          key={deal.id} 
-          deal={deal} 
-          onSelect={() => onSelect(deal.id)} 
-        />
-      ))}
-    </div>
+    <>
+      <CachedDataAlert 
+        isCached={isCached} 
+        cachedDate={cacheDate} 
+        onRefresh={onRefresh}
+        className="mb-4"
+      />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full pb-16">
+        {deals.map((deal) => (
+          <DealCard 
+            key={deal.id} 
+            deal={deal} 
+            onSelect={() => onSelect(deal.id)} 
+            isCached={isCached}
+          />
+        ))}
+      </div>
+    </>
   );
 }
 
 interface DealCardProps {
   deal: DealWithBusiness;
   onSelect: () => void;
+  isCached?: boolean;
 }
 
-function DealCard({ deal, onSelect }: DealCardProps) {
+function DealCard({ deal, onSelect, isCached = false }: DealCardProps) {
   const { ref, inView } = useInView({
     triggerOnce: true,
     threshold: 0.1,
@@ -113,6 +134,15 @@ function DealCard({ deal, onSelect }: DealCardProps) {
           </div>
           <FavoriteButton dealId={deal.id} />
           
+          {/* Cache indicator for individual deal cards */}
+          {isCached && (
+            <div className="absolute bottom-2 right-2">
+              <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200 text-xs flex gap-1 items-center px-2 py-0.5">
+                <Database className="h-3 w-3" />
+                <span>Cached</span>
+              </Badge>
+            </div>
+          )}
         </div>
       ) : (
         <div className="aspect-video bg-muted animate-pulse" />
