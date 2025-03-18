@@ -11,6 +11,13 @@ import CategoryFilter from '@/components/dashboard/CategoryFilter';
 import { CATEGORIES } from '@/components/dashboard/CategoryFilter';
 import DealGrid from '@/components/dashboard/DealGrid';
 import DealDetail from '@/components/dashboard/DealDetail';
+import CachedDataAlert from '@/components/ui/CachedDataAlert';
+import { 
+  getCacheStatusFromResponse, 
+  getFreshCacheStatus,
+  listenForConnectionRestoration,
+  CacheStatus
+} from '@/utils/dealsCacheManager';
 // Import the Deal type
 import { Deal } from '@shared/schema';
 
@@ -37,6 +44,12 @@ export default function ExplorePage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(true);
   
+  // State for tracking cached data status
+  const [dealsCacheStatus, setDealsCacheStatus] = useState<CacheStatus>({
+    isCached: false,
+    cacheDate: undefined
+  });
+  
   // Load saved filters on initial render
   useEffect(() => {
     const savedCategories = localStorage.getItem('pinnity-category-filters');
@@ -53,14 +66,47 @@ export default function ExplorePage() {
   }, []);
   
   // Fetch all deals
-  const { data: deals = [], isLoading, error } = useQuery({
+  const { data: deals = [], isLoading, error, refetch: refetchDeals } = useQuery({
     queryKey: ['/api/deals'],
     queryFn: async () => {
-      const response = await apiRequest('/api/deals');
-      console.log("API Response:", response);
-      return response;
+      try {
+        // Use the raw fetch instead of apiRequest to access headers
+        const response = await fetch('/api/deals');
+        
+        // Check if response is from cache using centralized utility
+        const cacheStatus = getCacheStatusFromResponse(response);
+        
+        // Update cache status
+        setDealsCacheStatus(cacheStatus);
+        
+        const data = await response.json();
+        console.log("API Response:", data);
+        return data;
+      } catch (error) {
+        console.error('Error fetching deals:', error);
+        throw error;
+      }
     },
   });
+  
+  // Handle automatic refresh when connection is restored
+  useEffect(() => {
+    const handleConnectionRestored = () => {
+      console.log('Connection restored - automatically refreshing deals data');
+      
+      // Set fresh cache status using the utility
+      setDealsCacheStatus(getFreshCacheStatus());
+      
+      // Refresh deals data
+      refetchDeals();
+    };
+    
+    // Use the centralized utility to listen for connection restoration events
+    const cleanup = listenForConnectionRestoration(handleConnectionRestored);
+    
+    // Clean up event listener on unmount
+    return cleanup;
+  }, [refetchDeals]);
   
   // Log error if any occurs
   if (error) {
@@ -217,6 +263,13 @@ export default function ExplorePage() {
               Change
             </Button>
           </div>
+          
+          {/* Cache status alert */}
+          <CachedDataAlert 
+            isCached={dealsCacheStatus.isCached} 
+            cachedDate={dealsCacheStatus.cacheDate} 
+            onRefresh={() => refetchDeals()}
+          />
 
           {/* Deal grid */}
           {isLoading ? (
@@ -246,6 +299,9 @@ export default function ExplorePage() {
               deals={filteredDeals}
               isLoading={isLoading}
               onSelect={(dealId) => setSelectedDealId(dealId)}
+              isCached={dealsCacheStatus.isCached}
+              cacheDate={dealsCacheStatus.cacheDate}
+              onRefresh={() => refetchDeals()}
             />
           )}
         </div>
