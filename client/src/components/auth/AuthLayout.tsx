@@ -21,7 +21,9 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
 
         {/* Auth Container */}
         <div className="flex-grow flex flex-col">
-          {children}
+          <div className="min-h-[600px] w-full flex flex-col">
+            {children}
+          </div>
         </div>
       </div>
 
