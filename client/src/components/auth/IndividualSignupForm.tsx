@@ -163,7 +163,7 @@ export default function IndividualSignupForm() {
             htmlFor="terms" 
             className={`${errors.termsAccepted ? "text-red-500" : "text-gray-500"}`}
           >
-            I agree to the <Link href="/terms" className="text-[#00796B] hover:text-[#004D40]">Terms of Service</Link> and <a href="#" className="text-[#00796B] hover:text-[#004D40]">Privacy Policy</a>
+            I agree to the <Link href="/terms" className="text-[#00796B] hover:text-[#004D40]">Terms of Service</Link> and <Link href="/privacy" className="text-[#00796B] hover:text-[#004D40]">Privacy Policy</Link>
           </label>
           {errors.termsAccepted && (
             <p className="text-xs text-red-500 mt-1">{errors.termsAccepted.message}</p>
