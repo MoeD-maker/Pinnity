@@ -11,10 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { apiPost } from "@/lib/api";
 import { Loader2 } from "lucide-react";
+import { PolicyModal } from "./PolicyModal";
 
 export default function IndividualSignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, feedback: "Password is required" });
+  const [termsModalOpen, setTermsModalOpen] = useState(false);
+  const [privacyModalOpen, setPrivacyModalOpen] = useState(false);
   const { toast } = useToast();
   
   const {

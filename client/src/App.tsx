@@ -309,6 +309,8 @@ function Router() {
       {/* Public routes - no authentication required */}
       <Route path="/auth" component={AuthPage}/>
       <Route path="/onboarding/:userType/:userId" component={OnboardingPage}/>
+      <Route path="/terms" component={lazy(() => import("@/pages/terms"))}/>
+      <Route path="/privacy" component={lazy(() => import("@/pages/privacy"))}/>
       <Route path="/test-login" component={TestLogin}/>
       <Route path="/simple-explore" component={SimpleExplorePage}/>
       <Route path="/test-page" component={TestPage}/>
