@@ -82,7 +82,79 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // API requests - network first, then offline response
+  // Special handling for deal API requests with TTL
+  if (event.request.url.includes('/api/deals')) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          // Cache successful deal API responses with timestamp
+          if (response.status === 200) {
+            const responseClone = response.clone();
+            
+            // Create a new response with cache date headers
+            const timestamp = Date.now();
+            const headers = new Headers(responseClone.headers);
+            headers.append('X-Cache-Date', timestamp.toString());
+            
+            // Create a modified response with the new headers
+            const cachedResponseInit = {
+              status: responseClone.status,
+              statusText: responseClone.statusText,
+              headers: headers
+            };
+            
+            // Store the response with the modified headers
+            responseClone.text().then(body => {
+              const modifiedResponse = new Response(body, cachedResponseInit);
+              
+              // Only cache GET requests
+              if (event.request.method === 'GET') {
+                caches.open(CACHE_NAME).then(cache => {
+                  cache.put(event.request, modifiedResponse);
+                  console.log('[Service Worker] Cached deal data with timestamp', timestamp);
+                });
+              }
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          // Return cached response if available and not expired
+          return caches.match(event.request)
+            .then(cachedResponse => {
+              if (cachedResponse) {
+                // Check if the cached response has expired
+                const cacheDate = cachedResponse.headers.get('X-Cache-Date');
+                const cacheTimestamp = cacheDate ? parseInt(cacheDate, 10) : 0;
+                const now = Date.now();
+                
+                // Skip returning cached deals older than DEAL_CACHE_MAX_AGE
+                if (cacheTimestamp && (now - cacheTimestamp) > DEAL_CACHE_MAX_AGE) {
+                  console.log('[Service Worker] Cached deal data expired, not using', cacheTimestamp);
+                  return caches.match(OFFLINE_PAGE);
+                }
+                
+                // Add headers to indicate this is a cached response
+                const headers = new Headers(cachedResponse.headers);
+                headers.append('X-Is-Cached', 'true');
+                
+                // Return the cached response with added headers
+                return cachedResponse.text().then(body => {
+                  return new Response(body, {
+                    status: cachedResponse.status,
+                    statusText: cachedResponse.statusText,
+                    headers: headers
+                  });
+                });
+              }
+              return caches.match(OFFLINE_PAGE);
+            });
+        })
+    );
+    return;
+  }
+  
+  // Other API requests - network first, then offline response
   if (event.request.url.includes('/api/')) {
     event.respondWith(
       fetch(event.request)
