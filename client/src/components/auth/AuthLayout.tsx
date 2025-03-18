@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
-import { MapPin } from "lucide-react";
+import { MapPin, Shield } from "lucide-react";
+import TestimonialCarousel from "./TestimonialCarousel";
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -24,13 +25,29 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
           <div className="min-h-[600px] w-full flex flex-col">
             {children}
           </div>
+          
+          {/* Trust badges (mobile only) */}
+          <div className="mt-8 md:hidden">
+            <div className="flex items-center justify-center space-x-4 py-3 border-t border-gray-100">
+              <div className="flex items-center">
+                <Shield className="h-4 w-4 text-[#00796B] mr-1.5" />
+                <span className="text-xs text-gray-500">Secure Login</span>
+              </div>
+              <div className="flex items-center">
+                <svg className="h-4 w-4 text-[#00796B] mr-1.5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z" />
+                </svg>
+                <span className="text-xs text-gray-500">Encrypted Data</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Right Panel - Brand Image (only on desktop) */}
       <div className="hidden md:block md:w-1/2 xl:w-3/5 bg-[#00796B]">
-        <div className="h-full flex items-center justify-center p-8 bg-gradient-to-br from-[#00796B] to-[#004D40]">
-          <div className="max-w-lg text-center">
+        <div className="h-full flex flex-col justify-between p-8 bg-gradient-to-br from-[#00796B] to-[#004D40]">
+          <div className="max-w-lg mx-auto text-center mt-8">
             <div className="mb-6">
               <MapPin className="h-20 w-20 mx-auto text-white" />
             </div>
@@ -70,6 +87,25 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
                   <p className="text-sm text-[#B2DFDB]">Meet like-minded locals and build meaningful connections.</p>
                 </div>
               </div>
+            </div>
+          </div>
+          
+          {/* Testimonial Carousel */}
+          <div className="max-w-lg mx-auto">
+            <TestimonialCarousel />
+          </div>
+          
+          {/* Trust badges */}
+          <div className="mt-6 flex justify-center space-x-6">
+            <div className="flex items-center">
+              <Shield className="h-5 w-5 text-white mr-2" />
+              <span className="text-[#B2DFDB]">Secure Authentication</span>
+            </div>
+            <div className="flex items-center">
+              <svg className="h-5 w-5 text-white mr-2" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z" />
+              </svg>
+              <span className="text-[#B2DFDB]">End-to-End Encryption</span>
             </div>
           </div>
         </div>

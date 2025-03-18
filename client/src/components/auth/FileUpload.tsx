@@ -1,15 +1,16 @@
 import { forwardRef, useState, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { Cloud, X } from "lucide-react";
+import { Cloud, X, Lock, Shield } from "lucide-react";
 
 export interface FileUploadProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
   error?: string;
   onFileChange?: (file: File | null) => void;
+  showSecurityInfo?: boolean;
 }
 
 const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(
-  ({ label, className, error, onFileChange, ...props }, ref) => {
+  ({ label, className, error, onFileChange, showSecurityInfo = true, ...props }, ref) => {
     const [file, setFile] = useState<File | null>(null);
     const [preview, setPreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -88,15 +89,8 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(
             </div>
           )}
           <input
-            ref={(node) => {
-              // Handle both the forwarded ref and the local ref
-              if (typeof ref === "function") {
-                ref(node);
-              } else if (ref) {
-                ref.current = node;
-              }
-              fileInputRef.current = node;
-            }}
+            // Use only local ref - the component is already forwarded
+            ref={fileInputRef}
             type="file"
             className="hidden"
             onChange={handleFileChange}
@@ -105,6 +99,18 @@ const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(
           />
         </div>
         {error && <p className="text-xs text-red-500">{error}</p>}
+        
+        {/* Security information */}
+        {showSecurityInfo && (
+          <div className="mt-2 flex items-start space-x-2 bg-blue-50 p-2 rounded-md">
+            <Lock className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-xs text-blue-800">
+                Your documents are encrypted and securely stored. We use bank-level security to protect your information.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
