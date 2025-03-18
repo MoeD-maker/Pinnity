@@ -3,281 +3,169 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Offline - Pinnity</title>
   <meta name="theme-color" content="#00796B">
-  <link rel="icon" href="/favicon.ico" sizes="any">
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <title>Pinnity - You're Offline</title>
+  <link rel="shortcut icon" href="favicon.ico">
   <style>
-    :root {
-      --primary: #00796B;
-      --primary-darker: #005a4f;
-      --primary-lighter: #B2DFDB;
-      --primary-50: rgba(0, 121, 107, 0.05);
-      --primary-100: rgba(0, 121, 107, 0.1);
-      --primary-200: rgba(0, 121, 107, 0.2);
-      --background: #ffffff;
-      --card: #ffffff;
-      --card-foreground: #333333;
-      --foreground: #333333;
-      --muted: #f5f5f5;
-      --muted-foreground: #737373;
-      --border: #e2e2e2;
-      --radius: 0.5rem;
-    }
-
+    /* Lightweight, inline styles to ensure fast loading */
     * {
-      box-sizing: border-box;
       margin: 0;
       padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     }
     
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-      background-color: var(--muted);
-      margin: 0;
-      padding: 0;
+      background-color: #f7f7f7;
+      color: #333;
       display: flex;
       flex-direction: column;
       min-height: 100vh;
-      color: var(--foreground);
+      text-align: center;
     }
     
     header {
-      background-color: var(--primary);
-      padding: 1rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      background-color: #00796B;
       color: white;
+      padding: 16px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-    
-    .logo {
-      height: 2.5rem;
-      margin-right: 0.5rem;
-    }
-    
-    .app-name {
-      font-size: 1.5rem;
-      font-weight: 600;
     }
     
     main {
       flex: 1;
       display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 2rem 1rem;
-    }
-    
-    .offline-container {
-      background-color: var(--card);
-      border-radius: var(--radius);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-      padding: 2rem;
-      max-width: 450px;
-      width: 100%;
-      text-align: center;
-      animation: fadeIn 0.5s ease-out;
-    }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .status-indicator {
-      display: inline-flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      width: 5rem;
-      height: 5rem;
-      border-radius: 50%;
-      background-color: var(--primary-50);
-      margin-bottom: 1.5rem;
+      padding: 24px;
+      max-width: 600px;
+      margin: 0 auto;
     }
     
-    .offline-icon {
-      width: 2.5rem;
-      height: 2.5rem;
-      color: var(--primary);
+    .logo-container {
+      margin-bottom: 24px;
+    }
+    
+    .logo {
+      width: 120px;
+      height: 120px;
+      border-radius: 16px;
     }
     
     h1 {
-      color: var(--primary);
-      font-size: 1.5rem;
-      font-weight: 600;
-      margin-bottom: 1rem;
+      font-size: 1.8rem;
+      margin-bottom: 16px;
+      color: #00796B;
     }
     
     p {
-      font-size: 1rem;
+      margin-bottom: 24px;
       line-height: 1.6;
-      margin-bottom: 1.5rem;
-      color: var(--card-foreground);
+      color: #555;
     }
     
-    .button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background-color: var(--primary);
+    .retry-button {
+      background-color: #00796B;
       color: white;
       border: none;
-      border-radius: var(--radius);
-      padding: 0.75rem 1.5rem;
+      padding: 12px 24px;
+      border-radius: 4px;
       font-size: 1rem;
-      font-weight: 500;
       cursor: pointer;
-      transition: all 0.2s ease;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      transition: background-color 0.2s;
+      font-weight: 500;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
-    .button:hover {
-      background-color: var(--primary-darker);
-      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+    .retry-button:hover {
+      background-color: #005b4f;
     }
     
-    .button:active {
-      transform: translateY(1px);
+    .tips {
+      margin-top: 32px;
+      padding: 16px;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      width: 100%;
     }
     
-    .button svg {
-      margin-right: 0.5rem;
-      width: 1rem;
-      height: 1rem;
+    .tips h2 {
+      font-size: 1.2rem;
+      color: #00796B;
+      margin-bottom: 12px;
     }
     
-    .info-card {
-      margin-top: 1.5rem;
-      padding: 1rem;
-      background-color: var(--primary-50);
-      border-radius: var(--radius);
-      border-left: 3px solid var(--primary);
+    .tips ul {
+      text-align: left;
+      padding-left: 24px;
     }
     
-    .info-text {
-      font-size: 0.875rem;
-      color: var(--card-foreground);
-      display: flex;
-      align-items: center;
+    .tips li {
+      margin-bottom: 8px;
     }
     
-    .info-text svg {
-      width: 1rem;
-      height: 1rem;
-      margin-right: 0.5rem;
-      flex-shrink: 0;
-      color: var(--primary);
-    }
-    
-    footer {
-      padding: 1rem;
-      text-align: center;
-      font-size: 0.75rem;
-      color: var(--muted-foreground);
-      background-color: var(--background);
-      border-top: 1px solid var(--border);
-    }
-    
-    @media (max-width: 640px) {
-      .offline-container {
-        padding: 1.5rem;
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 1.5rem;
       }
       
-      .status-indicator {
-        width: 4rem;
-        height: 4rem;
-      }
-      
-      .offline-icon {
-        width: 2rem;
-        height: 2rem;
-      }
-    }
-    
-    .pulse {
-      animation: pulse 2s infinite;
-    }
-    
-    @keyframes pulse {
-      0% {
-        box-shadow: 0 0 0 0 var(--primary-200);
-      }
-      70% {
-        box-shadow: 0 0 0 10px rgba(0, 121, 107, 0);
-      }
-      100% {
-        box-shadow: 0 0 0 0 rgba(0, 121, 107, 0);
+      .logo {
+        width: 100px;
+        height: 100px;
       }
     }
   </style>
 </head>
 <body>
   <header>
-    <svg class="logo" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="32" height="32" rx="8" fill="white"/>
-      <path d="M10 8C10 10.2091 8.20914 12 6 12C8.20914 12 10 13.7909 10 16C10 13.7909 11.7909 12 14 12C11.7909 12 10 10.2091 10 8Z" fill="#00796B"/>
-      <path d="M22 8C22 10.2091 20.2091 12 18 12C20.2091 12 22 13.7909 22 16C22 13.7909 23.7909 12 26 12C23.7909 12 22 10.2091 22 8Z" fill="#00796B"/>
-      <path d="M16 16C16 18.2091 14.2091 20 12 20C14.2091 20 16 21.7909 16 24C16 21.7909 17.7909 20 20 20C17.7909 20 16 18.2091 16 16Z" fill="#00796B"/>
-    </svg>
-    <div class="app-name">Pinnity</div>
+    <h2>Pinnity</h2>
   </header>
   
   <main>
-    <div class="offline-container">
-      <div class="status-indicator pulse">
-        <svg class="offline-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M1 1L23 23" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M16.72 11.06C17.5 11.7 18.18 12.5 18.72 13.36" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M5 12.55C5.6 12.1 6.28 11.73 7 11.5C7.58 11.31 8.18 11.18 8.79 11.1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M10.71 5.05C13.36 4.46 16.17 4.79 18.61 6.05C19.35 6.43 20.05 6.88 20.68 7.4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M1.42 9C2.85 7.7 4.6 6.73 6.53 6.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M8.53 16.11C9.55 15.37 10.81 15 12 15C13.19 15 14.45 15.37 15.47 16.11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M12 20H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      
-      <h1>You're Offline</h1>
-      <p>It looks like you've lost your internet connection. Some features of Pinnity will be limited until you reconnect.</p>
-      
-      <button class="button" onclick="window.location.reload()">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 2v6h-6"></path>
-          <path d="M3 12a9 9 0 0 1 15-6.7l3-3"></path>
-          <path d="M3 22v-6h6"></path>
-          <path d="M21 12a9 9 0 0 1-15 6.7l-3 3"></path>
-        </svg>
-        Try Again
-      </button>
-      
-      <div class="info-card">
-        <div class="info-text">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="16" x2="12" y2="12"></line>
-            <line x1="12" y1="8" x2="12.01" y2="8"></line>
-          </svg>
-          <span>Your offline activities will automatically sync when you're back online.</span>
-        </div>
-      </div>
+    <div class="logo-container">
+      <img src="logo192.png" alt="Pinnity Logo" class="logo">
+    </div>
+    
+    <h1>You're Currently Offline</h1>
+    
+    <p>
+      We can't load the page you requested because you're not connected to the internet.
+      Check your connection and try again.
+    </p>
+    
+    <button class="retry-button" onclick="window.location.reload()">
+      Try Again
+    </button>
+    
+    <div class="tips">
+      <h2>While you're offline:</h2>
+      <ul>
+        <li>Any previously viewed deals will still be available</li>
+        <li>Your favorites are saved locally</li>
+        <li>New redemptions will sync when you're back online</li>
+      </ul>
     </div>
   </main>
   
-  <footer>
-    <div>© 2025 Pinnity - Find the best local deals</div>
-  </footer>
-
   <script>
-    // Check if we're back online
-    window.addEventListener('online', () => {
+    // Simple script to check for connection and auto-reload
+    window.addEventListener('online', function() {
       window.location.reload();
     });
     
-    // Check connection status immediately
-    if (navigator.onLine) {
-      window.location.reload();
-    }
+    // Add timestamp to know when we went offline
+    document.addEventListener('DOMContentLoaded', function() {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString();
+      const dateStr = now.toLocaleDateString();
+      const p = document.createElement('p');
+      p.style.fontSize = '0.8rem';
+      p.style.marginTop = '24px';
+      p.style.color = '#777';
+      p.textContent = `Offline since: ${timeStr} on ${dateStr}`;
+      document.querySelector('main').appendChild(p);
+    });
   </script>
 </body>
 </html>
