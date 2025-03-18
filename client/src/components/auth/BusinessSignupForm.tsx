@@ -8,6 +8,7 @@ import PasswordInput from "./PasswordInput";
 import PasswordStrengthIndicator from "./PasswordStrengthIndicator";
 import FileUpload from "./FileUpload";
 import { calculatePasswordStrength } from "@/lib/utils";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -272,7 +273,7 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
             htmlFor="business-terms" 
             className={`${errors.termsAccepted ? "text-red-500" : "text-gray-500"}`}
           >
-            I agree to the <a href="#" className="text-[#00796B] hover:text-[#004D40]">Terms of Service</a> and <a href="#" className="text-[#00796B] hover:text-[#004D40]">Privacy Policy</a>
+            I agree to the <Link href="/terms" className="text-[#00796B] hover:text-[#004D40]">Terms of Service</Link> and <a href="#" className="text-[#00796B] hover:text-[#004D40]">Privacy Policy</a>
           </label>
           {errors.termsAccepted && (
             <p className="text-xs text-red-500 mt-1">{errors.termsAccepted.message}</p>
