@@ -77,16 +77,40 @@ export default function Dashboard() {
       }
     }
   }, []);
+  
+  // Handle automatic refresh when connection is restored
+  useEffect(() => {
+    const handleConnectionRestored = () => {
+      console.log('Connection restored - automatically refreshing deals data');
+      // Refresh all deals data
+      refetchDeals();
+      refetchFeaturedDeals();
+    };
+    
+    // Listen for the custom connection restored event
+    window.addEventListener('connectionRestored', handleConnectionRestored);
+    
+    // Clean up event listener on unmount
+    return () => {
+      window.removeEventListener('connectionRestored', handleConnectionRestored);
+    };
+  }, [refetchDeals, refetchFeaturedDeals]);
 
   // State for tracking cached data status
-  const [dealsCacheStatus, setDealsCacheStatus] = useState({
+  const [dealsCacheStatus, setDealsCacheStatus] = useState<{
+    isCached: boolean;
+    cacheDate?: number;
+  }>({
     isCached: false,
-    cacheDate: null as null | number
+    cacheDate: undefined
   });
   
-  const [featuredDealsCacheStatus, setFeaturedDealsCacheStatus] = useState({
+  const [featuredDealsCacheStatus, setFeaturedDealsCacheStatus] = useState<{
+    isCached: boolean;
+    cacheDate?: number;
+  }>({
     isCached: false,
-    cacheDate: null as null | number
+    cacheDate: undefined
   });
 
   // Fetch all deals
@@ -103,7 +127,7 @@ export default function Dashboard() {
         // Update cache status
         setDealsCacheStatus({
           isCached,
-          cacheDate: cacheDate ? parseInt(cacheDate, 10) : null
+          cacheDate: cacheDate ? parseInt(cacheDate, 10) : undefined
         });
         
         return await response.json();
@@ -128,7 +152,7 @@ export default function Dashboard() {
         // Update cache status
         setFeaturedDealsCacheStatus({
           isCached,
-          cacheDate: cacheDate ? parseInt(cacheDate, 10) : null
+          cacheDate: cacheDate ? parseInt(cacheDate, 10) : undefined
         });
         
         return await response.json();

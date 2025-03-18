@@ -69,7 +69,11 @@ function NetworkStatusAlert() {
     };
     
     // Browser online/offline event listeners
-    const handleOnline = () => handleStatusChange(false);
+    const handleOnline = () => {
+      handleStatusChange(false);
+      // Dispatch a custom event to trigger data refresh across the app
+      window.dispatchEvent(new CustomEvent('connectionRestored'));
+    };
     const handleOffline = () => handleStatusChange(true);
     
     // Custom event listener for programmatic status changes
@@ -77,6 +81,10 @@ function NetworkStatusAlert() {
       const customEvent = e as CustomEvent;
       if (customEvent.detail && customEvent.detail.hasOwnProperty('isOffline')) {
         handleStatusChange(customEvent.detail.isOffline);
+        // If connection is restored programmatically, also dispatch refresh event
+        if (!customEvent.detail.isOffline) {
+          window.dispatchEvent(new CustomEvent('connectionRestored'));
+        }
       }
     };
     
@@ -146,6 +154,8 @@ function useOfflineData() {
     const handleOnline = () => {
       console.log('Connection restored - online');
       setIsOffline(false);
+      // Dispatch a custom event to trigger data refresh across the app
+      window.dispatchEvent(new CustomEvent('connectionRestored'));
     };
 
     const handleOffline = () => {
