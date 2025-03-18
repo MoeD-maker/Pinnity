@@ -95,7 +95,6 @@ export default function LoginForm() {
         label="Password"
         {...register("password")}
         error={errors.password?.message}
-        showRequirements={false}
       />
 
       <div className="flex items-center justify-between">

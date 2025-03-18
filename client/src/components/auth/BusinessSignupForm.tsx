@@ -208,12 +208,12 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
             onChange: onPasswordChange,
           })}
           error={errors.password?.message}
-          showRequirements={true}
         />
         
         <PasswordStrengthIndicator 
           score={passwordStrength.score} 
-          feedback={passwordStrength.feedback} 
+          feedback={passwordStrength.feedback}
+          password={watch("password") || ""}
         />
       </div>
 
@@ -221,7 +221,6 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
         label="Confirm password"
         {...register("confirmPassword")}
         error={errors.confirmPassword?.message}
-        showRequirements={false}
       />
 
       <FormInput
