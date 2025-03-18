@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { LastUpdatedTimestamp } from '@/components/ui/LastUpdatedTimestamp';
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";

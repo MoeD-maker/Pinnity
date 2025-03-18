@@ -17,6 +17,7 @@ import {
   ChevronDown,
   Clock
 } from 'lucide-react';
+import { LastUpdatedTimestamp } from '@/components/ui/LastUpdatedTimestamp';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -261,7 +262,14 @@ export default function Dashboard() {
       {/* Header section */}
       <div className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-primary mb-2">Discover Local Deals</h1>
-        <p className="text-muted-foreground">Find and save the best deals near you</p>
+        <div className="flex justify-between items-center">
+          <p className="text-muted-foreground">Find and save the best deals near you</p>
+          <LastUpdatedTimestamp 
+            timestamp={dealsCacheStatus.cacheDate} 
+            isCached={dealsCacheStatus.isCached}
+            onRefresh={() => refetchDeals()}
+          />
+        </div>
       </div>
 
       {/* Search and filter section */}
