@@ -262,9 +262,9 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
           <Checkbox 
             id="business-terms" 
             onCheckedChange={(checked) => {
-              register("termsAccepted").onChange({
-                target: { name: "termsAccepted", value: checked === true }
-              } as React.ChangeEvent<HTMLInputElement>);
+              const checkValue = checked === true;
+              // Use setValue instead of manually creating a change event
+              setValue("termsAccepted", checkValue, { shouldValidate: true });
             }}
           />
         </div>
