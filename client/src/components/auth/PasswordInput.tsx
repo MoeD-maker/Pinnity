@@ -1,5 +1,5 @@
 import { forwardRef, useState, useEffect } from "react";
-import { Eye, EyeOff, Check, X } from "lucide-react";
+import { Eye, EyeOff, Check, X } from "lucide-react"; // Verify correct imports
 import { cn } from "@/lib/utils";
 
 export interface PasswordInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -51,6 +51,14 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
       }
     };
 
+    // Add debugging log
+    console.log('Password requirements:', requirements.map(r => ({ 
+      key: r.key, 
+      met: r.met, 
+      status: r.status 
+    })));
+    console.log('Has value:', hasValue, 'Password value:', currentValue);
+
     return (
       <div className="space-y-1">
         <div
@@ -97,17 +105,18 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             <ul className="space-y-1 pl-0.5">
               {requirements.map((requirement) => (
                 <li key={requirement.key} className="flex items-center gap-1.5">
-                  {requirement.status === 'valid' ? (
-                    <Check className="h-3.5 w-3.5 text-green-600" />
-                  ) : requirement.status === 'invalid' ? (
-                    <X className="h-3.5 w-3.5 text-red-500" />
+                  {requirement.met && hasValue ? (
+                    <Check size={14} className="text-green-600" />
+                  ) : !hasValue ? (
+                    <div className="w-3.5 h-3.5 flex items-center justify-center text-gray-400">
+                      <X size={14} />
+                    </div>
                   ) : (
-                    <X className="h-3.5 w-3.5 text-gray-400" />
+                    <X size={14} className="text-red-500" />
                   )}
                   <span className={
-                    requirement.status === 'valid' ? "text-green-700" : 
-                    requirement.status === 'invalid' ? "text-red-500" :
-                    "text-gray-500"
+                    requirement.met && hasValue ? "text-green-700" : 
+                    !hasValue ? "text-gray-500" : "text-red-500"
                   }>
                     {requirement.text}
                   </span>
