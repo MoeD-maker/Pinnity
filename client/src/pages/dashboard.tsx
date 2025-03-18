@@ -22,6 +22,11 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { isExpired } from '@/utils/dealReminders';
+import { 
+  getCacheStatusFromResponse,
+  getFreshCacheStatus,
+  listenForConnectionRestoration
+} from '@/utils/dealsCacheManager';
 
 // Use the barrel export for dashboard components
 import { 
@@ -79,19 +84,13 @@ export default function Dashboard() {
     }
   }, []);
 
-  // State for tracking cached data status
-  const [dealsCacheStatus, setDealsCacheStatus] = useState<{
-    isCached: boolean;
-    cacheDate?: number;
-  }>({
+  // State for tracking cached data status using the shared interface
+  const [dealsCacheStatus, setDealsCacheStatus] = useState<CacheStatus>({
     isCached: false,
     cacheDate: undefined
   });
   
-  const [featuredDealsCacheStatus, setFeaturedDealsCacheStatus] = useState<{
-    isCached: boolean;
-    cacheDate?: number;
-  }>({
+  const [featuredDealsCacheStatus, setFeaturedDealsCacheStatus] = useState<CacheStatus>({
     isCached: false,
     cacheDate: undefined
   });
@@ -103,15 +102,11 @@ export default function Dashboard() {
       try {
         const response = await fetch('/api/deals');
         
-        // Check if response is from cache
-        const isCached = response.headers.get('X-Is-Cached') === 'true';
-        const cacheDate = response.headers.get('X-Cache-Date');
+        // Use centralized cache utility to check cache status
+        const cacheStatus = getCacheStatusFromResponse(response);
         
         // Update cache status
-        setDealsCacheStatus({
-          isCached,
-          cacheDate: cacheDate ? parseInt(cacheDate, 10) : undefined
-        });
+        setDealsCacheStatus(cacheStatus);
         
         return await response.json();
       } catch (error) {
@@ -128,15 +123,11 @@ export default function Dashboard() {
       try {
         const response = await fetch('/api/deals/featured?limit=5');
         
-        // Check if response is from cache
-        const isCached = response.headers.get('X-Is-Cached') === 'true';
-        const cacheDate = response.headers.get('X-Cache-Date');
+        // Use centralized cache utility to check cache status
+        const cacheStatus = getCacheStatusFromResponse(response);
         
         // Update cache status
-        setFeaturedDealsCacheStatus({
-          isCached,
-          cacheDate: cacheDate ? parseInt(cacheDate, 10) : undefined
-        });
+        setFeaturedDealsCacheStatus(cacheStatus);
         
         return await response.json();
       } catch (error) {
@@ -201,27 +192,21 @@ export default function Dashboard() {
   useEffect(() => {
     const handleConnectionRestored = () => {
       console.log('Connection restored - automatically refreshing deals data');
-      // Set cached status to false since we're getting fresh data
-      setDealsCacheStatus({
-        isCached: false,
-        cacheDate: Date.now()
-      });
-      setFeaturedDealsCacheStatus({
-        isCached: false,
-        cacheDate: Date.now()
-      });
+      
+      // Set fresh cache status using the utility
+      setDealsCacheStatus(getFreshCacheStatus());
+      setFeaturedDealsCacheStatus(getFreshCacheStatus());
+      
       // Refresh all deals data
       refetchDeals();
       refetchFeaturedDeals();
     };
     
-    // Listen for the custom connection restored event
-    window.addEventListener('connectionRestored', handleConnectionRestored);
+    // Use the centralized utility to listen for connection restoration events
+    const cleanup = listenForConnectionRestoration(handleConnectionRestored);
     
     // Clean up event listener on unmount
-    return () => {
-      window.removeEventListener('connectionRestored', handleConnectionRestored);
-    };
+    return cleanup;
   }, [refetchDeals, refetchFeaturedDeals]);
   
   // Filter deals based on search query, selected categories, and expiration status
