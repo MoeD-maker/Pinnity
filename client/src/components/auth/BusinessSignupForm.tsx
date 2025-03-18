@@ -326,6 +326,21 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
           "Create Business Account"
         )}
       </Button>
+
+      {/* Policy Modals */}
+      <PolicyModal
+        title="Terms of Service"
+        isOpen={termsModalOpen}
+        onClose={() => setTermsModalOpen(false)}
+        type="terms"
+      />
+
+      <PolicyModal
+        title="Privacy Policy"
+        isOpen={privacyModalOpen}
+        onClose={() => setPrivacyModalOpen(false)}
+        type="privacy"
+      />
     </form>
   );
 }
