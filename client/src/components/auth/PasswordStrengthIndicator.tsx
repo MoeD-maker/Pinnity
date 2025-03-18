@@ -43,6 +43,23 @@ export default function PasswordStrengthIndicator({
         return '';
     }
   };
+  
+  // Get label color class
+  const getLabelColorClass = () => {
+    switch (score) {
+      case 0:
+      case 1:
+        return 'text-red-700';
+      case 2:
+        return 'text-orange-700';
+      case 3:
+        return 'text-yellow-700';
+      case 4:
+        return 'text-green-700';
+      default:
+        return 'text-gray-500';
+    }
+  };
 
   // Calculate progress value (out of 100)
   const progressValue = score * 25; // 0, 25, 50, 75, 100
@@ -50,11 +67,11 @@ export default function PasswordStrengthIndicator({
   return (
     <div className="mt-2 space-y-1">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">{getLabel()}</p>
-        <p className="text-xs text-muted-foreground">{progressValue}%</p>
+        <p className={`text-xs font-medium ${getLabelColorClass()}`}>{getLabel()}</p>
+        <p className="text-xs text-gray-500">{progressValue}%</p>
       </div>
       <Progress value={progressValue} className={getColor()} />
-      {feedback && <p className="mt-1 text-xs text-muted-foreground">{feedback}</p>}
+      {feedback && <p className="mt-1 text-xs text-gray-500">{feedback}</p>}
     </div>
   );
 }

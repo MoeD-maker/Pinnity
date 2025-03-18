@@ -116,6 +116,7 @@ export default function IndividualSignupForm() {
             onChange: onPasswordChange,
           })}
           error={errors.password?.message}
+          showRequirements={true}
         />
         
         <PasswordStrengthIndicator 
@@ -128,6 +129,7 @@ export default function IndividualSignupForm() {
         label="Confirm password"
         {...register("confirmPassword")}
         error={errors.confirmPassword?.message}
+        showRequirements={false}
       />
 
       <FormInput
