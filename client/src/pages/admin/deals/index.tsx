@@ -239,6 +239,23 @@ export default function DealsPage() {
       setSelectedDeals([]);
     }
   }, [selectAll, filteredDeals]);
+  
+  // Handle automatic refresh when connection is restored
+  useEffect(() => {
+    const handleConnectionRestored = () => {
+      console.log('Connection restored in admin deals - refreshing data');
+      // Invalidate and refresh all deals data
+      queryClient.invalidateQueries({ queryKey: ['admin', 'deals'] });
+    };
+    
+    // Listen for the custom connection restored event
+    window.addEventListener('connectionRestored', handleConnectionRestored);
+    
+    // Clean up event listener on unmount
+    return () => {
+      window.removeEventListener('connectionRestored', handleConnectionRestored);
+    };
+  }, [queryClient]);
 
   // Handle deal selection toggle
   const toggleDealSelection = (dealId: number) => {
@@ -252,12 +269,12 @@ export default function DealsPage() {
   // Get unique categories and businesses for filters
   const categories = React.useMemo(() => {
     if (!deals) return [];
-    return Array.from(new Set(deals.map(d => d.category)));
+    return Array.from(new Set(deals.map((d: Deal) => d.category)));
   }, [deals]);
 
   const businesses = React.useMemo(() => {
     if (!deals) return [];
-    return Array.from(new Set(deals.map(d => d.business))).map(b => ({
+    return Array.from(new Set(deals.map((d: Deal) => d.business))).map((b: Business) => ({
       id: b.id,
       name: b.businessName
     }));

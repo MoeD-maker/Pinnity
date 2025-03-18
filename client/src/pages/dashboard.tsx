@@ -77,24 +77,6 @@ export default function Dashboard() {
       }
     }
   }, []);
-  
-  // Handle automatic refresh when connection is restored
-  useEffect(() => {
-    const handleConnectionRestored = () => {
-      console.log('Connection restored - automatically refreshing deals data');
-      // Refresh all deals data
-      refetchDeals();
-      refetchFeaturedDeals();
-    };
-    
-    // Listen for the custom connection restored event
-    window.addEventListener('connectionRestored', handleConnectionRestored);
-    
-    // Clean up event listener on unmount
-    return () => {
-      window.removeEventListener('connectionRestored', handleConnectionRestored);
-    };
-  }, [refetchDeals, refetchFeaturedDeals]);
 
   // State for tracking cached data status
   const [dealsCacheStatus, setDealsCacheStatus] = useState<{
@@ -214,6 +196,24 @@ export default function Dashboard() {
     categoryCounter['all'] = deals.length;
   }
 
+  // Handle automatic refresh when connection is restored
+  useEffect(() => {
+    const handleConnectionRestored = () => {
+      console.log('Connection restored - automatically refreshing deals data');
+      // Refresh all deals data
+      refetchDeals();
+      refetchFeaturedDeals();
+    };
+    
+    // Listen for the custom connection restored event
+    window.addEventListener('connectionRestored', handleConnectionRestored);
+    
+    // Clean up event listener on unmount
+    return () => {
+      window.removeEventListener('connectionRestored', handleConnectionRestored);
+    };
+  }, [refetchDeals, refetchFeaturedDeals]);
+  
   // Filter deals based on search query, selected categories, and expiration status
   const filteredDeals = deals && Array.isArray(deals) 
     ? deals.filter((deal: Deal & { business: any }) => {
