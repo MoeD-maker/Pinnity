@@ -95,22 +95,43 @@ export default function DealsPage() {
   const [modificationsMessage, setModificationsMessage] = useState("");
   const [dealDetailDialogOpen, setDealDetailDialogOpen] = useState(false);
   const [selectedDealForDetail, setSelectedDealForDetail] = useState<Deal | null>(null);
+  
+  // State for tracking cached data status
+  const [dealsCacheStatus, setDealsCacheStatus] = useState<{
+    isCached: boolean;
+    cacheDate?: number;
+  }>({
+    isCached: false,
+    cacheDate: undefined
+  });
 
   // Fetch deal data
-  const { data: deals = [], isLoading } = useQuery({
+  const { data: deals = [], isLoading, refetch: refetchDeals } = useQuery({
     queryKey: ['admin', 'deals'],
     queryFn: async () => {
       try {
         // Get deals with pending status first
-        const response = await apiRequest('/api/deals');
+        const response = await fetch('/api/deals');
         
-        if (!response) {
+        // Check if response is from cache
+        const isCached = response.headers.get('X-Is-Cached') === 'true';
+        const cacheDate = response.headers.get('X-Cache-Date');
+        
+        // Update cache status
+        setDealsCacheStatus({
+          isCached,
+          cacheDate: cacheDate ? parseInt(cacheDate, 10) : undefined
+        });
+        
+        const data = await response.json();
+        
+        if (!data) {
           return [];
         }
         
         // Map the response to match our expected deal structure
         // Converting createdAt to submissionDate for display
-        const dealData = response.map((deal: any) => ({
+        const dealData = data.map((deal: any) => ({
           ...deal,
           submissionDate: deal.createdAt,
           lastUpdated: deal.createdAt
@@ -245,6 +266,11 @@ export default function DealsPage() {
   useEffect(() => {
     const handleConnectionRestored = () => {
       console.log('Connection restored in admin deals - refreshing data');
+      // Set cached status to false since we're getting fresh data
+      setDealsCacheStatus({
+        isCached: false,
+        cacheDate: Date.now()
+      });
       // Invalidate and refresh all deals data
       queryClient.invalidateQueries({ queryKey: ['admin', 'deals'] });
     };
@@ -369,7 +395,14 @@ export default function DealsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Deal Management</h1>
-          <p className="text-muted-foreground">Review and moderate deal submissions</p>
+          <div className="flex justify-between items-center">
+            <p className="text-muted-foreground">Review and moderate deal submissions</p>
+            <LastUpdatedTimestamp 
+              timestamp={dealsCacheStatus.cacheDate} 
+              isCached={dealsCacheStatus.isCached}
+              onRefresh={() => refetchDeals()}
+            />
+          </div>
         </div>
         <div className="space-x-2">
           <Button variant="outline">

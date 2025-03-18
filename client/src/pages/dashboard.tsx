@@ -201,6 +201,15 @@ export default function Dashboard() {
   useEffect(() => {
     const handleConnectionRestored = () => {
       console.log('Connection restored - automatically refreshing deals data');
+      // Set cached status to false since we're getting fresh data
+      setDealsCacheStatus({
+        isCached: false,
+        cacheDate: Date.now()
+      });
+      setFeaturedDealsCacheStatus({
+        isCached: false,
+        cacheDate: Date.now()
+      });
       // Refresh all deals data
       refetchDeals();
       refetchFeaturedDeals();
