@@ -33,7 +33,7 @@ export default function IndividualSignupForm() {
       phone: "",
       address: "",
       // Cast to satisfy the type constraint from the zod schema
-      termsAccepted: false as unknown as true,
+      termsAccepted: false,
     },
     mode: "onChange",
   });
@@ -149,7 +149,12 @@ export default function IndividualSignupForm() {
         <div className="flex items-center h-5">
           <Checkbox 
             id="terms" 
-            {...register("termsAccepted")}
+            checked={watch("termsAccepted")}
+            onCheckedChange={(checked) => {
+              register("termsAccepted").onChange({
+                target: { name: "termsAccepted", value: checked }
+              } as React.ChangeEvent<HTMLInputElement>);
+            }}
           />
         </div>
         <div className="ml-3 text-sm">
