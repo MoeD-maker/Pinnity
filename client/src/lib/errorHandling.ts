@@ -1,6 +1,4 @@
 /**
- * Error Handling Utility
- * 
  * Centralized error handling system for API calls and application errors.
  * Provides standardized error handling, user-friendly messages, and recovery options.
  */
@@ -313,16 +311,22 @@ export function handleError(error: any, options?: {
     const variant = getErrorVariant(appError);
     const recovery = getRecoveryAction(appError, options?.retryFn);
     
-    toast({
-      title: 'Error',
-      description: userMessage,
-      variant,
-      duration: options?.duration || 5000,
-      action: recovery && appError.recoverable ? {
-        label: 'Retry',
-        onClick: recovery,
-      } : undefined,
-    });
+    if (recovery && appError.recoverable) {
+      toast({
+        title: 'Error',
+        description: userMessage,
+        variant,
+        duration: options?.duration || 5000,
+        onAction: recovery,
+      });
+    } else {
+      toast({
+        title: 'Error',
+        description: userMessage,
+        variant,
+        duration: options?.duration || 5000,
+      });
+    }
   }
   
   return appError;
