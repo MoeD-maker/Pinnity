@@ -185,9 +185,11 @@ export default function ProfilePage() {
             </div>
             
             <div className="mt-6">
-              <Button variant="default" className="w-full" onClick={() => window.location.href = '/settings?tab=notifications'}>
-                Manage Notification Settings
-              </Button>
+              <Link href="/settings?tab=notifications">
+                <Button variant="default" className="w-full">
+                  Manage Notification Settings
+                </Button>
+              </Link>
               <p className="text-xs text-muted-foreground text-center mt-2">
                 Update your notification preferences in the settings page
               </p>
