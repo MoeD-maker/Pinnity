@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { apiRequest } from '@/lib/queryClient';
@@ -15,7 +15,9 @@ import {
   Grid as GridIcon,
   ChevronUp,
   ChevronDown,
-  Clock
+  Clock,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { LastUpdatedTimestamp } from '@/components/ui/LastUpdatedTimestamp';
 import { Input } from '@/components/ui/input';
@@ -66,6 +68,8 @@ export default function Dashboard() {
   const [showFilters, setShowFilters] = useState(true); // Default to true to show filters
   const [selectedDeal, setSelectedDeal] = useState<number | null>(null);
   const [showExpired, setShowExpired] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const dealsPerPage = 12; // Number of deals to show per page
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -140,6 +144,9 @@ export default function Dashboard() {
 
   // Handle category filter changes
   const handleCategoryChange = (category: string) => {
+    // Reset to first page when changing filters
+    setCurrentPage(1);
+    
     setSelectedCategories(prev => {
       // If 'all' is selected, clear all other selections
       if (category === 'all') {
@@ -164,11 +171,13 @@ export default function Dashboard() {
   const handleClearFilters = () => {
     setSelectedCategories([]);
     setSearchQuery('');
+    setCurrentPage(1);
   };
 
   // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
+    setCurrentPage(1);
   };
 
   // Calculate category counts
@@ -210,37 +219,56 @@ export default function Dashboard() {
     return cleanup;
   }, [refetchDeals, refetchFeaturedDeals]);
   
-  // Filter deals based on search query, selected categories, and expiration status
-  const filteredDeals = deals && Array.isArray(deals) 
-    ? deals.filter((deal: Deal & { business: any }) => {
-        // Map API category to our category system
-        const dealCategoryId = mapCategoryToId(deal.category);
-        
-        const matchesSearch = searchQuery === '' || 
-          deal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          deal.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          deal.business.businessName.toLowerCase().includes(searchQuery.toLowerCase());
-        
-        const matchesCategory = selectedCategories.length === 0 || 
-          selectedCategories.includes(dealCategoryId);
-        
-        // For individual users, filter out expired deals
-        // For business and admin users, show expired deals based on toggle
-        const dealExpired = isExpired(deal);
-        
-        // For individual users (non-business, non-admin)
-        if (user?.userType === 'individual' && dealExpired) {
-          return false; // Hide expired deals for regular users
-        }
-        
-        // For business and admin users
-        if ((user?.userType === 'business' || user?.userType === 'admin') && dealExpired) {
-          return showExpired; // Only show if toggle is enabled
-        }
-        
-        return matchesSearch && matchesCategory;
-      })
-    : [];
+  // Filter deals based on search query, selected categories, and expiration status using useMemo
+  const filteredDeals = useMemo(() => {
+    if (!deals || !Array.isArray(deals)) return [];
+    
+    return deals.filter((deal: Deal & { business: any }) => {
+      // Map API category to our category system
+      const dealCategoryId = mapCategoryToId(deal.category);
+      
+      const matchesSearch = searchQuery === '' || 
+        deal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        deal.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        deal.business.businessName.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesCategory = selectedCategories.length === 0 || 
+        selectedCategories.includes(dealCategoryId);
+      
+      // For individual users, filter out expired deals
+      // For business and admin users, show expired deals based on toggle
+      const dealExpired = isExpired(deal);
+      
+      // For individual users (non-business, non-admin)
+      if (user?.userType === 'individual' && dealExpired) {
+        return false; // Hide expired deals for regular users
+      }
+      
+      // For business and admin users
+      if ((user?.userType === 'business' || user?.userType === 'admin') && dealExpired) {
+        return showExpired; // Only show if toggle is enabled
+      }
+      
+      return matchesSearch && matchesCategory;
+    });
+  }, [deals, searchQuery, selectedCategories, showExpired, user?.userType]);
+  
+  // Calculate pagination data
+  const totalPages = Math.ceil(filteredDeals.length / dealsPerPage);
+  
+  // Ensure current page doesn't exceed total pages when filters change
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [filteredDeals.length, totalPages, currentPage]);
+  
+  // Get current page of deals
+  const currentDeals = useMemo(() => {
+    const indexOfLastDeal = currentPage * dealsPerPage;
+    const indexOfFirstDeal = indexOfLastDeal - dealsPerPage;
+    return filteredDeals.slice(indexOfFirstDeal, indexOfLastDeal);
+  }, [filteredDeals, currentPage, dealsPerPage]);
 
   // Handle deal selection for detail view
   const handleDealSelect = (dealId: number) => {
@@ -396,14 +424,45 @@ export default function Dashboard() {
       {/* Main content based on view mode */}
       {filteredDeals.length > 0 && (
         viewMode === 'grid' ? (
-          <DealGrid 
-            deals={filteredDeals} 
-            isLoading={isLoadingDeals}
-            onSelect={handleDealSelect}
-            isCached={dealsCacheStatus.isCached}
-            cacheDate={dealsCacheStatus.cacheDate}
-            onRefresh={() => refetchDeals()}
-          />
+          <>
+            <DealGrid 
+              deals={currentDeals} 
+              isLoading={isLoadingDeals}
+              onSelect={handleDealSelect}
+              isCached={dealsCacheStatus.isCached}
+              cacheDate={dealsCacheStatus.cacheDate}
+              onRefresh={() => refetchDeals()}
+            />
+            
+            {/* Pagination controls */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 mt-8 mb-4">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Previous
+                </Button>
+                
+                <div className="flex items-center mx-2">
+                  <span className="text-sm">{currentPage} of {totalPages}</span>
+                </div>
+                
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            )}
+          </>
         ) : (
           <DealMap 
             deals={filteredDeals} 
