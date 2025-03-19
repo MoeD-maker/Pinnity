@@ -317,7 +317,10 @@ export function handleError(error: any, options?: {
         description: userMessage,
         variant,
         duration: options?.duration || 5000,
-        onAction: recovery,
+        action: {
+          label: 'Retry',
+          onClick: recovery
+        }
       });
     } else {
       toast({
