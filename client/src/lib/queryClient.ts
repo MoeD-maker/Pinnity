@@ -1,27 +1,43 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { handleError, withErrorHandling, ErrorCategory } from './errorHandling';
+import { fetchWithCSRF } from './api';
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    const contentType = res.headers.get('content-type');
+    let errorData: any = {};
+    
+    try {
+      if (contentType && contentType.includes('application/json')) {
+        errorData = await res.json();
+      } else {
+        errorData.message = await res.text();
+      }
+    } catch (e) {
+      errorData.message = res.statusText;
+    }
+    
+    const error = new Error(errorData.message || `API request failed: ${res.status}`);
+    (error as any).status = res.status;
+    (error as any).data = errorData;
+    throw error;
   }
 }
-
-import { fetchWithCSRF } from './api';
 
 export async function apiRequest(
   url: string,
   options?: {
     method?: string;
     data?: unknown;
+    silentError?: boolean;
   },
 ): Promise<any> {
-  try {
-    const method = options?.method || 'GET';
-    const data = options?.data;
-    
-    console.log(`Making ${method} request to ${url}`, data);
-    
+  const method = options?.method || 'GET';
+  const data = options?.data;
+  
+  console.log(`Making ${method} request to ${url}`, data);
+  
+  return withErrorHandling(async () => {
     // Use fetchWithCSRF to ensure CSRF protection for all API calls
     const res = await fetchWithCSRF(url, {
       method,
@@ -37,10 +53,10 @@ export async function apiRequest(
     console.log(`Response from ${url}:`, result);
     
     return result;
-  } catch (error) {
-    console.error(`Error in apiRequest to ${url}:`, error);
-    throw error;
-  }
+  }, {
+    defaultMessage: `Failed to ${method.toLowerCase()} data from server`,
+    silent: options?.silentError,
+  });
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
