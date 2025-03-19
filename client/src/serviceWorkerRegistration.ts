@@ -108,37 +108,96 @@ function registerValidSW(swUrl: string, config?: PinnityServiceWorkerConfig) {
 
 /**
  * Check if a new service worker is waiting and trigger update notification
+ * 
+ * Enhanced to use a custom event with registration details
+ * to provide more information to the update notification component.
  */
-export function checkForUpdates(callback: () => void) {
+export function checkForUpdates(callback?: () => void) {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.ready.then(registration => {
+      // Check if a waiting worker already exists
+      if (registration.waiting) {
+        console.log('[Service Worker] Update already waiting on page load');
+        
+        // Dispatch custom event with registration details
+        window.dispatchEvent(
+          new CustomEvent('pwaUpdate', { 
+            detail: { registration } 
+          })
+        );
+        
+        if (callback) callback();
+        return;
+      }
+      
+      // Otherwise listen for future updates
       registration.addEventListener('updatefound', () => {
         const newWorker = registration.installing;
         if (newWorker) {
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // New content is available; dispatch an event for components to listen to
-              window.dispatchEvent(new Event('serviceWorkerUpdateFound'));
-              callback();
+              console.log('[Service Worker] New version installed and waiting');
+              
+              // Dispatch custom event with registration details
+              window.dispatchEvent(
+                new CustomEvent('pwaUpdate', { 
+                  detail: { registration } 
+                })
+              );
+              
+              if (callback) callback();
             }
           });
         }
       });
+      
+      // Periodically check for updates (every hour)
+      setInterval(() => {
+        console.log('[Service Worker] Checking for updates...');
+        registration.update().catch(err => {
+          console.error('[Service Worker] Update check failed:', err);
+        });
+      }, 60 * 60 * 1000);
     });
   }
 }
 
 /**
  * Apply updates from a waiting service worker
+ * 
+ * This function sends a SKIP_WAITING message to the service worker
+ * and reloads the page to activate the new version.
+ * Uses the updated event lifecycle patterns recommended by the PWA best practices.
  */
 export function applyUpdates() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.ready.then(registration => {
-      if (registration.waiting) {
-        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-        window.location.reload();
-      }
+    // Create a controller to handle the update process
+    let refreshing = false;
+
+    // Listen for the controlling service worker changing
+    // This happens when a new service worker activates after skipWaiting()
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return;
+      
+      console.log('[Service Worker] Controller changed, reloading...');
+      refreshing = true;
+      window.location.reload();
     });
+
+    // Get the registration then send message to skip waiting
+    navigator.serviceWorker.ready
+      .then(registration => {
+        if (registration.waiting) {
+          // Log the update version if possible
+          console.log('[Service Worker] Activating new version...');
+          
+          // Send the skip waiting message
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+      })
+      .catch(err => {
+        console.error('[Service Worker] Failed to apply updates:', err);
+      });
   }
 }
 
@@ -161,12 +220,19 @@ export function performBackgroundSync(syncTag: string): Promise<boolean> {
   if ('serviceWorker' in navigator && 'SyncManager' in window) {
     return navigator.serviceWorker.ready
       .then(registration => {
-        return registration.sync.register(syncTag)
+        // Add type assertion for the sync property
+        const regWithSync = registration as ServiceWorkerRegistration & {
+          sync: {
+            register(tag: string): Promise<void>;
+          }
+        };
+        
+        return regWithSync.sync.register(syncTag)
           .then(() => {
             console.log(`Background sync registered: ${syncTag}`);
             return true;
           })
-          .catch(err => {
+          .catch((err: Error) => {
             console.error(`Background sync failed: ${err}`);
             return false;
           });
@@ -179,18 +245,21 @@ export function performBackgroundSync(syncTag: string): Promise<boolean> {
 
 /**
  * Sync offline actions when back online
+ * 
+ * This function triggers background sync for favorites and redemptions
+ * when the device comes back online.
  */
 export function syncOfflineActions() {
   if ('serviceWorker' in navigator) {
     // Attempt to sync favorites
     performBackgroundSync('sync-favorites')
       .then(() => console.log('Favorites sync initiated'))
-      .catch(err => console.error('Favorites sync error:', err));
+      .catch((err: Error) => console.error('Favorites sync error:', err));
     
     // Attempt to sync redemptions
     performBackgroundSync('sync-redemptions')
       .then(() => console.log('Redemptions sync initiated'))
-      .catch(err => console.error('Redemptions sync error:', err));
+      .catch((err: Error) => console.error('Redemptions sync error:', err));
   }
 }
 
