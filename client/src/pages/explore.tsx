@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,6 +13,7 @@ import { CATEGORIES } from '@/components/dashboard/CategoryFilter';
 import DealGrid from '@/components/dashboard/DealGrid';
 import DealDetail from '@/components/dashboard/DealDetail';
 import CachedDataAlert from '@/components/ui/CachedDataAlert';
+import Breadcrumbs, { commonPathLabels } from '@/components/navigation/Breadcrumbs';
 import { 
   getCacheStatusFromResponse, 
   getFreshCacheStatus,
