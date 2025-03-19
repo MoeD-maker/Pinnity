@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 import { DealMap, DealDetail, CategoryFilter, CATEGORIES } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { Search, Filter, MapPin, X } from 'lucide-react';
@@ -7,6 +8,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import Breadcrumbs, { commonPathLabels } from '@/components/navigation/Breadcrumbs';
 import { Deal } from '@shared/schema';
 
 // Map API categories to our internal category IDs (same as in dashboard.tsx)
@@ -125,6 +127,15 @@ export default function MapPage() {
 
   return (
     <div className="h-full flex flex-col">
+      {/* Breadcrumbs navigation */}
+      <div className="p-3 bg-background z-10">
+        <div className="container max-w-7xl mx-auto">
+          <Breadcrumbs 
+            pathLabels={commonPathLabels} 
+          />
+        </div>
+      </div>
+      
       {/* Search bar */}
       <div className="p-4 shadow-sm bg-background z-10">
         <div className="container max-w-7xl mx-auto flex flex-col sm:flex-row gap-2">

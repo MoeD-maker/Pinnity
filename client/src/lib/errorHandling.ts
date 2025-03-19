@@ -3,6 +3,7 @@
  * Provides standardized error handling, user-friendly messages, and recovery options.
  */
 
+import React from 'react';
 import { toast } from '@/hooks/use-toast';
 
 // Error categories for consistent handling
@@ -311,24 +312,29 @@ export function handleError(error: any, options?: {
     const variant = getErrorVariant(appError);
     const recovery = getRecoveryAction(appError, options?.retryFn);
     
+    // Always show the toast first
+    toast({
+      title: 'Error',
+      description: userMessage,
+      variant,
+      duration: options?.duration || 5000
+    });
+    
+    // If there's a recovery option, show a separate toast with retry action
     if (recovery && appError.recoverable) {
       toast({
-        title: 'Error',
-        description: userMessage,
-        variant,
-        duration: options?.duration || 5000,
-        action: {
-          label: 'Retry',
-          onClick: recovery
-        }
+        title: 'Recovery Available',
+        description: 'You can retry the operation that failed',
       });
-    } else {
-      toast({
-        title: 'Error',
-        description: userMessage,
-        variant,
-        duration: options?.duration || 5000,
-      });
+      
+      // Execute recovery if it's an offline error after a short delay
+      if (appError.category === ErrorCategory.OFFLINE) {
+        setTimeout(() => {
+          if (navigator.onLine && recovery) {
+            recovery();
+          }
+        }, 2000);
+      }
     }
   }
   
