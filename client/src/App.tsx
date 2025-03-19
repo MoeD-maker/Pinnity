@@ -467,6 +467,44 @@ function App() {
   // Initialize the offline data hook for availability throughout the app
   useOfflineData();
   
+  // Initialize service worker with PWA support
+  useEffect(() => {
+    import('./serviceWorkerRegistration').then(({ register, checkForUpdates }) => {
+      // Register service worker with callbacks for updates
+      register({
+        onUpdate: (registration) => {
+          console.log('[PWA] New content is available, triggering update notification');
+          // Service worker update found, notification is handled via event
+        },
+        onSuccess: (registration) => {
+          console.log('[PWA] Content is cached for offline use');
+        },
+        onOffline: () => {
+          console.log('[PWA] App is offline');
+        },
+        onOnline: () => {
+          console.log('[PWA] App is online, syncing data');
+        },
+        onMessage: (event) => {
+          console.log('[PWA] Received message from service worker:', event.data);
+          // Handle service worker messages (sync results, etc.)
+          if (event.data?.type === 'FAVORITES_SYNCED' || event.data?.type === 'REDEMPTIONS_SYNCED') {
+            const { success, failed } = event.data;
+            if (success > 0) {
+              // Notify user of successful synchronization
+              console.log(`[PWA] Synced ${success} items successfully, ${failed} failed`);
+            }
+          }
+        }
+      });
+      
+      // Check for waiting service worker updates
+      setTimeout(() => {
+        checkForUpdates();
+      }, 3000);
+    });
+  }, []);
+  
   // Simplified App component for debugging
   try {
     // Instead of returning the debug view directly, let's wrap everything in providers
