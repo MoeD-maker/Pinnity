@@ -16,6 +16,18 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const userId = user?.id || 1;
   
+  // Get tab from URL query parameter if it exists
+  const getDefaultTab = () => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tab = urlParams.get('tab');
+      if (tab && ['notifications', 'appearance', 'privacy'].includes(tab)) {
+        return tab;
+      }
+    }
+    return 'notifications';
+  };
+  
   // Fetch user notification preferences
   const { data: preferences, isLoading: isLoadingPreferences } = useQuery({
     queryKey: ['/api/user', userId, 'notification-preferences'],
@@ -64,7 +76,7 @@ export default function SettingsPage() {
     <div className="container max-w-4xl mx-auto p-4">
       <h1 className="text-3xl font-bold text-primary mb-6">Settings</h1>
       
-      <Tabs defaultValue="notifications">
+      <Tabs defaultValue={getDefaultTab()}>
         <TabsList className="mb-6">
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="appearance">Appearance</TabsTrigger>

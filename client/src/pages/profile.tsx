@@ -11,6 +11,7 @@ import { User as UserIcon } from 'lucide-react';
 import PasswordChangeForm from '@/components/profile/PasswordChangeForm';
 import UserRatingsList from '@/components/ratings/UserRatingsList';
 import RecentRedemptionsRatingPrompt from '@/components/ratings/RecentRedemptionsRatingPrompt';
+import { Link } from 'wouter';
 
 export default function ProfilePage() {
   // For demo purposes, hardcoded user ID
@@ -102,7 +103,7 @@ export default function ProfilePage() {
               <Avatar className="h-16 w-16">
                 <AvatarImage src={user?.avatarUrl || ''} alt={user?.name} />
                 <AvatarFallback className="bg-primary text-white">
-                  {user?.name?.split(' ').map(n => n[0]).join('') || 'U'}
+                  {user?.name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
                 </AvatarFallback>
               </Avatar>
               <div>
@@ -143,63 +144,53 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="email-notifications">Email Notifications</Label>
-                  <p className="text-sm text-muted-foreground">Receive emails about deal updates</p>
-                </div>
-                <Switch 
-                  id="email-notifications" 
-                  checked={preferences?.emailNotifications} 
-                  disabled
-                />
-              </div>
-              
-              <Separator />
-              
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="push-notifications">Push Notifications</Label>
-                  <p className="text-sm text-muted-foreground">Receive notifications on your device</p>
-                </div>
-                <Switch 
-                  id="push-notifications" 
-                  checked={preferences?.pushNotifications} 
-                  disabled
-                />
-              </div>
-              
-              <Separator />
-              
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="deal-alerts">Deal Alerts</Label>
-                  <p className="text-sm text-muted-foreground">Get notified about new deals in your area</p>
-                </div>
-                <Switch 
-                  id="deal-alerts" 
-                  checked={preferences?.dealAlerts} 
-                  disabled
-                />
-              </div>
-              
-              <Separator />
-              
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="newsletter">Weekly Newsletter</Label>
-                  <p className="text-sm text-muted-foreground">Receive our weekly newsletter</p>
-                </div>
-                <Switch 
-                  id="newsletter" 
-                  checked={preferences?.weeklyNewsletter} 
-                  disabled
-                />
+              {/* Simplified notification summary */}
+              <div className="bg-muted/50 rounded-lg p-4">
+                <h4 className="font-medium mb-2">Active Notifications</h4>
+                <ul className="space-y-2 text-sm">
+                  {preferences?.emailNotifications && (
+                    <li className="flex items-center">
+                      <span className="text-green-600 mr-2">✓</span>
+                      Email notifications
+                    </li>
+                  )}
+                  {preferences?.pushNotifications && (
+                    <li className="flex items-center">
+                      <span className="text-green-600 mr-2">✓</span>
+                      Push notifications
+                    </li>
+                  )}
+                  {preferences?.dealAlerts && (
+                    <li className="flex items-center">
+                      <span className="text-green-600 mr-2">✓</span>
+                      Deal alerts
+                    </li>
+                  )}
+                  {preferences?.weeklyNewsletter && (
+                    <li className="flex items-center">
+                      <span className="text-green-600 mr-2">✓</span>
+                      Weekly newsletter
+                    </li>
+                  )}
+                  {!preferences?.emailNotifications && 
+                   !preferences?.pushNotifications && 
+                   !preferences?.dealAlerts && 
+                   !preferences?.weeklyNewsletter && (
+                    <li className="text-muted-foreground italic">
+                      No notifications enabled
+                    </li>
+                  )}
+                </ul>
               </div>
             </div>
             
             <div className="mt-6">
-              <Button variant="outline">Update Preferences</Button>
+              <Button variant="default" className="w-full" onClick={() => window.location.href = '/settings?tab=notifications'}>
+                Manage Notification Settings
+              </Button>
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                Update your notification preferences in the settings page
+              </p>
             </div>
           </CardContent>
         </Card>
