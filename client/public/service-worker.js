@@ -2,7 +2,9 @@
 // Import localforage for offline data storage
 importScripts('https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js');
 
-const CACHE_NAME = 'pinnity-cache-v1';
+// Version is used to trigger updates when changed
+const APP_VERSION = 'v1.1.0';
+const CACHE_NAME = `pinnity-cache-${APP_VERSION}`;
 const DEAL_CACHE_MAX_AGE = 3600000; // 1 hour in milliseconds
 const OFFLINE_PAGE = '/offline.html';
 const CACHE_ASSETS = [
