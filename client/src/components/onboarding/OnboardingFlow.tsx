@@ -13,7 +13,11 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, ChevronRight, ChevronLeft, Check, ShieldAlert } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiPost } from "@/lib/api";
-import useCsrfProtection from "@/hooks/useCsrfProtection";
+import { useCsrfProtection } from "@/hooks/useCsrfProtection";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
+import { SessionRecoveryNotice } from "./SessionRecoveryNotice";
+import { SaveProgressButton } from "./SaveProgressButton";
+import { SaveAndContinueModal } from "./SaveAndContinueModal";
 
 // Define the user interface
 interface UserData {
@@ -274,11 +278,65 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
     fetchWithProtection
   } = useCsrfProtection(true); // Auto-fetch token on mount
   
+  // Form persistence
+  const formData = {
+    userType,
+    step,
+    preferences: userType === 'individual' ? individualPreferences : businessPreferences
+  };
+  
+  const { 
+    saveFormState, 
+    restoreFormState, 
+    clearFormState, 
+    checkForSavedData,
+    metadata: persistenceMetadata
+  } = useFormPersistence(formData, {
+    formId: `onboarding-${userType}`,
+    autoSave: true,
+    autoSaveInterval: 30 * 1000, // 30 seconds
+    onRestoreSuccess: (data) => {
+      console.log('Successfully restored onboarding data');
+      if (data.step) {
+        setStep(data.step);
+      }
+      
+      if (data.preferences) {
+        if (userType === 'individual') {
+          setIndividualPreferences(data.preferences);
+        } else {
+          setBusinessPreferences(data.preferences);
+        }
+      }
+      
+      setRestoringSession(false);
+    },
+    onSaveSuccess: () => {
+      console.log('Successfully saved onboarding progress');
+    }
+  });
+  
   // Session timeout handling reference
   const sessionTimeoutRef = useRef<number | null>(null);
   
   // Flag to track if security setup is complete (both auth and CSRF)
   const [securitySetupComplete, setSecuritySetupComplete] = useState(false);
+  
+  // Check for existing form data and restore session
+  useEffect(() => {
+    const checkForExistingData = async () => {
+      const hasData = await checkForSavedData();
+      
+      if (hasData && persistenceMetadata.lastSaved) {
+        console.log('Found saved onboarding data, setting restore flag');
+        setRestoringSession(true);
+      }
+    };
+    
+    if (isAuthenticated) {
+      checkForExistingData();
+    }
+  }, [checkForSavedData, persistenceMetadata.lastSaved, isAuthenticated]);
   
   // Check authentication and CSRF on component mount
   useEffect(() => {

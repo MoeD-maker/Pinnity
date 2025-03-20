@@ -1,329 +1,344 @@
 /**
  * Form Persistence Hook
  * 
- * This hook provides automatic form state persistence with:
- * - Auto-saving form state as the user interacts
- * - Restoring form state when returning to a form
- * - Session recovery if the browser crashes or page is refreshed
- * - Support for "Save & Continue Later" functionality
- * - Auto-expiration of old/unused form state
+ * This hook provides automatic persistence for form data using IndexedDB,
+ * with features for saving, restoring, and managing form state across sessions.
+ * It includes auto-save functionality, manual save actions, and dirty state tracking.
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { 
-  saveFormState, 
-  getFormState, 
-  removeFormState 
-} from '@/lib/storage';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { 
+  storeData, 
+  retrieveData, 
+  removeData, 
+  getFormStorageKey,
+  getExpirationInfo,
+  hasData
+} from '@/lib/storage';
 
-export interface FormPersistenceOptions {
-  /** How often to auto-save (in milliseconds). Set to 0 to disable auto-save. */
-  autoSaveInterval?: number;
-  /** How long to keep the form data (in milliseconds) */
-  expiryTime?: number;
-  /** Whether to automatically restore form data on mount */
-  autoRestore?: boolean;
-  /** Whether to show debugging information in console */
-  debug?: boolean;
-}
-
-const DEFAULT_OPTIONS: FormPersistenceOptions = {
-  autoSaveInterval: 5000, // 5 seconds
-  expiryTime: 24 * 60 * 60 * 1000, // 24 hours
-  autoRestore: true,
-  debug: false
-};
+// Default auto-save interval in milliseconds (15 seconds)
+const DEFAULT_AUTOSAVE_INTERVAL = 15 * 1000;
 
 export interface FormPersistenceMetadata {
-  lastSaved: Date | null;
-  isDirty: boolean;
+  lastSaved: number | null;
+  saveStatus: 'idle' | 'saving' | 'success' | 'error';
   hasPersistedData: boolean;
-  saveStatus: 'idle' | 'saving' | 'saved' | 'error';
+  isDirty: boolean;
+  expiresAt: number | null;
+}
+
+export interface FormPersistenceOptions {
+  // Form identifier (used in storage key)
+  formId: string;
+  
+  // Whether to enable auto-save functionality
+  autoSave?: boolean;
+  
+  // Auto-save interval in milliseconds
+  autoSaveInterval?: number;
+  
+  // Maximum storage time in milliseconds (default: 24 hours)
+  expirationMs?: number;
+  
+  // Optional callback to run on successful restore
+  onRestoreSuccess?: (data: any) => void;
+  
+  // Optional callback to run when restore fails
+  onRestoreError?: (error: any) => void;
+  
+  // Optional callback to run on save success
+  onSaveSuccess?: () => void;
+  
+  // Optional callback to run on save error
+  onSaveError?: (error: any) => void;
 }
 
 /**
- * Hook for form state persistence
- * @param formId Unique identifier for the form
- * @param initialState Initial form state (before any persistence)
- * @param options Configuration options
- * @returns An object containing form state, metadata, and control functions
+ * Hook for form data persistence across sessions
+ * 
+ * @param formState Current form state to persist
+ * @param options Configuration options for persistence behavior
+ * @returns Object with form persistence functions and metadata
  */
-export function useFormPersistence<T extends Record<string, any>>(
-  formId: string,
-  initialState: T,
-  options: FormPersistenceOptions = {}
-) {
-  // Merge default options with provided options
-  const mergedOptions = { ...DEFAULT_OPTIONS, ...options };
-  const { debug, autoSaveInterval, expiryTime, autoRestore } = mergedOptions;
-
-  // Get authenticated user
+export function useFormPersistence<T extends object>(
+  formState: T,
+  options: FormPersistenceOptions
+): {
+  // Save the current form state manually
+  saveFormState: () => Promise<boolean>;
+  
+  // Restore form state from storage
+  restoreFormState: () => Promise<T | null>;
+  
+  // Clear the stored form state
+  clearFormState: () => Promise<boolean>;
+  
+  // Metadata about the persistence state
+  metadata: FormPersistenceMetadata;
+  
+  // Check if there's previously saved data without loading it
+  checkForSavedData: () => Promise<boolean>;
+} {
+  // Get auth context for user ID
   const { user } = useAuth();
-  const userId = user?.id;
-
-  // Form state and metadata
-  const [formState, setFormState] = useState<T>(initialState);
+  const userId = user?.id || null;
+  
+  // Set up initial metadata state
   const [metadata, setMetadata] = useState<FormPersistenceMetadata>({
     lastSaved: null,
-    isDirty: false,
+    saveStatus: 'idle',
     hasPersistedData: false,
-    saveStatus: 'idle'
+    isDirty: false,
+    expiresAt: null,
   });
   
-  // Track if the form has been modified since last save
-  const [isDirty, setIsDirty] = useState(false);
-  const formStateRef = useRef(formState);
+  // Previous form state for comparison
+  const previousFormStateRef = useRef<string>(JSON.stringify(formState));
+  
+  // Storage key for this form
+  const storageKey = getFormStorageKey(userId, options.formId);
+  
+  // Auto-save timer reference
   const autoSaveTimerRef = useRef<number | null>(null);
   
-  // Log debug information if enabled
-  const logDebug = useCallback((message: string, data?: any) => {
-    if (debug) {
-      console.log(`[FormPersistence:${formId}] ${message}`, data || '');
-    }
-  }, [debug, formId]);
-
-  // Load form state from storage on mount
-  useEffect(() => {
-    if (!userId || !autoRestore) return;
-    
-    const loadFormState = async () => {
-      try {
-        logDebug('Loading form state from storage');
-        const savedState = await getFormState<T | null>(userId, formId, null);
-        
-        if (savedState) {
-          logDebug('Loaded saved state', savedState);
-          setFormState(savedState);
-          setMetadata(prev => ({
-            ...prev,
-            hasPersistedData: true,
-            lastSaved: new Date()
-          }));
-        } else {
-          logDebug('No saved state found, using initial state');
-          setFormState(initialState);
-        }
-      } catch (error) {
-        console.error('Error loading form state:', error);
-        setFormState(initialState);
-      }
-    };
-    
-    loadFormState();
-  }, [userId, formId, initialState, autoRestore, logDebug]);
+  // Default options
+  const {
+    autoSave = true,
+    autoSaveInterval = DEFAULT_AUTOSAVE_INTERVAL,
+    expirationMs,
+    onRestoreSuccess,
+    onRestoreError,
+    onSaveSuccess,
+    onSaveError,
+  } = options;
   
-  // Update formStateRef when formState changes
-  useEffect(() => {
-    formStateRef.current = formState;
+  /**
+   * Check if the form has been modified since last save
+   */
+  const checkIfDirty = useCallback(() => {
+    const currentFormState = JSON.stringify(formState);
+    const isDirty = currentFormState !== previousFormStateRef.current;
+    
+    setMetadata(prev => ({
+      ...prev,
+      isDirty,
+    }));
+    
+    return isDirty;
   }, [formState]);
   
-  // Save form state to storage
-  const saveState = useCallback(async () => {
-    if (!userId) {
-      logDebug('No user ID available, skipping save');
-      return false;
-    }
-    
+  /**
+   * Save the current form state
+   */
+  const saveFormState = useCallback(async (): Promise<boolean> => {
     try {
-      logDebug('Saving form state to storage', formStateRef.current);
+      // Check if there are actual changes to save
+      const isDirty = checkIfDirty();
+      if (!isDirty) {
+        console.log('No changes to save for form:', options.formId);
+        return true; // Not saving but not an error
+      }
+      
       setMetadata(prev => ({ ...prev, saveStatus: 'saving' }));
       
-      const success = await saveFormState(
-        userId, 
-        formId, 
-        formStateRef.current,
-        expiryTime
+      const success = await storeData(
+        storageKey,
+        formState,
+        expirationMs
       );
       
       if (success) {
-        logDebug('Form state saved successfully');
-        setIsDirty(false);
+        const now = Date.now();
         setMetadata(prev => ({
           ...prev,
-          lastSaved: new Date(),
-          isDirty: false,
+          lastSaved: now,
+          saveStatus: 'success',
           hasPersistedData: true,
-          saveStatus: 'saved'
+          isDirty: false,
         }));
+        
+        // Update the previous state reference
+        previousFormStateRef.current = JSON.stringify(formState);
+        
+        // Get and store expiration info
+        const expirationInfo = await getExpirationInfo(storageKey);
+        if (expirationInfo) {
+          setMetadata(prev => ({
+            ...prev,
+            expiresAt: expirationInfo.expiresAt,
+          }));
+        }
+        
+        onSaveSuccess?.();
         return true;
       } else {
-        throw new Error('Save operation returned false');
+        setMetadata(prev => ({ ...prev, saveStatus: 'error' }));
+        onSaveError?.(new Error('Failed to save form state'));
+        return false;
       }
     } catch (error) {
       console.error('Error saving form state:', error);
       setMetadata(prev => ({ ...prev, saveStatus: 'error' }));
+      onSaveError?.(error);
       return false;
     }
-  }, [userId, formId, expiryTime, logDebug]);
+  }, [
+    checkIfDirty, 
+    expirationMs, 
+    formState, 
+    onSaveError, 
+    onSaveSuccess, 
+    options.formId, 
+    storageKey
+  ]);
   
-  // Auto-save effect
-  useEffect(() => {
-    if (!userId || !autoSaveInterval || autoSaveInterval <= 0) return;
-    
-    // Clear existing timer
-    if (autoSaveTimerRef.current) {
-      window.clearInterval(autoSaveTimerRef.current);
-    }
-    
-    // Set up auto-save interval
-    autoSaveTimerRef.current = window.setInterval(() => {
-      if (isDirty) {
-        logDebug('Auto-saving form state');
-        saveState();
-      }
-    }, autoSaveInterval);
-    
-    // Cleanup on unmount
-    return () => {
-      if (autoSaveTimerRef.current) {
-        window.clearInterval(autoSaveTimerRef.current);
-      }
-    };
-  }, [userId, isDirty, autoSaveInterval, saveState, logDebug]);
-
-  // Handle beforeunload event to save state when leaving the page
-  useEffect(() => {
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (isDirty) {
-        // Save state synchronously using localStorage as a fallback
-        // since async operations might not complete before page unloads
-        try {
-          localStorage.setItem(
-            `emergency_form_state_${formId}`, 
-            JSON.stringify({
-              data: formStateRef.current,
-              userId,
-              timestamp: Date.now()
-            })
-          );
-        } catch (error) {
-          console.error('Error saving emergency form state:', error);
-        }
-        
-        // Modern browsers ignore this message but require returnValue to be set
-        const message = 'You have unsaved changes. Are you sure you want to leave?';
-        event.returnValue = message;
-        return message;
-      }
-    };
-    
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [userId, formId, isDirty]);
-  
-  // Check for emergency saved state on mount and restore if needed
-  useEffect(() => {
-    const checkEmergencyState = () => {
-      try {
-        const key = `emergency_form_state_${formId}`;
-        const savedJson = localStorage.getItem(key);
-        
-        if (savedJson) {
-          const saved = JSON.parse(savedJson);
-          
-          // Only restore if it's for the current user
-          if (saved.userId === userId) {
-            logDebug('Found emergency saved state, restoring', saved.data);
-            setFormState(saved.data);
-            setIsDirty(true);
-            setMetadata(prev => ({
-              ...prev, 
-              hasPersistedData: true,
-              lastSaved: new Date(saved.timestamp)
-            }));
-          }
-          
-          // Remove the emergency state
-          localStorage.removeItem(key);
-        }
-      } catch (error) {
-        console.error('Error checking emergency form state:', error);
-      }
-    };
-    
-    if (userId && autoRestore) {
-      checkEmergencyState();
-    }
-  }, [userId, formId, autoRestore, logDebug]);
-  
-  // Update form state and mark as dirty
-  const updateFormState = useCallback((newState: Partial<T> | ((prev: T) => T)) => {
-    setFormState(prev => {
-      const nextState = typeof newState === 'function'
-        ? (newState as Function)(prev)
-        : { ...prev, ...newState };
-      
-      // Only mark as dirty if state has actually changed
-      const hasChanged = JSON.stringify(nextState) !== JSON.stringify(prev);
-      if (hasChanged && !isDirty) {
-        setIsDirty(true);
-        setMetadata(prevMetadata => ({ ...prevMetadata, isDirty: true }));
-      }
-      
-      return nextState;
-    });
-  }, [isDirty]);
-  
-  // Save immediately
-  const saveImmediately = useCallback(async () => {
-    return await saveState();
-  }, [saveState]);
-  
-  // Clear saved state
-  const clearSavedState = useCallback(async () => {
-    if (!userId) return false;
-    
+  /**
+   * Restore form state from storage
+   */
+  const restoreFormState = useCallback(async (): Promise<T | null> => {
     try {
-      logDebug('Clearing saved form state');
-      const success = await removeFormState(userId, formId);
+      const data = await retrieveData<T>(storageKey);
       
-      if (success) {
-        setFormState(initialState);
-        setIsDirty(false);
-        setMetadata({
-          lastSaved: null,
+      if (data) {
+        // Update the metadata to show we have valid data
+        const expirationInfo = await getExpirationInfo(storageKey);
+        setMetadata(prev => ({
+          ...prev,
+          hasPersistedData: true,
+          lastSaved: expirationInfo?.expiresAt 
+            ? expirationInfo.expiresAt - (expirationMs || 24 * 60 * 60 * 1000) 
+            : Date.now(),
+          expiresAt: expirationInfo?.expiresAt || null,
           isDirty: false,
-          hasPersistedData: false,
-          saveStatus: 'idle'
-        });
-        return true;
+        }));
+        
+        // Update the previous state reference
+        previousFormStateRef.current = JSON.stringify(data);
+        
+        onRestoreSuccess?.(data);
+        return data;
       }
       
-      return false;
+      setMetadata(prev => ({
+        ...prev,
+        hasPersistedData: false,
+      }));
+      
+      return null;
     } catch (error) {
-      console.error('Error clearing saved form state:', error);
+      console.error('Error restoring form state:', error);
+      onRestoreError?.(error);
+      return null;
+    }
+  }, [expirationMs, onRestoreError, onRestoreSuccess, storageKey]);
+  
+  /**
+   * Clear the stored form state
+   */
+  const clearFormState = useCallback(async (): Promise<boolean> => {
+    try {
+      await removeData(storageKey);
+      
+      setMetadata(prev => ({
+        ...prev,
+        hasPersistedData: false,
+        lastSaved: null,
+        expiresAt: null,
+      }));
+      
+      return true;
+    } catch (error) {
+      console.error('Error clearing form state:', error);
       return false;
     }
-  }, [userId, formId, initialState, logDebug]);
+  }, [storageKey]);
   
-  // Reset form to initial state
-  const resetForm = useCallback(() => {
-    setFormState(initialState);
-    setIsDirty(true);
-    setMetadata(prev => ({
-      ...prev,
-      isDirty: true
-    }));
-  }, [initialState]);
+  /**
+   * Check if there's previously saved data without loading it
+   */
+  const checkForSavedData = useCallback(async (): Promise<boolean> => {
+    try {
+      const exists = await hasData(storageKey);
+      
+      if (exists) {
+        const expirationInfo = await getExpirationInfo(storageKey);
+        
+        setMetadata(prev => ({
+          ...prev,
+          hasPersistedData: true,
+          expiresAt: expirationInfo?.expiresAt || null,
+          lastSaved: expirationInfo?.expiresAt 
+            ? expirationInfo.expiresAt - (expirationMs || 24 * 60 * 60 * 1000)
+            : null,
+        }));
+      } else {
+        setMetadata(prev => ({
+          ...prev,
+          hasPersistedData: false,
+        }));
+      }
+      
+      return exists;
+    } catch (error) {
+      console.error('Error checking for saved data:', error);
+      return false;
+    }
+  }, [expirationMs, storageKey]);
+  
+  /**
+   * Set up auto-save functionality and check for existing data
+   */
+  useEffect(() => {
+    // Check for existing data on mount
+    checkForSavedData();
+    
+    // Set up auto-save functionality if enabled
+    if (autoSave) {
+      const setupAutoSave = () => {
+        // Clear any existing timer
+        if (autoSaveTimerRef.current !== null) {
+          window.clearInterval(autoSaveTimerRef.current);
+        }
+        
+        // Set up new timer
+        autoSaveTimerRef.current = window.setInterval(() => {
+          const isDirty = checkIfDirty();
+          if (isDirty) {
+            saveFormState();
+          }
+        }, autoSaveInterval);
+      };
+      
+      setupAutoSave();
+      
+      // Clean up timer on unmount
+      return () => {
+        if (autoSaveTimerRef.current !== null) {
+          window.clearInterval(autoSaveTimerRef.current);
+        }
+      };
+    }
+  }, [
+    autoSave, 
+    autoSaveInterval, 
+    checkForSavedData, 
+    checkIfDirty, 
+    saveFormState
+  ]);
+  
+  /**
+   * Check for form changes when formState changes
+   */
+  useEffect(() => {
+    checkIfDirty();
+  }, [checkIfDirty, formState]);
   
   return {
-    // Form state and update function
-    formState,
-    updateFormState,
-    
-    // Metadata for the UI
+    saveFormState,
+    restoreFormState,
+    clearFormState,
     metadata,
-    
-    // Actions
-    save: saveImmediately,
-    reset: resetForm,
-    clear: clearSavedState,
-    
-    // Additional helpers
-    isDirty
+    checkForSavedData,
   };
 }
