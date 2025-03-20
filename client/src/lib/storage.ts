@@ -1,251 +1,206 @@
 /**
- * Storage Utility - Provides a wrapper around localForage for persistent storage
+ * Storage utilities for client-side persistence
  * 
- * This utility provides a simple interface for storing and retrieving data
- * from IndexedDB using localForage. It includes features for:
- * - Type-safe storage and retrieval of data
- * - Default values when data isn't available
- * - Encrypted storage for sensitive data
- * - Session recovery for form state
- * - Data expiration for temporary storage
+ * This module provides utilities for storing and retrieving data from IndexedDB
+ * using the localforage library. It handles serialization, storage limits,
+ * and expiration of stored data.
  */
 
-import localForage from 'localforage';
+import localforage from 'localforage';
 
-// Configure localForage
-localForage.config({
+// Configure localforage
+localforage.config({
   name: 'pinnity',
-  storeName: 'pinnity_storage',
-  description: 'Pinnity application data store'
+  version: 1.0,
+  storeName: 'pinnity_userdata',
+  description: 'Pinnity user data and form persistence',
 });
 
-// Create separate instances for different storage purposes
-export const formStateStore = localForage.createInstance({
-  name: 'pinnity',
-  storeName: 'form_state'
-});
+// Default expiration time for stored data (24 hours)
+const DEFAULT_EXPIRATION_MS = 24 * 60 * 60 * 1000;
 
-export const userPreferencesStore = localForage.createInstance({
-  name: 'pinnity',
-  storeName: 'user_preferences'
-});
+// Maximum size for stored values (in bytes)
+const MAX_VALUE_SIZE = 5 * 1024 * 1024; // 5MB
 
-export const temporaryStore = localForage.createInstance({
-  name: 'pinnity',
-  storeName: 'temporary_data'
-});
+// Types for stored data
+export interface StoredData<T> {
+  value: T;
+  timestamp: number;
+  expiresAt: number;
+  size: number;
+}
 
 /**
- * Saves data to the specified store
- * @param store The localForage instance to use
- * @param key The key to store the data under
- * @param data The data to store
- * @param expiryTimeMs Optional expiration time in milliseconds
- * @returns Promise resolving to true if successful
+ * Store data in IndexedDB with expiration
+ * 
+ * @param key Storage key
+ * @param value Data to store
+ * @param expirationMs Expiration time in milliseconds (default: 24 hours)
+ * @returns Promise resolving to success status
  */
-export async function saveData<T>(
-  store: LocalForage,
-  key: string,
-  data: T,
-  expiryTimeMs?: number
+export async function storeData<T>(
+  key: string, 
+  value: T, 
+  expirationMs: number = DEFAULT_EXPIRATION_MS
 ): Promise<boolean> {
   try {
-    const storageItem = {
-      data,
-      timestamp: Date.now(),
-      expiry: expiryTimeMs ? Date.now() + expiryTimeMs : null
+    // Serialize the value to JSON to get its size
+    const serialized = JSON.stringify(value);
+    
+    // Check if the value exceeds the maximum size
+    if (serialized.length > MAX_VALUE_SIZE) {
+      console.error(`Data for key '${key}' exceeds maximum size limit`);
+      return false;
+    }
+    
+    // Store with metadata including expiration
+    const now = Date.now();
+    const storedData: StoredData<T> = {
+      value,
+      timestamp: now,
+      expiresAt: now + expirationMs,
+      size: serialized.length,
     };
     
-    await store.setItem(key, storageItem);
+    await localforage.setItem(key, storedData);
     return true;
   } catch (error) {
-    console.error(`Error saving data for key "${key}":`, error);
+    console.error(`Error storing data for key '${key}':`, error);
     return false;
   }
 }
 
 /**
- * Retrieves data from the specified store
- * @param store The localForage instance to use
- * @param key The key to retrieve data from
- * @param defaultValue The default value to return if no data exists or it has expired
- * @returns Promise resolving to the stored data or defaultValue
+ * Retrieve data from IndexedDB, checking for expiration
+ * 
+ * @param key Storage key
+ * @returns Promise resolving to the stored value or null if not found or expired
  */
-export async function getData<T>(
-  store: LocalForage,
-  key: string,
-  defaultValue: T
-): Promise<T> {
+export async function retrieveData<T>(key: string): Promise<T | null> {
   try {
-    const storedItem = await store.getItem<{
-      data: T;
-      timestamp: number;
-      expiry: number | null;
-    }>(key);
+    const storedData = await localforage.getItem<StoredData<T>>(key);
     
-    // Return default value if no data exists
-    if (!storedItem) {
-      return defaultValue;
+    // Check if data exists
+    if (!storedData) {
+      return null;
     }
     
     // Check if data has expired
-    if (storedItem.expiry && storedItem.expiry < Date.now()) {
-      await store.removeItem(key);
-      return defaultValue;
+    if (Date.now() > storedData.expiresAt) {
+      console.log(`Data for key '${key}' has expired, removing it`);
+      await localforage.removeItem(key);
+      return null;
     }
     
-    return storedItem.data;
+    return storedData.value;
   } catch (error) {
-    console.error(`Error retrieving data for key "${key}":`, error);
-    return defaultValue;
+    console.error(`Error retrieving data for key '${key}':`, error);
+    return null;
   }
 }
 
 /**
- * Removes data from the specified store
- * @param store The localForage instance to use
- * @param key The key to remove
- * @returns Promise resolving to true if successful
+ * Remove data from IndexedDB
+ * 
+ * @param key Storage key
+ * @returns Promise resolving to success status
  */
-export async function removeData(
-  store: LocalForage,
-  key: string
-): Promise<boolean> {
+export async function removeData(key: string): Promise<boolean> {
   try {
-    await store.removeItem(key);
+    await localforage.removeItem(key);
     return true;
   } catch (error) {
-    console.error(`Error removing data for key "${key}":`, error);
+    console.error(`Error removing data for key '${key}':`, error);
     return false;
   }
 }
 
 /**
- * Clears all data in the specified store
- * @param store The localForage instance to use
- * @returns Promise resolving to true if successful
+ * Check if data exists for a key (and is not expired)
+ * 
+ * @param key Storage key
+ * @returns Promise resolving to boolean indicating existence
  */
-export async function clearStore(store: LocalForage): Promise<boolean> {
+export async function hasData(key: string): Promise<boolean> {
+  const data = await retrieveData(key);
+  return data !== null;
+}
+
+/**
+ * Get expiration info for stored data
+ * 
+ * @param key Storage key
+ * @returns Promise resolving to expiration timestamp or null if not found
+ */
+export async function getExpirationInfo(key: string): Promise<{ 
+  expiresAt: number; 
+  remainingMs: number;
+} | null> {
   try {
-    await store.clear();
+    const storedData = await localforage.getItem<StoredData<any>>(key);
+    
+    if (!storedData) {
+      return null;
+    }
+    
+    const now = Date.now();
+    const remainingMs = Math.max(0, storedData.expiresAt - now);
+    
+    return {
+      expiresAt: storedData.expiresAt,
+      remainingMs,
+    };
+  } catch (error) {
+    console.error(`Error getting expiration info for key '${key}':`, error);
+    return null;
+  }
+}
+
+/**
+ * Clear all stored data
+ * 
+ * @returns Promise resolving to success status
+ */
+export async function clearAllData(): Promise<boolean> {
+  try {
+    await localforage.clear();
     return true;
   } catch (error) {
-    console.error('Error clearing store:', error);
+    console.error('Error clearing all data:', error);
     return false;
   }
 }
 
 /**
- * Removes all expired items from the specified store
- * @param store The localForage instance to use
- * @returns Promise resolving to the number of items removed
+ * Generate a unique storage key based on user ID and form ID
+ * 
+ * @param userId User ID (can be null for anonymous users)
+ * @param formId Form identifier
+ * @returns Unique storage key
  */
-export async function removeExpiredItems(store: LocalForage): Promise<number> {
+export function getFormStorageKey(userId: number | null, formId: string): string {
+  return `form:${userId || 'anonymous'}:${formId}`;
+}
+
+/**
+ * Clean up expired data (can be called periodically)
+ * 
+ * @returns Promise resolving to number of items removed
+ */
+export async function cleanupExpiredData(): Promise<number> {
   try {
     let removedCount = 0;
     
-    await store.iterate((value: any, key) => {
-      if (value.expiry && value.expiry < Date.now()) {
-        store.removeItem(key);
+    await localforage.iterate<StoredData<any>, void>((storedData, key) => {
+      if (Date.now() > storedData.expiresAt) {
+        localforage.removeItem(key);
         removedCount++;
       }
     });
     
     return removedCount;
   } catch (error) {
-    console.error('Error removing expired items:', error);
-    return 0;
-  }
-}
-
-/**
- * Special keys for form state management
- */
-export const STORAGE_KEYS = {
-  ONBOARDING_STATE: 'onboarding_state',
-  ONBOARDING_STEP: 'onboarding_step',
-  ONBOARDING_TIMESTAMP: 'onboarding_timestamp',
-  FORM_AUTOSAVE_PREFIX: 'form_autosave_',
-};
-
-/**
- * Helper function to generate a scoped form storage key for a specific user
- * @param userId The user ID
- * @param formId The form identifier
- * @returns A scoped key for the user's form state
- */
-export function getScopedFormKey(userId: number, formId: string): string {
-  return `${STORAGE_KEYS.FORM_AUTOSAVE_PREFIX}${userId}_${formId}`;
-}
-
-/**
- * Save form state with user ID scoping for security
- * @param userId The user ID
- * @param formId The form identifier
- * @param formData The form data to save
- * @param expiryTimeMs Optional expiration time in milliseconds (default: 24 hours)
- * @returns Promise resolving to true if successful
- */
-export async function saveFormState<T>(
-  userId: number,
-  formId: string,
-  formData: T,
-  expiryTimeMs: number = 24 * 60 * 60 * 1000 // 24 hours default
-): Promise<boolean> {
-  const key = getScopedFormKey(userId, formId);
-  return saveData(formStateStore, key, formData, expiryTimeMs);
-}
-
-/**
- * Retrieve form state with user ID scoping for security
- * @param userId The user ID
- * @param formId The form identifier
- * @param defaultValue The default value to return if no data exists
- * @returns Promise resolving to the form state or defaultValue
- */
-export async function getFormState<T>(
-  userId: number,
-  formId: string,
-  defaultValue: T
-): Promise<T> {
-  const key = getScopedFormKey(userId, formId);
-  return getData(formStateStore, key, defaultValue);
-}
-
-/**
- * Remove a specific form state
- * @param userId The user ID
- * @param formId The form identifier
- * @returns Promise resolving to true if successful
- */
-export async function removeFormState(
-  userId: number,
-  formId: string
-): Promise<boolean> {
-  const key = getScopedFormKey(userId, formId);
-  return removeData(formStateStore, key);
-}
-
-/**
- * Clear all form states for a specific user
- * @param userId The user ID
- * @returns Promise resolving to the number of items removed
- */
-export async function clearUserFormStates(userId: number): Promise<number> {
-  try {
-    let removedCount = 0;
-    const prefix = `${STORAGE_KEYS.FORM_AUTOSAVE_PREFIX}${userId}_`;
-    
-    await formStateStore.iterate((value, key) => {
-      if (typeof key === 'string' && key.startsWith(prefix)) {
-        formStateStore.removeItem(key);
-        removedCount++;
-      }
-    });
-    
-    return removedCount;
-  } catch (error) {
-    console.error('Error clearing user form states:', error);
+    console.error('Error cleaning up expired data:', error);
     return 0;
   }
 }

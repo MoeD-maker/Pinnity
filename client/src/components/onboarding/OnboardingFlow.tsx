@@ -35,9 +35,10 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  
-  // Individual user preferences
-  const [individualPreferences, setIndividualPreferences] = useState({
+  const [restoringSession, setRestoringSession] = useState(false);
+
+  // Initialize default preferences
+  const defaultIndividualPreferences = {
     // Deal categories interests
     categories: {
       food: false,
@@ -64,10 +65,13 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
       favorites: true,
       expiringDeals: true
     }
-  });
+  };
   
-  // Business user preferences
-  const [businessPreferences, setBusinessPreferences] = useState({
+  // Initialize the state with the default values
+  const [individualPreferences, setIndividualPreferences] = useState(defaultIndividualPreferences);
+  
+  // Default business preferences
+  const defaultBusinessPreferences = {
     // Business hours
     businessHours: {
       monday: { open: "09:00", close: "17:00", closed: false },
@@ -100,7 +104,10 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
       targetByInterest: false,
       localFocus: true
     }
-  });
+  };
+  
+  // Initialize the business preferences state
+  const [businessPreferences, setBusinessPreferences] = useState(defaultBusinessPreferences);
 
   // Define steps for each user type
   const individualSteps = [
