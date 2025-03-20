@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -10,6 +10,7 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { PasswordField } from './PasswordField';
+import { useCsrfProtection } from '@/hooks/useCsrfProtection';
 
 // Password validation schema with strong requirements
 const resetPasswordSchema = z.object({

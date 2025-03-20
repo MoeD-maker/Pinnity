@@ -19,10 +19,16 @@ const MAX_CSRF_RETRY_ATTEMPTS = 3;
 /**
  * Reset the CSRF token - forces a new token to be fetched on the next request
  * Used when token refresh is needed
+ * @param newToken Optional new token to set directly
  */
-export function resetCSRFToken(): void {
-  csrfToken = null;
-  console.log('CSRF token reset - will fetch a new token on next request');
+export function resetCSRFToken(newToken?: string): void {
+  if (newToken) {
+    csrfToken = newToken;
+    console.log('CSRF token updated with new value');
+  } else {
+    csrfToken = null;
+    console.log('CSRF token reset - will fetch a new token on next request');
+  }
 }
 
 // Base delay for exponential backoff (in milliseconds)
