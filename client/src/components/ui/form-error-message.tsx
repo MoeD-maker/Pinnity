@@ -104,27 +104,27 @@ export function FormErrorMessage({
     error: {
       icon: icon ? <AlertCircle className={cn("h-4 w-4", compact ? "mr-1" : "mr-2")} /> : null,
       className: "text-destructive",
-      ariaLive: "assertive"
+      ariaLive: "assertive" as const
     },
     warning: {
       icon: icon ? <AlertTriangle className={cn("h-4 w-4", compact ? "mr-1" : "mr-2")} /> : null,
       className: "text-amber-600",
-      ariaLive: "polite"
+      ariaLive: "polite" as const
     },
     success: {
       icon: icon ? <CheckCircle className={cn("h-4 w-4", compact ? "mr-1" : "mr-2")} /> : null,
       className: "text-green-600",
-      ariaLive: "polite"
+      ariaLive: "polite" as const
     },
     info: {
       icon: icon ? <HelpCircle className={cn("h-4 w-4", compact ? "mr-1" : "mr-2")} /> : null,
       className: "text-blue-600",
-      ariaLive: "polite"
+      ariaLive: "polite" as const
     },
     none: {
       icon: null,
       className: "",
-      ariaLive: "off"
+      ariaLive: "off" as const
     }
   };
   

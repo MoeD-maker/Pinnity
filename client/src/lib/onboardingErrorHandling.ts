@@ -338,7 +338,7 @@ export function withOnboardingErrorHandling<T>(
     ? createRetryFunction(asyncFn, {
         ...options.retryConfig,
         onRetry: (attempt, delay) => {
-          console.log(`Retrying operation (${attempt}/${options.retryConfig?.maxRetries || L})...`);
+          console.log(`Retrying operation (${attempt}/${options.retryConfig?.maxRetries || 3})...`);
         }
       })
     : asyncFn;

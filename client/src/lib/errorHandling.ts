@@ -1,419 +1,353 @@
 /**
- * Centralized error handling system for API calls and application errors.
- * Provides standardized error handling, user-friendly messages, and recovery options.
+ * Centralized Error Handling System
+ * 
+ * This module provides a comprehensive error handling system for the application.
+ * It standardizes error objects, provides categorization, and logging utilities.
  */
 
-import React from 'react';
 import { toast } from '@/hooks/use-toast';
 
-// Error categories for consistent handling
+// Error categories for better handling and recovery
 export enum ErrorCategory {
-  NETWORK = 'network',
-  AUTHENTICATION = 'authentication',
-  SERVER = 'server',
   VALIDATION = 'validation',
-  NOT_FOUND = 'not_found',
-  PERMISSION = 'permission',
-  TIMEOUT = 'timeout',
+  AUTHENTICATION = 'authentication',
+  AUTHORIZATION = 'authorization',
+  NETWORK = 'network',
   OFFLINE = 'offline',
+  TIMEOUT = 'timeout',
+  SERVER = 'server',
+  CLIENT = 'client',
+  PERSISTENCE = 'persistence',
+  INTEGRATION = 'integration',
   UNKNOWN = 'unknown'
 }
 
-// Base error structure
-export interface AppError {
-  message: string;
+// Standardized application error structure
+export interface AppError extends Error {
   category: ErrorCategory;
-  statusCode?: number;
-  details?: string;
+  code?: string;
+  status?: number;
+  details?: Record<string, any>;
+  timestamp: Date;
+  handled: boolean;
+  recoverable: boolean;
   originalError?: any;
-  recoverable?: boolean;
-  retryFn?: () => Promise<any>;
 }
 
 /**
- * Determine error category from various error types
+ * Convert any error to a standardized AppError
+ * @param error Original error
+ * @param defaultMessage Default message to use if original error has no message
+ * @returns Normalized AppError
  */
-export function categorizeError(error: any): ErrorCategory {
-  // Check for network errors
-  if (!navigator.onLine || error.message?.includes('offline') || error.message?.includes('network')) {
-    return ErrorCategory.OFFLINE;
-  }
-
-  // Check for fetch/response errors with status codes
-  if (error.status || error.statusCode) {
-    const status = error.status || error.statusCode;
-    
-    if (status === 401 || status === 403) {
-      return ErrorCategory.AUTHENTICATION;
-    }
-    
-    if (status === 404) {
-      return ErrorCategory.NOT_FOUND;
-    }
-    
-    if (status === 400 || status === 422) {
-      return ErrorCategory.VALIDATION;
-    }
-    
-    if (status >= 500) {
-      return ErrorCategory.SERVER;
-    }
-  }
-
-  // Check common error messages
-  if (error.message) {
-    const msg = error.message.toLowerCase();
-    
-    if (msg.includes('timeout') || msg.includes('timed out')) {
-      return ErrorCategory.TIMEOUT;
-    }
-    
-    if (msg.includes('network') || msg.includes('fetch') || msg.includes('failed to fetch')) {
-      return ErrorCategory.NETWORK;
-    }
-    
-    if (msg.includes('permission') || msg.includes('unauthorized') || msg.includes('access denied')) {
-      return ErrorCategory.PERMISSION;
-    }
-    
-    if (msg.includes('not found')) {
-      return ErrorCategory.NOT_FOUND;
-    }
-    
-    if (msg.includes('validation') || msg.includes('invalid')) {
-      return ErrorCategory.VALIDATION;
-    }
-  }
-
-  // If we can't categorize, it's unknown
-  return ErrorCategory.UNKNOWN;
-}
-
-/**
- * Convert any error to an AppError
- */
-export function normalizeError(error: any, defaultMessage = 'An unexpected error occurred'): AppError {
+export function normalizeError(error: any, defaultMessage: string = 'An unexpected error occurred'): AppError {
   // If it's already an AppError, return it
-  if (error.category && typeof error.message === 'string') {
+  if (error && typeof error === 'object' && 'category' in error && 'timestamp' in error) {
     return error as AppError;
   }
   
-  // Extract status code if available
-  let statusCode: number | undefined;
-  if (error.status && typeof error.status === 'number') {
-    statusCode = error.status;
-  } else if (error.statusCode && typeof error.statusCode === 'number') {
-    statusCode = error.statusCode;
-  }
-  
-  // Extract message
-  let message = defaultMessage;
-  if (error.message && typeof error.message === 'string') {
-    message = error.message;
-  } else if (typeof error === 'string') {
-    message = error;
-  }
-  
-  // Try to get more details
-  let details: string | undefined;
-  if (error.details) {
-    details = typeof error.details === 'string' 
-      ? error.details 
-      : JSON.stringify(error.details);
-  } else if (error.data) {
-    details = typeof error.data === 'string' 
-      ? error.data 
-      : JSON.stringify(error.data);
-  }
-  
-  // Determine if error is likely recoverable
-  const category = categorizeError(error);
-  const recoverable = [
-    ErrorCategory.NETWORK, 
-    ErrorCategory.TIMEOUT, 
-    ErrorCategory.OFFLINE
-  ].includes(category);
-  
-  return {
-    message,
-    category,
-    statusCode,
-    details,
-    originalError: error,
-    recoverable
-  };
-}
-
-/**
- * Get user-friendly message based on error category
- */
-export function getUserFriendlyMessage(error: AppError): string {
-  switch (error.category) {
-    case ErrorCategory.NETWORK:
-      return 'Network connection issue. Please check your connection and try again.';
-    
-    case ErrorCategory.AUTHENTICATION:
-      return 'Your session has expired. Please log in again.';
-    
-    case ErrorCategory.SERVER:
-      return 'The server encountered an error. Our team has been notified.';
-    
-    case ErrorCategory.VALIDATION:
-      return error.message || 'Please check your information and try again.';
-    
-    case ErrorCategory.NOT_FOUND:
-      return 'The requested information could not be found.';
-    
-    case ErrorCategory.PERMISSION:
-      return 'You don\'t have permission to perform this action.';
-    
-    case ErrorCategory.TIMEOUT:
-      return 'The request took too long to complete. Please try again.';
-    
-    case ErrorCategory.OFFLINE:
-      return 'You appear to be offline. Please check your connection.';
-    
-    case ErrorCategory.UNKNOWN:
-    default:
-      return error.message || 'An unexpected error occurred. Please try again.';
-  }
-}
-
-/**
- * Get appropriate UI variant based on error category
- */
-export function getErrorVariant(error: AppError): 'default' | 'destructive' {
-  switch (error.category) {
-    case ErrorCategory.NETWORK:
-    case ErrorCategory.TIMEOUT:
-    case ErrorCategory.OFFLINE:
-      return 'default';
-    
-    case ErrorCategory.AUTHENTICATION:
-    case ErrorCategory.SERVER:
-    case ErrorCategory.VALIDATION:
-    case ErrorCategory.NOT_FOUND:
-    case ErrorCategory.PERMISSION:
-    case ErrorCategory.UNKNOWN:
-    default:
-      return 'destructive';
-  }
-}
-
-/**
- * Log error details to console with appropriate level
- */
-export function logError(error: AppError): void {
-  const { category, message, details, statusCode, originalError } = error;
-  
-  const logData = {
-    category,
-    message,
-    details,
-    statusCode,
-    timestamp: new Date().toISOString(),
+  // Create a normalized error object
+  const normalizedError: AppError = {
+    name: error?.name || 'Error',
+    message: error?.message || defaultMessage,
+    stack: error?.stack,
+    category: ErrorCategory.UNKNOWN,
+    timestamp: new Date(),
+    handled: false,
+    recoverable: false,
+    originalError: error
   };
   
-  switch (category) {
-    case ErrorCategory.NETWORK:
-    case ErrorCategory.TIMEOUT:
-    case ErrorCategory.OFFLINE:
-      console.warn('[Pinnity Error]', logData);
-      break;
+  // Try to determine the error category
+  if (error) {
+    // Check error message for clues
+    const message = String(error.message || '').toLowerCase();
+    const statusCode = typeof error.status === 'number' ? error.status : 
+                      typeof error.statusCode === 'number' ? error.statusCode : 
+                      null;
     
-    case ErrorCategory.VALIDATION:
-    case ErrorCategory.NOT_FOUND:
-      console.info('[Pinnity Error]', logData);
-      break;
-    
-    case ErrorCategory.AUTHENTICATION:
-    case ErrorCategory.PERMISSION:
-    case ErrorCategory.SERVER:
-    case ErrorCategory.UNKNOWN:
-    default:
-      console.error('[Pinnity Error]', logData, originalError);
-  }
-}
-
-/**
- * Provide recovery function based on error type
- */
-export function getRecoveryAction(error: AppError, retryFn?: () => Promise<any>): (() => void) | undefined {
-  // Use provided retry function if available
-  if (retryFn) {
-    return () => {
-      toast({
-        title: 'Retrying...',
-        description: 'Attempting to recover from the error',
-      });
-      retryFn().catch(e => handleError(e));
-    };
-  }
-  
-  // Return built-in recovery action based on error category
-  switch (error.category) {
-    case ErrorCategory.AUTHENTICATION:
-      return () => {
-        // Redirect to login page
-        window.location.href = '/auth';
-      };
-    
-    case ErrorCategory.OFFLINE:
-      return () => {
-        toast({
-          title: 'Checking connection...',
-          description: 'Attempting to reconnect',
-        });
-        
-        // Try to reload the page after a short delay
-        setTimeout(() => {
-          if (navigator.onLine) {
-            window.location.reload();
-          } else {
-            toast({
-              title: 'Still offline',
-              description: 'Please check your internet connection',
-              variant: 'destructive',
-            });
-          }
-        }, 1500);
-      };
-    
-    default:
-      return error.retryFn ? () => {
-        error.retryFn!().catch(e => handleError(e));
-      } : undefined;
-  }
-}
-
-/**
- * Main error handler - call this from try/catch blocks
- */
-export function handleError(error: any, options?: {
-  defaultMessage?: string;
-  retryFn?: () => Promise<any>;
-  silent?: boolean;
-  duration?: number;
-}): AppError {
-  const appError = normalizeError(error, options?.defaultMessage);
-  
-  // Set retry function if provided
-  if (options?.retryFn) {
-    appError.retryFn = options.retryFn;
-    appError.recoverable = true;
-  }
-  
-  // Log error details
-  logError(appError);
-  
-  // Show toast notification unless silent option is true
-  if (!options?.silent) {
-    const userMessage = getUserFriendlyMessage(appError);
-    const variant = getErrorVariant(appError);
-    const recovery = getRecoveryAction(appError, options?.retryFn);
-    
-    // Always show the toast first
-    toast({
-      title: 'Error',
-      description: userMessage,
-      variant,
-      duration: options?.duration || 5000
-    });
-    
-    // If there's a recovery option, show a separate toast with retry action
-    if (recovery && appError.recoverable) {
-      toast({
-        title: 'Recovery Available',
-        description: 'You can retry the operation that failed',
-      });
-      
-      // Execute recovery if it's an offline error after a short delay
-      if (appError.category === ErrorCategory.OFFLINE) {
-        setTimeout(() => {
-          if (navigator.onLine && recovery) {
-            recovery();
-          }
-        }, 2000);
-      }
+    // Handle specific error types
+    if (error.name === 'ValidationError' || message.includes('validation') || message.includes('invalid')) {
+      normalizedError.category = ErrorCategory.VALIDATION;
+      normalizedError.recoverable = true;
+    } else if (error.name === 'AuthenticationError' || statusCode === 401 || 
+              message.includes('unauthorized') || message.includes('unauthenticated') || 
+              message.includes('authentication') || message.includes('login')) {
+      normalizedError.category = ErrorCategory.AUTHENTICATION;
+      normalizedError.recoverable = true;
+    } else if (error.name === 'AuthorizationError' || statusCode === 403 || 
+              message.includes('forbidden') || message.includes('permission')) {
+      normalizedError.category = ErrorCategory.AUTHORIZATION;
+      normalizedError.recoverable = false;
+    } else if (error.name === 'NetworkError' || error.name === 'FetchError' || 
+              message.includes('network') || message.includes('fetch') || 
+              message.includes('request failed') || statusCode === 0) {
+      normalizedError.category = ErrorCategory.NETWORK;
+      normalizedError.recoverable = true;
+    } else if (!navigator.onLine || message.includes('offline') || message.includes('internet')) {
+      normalizedError.category = ErrorCategory.OFFLINE;
+      normalizedError.recoverable = true;
+    } else if (error.name === 'TimeoutError' || message.includes('timeout') || message.includes('timed out')) {
+      normalizedError.category = ErrorCategory.TIMEOUT;
+      normalizedError.recoverable = true;
+    } else if (statusCode && statusCode >= 500 || message.includes('server')) {
+      normalizedError.category = ErrorCategory.SERVER;
+      normalizedError.recoverable = true;
+    } else if (statusCode && statusCode >= 400 && statusCode < 500) {
+      normalizedError.category = ErrorCategory.CLIENT;
+      normalizedError.recoverable = true;
+    } else if (message.includes('storage') || message.includes('database') || message.includes('indexeddb')) {
+      normalizedError.category = ErrorCategory.PERSISTENCE;
+      normalizedError.recoverable = true;
+    } else if (message.includes('api') || message.includes('service') || message.includes('integration')) {
+      normalizedError.category = ErrorCategory.INTEGRATION;
+      normalizedError.recoverable = true;
     }
+    
+    // Add HTTP status to standardized error if available
+    if (statusCode) {
+      normalizedError.status = statusCode;
+    }
+    
+    // Add error code if available
+    if (error.code) {
+      normalizedError.code = error.code;
+    }
+    
+    // Add error details if available
+    if (error.details || error.data) {
+      normalizedError.details = error.details || error.data;
+    }
+  }
+  
+  return normalizedError;
+}
+
+/**
+ * Handle an error with toast notification and logging
+ * @param error Error to handle
+ * @param options Options for error handling
+ * @returns The normalized error
+ */
+export function handleError(
+  error: any, 
+  options: {
+    silent?: boolean;
+    logLevel?: 'error' | 'warn' | 'info';
+    context?: string;
+    defaultMessage?: string;
+    retryFn?: () => Promise<any>;
+    redirectPath?: string;
+  } = {}
+): AppError {
+  // Normalize the error
+  const appError = normalizeError(error, options.defaultMessage);
+  
+  // Mark as handled
+  appError.handled = true;
+  
+  // Log the error
+  const logLevel = options.logLevel || 'error';
+  const logPrefix = options.context ? `[${options.context}] ` : '';
+  
+  if (logLevel === 'error') {
+    console.error(`${logPrefix}Error (${appError.category}):`, appError);
+  } else if (logLevel === 'warn') {
+    console.warn(`${logPrefix}Warning (${appError.category}):`, appError);
+  } else {
+    console.info(`${logPrefix}Info (${appError.category}):`, appError);
+  }
+  
+  // Show toast notification unless silent mode is enabled
+  if (!options.silent) {
+    const title = getErrorTitle(appError);
+    const description = appError.message;
+    const variant = appError.category === ErrorCategory.OFFLINE || 
+                   appError.category === ErrorCategory.NETWORK ? 
+                   'default' : 'destructive';
+    
+    toast({
+      title,
+      description,
+      variant,
+      duration: 5000,
+    });
   }
   
   return appError;
 }
 
 /**
- * Safe wrapper for async functions that handles errors automatically
+ * Get a user-friendly error title based on the error category
+ * @param error AppError
+ * @returns User-friendly error title
+ */
+function getErrorTitle(error: AppError): string {
+  switch (error.category) {
+    case ErrorCategory.VALIDATION:
+      return 'Validation Error';
+    case ErrorCategory.AUTHENTICATION:
+      return 'Authentication Error';
+    case ErrorCategory.AUTHORIZATION:
+      return 'Authorization Error';
+    case ErrorCategory.NETWORK:
+      return 'Network Error';
+    case ErrorCategory.OFFLINE:
+      return 'You Are Offline';
+    case ErrorCategory.TIMEOUT:
+      return 'Request Timeout';
+    case ErrorCategory.SERVER:
+      return 'Server Error';
+    case ErrorCategory.CLIENT:
+      return 'Request Error';
+    case ErrorCategory.PERSISTENCE:
+      return 'Storage Error';
+    case ErrorCategory.INTEGRATION:
+      return 'Integration Error';
+    default:
+      return 'Error';
+  }
+}
+
+/**
+ * Create a retry function with exponential backoff
+ * @param fn Function to retry
+ * @param options Retry options
+ * @returns Function with retry capability
+ */
+export function withRetry<T>(
+  fn: () => Promise<T>,
+  options: {
+    maxRetries?: number;
+    initialDelay?: number;
+    maxDelay?: number;
+    onRetry?: (attempt: number, delay: number) => void;
+    retryableCategories?: ErrorCategory[];
+  } = {}
+): () => Promise<T> {
+  const maxRetries = options.maxRetries ?? 3;
+  const initialDelay = options.initialDelay ?? 1000;
+  const maxDelay = options.maxDelay ?? 10000;
+  const retryableCategories = options.retryableCategories ?? [
+    ErrorCategory.NETWORK,
+    ErrorCategory.TIMEOUT,
+    ErrorCategory.SERVER,
+    ErrorCategory.OFFLINE
+  ];
+  
+  let attempts = 0;
+  
+  const retry = async (): Promise<T> => {
+    try {
+      return await fn();
+    } catch (error) {
+      // Normalize error
+      const appError = normalizeError(error);
+      
+      // Check if retry is possible
+      if (
+        attempts < maxRetries && 
+        retryableCategories.includes(appError.category) &&
+        appError.recoverable
+      ) {
+        attempts++;
+        
+        // Calculate backoff delay with jitter
+        const delay = Math.min(
+          initialDelay * Math.pow(2, attempts - 1) + Math.random() * 1000, 
+          maxDelay
+        );
+        
+        if (options.onRetry) {
+          options.onRetry(attempts, delay);
+        }
+        
+        // Wait for backoff delay
+        await new Promise(resolve => setTimeout(resolve, delay));
+        
+        // Retry
+        return retry();
+      }
+      
+      // If we can't retry, rethrow the error
+      throw appError;
+    }
+  };
+  
+  return retry;
+}
+
+/**
+ * Wrap a function with error handling
+ * @param fn Function to wrap
+ * @param options Error handling options
+ * @returns Wrapped function with error handling
  */
 export function withErrorHandling<T>(
-  asyncFn: () => Promise<T>,
-  options?: {
-    defaultMessage?: string;
+  fn: () => Promise<T>,
+  options: {
     silent?: boolean;
-    duration?: number;
-  }
+    logLevel?: 'error' | 'warn' | 'info';
+    context?: string;
+    defaultMessage?: string;
+    retryOptions?: {
+      maxRetries?: number;
+      initialDelay?: number;
+      maxDelay?: number;
+      retryableCategories?: ErrorCategory[];
+    };
+  } = {}
 ): Promise<T> {
-  return asyncFn().catch(error => {
-    const appError = handleError(error, {
-      ...options,
-      retryFn: () => withErrorHandling(asyncFn, options),
+  // Create a function with retry if retry options are provided
+  const fnWithRetry = options.retryOptions 
+    ? withRetry(fn, {
+        ...options.retryOptions,
+        onRetry: (attempt, delay) => {
+          console.log(`Retrying (${attempt}/${options.retryOptions?.maxRetries || 3})...`);
+        }
+      })
+    : fn;
+  
+  // Execute with error handling
+  return fnWithRetry().catch(error => {
+    handleError(error, {
+      silent: options.silent,
+      logLevel: options.logLevel,
+      context: options.context,
+      defaultMessage: options.defaultMessage
     });
     
-    // Re-throw the normalized error for further handling if needed
-    throw appError;
+    // Re-throw the error for further handling
+    throw error;
   });
 }
 
 /**
- * Query error handler for react-query
+ * Create a safe version of an async function that handles errors
+ * @param fn Original function
+ * @param errorHandler Custom error handler
+ * @returns Safe function that handles errors
  */
-export function handleQueryError(error: any): void {
-  handleError(error);
-}
-
-/**
- * Create a custom fetch with error handling
- */
-export function createFetchWithErrorHandling(
-  baseUrl: string = '',
-  defaultOptions: RequestInit = {}
-) {
-  return async (url: string, options: RequestInit = {}): Promise<Response> => {
-    const fullUrl = baseUrl ? `${baseUrl}${url}` : url;
-    
-    const fetchOptions = {
-      ...defaultOptions,
-      ...options,
-      headers: {
-        ...defaultOptions.headers,
-        ...options.headers,
-      },
-    };
-    
-    return withErrorHandling(async () => {
-      const response = await fetch(fullUrl, fetchOptions);
+export function createSafeAsyncFunction<T extends any[], R>(
+  fn: (...args: T) => Promise<R>,
+  errorHandler?: (error: AppError, ...args: T) => R | Promise<R>
+): (...args: T) => Promise<R> {
+  return async (...args: T): Promise<R> => {
+    try {
+      return await fn(...args);
+    } catch (error) {
+      const appError = normalizeError(error);
       
-      if (!response.ok) {
-        const contentType = response.headers.get('content-type');
-        let errorData: any = {};
-        
-        try {
-          if (contentType && contentType.includes('application/json')) {
-            errorData = await response.json();
-          } else {
-            errorData.message = await response.text();
-          }
-        } catch (e) {
-          // If we can't parse the response, just use the status text
-          errorData.message = response.statusText;
-        }
-        
-        const error = new Error(errorData.message || 'Request failed');
-        (error as any).status = response.status;
-        (error as any).data = errorData;
-        throw error;
+      // Log the error
+      console.error(`Error in safe function: ${appError.message}`, appError);
+      
+      // Use custom error handler if provided
+      if (errorHandler) {
+        return errorHandler(appError, ...args);
       }
       
-      return response;
-    });
+      // Re-throw normalized error
+      throw appError;
+    }
   };
 }

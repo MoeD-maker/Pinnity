@@ -1,828 +1,544 @@
 import React, { useState } from 'react';
+import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { ValidatedField, ValidatedFieldGroup, ValidatedCheckboxGroup } from '@/components/ui/validated-form-field';
+import { PasswordInput, standardPasswordRequirements } from '@/components/ui/password-input';
+import { FormErrorMessage } from '@/components/ui/form-error-message';
+import { NetworkRetryButton } from '@/components/ui/network-retry-button';
+import { ErrorBoundary, FormErrorBoundary } from '@/components/ui/error-boundary';
+import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { InfoIcon, CheckIcon, XIcon } from 'lucide-react';
-import { PasswordInput } from '@/components/ui/password-input';
-import { passwordSchema } from '@/schemas/authValidation';
+import { RefreshCw, ChevronRight, Lock, User, Mail, Phone, Check, AlertCircle } from 'lucide-react';
 
-// Basic form validation schema
-const formSchema = z.object({
-  name: z.string().min(2, {
-    message: "Name must be at least 2 characters.",
-  }),
-  email: z.string().email({
-    message: "Please enter a valid email address.",
-  }),
-  age: z.coerce.number().min(18, {
-    message: "You must be at least 18 years old.",
-  }).max(120, {
-    message: "Age must be less than 120.",
-  }),
-  website: z.string().url({
-    message: "Please enter a valid URL.",
-  }).optional().or(z.literal('')),
-  agreeTerms: z.boolean().refine(val => val === true, {
-    message: "You must agree to the terms and conditions.",
-  }),
-  password: passwordSchema,
+// Import our validation schemas (create this if it doesn't exist)
+// import { loginSchema, signupSchema } from '@/schemas/authValidation';
+
+// Define the validation schemas here for the demo
+const loginSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email address" }),
+  password: z.string().min(8, { message: "Password must be at least 8 characters" })
+});
+
+const signupSchema = z.object({
+  firstName: z.string().min(2, { message: "First name must be at least 2 characters" }),
+  lastName: z.string().min(2, { message: "Last name must be at least 2 characters" }),
+  email: z.string().email({ message: "Please enter a valid email address" }),
+  phone: z.string().regex(/^\+?[0-9]{10,15}$/, { message: "Please enter a valid phone number" }).optional(),
+  password: z.string()
+    .min(8, { message: "Password must be at least 8 characters" })
+    .regex(/[A-Z]/, { message: "Password must contain at least one uppercase letter" })
+    .regex(/[a-z]/, { message: "Password must contain at least one lowercase letter" })
+    .regex(/[0-9]/, { message: "Password must contain at least one number" })
+    .regex(/[^A-Za-z0-9]/, { message: "Password must contain at least one special character" }),
   confirmPassword: z.string(),
+  agreeTerms: z.boolean().refine(val => val === true, { message: "You must agree to the terms and conditions" }),
+  notifications: z.array(z.string()).optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
-  path: ["confirmPassword"],
+  path: ["confirmPassword"]
 });
 
-// Advanced form validation schema
-const addressSchema = z.object({
-  street: z.string().min(3, "Street address is required"),
-  city: z.string().min(2, "City is required"),
-  state: z.string().min(2, "State is required"),
-  zipCode: z.string().regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code format")
-});
+type LoginFormValues = z.infer<typeof loginSchema>;
+type SignupFormValues = z.infer<typeof signupSchema>;
 
-const phoneSchema = z.string().regex(/^\(\d{3}\) \d{3}-\d{4}$/, "Phone must be in format (123) 456-7890");
+/**
+ * Demo page showcasing the form validation components and error handling
+ */
+export default function FormValidationDemo() {
+  const [activeTab, setActiveTab] = useState("login");
+  const [isLoading, setIsLoading] = useState(false);
+  const [formErrors, setFormErrors] = useState<string[]>([]);
 
-const advancedFormSchema = z.object({
-  fullName: z.string().min(2, "Full name is required"),
-  email: z.string().email("Invalid email address"),
-  phone: phoneSchema,
-  address: addressSchema,
-  bio: z.string().max(500, "Bio must be 500 characters or less").optional(),
-  skills: z.array(z.string()).min(1, "Select at least one skill"),
-  experience: z.enum(["beginner", "intermediate", "advanced"], {
-    errorMap: () => ({ message: "Please select your experience level" })
-  }),
-  portfolioUrl: z.string().url({ message: "Please enter a valid URL" }).optional().or(z.literal('')),
-  agreeTerms: z.boolean().refine(val => val === true, {
-    message: "You must agree to the terms and conditions",
-  }),
-});
-
-// Real-time validation component that displays validation status
-const ValidationStatus = ({ isValid, message }: { isValid: boolean; message: string }) => {
-  return (
-    <div className="flex items-center gap-2 text-sm mt-1">
-      {isValid ? (
-        <CheckIcon className="h-4 w-4 text-green-500" />
-      ) : (
-        <XIcon className="h-4 w-4 text-red-500" />
-      )}
-      <span className={isValid ? "text-green-700" : "text-red-700"}>
-        {message}
-      </span>
-    </div>
-  );
-};
-
-// Component to demonstrate real-time field validation
-const RealTimeValidation = () => {
-  const [value, setValue] = useState('');
-  const [touched, setTouched] = useState(false);
-  
-  // Email validation
-  const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
-  const isValidEmail = emailRegex.test(value);
-  const hasAtSymbol = value.includes('@');
-  const hasDomain = value.includes('.') && value.indexOf('.') > value.indexOf('@');
-  
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Real-time Field Validation</CardTitle>
-        <CardDescription>
-          See validation feedback as you type
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email-validation">Email Address</Label>
-            <Input
-              id="email-validation"
-              placeholder="Enter your email"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              onBlur={() => setTouched(true)}
-              className={touched ? (isValidEmail ? "border-green-500" : "border-red-500") : ""}
-            />
-            
-            {touched && (
-              <div className="mt-2 space-y-1">
-                <ValidationStatus 
-                  isValid={hasAtSymbol}
-                  message="Contains @ symbol"
-                />
-                <ValidationStatus 
-                  isValid={hasDomain}
-                  message="Has valid domain (contains .)"
-                />
-                <ValidationStatus 
-                  isValid={isValidEmail}
-                  message="Valid email format"
-                />
-              </div>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-// Basic form demonstration
-const BasicFormDemo = () => {
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  // Login form setup
+  const loginForm = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
     defaultValues: {
-      name: "",
       email: "",
-      age: undefined,
-      website: "",
-      agreeTerms: false,
-      password: "",
-      confirmPassword: "",
-    },
-  });
-  
-  const [formData, setFormData] = useState<z.infer<typeof formSchema> | null>(null);
-  
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    setFormData(values);
-  }
-  
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Basic Form Validation</CardTitle>
-          <CardDescription>
-            Example of a form with Zod schema validation
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="Enter your email" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="age"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Age</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="Enter your age" 
-                        {...field} 
-                        onChange={(e) => {
-                          const value = e.target.value === '' ? undefined : parseInt(e.target.value, 10);
-                          field.onChange(value);
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="website"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Website (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://example.com" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Leave blank if you don't have a website
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <PasswordInput placeholder="Enter your password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="password" 
-                        placeholder="Confirm your password" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="agreeTerms"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 py-4">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>
-                        I agree to the terms and conditions
-                      </FormLabel>
-                      <FormMessage />
-                    </div>
-                  </FormItem>
-                )}
-              />
-              
-              <Button type="submit" className="w-full">Submit</Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-      
-      {formData && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Form Submission Result</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <pre className="bg-slate-100 p-4 rounded-md overflow-auto">
-              {JSON.stringify(formData, null, 2)}
-            </pre>
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
-};
-
-// Advanced form demonstration with more complex validations
-const AdvancedFormDemo = () => {
-  const form = useForm<z.infer<typeof advancedFormSchema>>({
-    resolver: zodResolver(advancedFormSchema),
-    defaultValues: {
-      fullName: "",
-      email: "",
-      phone: "",
-      address: {
-        street: "",
-        city: "",
-        state: "",
-        zipCode: ""
-      },
-      bio: "",
-      skills: [],
-      experience: undefined,
-      portfolioUrl: "",
-      agreeTerms: false
+      password: ""
     }
   });
-  
-  const [formData, setFormData] = useState<z.infer<typeof advancedFormSchema> | null>(null);
-  
-  const skillOptions = [
-    { id: "react", label: "React" },
-    { id: "vue", label: "Vue" },
-    { id: "angular", label: "Angular" },
-    { id: "nodejs", label: "Node.js" },
-    { id: "python", label: "Python" }
-  ];
-  
-  function onSubmit(values: z.infer<typeof advancedFormSchema>) {
-    setFormData(values);
-  }
-  
+
+  // Signup form setup
+  const signupForm = useForm<SignupFormValues>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      password: "",
+      confirmPassword: "",
+      agreeTerms: false,
+      notifications: []
+    }
+  });
+
+  // Handle login form submission
+  const handleLoginSubmit = async (data: LoginFormValues) => {
+    setIsLoading(true);
+    setFormErrors([]);
+
+    try {
+      // Simulate API call with delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      if (data.email === "error@example.com") {
+        throw new Error("Invalid email or password");
+      }
+      
+      // Success!
+      toast({
+        title: "Login Successful",
+        description: `Welcome back! You've successfully logged in as ${data.email}`,
+      });
+      
+      // Reset the form on success
+      loginForm.reset();
+    } catch (error) {
+      // Handle errors
+      const message = error instanceof Error ? error.message : "Something went wrong";
+      setFormErrors([message]);
+      
+      toast({
+        title: "Login Failed",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle signup form submission
+  const handleSignupSubmit = async (data: SignupFormValues) => {
+    setIsLoading(true);
+    setFormErrors([]);
+
+    try {
+      // Simulate API call with delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      if (data.email === "taken@example.com") {
+        throw new Error("This email is already registered");
+      }
+      
+      // Success!
+      toast({
+        title: "Account Created",
+        description: `Welcome ${data.firstName}! Your account has been created successfully.`,
+      });
+      
+      // Reset the form on success
+      signupForm.reset();
+    } catch (error) {
+      // Handle errors
+      const message = error instanceof Error ? error.message : "Something went wrong";
+      setFormErrors([message]);
+      
+      toast({
+        title: "Registration Failed",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Simulate a network retry
+  const handleRetry = async () => {
+    // Simulate network delay and success
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Return success after delay
+    return true;
+  };
+
+  // Function to simulate an error
+  const handleSimulateError = () => {
+    // Create a test error and throw it
+    throw new Error("This is a simulated error to demonstrate the error boundary.");
+  };
+
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Advanced Form Validation</CardTitle>
-          <CardDescription>
-            Complex form with nested objects, arrays, and conditional validation
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="fullName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Full Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="John Doe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+    <div className="container max-w-5xl py-10">
+      <div className="mb-10">
+        <h1 className="text-3xl font-bold mb-2">Form Validation Demo</h1>
+        <p className="text-muted-foreground">
+          This page demonstrates the form validation components, error handling, and UI elements
+          that have been implemented in our application.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold mb-4">Authentication Forms</h2>
+            <Card className="shadow-md">
+              <CardHeader>
+                <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab}>
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="login">Login</TabsTrigger>
+                    <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </CardHeader>
+              <CardContent>
+                <TabsContent value="login" className="mt-0">
+                  <FormErrorBoundary>
+                    <FormProvider {...loginForm}>
+                      <form onSubmit={loginForm.handleSubmit(handleLoginSubmit)} className="space-y-4">
+                        <ValidatedField
+                          name="email"
+                          label="Email"
+                          type="email"
+                          placeholder="Enter your email address"
+                          autoComplete="email"
+                          required
+                        />
+                        
+                        <div className="space-y-2">
+                          <label htmlFor="password" className="text-sm font-medium">
+                            Password <span className="text-destructive">*</span>
+                          </label>
+                          <PasswordInput
+                            id="password"
+                            placeholder="Enter your password"
+                            autoComplete="current-password"
+                            showRequirements={false}
+                            error={loginForm.formState.errors.password?.message}
+                            {...loginForm.register("password")}
+                          />
+                        </div>
+                        
+                        {formErrors.length > 0 && (
+                          <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20">
+                            {formErrors.map((error, index) => (
+                              <div key={index} className="flex items-center gap-2 text-sm text-destructive">
+                                <AlertCircle className="h-4 w-4" />
+                                <span>{error}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        <div className="pt-2">
+                          <Button 
+                            type="submit" 
+                            className="w-full"
+                            disabled={isLoading}
+                          >
+                            {isLoading ? (
+                              <>
+                                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                                Logging in...
+                              </>
+                            ) : (
+                              <>
+                                <Lock className="mr-2 h-4 w-4" />
+                                Login
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </form>
+                    </FormProvider>
+                  </FormErrorBoundary>
+                </TabsContent>
+                
+                <TabsContent value="signup" className="mt-0">
+                  <FormErrorBoundary>
+                    <FormProvider {...signupForm}>
+                      <form onSubmit={signupForm.handleSubmit(handleSignupSubmit)} className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <ValidatedField
+                            name="firstName"
+                            label="First Name"
+                            type="text"
+                            placeholder="Enter your first name"
+                            autoComplete="given-name"
+                            required
+                          />
+                          
+                          <ValidatedField
+                            name="lastName"
+                            label="Last Name"
+                            type="text"
+                            placeholder="Enter your last name"
+                            autoComplete="family-name"
+                            required
+                          />
+                        </div>
+                        
+                        <ValidatedField
+                          name="email"
+                          label="Email"
+                          type="email"
+                          placeholder="Enter your email address"
+                          autoComplete="email"
+                          required
+                          hint="We'll never share your email with anyone else"
+                        />
+                        
+                        <ValidatedField
+                          name="phone"
+                          label="Phone Number"
+                          type="text"
+                          placeholder="Enter your phone number"
+                          autoComplete="tel"
+                          hint="Optional - for account recovery purposes"
+                        />
+                        
+                        <div className="space-y-2">
+                          <label htmlFor="signup-password" className="text-sm font-medium">
+                            Password <span className="text-destructive">*</span>
+                          </label>
+                          <PasswordInput
+                            id="signup-password"
+                            placeholder="Create a secure password"
+                            autoComplete="new-password"
+                            error={signupForm.formState.errors.password?.message}
+                            {...signupForm.register("password")}
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label htmlFor="confirmPassword" className="text-sm font-medium">
+                            Confirm Password <span className="text-destructive">*</span>
+                          </label>
+                          <PasswordInput
+                            id="confirmPassword"
+                            placeholder="Confirm your password"
+                            autoComplete="new-password"
+                            error={signupForm.formState.errors.confirmPassword?.message}
+                            showRequirements={false}
+                            {...signupForm.register("confirmPassword")}
+                          />
+                        </div>
+                        
+                        <ValidatedCheckboxGroup
+                          name="notifications"
+                          label="Notification Preferences"
+                          description="Choose how you'd like to be notified"
+                          options={[
+                            { id: "email", label: "Email notifications" },
+                            { id: "push", label: "Push notifications" },
+                            { id: "sms", label: "SMS notifications" }
+                          ]}
+                        />
+                        
+                        <ValidatedField
+                          name="agreeTerms"
+                          label="Terms and Conditions"
+                          type="checkbox"
+                          checkboxLabel="I agree to the Terms of Service and Privacy Policy"
+                          required
+                        />
+                        
+                        {formErrors.length > 0 && (
+                          <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20">
+                            {formErrors.map((error, index) => (
+                              <div key={index} className="flex items-center gap-2 text-sm text-destructive">
+                                <AlertCircle className="h-4 w-4" />
+                                <span>{error}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        <div className="pt-2">
+                          <Button 
+                            type="submit" 
+                            className="w-full"
+                            disabled={isLoading}
+                          >
+                            {isLoading ? (
+                              <>
+                                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                                Creating Account...
+                              </>
+                            ) : (
+                              <>
+                                <User className="mr-2 h-4 w-4" />
+                                Create Account
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </form>
+                    </FormProvider>
+                  </FormErrorBoundary>
+                </TabsContent>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-bold mb-4">Error Handling Components</h2>
+            <div className="grid grid-cols-1 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Network Retry Button</CardTitle>
+                  <CardDescription>
+                    Handles retry logic with exponential backoff and visual feedback
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex gap-4">
+                    <NetworkRetryButton
+                      onRetry={handleRetry}
+                      maxRetries={3}
+                    />
+                    
+                    <NetworkRetryButton
+                      onRetry={handleRetry}
+                      maxRetries={3}
+                      variant="outline"
+                    >
+                      Custom Retry Text
+                    </NetworkRetryButton>
+                  </div>
+                </CardContent>
+              </Card>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input placeholder="john@example.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone Number</FormLabel>
-                      <FormControl>
-                        <Input placeholder="(123) 456-7890" {...field} />
-                      </FormControl>
-                      <FormDescription>Format: (123) 456-7890</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Address Information</h3>
-                
-                <FormField
-                  control={form.control}
-                  name="address.street"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Street Address</FormLabel>
-                      <FormControl>
-                        <Input placeholder="123 Main St" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="address.city"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>City</FormLabel>
-                        <FormControl>
-                          <Input placeholder="City" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+              <Card>
+                <CardHeader>
+                  <CardTitle>Error Boundary</CardTitle>
+                  <CardDescription>
+                    Catches JavaScript errors and displays a fallback UI
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ErrorBoundary>
+                    <div className="flex justify-between items-center">
+                      <p>Click the button to trigger an error</p>
+                      <Button 
+                        variant="destructive"
+                        onClick={handleSimulateError}
+                      >
+                        Simulate Error
+                      </Button>
+                    </div>
+                  </ErrorBoundary>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold mb-4">Form Field Components</h2>
+            <Card>
+              <CardHeader>
+                <CardTitle>Validated Form Fields</CardTitle>
+                <CardDescription>
+                  Form fields with built-in validation and real-time feedback
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <ValidatedFieldGroup
+                  label="Contact Information"
+                  description="Enter your contact details"
+                  hint="All fields with * are required"
+                  required
+                >
+                  <div className="grid grid-cols-2 gap-4">
+                    <ValidatedField
+                      name="demo-firstName"
+                      label="First Name"
+                      type="text"
+                      placeholder="Jane"
+                      required
+                      defaultValue=""
+                    />
+                    
+                    <ValidatedField
+                      name="demo-lastName"
+                      label="Last Name"
+                      type="text"
+                      placeholder="Doe"
+                      required
+                      defaultValue=""
+                    />
+                  </div>
                   
-                  <FormField
-                    control={form.control}
-                    name="address.state"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>State</FormLabel>
-                        <FormControl>
-                          <Input placeholder="State" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                  <ValidatedField
+                    name="demo-email"
+                    label="Email"
+                    type="email"
+                    placeholder="jane.doe@example.com"
+                    required
+                    defaultValue=""
+                    hint="We'll use this for account recovery"
                   />
+                </ValidatedFieldGroup>
+                
+                <Separator />
+                
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Password Input</h3>
+                  <p className="text-sm text-muted-foreground">
+                    A secure password input with visibility toggle, requirement checking, and strength meter
+                  </p>
                   
-                  <FormField
-                    control={form.control}
-                    name="address.zipCode"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>ZIP Code</FormLabel>
-                        <FormControl>
-                          <Input placeholder="12345" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                  <PasswordInput
+                    placeholder="Enter a password"
+                    requirements={standardPasswordRequirements}
+                    showRequirements={true}
+                    showStrengthMeter={true}
                   />
                 </div>
-              </div>
-              
-              <FormField
-                control={form.control}
-                name="bio"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Bio</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Tell us about yourself" 
-                        className="resize-none" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Maximum 500 characters
-                    </FormDescription>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {field.value?.length || 0}/500 characters
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="skills"
-                render={() => (
-                  <FormItem>
-                    <div className="mb-4">
-                      <FormLabel className="text-base">Skills</FormLabel>
-                      <FormDescription>
-                        Select all the skills that apply
-                      </FormDescription>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                      {skillOptions.map((skill) => (
-                        <FormField
-                          key={skill.id}
-                          control={form.control}
-                          name="skills"
-                          render={({ field }) => {
-                            return (
-                              <FormItem
-                                key={skill.id}
-                                className="flex flex-row items-start space-x-3 space-y-0"
-                              >
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value?.includes(skill.id)}
-                                    onCheckedChange={(checked) => {
-                                      return checked
-                                        ? field.onChange([...field.value, skill.id])
-                                        : field.onChange(
-                                            field.value?.filter(
-                                              (value) => value !== skill.id
-                                            )
-                                          )
-                                    }}
-                                  />
-                                </FormControl>
-                                <FormLabel className="font-normal">
-                                  {skill.label}
-                                </FormLabel>
-                              </FormItem>
-                            )
-                          }}
-                        />
-                      ))}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="experience"
-                render={({ field }) => (
-                  <FormItem className="space-y-3">
-                    <FormLabel>Experience Level</FormLabel>
-                    <FormControl>
-                      <div className="flex flex-col space-y-1">
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            id="experience-beginner"
-                            value="beginner"
-                            checked={field.value === "beginner"}
-                            onChange={() => field.onChange("beginner")}
-                            className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                          />
-                          <Label htmlFor="experience-beginner">Beginner</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            id="experience-intermediate"
-                            value="intermediate"
-                            checked={field.value === "intermediate"}
-                            onChange={() => field.onChange("intermediate")}
-                            className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                          />
-                          <Label htmlFor="experience-intermediate">Intermediate</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            id="experience-advanced"
-                            value="advanced"
-                            checked={field.value === "advanced"}
-                            onChange={() => field.onChange("advanced")}
-                            className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                          />
-                          <Label htmlFor="experience-advanced">Advanced</Label>
-                        </div>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="portfolioUrl"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Portfolio URL (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://myportfolio.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="agreeTerms"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4 border rounded-md">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>
-                        I agree to the terms of service and privacy policy
-                      </FormLabel>
-                      <FormMessage />
-                    </div>
-                  </FormItem>
-                )}
-              />
-              
-              <Button type="submit" className="w-full">Submit Advanced Form</Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-      
-      {formData && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Advanced Form Submission Result</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <pre className="bg-slate-100 p-4 rounded-md overflow-auto">
-              {JSON.stringify(formData, null, 2)}
-            </pre>
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
-};
-
-// Password validation visualizer
-const PasswordValidationDemo = () => {
-  const [password, setPassword] = useState("");
-  
-  // Password validation rules
-  const minLength = password.length >= 8;
-  const hasUppercase = /[A-Z]/.test(password);
-  const hasLowercase = /[a-z]/.test(password);
-  const hasNumber = /[0-9]/.test(password);
-  const hasSpecial = /[^A-Za-z0-9]/.test(password);
-  
-  // Calculate password strength
-  const passwordStrength = 
-    (minLength ? 1 : 0) + 
-    (hasUppercase ? 1 : 0) + 
-    (hasLowercase ? 1 : 0) + 
-    (hasNumber ? 1 : 0) + 
-    (hasSpecial ? 1 : 0);
-  
-  let strengthLabel = "Weak";
-  let strengthColor = "bg-red-500";
-  
-  if (passwordStrength >= 5) {
-    strengthLabel = "Strong";
-    strengthColor = "bg-green-500";
-  } else if (passwordStrength >= 3) {
-    strengthLabel = "Moderate";
-    strengthColor = "bg-yellow-500";
-  }
-  
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Password Validation</CardTitle>
-        <CardDescription>
-          Real-time password strength indicator
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="password-demo">Password</Label>
-          <Input
-            id="password-demo"
-            type="password"
-            placeholder="Enter a password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <span className="text-sm">Password Strength:</span>
-            <Badge variant={passwordStrength >= 3 ? passwordStrength >= 5 ? "default" : "outline" : "destructive"}>
-              {strengthLabel}
-            </Badge>
-          </div>
-          
-          <div className="w-full bg-slate-200 rounded-full h-2.5">
-            <div
-              className={`h-2.5 rounded-full ${strengthColor}`}
-              style={{ width: `${(passwordStrength / 5) * 100}%` }}
-            ></div>
-          </div>
-          
-          <div className="space-y-1 mt-3">
-            <ValidationStatus 
-              isValid={minLength}
-              message="At least 8 characters"
-            />
-            <ValidationStatus 
-              isValid={hasUppercase}
-              message="Contains uppercase letter"
-            />
-            <ValidationStatus 
-              isValid={hasLowercase}
-              message="Contains lowercase letter"
-            />
-            <ValidationStatus 
-              isValid={hasNumber}
-              message="Contains number"
-            />
-            <ValidationStatus 
-              isValid={hasSpecial}
-              message="Contains special character"
-            />
+                
+                <Separator />
+                
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Other Field Types</h3>
+                  
+                  <ValidatedField
+                    name="demo-date"
+                    label="Date"
+                    type="date"
+                    defaultValue=""
+                  />
+                  
+                  <ValidatedField
+                    name="demo-textarea"
+                    label="Bio"
+                    type="textarea"
+                    placeholder="Tell us about yourself"
+                    defaultValue=""
+                  />
+                  
+                  <ValidatedField
+                    name="demo-select"
+                    label="Country"
+                    type="select"
+                    options={[
+                      { value: "us", label: "United States" },
+                      { value: "ca", label: "Canada" },
+                      { value: "mx", label: "Mexico" },
+                      { value: "uk", label: "United Kingdom" },
+                    ]}
+                    emptyOptionLabel="Select a country"
+                    defaultValue=""
+                  />
+                </div>
+              </CardContent>
+              <CardFooter className="border-t px-6 py-4">
+                <Button>
+                  Continue
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              </CardFooter>
+            </Card>
           </div>
         </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-// Main form validation demo page
-const FormValidationDemo = () => {
-  return (
-    <div className="container mx-auto py-8 px-4 max-w-6xl">
-      <div className="mb-8 space-y-2">
-        <h1 className="text-3xl font-bold">Form Validation System</h1>
-        <p className="text-muted-foreground">
-          A comprehensive demonstration of form validation techniques using Zod, React Hook Form, and real-time feedback
-        </p>
-      </div>
-      
-      <Alert className="mb-6">
-        <InfoIcon className="h-4 w-4" />
-        <AlertTitle>Validation Demo</AlertTitle>
-        <AlertDescription>
-          This page demonstrates the various form validation techniques implemented in the Pinnity app.
-          It showcases real-time validation, complex form structures, and password strength indicators.
-        </AlertDescription>
-      </Alert>
-      
-      <Tabs defaultValue="basic">
-        <TabsList className="grid grid-cols-4 w-full max-w-xl mx-auto mb-8">
-          <TabsTrigger value="basic">Basic Form</TabsTrigger>
-          <TabsTrigger value="advanced">Advanced Form</TabsTrigger>
-          <TabsTrigger value="realtime">Real-time Validation</TabsTrigger>
-          <TabsTrigger value="password">Password Validation</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="basic" className="mt-6">
-          <BasicFormDemo />
-        </TabsContent>
-        
-        <TabsContent value="advanced" className="mt-6">
-          <AdvancedFormDemo />
-        </TabsContent>
-        
-        <TabsContent value="realtime" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <RealTimeValidation />
-            <PasswordValidationDemo />
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="password" className="mt-6">
-          <div className="max-w-md mx-auto">
-            <PasswordValidationDemo />
-          </div>
-        </TabsContent>
-      </Tabs>
-      
-      <Separator className="my-8" />
-      
-      <div className="prose max-w-none">
-        <h2>Implementation Notes</h2>
-        <p>
-          The form validation system used throughout the Pinnity application uses a combination of:
-        </p>
-        <ul>
-          <li><strong>Zod:</strong> For schema-based validation with strong TypeScript integration</li>
-          <li><strong>React Hook Form:</strong> For form state management and validation triggering</li>
-          <li><strong>Custom Validation Components:</strong> For specialized validation needs</li>
-          <li><strong>Real-time Feedback:</strong> To provide immediate validation feedback</li>
-        </ul>
-        
-        <h3>Key Features</h3>
-        <p>
-          The validation system provides:
-        </p>
-        <ul>
-          <li>Strongly typed forms with TypeScript inference</li>
-          <li>Immediate validation feedback during typing</li>
-          <li>Complex nested object validation</li>
-          <li>Array and collection validation</li>
-          <li>Cross-field validation (e.g., password confirmation)</li>
-          <li>Custom validation rules and error messages</li>
-          <li>Accessibility-friendly error reporting</li>
-        </ul>
       </div>
     </div>
   );
-};
-
-export default FormValidationDemo;
+}
