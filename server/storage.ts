@@ -1,7 +1,7 @@
 import { 
   users, businesses, deals, userFavorites, dealRedemptions, userNotificationPreferences,
   dealApprovals, businessHours, businessSocial, businessDocuments, redemptionRatings,
-  passwordResetTokens,
+  passwordResetTokens, refreshTokens,
   type User, type InsertUser, type Business, type InsertBusiness, 
   type Deal, type InsertDeal, type UserFavorite, type InsertUserFavorite,
   type DealRedemption, type InsertDealRedemption, 
@@ -11,7 +11,8 @@ import {
   type BusinessSocial, type InsertBusinessSocial,
   type BusinessDocument, type InsertBusinessDocument,
   type RedemptionRating, type InsertRedemptionRating, type RatingData,
-  type PasswordResetToken, type InsertPasswordResetToken
+  type PasswordResetToken, type InsertPasswordResetToken,
+  type RefreshToken, type InsertRefreshToken
 } from "@shared/schema";
 import bcrypt from 'bcryptjs';
 import { db } from './db';
@@ -741,6 +742,97 @@ export class MemStorage implements IStorage {
     this.passwordResetTokens.set(token, resetToken);
     
     return true;
+  }
+
+  // Refresh token methods
+  async createRefreshToken(userId: number, token: string, expiresAt: Date, clientInfo?: { ipAddress?: string, userAgent?: string, deviceInfo?: string }): Promise<RefreshToken> {
+    // Create a refresh token record
+    const refreshToken: RefreshToken = {
+      id: Date.now(), // Using timestamp as ID for simplicity in memory store
+      userId: userId,
+      token: token,
+      expiresAt: expiresAt,
+      isRevoked: false,
+      createdAt: new Date(),
+      lastUsedAt: null,
+      ipAddress: clientInfo?.ipAddress || null,
+      userAgent: clientInfo?.userAgent || null,
+      deviceInfo: clientInfo?.deviceInfo || null
+    };
+    
+    // Store the token
+    this.refreshTokens.set(token, refreshToken);
+    
+    return refreshToken;
+  }
+  
+  async getRefreshToken(token: string): Promise<RefreshToken | undefined> {
+    // Retrieve the refresh token from storage
+    return this.refreshTokens.get(token);
+  }
+  
+  async revokeRefreshToken(token: string): Promise<boolean> {
+    // Get the refresh token
+    const refreshToken = this.refreshTokens.get(token);
+    if (!refreshToken) return false;
+    
+    // Mark the token as revoked
+    const updatedToken: RefreshToken = {
+      ...refreshToken,
+      isRevoked: true
+    };
+    
+    // Update storage
+    this.refreshTokens.set(token, updatedToken);
+    
+    return true;
+  }
+  
+  async revokeAllUserRefreshTokens(userId: number): Promise<number> {
+    // Find all refresh tokens for this user
+    let revokedCount = 0;
+    
+    // Iterate through all tokens
+    for (const [token, refreshToken] of this.refreshTokens.entries()) {
+      if (refreshToken.userId === userId && !refreshToken.isRevoked) {
+        // Mark as revoked
+        this.refreshTokens.set(token, {
+          ...refreshToken,
+          isRevoked: true
+        });
+        revokedCount++;
+      }
+    }
+    
+    return revokedCount;
+  }
+  
+  async rotateRefreshToken(oldToken: string, newToken: string, expiresAt: Date): Promise<RefreshToken | null> {
+    // Get the old token
+    const oldRefreshToken = this.refreshTokens.get(oldToken);
+    if (!oldRefreshToken) return null;
+    
+    // Check if the token is valid
+    if (oldRefreshToken.expiresAt < new Date() || oldRefreshToken.isRevoked) {
+      return null;
+    }
+    
+    // Revoke the old token
+    await this.revokeRefreshToken(oldToken);
+    
+    // Create a new token with the same user and client info
+    const newRefreshToken = await this.createRefreshToken(
+      oldRefreshToken.userId,
+      newToken,
+      expiresAt,
+      {
+        ipAddress: oldRefreshToken.ipAddress || undefined,
+        userAgent: oldRefreshToken.userAgent || undefined,
+        deviceInfo: oldRefreshToken.deviceInfo || undefined
+      }
+    );
+    
+    return newRefreshToken;
   }
   
   // Admin methods
