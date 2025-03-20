@@ -266,7 +266,11 @@ export default function MainLayout({ children }: MainLayoutProps) {
         </nav>
         
         <main className="flex-1 md:ml-60 pb-16 md:pb-0">
-          {children}
+          <div className="flex-grow flex flex-col">
+            <div className="w-full flex flex-col">
+              {children}
+            </div>
+          </div>
         </main>
       </div>
       
