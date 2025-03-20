@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
 import { apiPost, resetCSRFToken, fetchWithCSRF } from '@/lib/api';
+import { handleError, ErrorCategory } from '@/lib/errorHandling';
 
 // Cookie-based authentication
 // Since we're using secure HTTP-only cookies, we only need to keep track of auth status client-side
@@ -46,7 +47,9 @@ interface AuthContextType {
   error: string | null;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   logout: () => Promise<void>;
+  refreshToken: () => Promise<boolean>;
   isAuthenticated: boolean;
+  silentRefresh: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -56,8 +59,107 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [, setLocation] = useLocation();
+  
+  // Reference to the auto-refresh timer
+  const refreshTimerRef = useRef<number | null>(null);
+  
+  // Track if component is mounted (for cleanup)
+  const isMountedRef = useRef<boolean>(true);
 
   // Check if user is already logged in
+  // Clean up effect to cancel refresh timer on unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    
+    return () => {
+      isMountedRef.current = false;
+      // Clear token refresh timer if it exists
+      if (refreshTimerRef.current !== null) {
+        window.clearTimeout(refreshTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Token refresh function - used for both automatic and manual refresh
+  const refreshToken = useCallback(async (): Promise<boolean> => {
+    if (!getUserId()) {
+      return false;
+    }
+    
+    try {
+      console.log('Refreshing authentication token...');
+      const response = await apiPost<{
+        userId: number;
+        userType: string;
+        message: string;
+      }>('/api/auth/refresh-token');
+      
+      if (response && response.userId) {
+        // Update the user information
+        saveUserData(response.userId.toString(), response.userType);
+        
+        // Fetch complete user data if needed
+        if (!user || user.id !== response.userId) {
+          const userData = await apiRequest(`/api/user/${response.userId}`);
+          setUser(userData);
+        }
+        
+        console.log('Token refresh successful');
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      // Handle token refresh failure - could be expired token or network issues
+      console.error('Token refresh failed:', error);
+      
+      // Only display a visible error if it's an authentication error (not a network issue)
+      if (error && (error as any).status === 401) {
+        handleError(error, {
+          defaultMessage: 'Your session expired. Please log in again.',
+          silent: false
+        });
+        
+        // Clear user data on authentication error
+        setUser(null);
+        removeUserData();
+        resetCSRFToken();
+        
+        // Redirect to login page
+        setLocation('/auth');
+      } else {
+        // For network errors, log but don't disrupt the user experience
+        handleError(error, {
+          defaultMessage: 'Failed to refresh your session due to a connection issue.',
+          silent: true
+        });
+      }
+      
+      return false;
+    }
+  }, [user]);
+  
+  // Silent refresh that doesn't disrupt user experience
+  const silentRefresh = useCallback(async (): Promise<boolean> => {
+    try {
+      const result = await refreshToken();
+      
+      // Schedule next refresh if current one succeeded and component is still mounted
+      if (result && isMountedRef.current) {
+        // Set next refresh 5 minutes before token expiration (assuming 1 hour token)
+        refreshTimerRef.current = window.setTimeout(() => {
+          silentRefresh();
+        }, 55 * 60 * 1000); // 55 minutes
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Silent refresh error:', error);
+      return false;
+    }
+  }, [refreshToken]);
+  
+  // Setup initial authentication check and refresh timer
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
@@ -119,6 +221,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 saveUserData(userData.id.toString(), userData.userType);
               }
               
+              // Start token refresh timer
+              if (isMountedRef.current) {
+                // Schedule refresh for 5 minutes before token expiry
+                refreshTimerRef.current = window.setTimeout(() => {
+                  silentRefresh();
+                }, 55 * 60 * 1000); // 55 minutes
+                
+                console.log('Token refresh timer scheduled');
+              }
+              
               // If we're on the root path or auth page, redirect based on user type 
               const path = window.location.pathname;
               if (path === '/' || path === '/auth') {
@@ -152,7 +264,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     checkAuthStatus();
-  }, []);
+  }, [silentRefresh]);
 
   const login = async (email: string, password: string, rememberMe = false) => {
     try {
@@ -191,6 +303,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const userData = await apiRequest(`/api/user/${response.userId}`);
         console.log('User data received:', userData ? 'Yes' : 'No');
         setUser(userData);
+        
+        // Start token refresh timer - in case the user stays logged in for a long time
+        if (isMountedRef.current) {
+          // Schedule refresh for 5 minutes before token expiry
+          refreshTimerRef.current = window.setTimeout(() => {
+            silentRefresh();
+          }, 55 * 60 * 1000); // 55 minutes
+          
+          console.log('Token refresh timer scheduled after login');
+        }
 
         // Redirect based on user type
         if (response.userType === 'admin') {
@@ -241,6 +363,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Clear refresh timer on logout
+  const enhancedLogout = async () => {
+    // Clear token refresh timer if it exists
+    if (refreshTimerRef.current !== null) {
+      window.clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = null;
+    }
+    
+    // Call the original logout function
+    await logout();
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -248,7 +382,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         error,
         login,
-        logout,
+        logout: enhancedLogout,
+        refreshToken,
+        silentRefresh,
         isAuthenticated: !!user
       }}
     >

@@ -19,6 +19,15 @@ const MAX_CSRF_RETRY_ATTEMPTS = 3;
 // Base delay for exponential backoff (in milliseconds)
 const BASE_RETRY_DELAY = 500;
 
+// Global state for authentication token refresh operation
+let isRefreshingAuth = false;
+let failedRequests: Array<{
+  resolve: (value: any) => void;
+  reject: (reason?: any) => void;
+  config: RequestInit;
+  url: string;
+}> = [];
+
 /**
  * Sleep function for implementing delays between retries
  * @param ms Milliseconds to sleep
@@ -178,13 +187,135 @@ export function resetCSRFToken(): void {
 }
 
 /**
+ * Refresh authentication token
+ * Uses the refresh token to obtain a new access token
+ * @returns Promise resolving to true if token refresh was successful
+ */
+export async function refreshAuthToken(): Promise<boolean> {
+  if (isRefreshingAuth) {
+    // Return a promise that resolves when the current refresh operation completes
+    return new Promise((resolve) => {
+      // Add a simple callback that will be executed after refresh completes
+      const checkComplete = setInterval(() => {
+        if (!isRefreshingAuth) {
+          clearInterval(checkComplete);
+          resolve(true);
+        }
+      }, 100);
+    });
+  }
+
+  isRefreshingAuth = true;
+  console.log('Refreshing authentication token...');
+
+  try {
+    // Attempt to refresh the token
+    const response = await fetch('/api/v1/auth/refresh', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache'
+      }
+    });
+
+    if (!response.ok) {
+      console.error('Token refresh failed:', response.status);
+      return false;
+    }
+
+    const result = await response.json();
+    if (!result.success) {
+      console.error('Token refresh rejected by server');
+      return false;
+    }
+
+    console.log('Token refresh successful');
+    
+    // Process any queued requests that were waiting for a token refresh
+    let request;
+    while ((request = failedRequests.shift())) {
+      try {
+        const retryResponse = await fetchWithCSRF(request.url, request.config);
+        request.resolve(retryResponse);
+      } catch (error) {
+        request.reject(error);
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Token refresh error:', error);
+    
+    // Reject all queued requests on catastrophic refresh failure
+    failedRequests.forEach(request => {
+      request.reject(new Error('Authentication failed'));
+    });
+    failedRequests = [];
+    
+    return false;
+  } finally {
+    isRefreshingAuth = false;
+  }
+}
+
+/**
+ * Queue failed request for retry after token refresh
+ * @param url Request URL
+ * @param config Request configuration
+ * @returns Promise that resolves with the retried request response
+ */
+function enqueueFailedRequest(url: string, config: RequestInit): Promise<Response> {
+  return new Promise((resolve, reject) => {
+    failedRequests.push({ resolve, reject, config, url });
+  });
+}
+
+/**
  * Process API error response
  * @param response Fetch response object
  * @param context Additional context for the error message
+ * @param url Original request URL
+ * @param options Original request options
  * @throws Enhanced error object with status and detailed information
  */
-async function processApiError(response: Response, context: string): Promise<never> {
+async function processApiError(
+  response: Response, 
+  context: string, 
+  url?: string, 
+  options?: RequestInit
+): Promise<Response | never> {
   const status = response.status;
+  
+  // Handle authentication errors with token refresh
+  if (status === 401 && url && options) {
+    // Check if this response has specific indication that refresh token is needed
+    try {
+      const errorData = await response.clone().json();
+      
+      // Check for token expired message from server
+      if (errorData.error === 'token_expired' || 
+          errorData.message?.includes('expired') ||
+          errorData.code === 'auth/id-token-expired') {
+            
+        console.log('Access token expired. Attempting refresh...');
+        
+        // Try to refresh the token
+        const refreshSuccess = await refreshAuthToken();
+        
+        if (refreshSuccess) {
+          // If refresh was successful, retry the original request
+          console.log('Retrying request after token refresh');
+          
+          // Don't immediately retry - enqueue it to avoid race conditions
+          return enqueueFailedRequest(url, options);
+        }
+      }
+    } catch (e) {
+      // If we can't parse the response as JSON, continue with standard error handling
+    }
+  }
+  
   const error: any = new Error();
   error.status = status;
   
