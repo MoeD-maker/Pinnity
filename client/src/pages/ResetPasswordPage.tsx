@@ -40,7 +40,7 @@ export function ResetPasswordPage() {
         <div className="text-center mt-6">
           <Button 
             variant="link" 
-            onClick={() => navigate('/login')}
+            onClick={() => navigate('/auth')}
             className="text-sm text-primary"
           >
             Return to Login
