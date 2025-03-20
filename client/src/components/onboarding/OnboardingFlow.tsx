@@ -837,6 +837,53 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
     }
   };
   
+  // Function to render the security status indicator
+  const renderSecurityStatus = () => {
+    // If still loading the security setup
+    if (csrfLoading) {
+      return (
+        <div className="flex items-center gap-2 p-2 bg-gray-100 text-gray-700 text-sm rounded-md mb-4">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Setting up secure connection...</span>
+        </div>
+      );
+    }
+    
+    // If there's a CSRF error
+    if (csrfError) {
+      return (
+        <div className="flex items-center gap-2 p-2 bg-red-100 text-red-700 text-sm rounded-md mb-4">
+          <ShieldAlert className="h-4 w-4" />
+          <span>Security error: {csrfError}</span>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="ml-auto text-xs"
+            onClick={() => refreshCsrfToken()}
+          >
+            Retry
+          </Button>
+        </div>
+      );
+    }
+    
+    // If security setup is complete
+    if (securitySetupComplete && csrfReady) {
+      return (
+        <div className="flex items-center gap-2 p-2 bg-green-50 text-green-700 text-sm rounded-md mb-4">
+          <div className="flex items-center gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-9.618 5.04L2 9.5l.382 5.7a8.001 8.001 0 007.976 7.8 11.981 11.981 0 014.284 0A8.001 8.001 0 0021.618 15.2L22 9.5l-.382-1.516z" />
+            </svg>
+            <span>Secure connection established</span>
+          </div>
+        </div>
+      );
+    }
+    
+    return null;
+  };
+
   return (
     <Card className="shadow-lg overflow-hidden">
       {/* Progress stepper */}
@@ -846,6 +893,8 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
       
       {/* Main content */}
       <div className="p-6">
+        {/* Security status indicator */}
+        {renderSecurityStatus()}
         <AnimatePresence mode="wait">
           <motion.div
             key={step}

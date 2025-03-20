@@ -16,6 +16,15 @@ let csrfToken: string | null = null;
 // Maximum number of retry attempts for CSRF token fetching
 const MAX_CSRF_RETRY_ATTEMPTS = 3;
 
+/**
+ * Reset the CSRF token - forces a new token to be fetched on the next request
+ * Used when token refresh is needed
+ */
+export function resetCSRFToken(): void {
+  csrfToken = null;
+  console.log('CSRF token reset - will fetch a new token on next request');
+}
+
 // Base delay for exponential backoff (in milliseconds)
 const BASE_RETRY_DELAY = 500;
 
@@ -179,12 +188,7 @@ export async function fetchWithCSRF(url: string, options: RequestInit = {}): Pro
   return response;
 }
 
-/**
- * Reset CSRF token (e.g., after logout)
- */
-export function resetCSRFToken(): void {
-  csrfToken = null;
-}
+// resetCSRFToken is defined at the top of the file
 
 /**
  * Refresh authentication token
