@@ -33,21 +33,17 @@ export function ForgotPasswordForm() {
     setIsSubmitting(true);
     try {
       // Send request to password reset API endpoint
-      const response = await apiRequest('/api/v1/auth/forgot-password', {
+      await apiRequest('/api/v1/auth/forgot-password', {
         method: 'POST',
-        body: JSON.stringify({ email: data.email }),
+        data: { email: data.email },
       });
-
-      if (response.ok) {
-        setEmailSent(true);
-        toast({
-          title: 'Email Sent',
-          description: 'If an account exists with that email, you will receive password reset instructions.',
-        });
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to process password reset request');
-      }
+      
+      // If the request was successful (no error thrown), show success message
+      setEmailSent(true);
+      toast({
+        title: 'Email Sent',
+        description: 'If an account exists with that email, you will receive password reset instructions.',
+      });
     } catch (error) {
       console.error('Forgot password request failed:', error);
       toast({

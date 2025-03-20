@@ -395,16 +395,23 @@ async function processApiError(
 
 /**
  * Generic API POST request with JSON payload and CSRF protection
- * Enhanced with detailed error handling
+ * Enhanced with detailed error handling and token refresh
  */
 export async function apiPost<T>(url: string, data?: any): Promise<T> {
-  const response = await fetchWithCSRF(url, {
+  const options = {
     method: 'POST',
     body: data ? JSON.stringify(data) : undefined,
-  });
+  };
+  
+  const response = await fetchWithCSRF(url, options);
 
   if (!response.ok) {
-    await processApiError(response, 'POST request');
+    const processedResponse = await processApiError(response, 'POST request', url, options);
+    // If processApiError returns a response (after token refresh), use it
+    if (processedResponse instanceof Response) {
+      return await processedResponse.json();
+    }
+    // Otherwise processApiError would have thrown an error
   }
 
   return await response.json();
@@ -412,16 +419,23 @@ export async function apiPost<T>(url: string, data?: any): Promise<T> {
 
 /**
  * Generic API PUT request with JSON payload and CSRF protection
- * Enhanced with detailed error handling
+ * Enhanced with detailed error handling and token refresh
  */
 export async function apiPut<T>(url: string, data?: any): Promise<T> {
-  const response = await fetchWithCSRF(url, {
+  const options = {
     method: 'PUT',
     body: data ? JSON.stringify(data) : undefined,
-  });
+  };
+  
+  const response = await fetchWithCSRF(url, options);
 
   if (!response.ok) {
-    await processApiError(response, 'PUT request');
+    const processedResponse = await processApiError(response, 'PUT request', url, options);
+    // If processApiError returns a response (after token refresh), use it
+    if (processedResponse instanceof Response) {
+      return await processedResponse.json();
+    }
+    // Otherwise processApiError would have thrown an error
   }
 
   return await response.json();
@@ -429,30 +443,44 @@ export async function apiPut<T>(url: string, data?: any): Promise<T> {
 
 /**
  * Generic API DELETE request with CSRF protection
- * Enhanced with detailed error handling
+ * Enhanced with detailed error handling and token refresh
  */
 export async function apiDelete<T>(url: string): Promise<T> {
-  const response = await fetchWithCSRF(url, {
+  const options = {
     method: 'DELETE',
-  });
+  };
+  
+  const response = await fetchWithCSRF(url, options);
 
   if (!response.ok) {
-    await processApiError(response, 'DELETE request');
+    const processedResponse = await processApiError(response, 'DELETE request', url, options);
+    // If processApiError returns a response (after token refresh), use it
+    if (processedResponse instanceof Response) {
+      return await processedResponse.json();
+    }
+    // Otherwise processApiError would have thrown an error
   }
 
   return await response.json();
 }
 
 /**
- * Generic API GET request with detailed error handling
+ * Generic API GET request with detailed error handling and token refresh
  */
 export async function apiGet<T>(url: string): Promise<T> {
-  const response = await fetchWithCSRF(url, {
+  const options = {
     method: 'GET',
-  });
+  };
+  
+  const response = await fetchWithCSRF(url, options);
 
   if (!response.ok) {
-    await processApiError(response, 'GET request');
+    const processedResponse = await processApiError(response, 'GET request', url, options);
+    // If processApiError returns a response (after token refresh), use it
+    if (processedResponse instanceof Response) {
+      return await processedResponse.json();
+    }
+    // Otherwise processApiError would have thrown an error
   }
 
   return await response.json();
@@ -460,19 +488,66 @@ export async function apiGet<T>(url: string): Promise<T> {
 
 /**
  * Upload form data with CSRF protection
- * Enhanced with detailed error handling
+ * Enhanced with detailed error handling and token refresh
  */
 export async function uploadFormData<T>(url: string, formData: FormData): Promise<T> {
-  const response = await fetchWithCSRF(url, {
+  const options = {
     method: 'POST',
     body: formData,
     // Don't manually set Content-Type header for FormData
     // The browser will automatically set it with the correct boundary
-  });
+  };
+  
+  const response = await fetchWithCSRF(url, options);
 
   if (!response.ok) {
-    await processApiError(response, 'File upload');
+    const processedResponse = await processApiError(response, 'File upload', url, options);
+    // If processApiError returns a response (after token refresh), use it
+    if (processedResponse instanceof Response) {
+      return await processedResponse.json();
+    }
+    // Otherwise processApiError would have thrown an error
   }
 
+  return await response.json();
+}
+
+/**
+ * General-purpose API request with appropriate error handling and token refresh
+ * @param url API endpoint URL
+ * @param options Request options with method, data, etc.
+ * @returns Promise resolving to the response data
+ */
+export async function apiRequest<T>(url: string, options: {
+  method?: string;
+  data?: any;
+  silentError?: boolean;
+} = {}): Promise<T> {
+  const method = options.method || 'GET';
+  const body = options.data ? JSON.stringify(options.data) : undefined;
+  
+  const fetchOptions = {
+    method,
+    body
+  };
+  
+  const response = await fetchWithCSRF(url, fetchOptions);
+  
+  if (!response.ok) {
+    try {
+      const processedResponse = await processApiError(response, `${method} request`, url, fetchOptions);
+      
+      // If processApiError returns a response (after token refresh), use it
+      if (processedResponse instanceof Response) {
+        return await processedResponse.json();
+      }
+    } catch (error) {
+      if (!options.silentError) {
+        throw error;
+      }
+      return null as unknown as T;
+    }
+  }
+  
   return await response.json();
 }

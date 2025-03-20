@@ -50,24 +50,20 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
     setIsSubmitting(true);
     try {
       // Send request to reset password API endpoint
-      const response = await apiRequest('/api/v1/auth/reset-password', {
+      await apiRequest('/api/v1/auth/reset-password', {
         method: 'POST',
-        body: JSON.stringify({
+        data: {
           token,
           password: data.password,
-        }),
+        },
       });
-
-      if (response.ok) {
-        setResetComplete(true);
-        toast({
-          title: 'Password Reset Successful',
-          description: 'Your password has been successfully reset. You can now log in with your new password.',
-        });
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to reset password');
-      }
+      
+      // If the request was successful (no error thrown), show success message
+      setResetComplete(true);
+      toast({
+        title: 'Password Reset Successful',
+        description: 'Your password has been successfully reset. You can now log in with your new password.',
+      });
     } catch (error) {
       console.error('Password reset failed:', error);
       toast({

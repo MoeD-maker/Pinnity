@@ -1,97 +1,127 @@
-import React, { useState, forwardRef } from 'react';
+import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
-import { Check, X, Eye, EyeOff } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Eye, EyeOff, X, Check } from 'lucide-react';
 
-interface PasswordRequirement {
-  id: string;
-  label: string;
-  regex: RegExp;
-}
-
-const passwordRequirements: PasswordRequirement[] = [
-  { id: 'min-length', label: 'At least 8 characters', regex: /.{8,}/ },
-  { id: 'uppercase', label: 'At least one uppercase letter', regex: /[A-Z]/ },
-  { id: 'lowercase', label: 'At least one lowercase letter', regex: /[a-z]/ },
-  { id: 'number', label: 'At least one number', regex: /[0-9]/ },
-  { id: 'special', label: 'At least one special character', regex: /[^A-Za-z0-9]/ },
-];
-
-interface PasswordFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface PasswordFieldProps {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder?: string;
+  name?: string;
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
+  className?: string;
   showRequirements?: boolean;
 }
 
-export const PasswordField = forwardRef<HTMLInputElement, PasswordFieldProps>(
-  ({ showRequirements = false, ...props }, ref) => {
-    const [showPassword, setShowPassword] = useState(false);
-    const [passwordValue, setPasswordValue] = useState('');
+export function PasswordField({
+  value,
+  onChange,
+  placeholder,
+  name,
+  onBlur,
+  className,
+  showRequirements = false,
+}: PasswordFieldProps) {
+  const [showPassword, setShowPassword] = useState(false);
+  const [focused, setFocused] = useState(false);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      setPasswordValue(value);
-      
-      // Also call the original onChange handler if provided
-      if (props.onChange) {
-        props.onChange(e);
-      }
-    };
+  // Password validation rules
+  const hasMinLength = value.length >= 8;
+  const hasUpperCase = /[A-Z]/.test(value);
+  const hasLowerCase = /[a-z]/.test(value);
+  const hasNumber = /\d/.test(value);
+  const hasSpecial = /[^A-Za-z0-9]/.test(value);
 
-    const togglePasswordVisibility = () => {
-      setShowPassword(!showPassword);
-    };
-
-    return (
-      <div className="space-y-2">
-        <div className="relative">
-          <Input
-            type={showPassword ? 'text' : 'password'}
-            {...props}
-            onChange={handleChange}
-            ref={ref}
-            className="pr-10"
-          />
-          <button
-            type="button"
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-            onClick={togglePasswordVisibility}
-            tabIndex={-1}
-          >
-            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-          </button>
-        </div>
-
-        {showRequirements && passwordValue && (
-          <div className="mt-3 space-y-2">
-            <div className="text-sm font-medium text-gray-700">Password must have:</div>
-            <div className="space-y-1 text-sm">
-              {passwordRequirements.map((req) => (
-                <RequirementItem
-                  key={req.id}
-                  label={req.label}
-                  isMet={req.regex.test(passwordValue)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-);
-
-PasswordField.displayName = 'PasswordField';
-
-interface RequirementItemProps {
-  label: string;
-  isMet: boolean;
-}
-
-function RequirementItem({ label, isMet }: RequirementItemProps) {
   return (
-    <div className="flex items-center">
-      <div className={`mr-2 ${isMet ? 'text-green-500' : 'text-gray-400'}`}>
-        {isMet ? <Check size={16} /> : <X size={16} />}
+    <div className="relative w-full">
+      <div className="relative">
+        <Input
+          type={showPassword ? 'text' : 'password'}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          name={name}
+          onBlur={(e) => {
+            setFocused(false);
+            if (onBlur) onBlur(e);
+          }}
+          onFocus={() => setFocused(true)}
+          className={`pr-10 ${className}`}
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+          onClick={() => setShowPassword(!showPassword)}
+          tabIndex={-1}
+        >
+          {showPassword ? (
+            <EyeOff className="h-4 w-4 text-gray-500" />
+          ) : (
+            <Eye className="h-4 w-4 text-gray-500" />
+          )}
+          <span className="sr-only">{showPassword ? 'Hide password' : 'Show password'}</span>
+        </Button>
       </div>
-      <span className={isMet ? 'text-green-700' : 'text-gray-500'}>{label}</span>
+
+      {showRequirements && (focused || value.length > 0) && (
+        <div className="mt-2 rounded-md border border-gray-200 bg-gray-50 p-3 text-sm">
+          <p className="mb-1 font-medium text-gray-700">Password requirements:</p>
+          <ul className="space-y-1 text-xs">
+            <li className="flex items-center">
+              {hasMinLength ? (
+                <Check className="mr-1 h-3.5 w-3.5 text-green-500" />
+              ) : (
+                <X className="mr-1 h-3.5 w-3.5 text-red-500" />
+              )}
+              <span className={hasMinLength ? 'text-green-700' : 'text-gray-600'}>
+                At least 8 characters
+              </span>
+            </li>
+            <li className="flex items-center">
+              {hasUpperCase ? (
+                <Check className="mr-1 h-3.5 w-3.5 text-green-500" />
+              ) : (
+                <X className="mr-1 h-3.5 w-3.5 text-red-500" />
+              )}
+              <span className={hasUpperCase ? 'text-green-700' : 'text-gray-600'}>
+                One uppercase letter
+              </span>
+            </li>
+            <li className="flex items-center">
+              {hasLowerCase ? (
+                <Check className="mr-1 h-3.5 w-3.5 text-green-500" />
+              ) : (
+                <X className="mr-1 h-3.5 w-3.5 text-red-500" />
+              )}
+              <span className={hasLowerCase ? 'text-green-700' : 'text-gray-600'}>
+                One lowercase letter
+              </span>
+            </li>
+            <li className="flex items-center">
+              {hasNumber ? (
+                <Check className="mr-1 h-3.5 w-3.5 text-green-500" />
+              ) : (
+                <X className="mr-1 h-3.5 w-3.5 text-red-500" />
+              )}
+              <span className={hasNumber ? 'text-green-700' : 'text-gray-600'}>
+                One number
+              </span>
+            </li>
+            <li className="flex items-center">
+              {hasSpecial ? (
+                <Check className="mr-1 h-3.5 w-3.5 text-green-500" />
+              ) : (
+                <X className="mr-1 h-3.5 w-3.5 text-red-500" />
+              )}
+              <span className={hasSpecial ? 'text-green-700' : 'text-gray-600'}>
+                One special character
+              </span>
+            </li>
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
