@@ -1,100 +1,153 @@
-import * as React from "react";
+import React, { useState, useEffect } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { FormControl } from "@/components/ui/form";
+import { Check, X, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Input, InputProps } from "@/components/ui/input";
-import { EyeIcon, EyeOffIcon, CheckIcon, XIcon } from "lucide-react";
 
-interface PasswordRequirement {
+type PasswordRequirement = {
+  id: string;
+  label: string;
   regex: RegExp;
-  text: string;
-}
+  met: boolean;
+};
 
-interface PasswordInputProps extends Omit<InputProps, "onChange"> {
+interface PasswordInputProps {
+  label?: string;
+  value: string;
+  onChange: (value: string) => void;
   showRequirements?: boolean;
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  error?: string;
+  id?: string;
+  placeholder?: string;
+  className?: string;
+  disabled?: boolean;
 }
 
 export function PasswordInput({
-  className,
-  showRequirements = false,
+  label,
+  value,
   onChange,
-  ...props
+  showRequirements = true,
+  error,
+  id = "password",
+  placeholder = "Enter your password",
+  className,
+  disabled = false,
 }: PasswordInputProps) {
-  const [showPassword, setShowPassword] = React.useState(false);
-  const [password, setPassword] = React.useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [requirements, setRequirements] = useState<PasswordRequirement[]>([
+    {
+      id: "length",
+      label: "At least 8 characters",
+      regex: /^.{8,}$/,
+      met: false,
+    },
+    {
+      id: "uppercase",
+      label: "At least one uppercase letter",
+      regex: /[A-Z]/,
+      met: false,
+    },
+    {
+      id: "lowercase",
+      label: "At least one lowercase letter",
+      regex: /[a-z]/,
+      met: false,
+    },
+    {
+      id: "number",
+      label: "At least one number",
+      regex: /[0-9]/,
+      met: false,
+    },
+    {
+      id: "special",
+      label: "At least one special character",
+      regex: /[^A-Za-z0-9]/,
+      met: false,
+    },
+  ]);
 
-  // Define password requirements
-  const requirements: PasswordRequirement[] = [
-    { regex: /.{8,}/, text: "At least 8 characters" },
-    { regex: /[A-Z]/, text: "At least one uppercase letter" },
-    { regex: /[a-z]/, text: "At least one lowercase letter" },
-    { regex: /[0-9]/, text: "At least one number" },
-    { regex: /[^A-Za-z0-9]/, text: "At least one special character" },
-  ];
+  // Update requirement statuses when password changes
+  useEffect(() => {
+    setRequirements((prev) =>
+      prev.map((req) => ({
+        ...req,
+        met: req.regex.test(value),
+      }))
+    );
+  }, [value]);
 
-  // Handle password input changes
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPassword(e.target.value);
-    if (onChange) {
-      onChange(e);
-    }
-  };
-
-  // Toggle password visibility
-  const togglePasswordVisibility = () => {
-    setShowPassword((prev) => !prev);
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
   };
 
   return (
     <div className="space-y-2">
+      {label && (
+        <Label htmlFor={id} className="text-sm font-medium">
+          {label}
+        </Label>
+      )}
       <div className="relative">
-        <Input
-          type={showPassword ? "text" : "password"}
-          className={cn("pr-10", className)}
-          onChange={handleChange}
-          {...props}
-        />
-        <Button
+        <FormControl>
+          <Input
+            type={showPassword ? "text" : "password"}
+            id={id}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            className={cn("pr-10", className)}
+            disabled={disabled}
+            aria-invalid={!!error}
+            aria-describedby={error ? `${id}-error` : undefined}
+          />
+        </FormControl>
+        <button
           type="button"
-          variant="ghost"
-          size="sm"
-          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-          onClick={togglePasswordVisibility}
+          className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-500"
+          onClick={toggleShowPassword}
+          aria-label={showPassword ? "Hide password" : "Show password"}
           tabIndex={-1}
         >
           {showPassword ? (
-            <EyeOffIcon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            <EyeOff className="h-4 w-4" />
           ) : (
-            <EyeIcon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            <Eye className="h-4 w-4" />
           )}
-          <span className="sr-only">
-            {showPassword ? "Hide password" : "Show password"}
-          </span>
-        </Button>
+        </button>
       </div>
 
-      {/* Display password requirements if enabled and the input is focused or has content */}
-      {showRequirements && password.length > 0 && (
-        <div className="mt-2 space-y-1 text-sm">
-          {requirements.map((req, index) => {
-            const isMet = req.regex.test(password);
-            return (
-              <div
-                key={index}
+      {error && (
+        <p id={`${id}-error`} className="text-sm font-medium text-destructive">
+          {error}
+        </p>
+      )}
+
+      {showRequirements && (
+        <div className="mt-3 space-y-2">
+          <p className="text-xs font-medium text-muted-foreground">
+            Password requirements:
+          </p>
+          <ul className="space-y-1 text-xs">
+            {requirements.map((req) => (
+              <li
+                key={req.id}
                 className={cn(
-                  "flex items-center gap-1.5",
-                  isMet ? "text-green-600" : "text-muted-foreground"
+                  "flex items-center gap-2",
+                  req.met ? "text-green-600" : "text-muted-foreground"
                 )}
               >
-                {isMet ? (
-                  <CheckIcon className="h-3 w-3" />
+                {req.met ? (
+                  <Check className="h-3 w-3" />
                 ) : (
-                  <XIcon className="h-3 w-3" />
+                  <X className="h-3 w-3" />
                 )}
-                <span className="text-xs">{req.text}</span>
-              </div>
-            );
-          })}
+                {req.label}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>
