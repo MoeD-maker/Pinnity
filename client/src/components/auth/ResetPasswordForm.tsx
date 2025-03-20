@@ -50,11 +50,11 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
     setIsSubmitting(true);
     try {
       // Send request to reset password API endpoint
-      await apiRequest('/api/v1/auth/reset-password', {
+      await apiRequest('/api/v1/auth/password-reset/verify', {
         method: 'POST',
         data: {
           token,
-          password: data.password,
+          newPassword: data.password,
         },
       });
       

@@ -1,52 +1,59 @@
 import React, { useState } from 'react';
+import { Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Eye, EyeOff, X, Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-interface PasswordFieldProps {
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder?: string;
-  name?: string;
-  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
-  className?: string;
+interface PasswordRequirement {
+  regex: RegExp;
+  text: string;
+}
+
+interface PasswordFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   showRequirements?: boolean;
+  className?: string;
 }
 
 export function PasswordField({
-  value,
-  onChange,
-  placeholder,
-  name,
-  onBlur,
-  className,
   showRequirements = false,
+  className = '',
+  value = '',
+  onChange,
+  onBlur,
+  ...props
 }: PasswordFieldProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [focused, setFocused] = useState(false);
+  
+  // Convert value to string if it's not already
+  const passwordValue = typeof value === 'string' ? value : String(value || '');
+  
+  // Define password requirements with clear descriptions
+  const requirements: PasswordRequirement[] = [
+    { regex: /.{8,}/, text: "At least 8 characters" },
+    { regex: /[A-Z]/, text: "At least one uppercase letter" },
+    { regex: /[a-z]/, text: "At least one lowercase letter" },
+    { regex: /[0-9]/, text: "At least one number" },
+    { regex: /[^A-Za-z0-9]/, text: "At least one special character" },
+  ];
 
-  // Password validation rules
-  const hasMinLength = value.length >= 8;
-  const hasUpperCase = /[A-Z]/.test(value);
-  const hasLowerCase = /[a-z]/.test(value);
-  const hasNumber = /\d/.test(value);
-  const hasSpecial = /[^A-Za-z0-9]/.test(value);
+  // Check if requirement is met
+  const checkRequirement = (regex: RegExp) => regex.test(passwordValue);
 
   return (
-    <div className="relative w-full">
-      <div className="relative">
+    <div className="w-full space-y-2">
+      <div className="relative w-full">
         <Input
           type={showPassword ? 'text' : 'password'}
           value={value}
           onChange={onChange}
-          placeholder={placeholder}
-          name={name}
           onBlur={(e) => {
             setFocused(false);
             if (onBlur) onBlur(e);
           }}
           onFocus={() => setFocused(true)}
-          className={`pr-10 ${className}`}
+          className={cn("pr-10", className)}
+          {...props}
         />
         <Button
           type="button"
@@ -64,64 +71,35 @@ export function PasswordField({
           <span className="sr-only">{showPassword ? 'Hide password' : 'Show password'}</span>
         </Button>
       </div>
-
-      {showRequirements && (focused || value.length > 0) && (
-        <div className="mt-2 rounded-md border border-gray-200 bg-gray-50 p-3 text-sm">
-          <p className="mb-1 font-medium text-gray-700">Password requirements:</p>
-          <ul className="space-y-1 text-xs">
-            <li className="flex items-center">
-              {hasMinLength ? (
-                <Check className="mr-1 h-3.5 w-3.5 text-green-500" />
-              ) : (
-                <X className="mr-1 h-3.5 w-3.5 text-red-500" />
-              )}
-              <span className={hasMinLength ? 'text-green-700' : 'text-gray-600'}>
-                At least 8 characters
-              </span>
-            </li>
-            <li className="flex items-center">
-              {hasUpperCase ? (
-                <Check className="mr-1 h-3.5 w-3.5 text-green-500" />
-              ) : (
-                <X className="mr-1 h-3.5 w-3.5 text-red-500" />
-              )}
-              <span className={hasUpperCase ? 'text-green-700' : 'text-gray-600'}>
-                One uppercase letter
-              </span>
-            </li>
-            <li className="flex items-center">
-              {hasLowerCase ? (
-                <Check className="mr-1 h-3.5 w-3.5 text-green-500" />
-              ) : (
-                <X className="mr-1 h-3.5 w-3.5 text-red-500" />
-              )}
-              <span className={hasLowerCase ? 'text-green-700' : 'text-gray-600'}>
-                One lowercase letter
-              </span>
-            </li>
-            <li className="flex items-center">
-              {hasNumber ? (
-                <Check className="mr-1 h-3.5 w-3.5 text-green-500" />
-              ) : (
-                <X className="mr-1 h-3.5 w-3.5 text-red-500" />
-              )}
-              <span className={hasNumber ? 'text-green-700' : 'text-gray-600'}>
-                One number
-              </span>
-            </li>
-            <li className="flex items-center">
-              {hasSpecial ? (
-                <Check className="mr-1 h-3.5 w-3.5 text-green-500" />
-              ) : (
-                <X className="mr-1 h-3.5 w-3.5 text-red-500" />
-              )}
-              <span className={hasSpecial ? 'text-green-700' : 'text-gray-600'}>
-                One special character
-              </span>
-            </li>
+      
+      {showRequirements && (passwordValue.length > 0 || focused) && (
+        <div className="pt-2 space-y-2">
+          <p className="text-xs font-medium text-gray-700 mb-1">Password requirements:</p>
+          <ul className="space-y-1">
+            {requirements.map((requirement, index) => {
+              const isMet = checkRequirement(requirement.regex);
+              return (
+                <li 
+                  key={index} 
+                  className={cn(
+                    "flex items-center text-xs",
+                    isMet ? "text-green-600" : "text-gray-500"
+                  )}
+                >
+                  {isMet ? (
+                    <CheckCircle className="h-3.5 w-3.5 mr-2 text-green-600" />
+                  ) : (
+                    <XCircle className="h-3.5 w-3.5 mr-2 text-gray-400" />
+                  )}
+                  {requirement.text}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
     </div>
   );
 }
+
+export default PasswordField;
