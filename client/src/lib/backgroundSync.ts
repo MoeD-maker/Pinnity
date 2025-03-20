@@ -142,15 +142,24 @@ export function useBackgroundSync() {
  * This uses Service Worker's Background Sync API for more reliable syncing
  */
 export async function registerBackgroundSync(): Promise<boolean> {
+  // Check if the browser supports background sync
   if ('serviceWorker' in navigator && 'SyncManager' in window) {
     try {
       const registration = await navigator.serviceWorker.ready;
       
-      // Register a background sync
-      await registration.sync.register('pinnity-sync');
-      
-      console.log('Background sync registered');
-      return true;
+      // Check if sync is available on the registration
+      // @ts-ignore - TypeScript doesn't recognize sync on ServiceWorkerRegistration
+      if (registration.sync) {
+        // Register a background sync
+        // @ts-ignore - TypeScript doesn't recognize sync on ServiceWorkerRegistration
+        await registration.sync.register('pinnity-sync');
+        
+        console.log('Background sync registered');
+        return true;
+      } else {
+        console.log('Background sync API is not available on this browser');
+        return false;
+      }
     } catch (error) {
       console.error('Failed to register background sync:', error);
       return false;

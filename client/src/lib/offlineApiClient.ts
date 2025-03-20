@@ -70,15 +70,17 @@ export const offlineApiClient = {
    * @returns Promise resolving to the number of pending requests
    */
   async getPendingRequestCount(): Promise<number> {
-    return stores.offlineMetadata.getItem<number>('pendingRequests') || 0;
+    const count = await stores.offlineMetadata.getItem<number>('pendingRequests');
+    return count || 0;
   },
   
   /**
    * Get the last online timestamp
-   * @returns Promise resolving to the last online timestamp or null
+   * @returns Promise resolving to the last online timestamp (or current time if never set)
    */
-  async getLastOnlineTimestamp(): Promise<number | null> {
-    return stores.offlineMetadata.getItem<number>('lastOnline');
+  async getLastOnlineTimestamp(): Promise<number> {
+    const timestamp = await stores.offlineMetadata.getItem<number>('lastOnline');
+    return timestamp || Date.now(); // Return current time if no timestamp found
   }
 };
 
@@ -104,7 +106,8 @@ export async function isInOfflineMode(): Promise<boolean> {
   }
   
   // If we have pending requests, we're functionally in offline mode
-  const pendingRequests = await stores.offlineMetadata.getItem<number>('pendingRequests') || 0;
+  const pendingRequestsValue = await stores.offlineMetadata.getItem<number>('pendingRequests');
+  const pendingRequests = pendingRequestsValue || 0;
   if (pendingRequests > 0) {
     return true;
   }
@@ -112,7 +115,10 @@ export async function isInOfflineMode(): Promise<boolean> {
   // If we haven't had a successful sync in 5 minutes but the browser reports online,
   // we could be in a "lie-fi" situation (connected but not really working)
   const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
-  if (lastSyncAttempt && lastSyncAttempt > lastOnline && lastOnline < fiveMinutesAgo) {
+  const safeLastOnline = lastOnline || Date.now();
+  const safeLastSyncAttempt = lastSyncAttempt || 0;
+  
+  if (safeLastSyncAttempt > safeLastOnline && safeLastOnline < fiveMinutesAgo) {
     return true; // Functionally offline
   }
   

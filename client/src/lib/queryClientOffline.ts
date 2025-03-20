@@ -151,11 +151,11 @@ export function createOfflineQueryClient(): QueryClient {
       queries: {
         // Keep cached data longer for offline support
         staleTime: 5 * 60 * 1000, // 5 minutes
-        cacheTime: 60 * 60 * 1000, // 1 hour
+        gcTime: 60 * 60 * 1000, // 1 hour (renamed from cacheTime in React Query v5)
         // Enable retries but don't retry too much
         retry: 2,
         // Include both new and stale data in result
-        keepPreviousData: true,
+        placeholderData: 'previousData', // Using string literal for v5
         // Handle network errors more gracefully
         retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
         // Refetch only if online
