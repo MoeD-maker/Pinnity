@@ -453,6 +453,80 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
     setupSessionTimeoutHandler();
   };
   
+  // Handle manually saving progress
+  const handleSaveProgress = async () => {
+    resetSessionTimeout(); // Reset the inactivity timer
+    const saved = await saveFormState();
+    
+    if (saved) {
+      toast({
+        title: "Progress saved",
+        description: "You can continue later where you left off",
+      });
+    } else {
+      toast({
+        title: "Could not save progress",
+        description: "There was an issue saving your progress",
+        variant: "destructive"
+      });
+    }
+    
+    return saved;
+  };
+  
+  // Handle restoring session from saved data
+  const handleRestoreSession = async () => {
+    resetSessionTimeout(); // Reset the inactivity timer
+    setRestoringSession(true);
+    
+    try {
+      const data = await restoreFormState();
+      
+      if (!data) {
+        toast({
+          title: "Unable to restore session",
+          description: "We couldn't find your saved progress",
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error restoring session:', error);
+      toast({
+        title: "Error restoring session",
+        description: "There was a problem restoring your progress",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+  
+  // Handle discarding saved session
+  const handleDiscardSession = async () => {
+    resetSessionTimeout(); // Reset the inactivity timer
+    await clearFormState();
+    setRestoringSession(false);
+    
+    toast({
+      title: "Progress discarded",
+      description: "Starting a fresh session",
+    });
+    
+    // Reset to first step
+    setStep(1);
+    
+    // Reset preferences to defaults
+    if (userType === 'individual') {
+      setIndividualPreferences(defaultIndividualPreferences);
+    } else {
+      setBusinessPreferences(defaultBusinessPreferences);
+    }
+    
+    return true;
+  };
+  
   // Handle completing onboarding
   const handleComplete = async () => {
     setLoading(true);
@@ -950,14 +1024,39 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
   };
 
   return (
-    <Card className="shadow-lg overflow-hidden">
-      {/* Progress stepper */}
-      <div className="p-6 bg-white border-b">
-        <RegistrationStepper steps={steps} currentStep={step} />
-      </div>
+    <div className="relative">
+      {/* Session Recovery Notice - shown above the card when saved data exists */}
+      {persistenceMetadata.hasPersistedData && persistenceMetadata.lastSaved && !restoringSession && (
+        <SessionRecoveryNotice
+          hasPersistedData={persistenceMetadata.hasPersistedData}
+          lastSaved={new Date(persistenceMetadata.lastSaved)}
+          onRestore={handleRestoreSession}
+          onDiscard={handleDiscardSession}
+        />
+      )}
       
-      {/* Main content */}
-      <div className="p-6">
+      <Card className="shadow-lg overflow-hidden">
+        {/* Header with progress stepper and save button */}
+        <div className="p-6 bg-white border-b flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <RegistrationStepper steps={steps} currentStep={step} />
+          
+          {/* Save Progress Button */}
+          <div className="flex items-center justify-end gap-2">
+            <SaveProgressButton
+              onClick={handleSaveProgress}
+              metadata={persistenceMetadata}
+              showLabel={true}
+            />
+            <SaveAndContinueModal 
+              onSave={handleSaveProgress}
+              metadata={persistenceMetadata}
+              userEmail={user.email}
+            />
+          </div>
+        </div>
+        
+        {/* Main content */}
+        <div className="p-6">
         {/* Security status indicator */}
         {renderSecurityStatus()}
         <AnimatePresence mode="wait">
@@ -1018,5 +1117,6 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
         )}
       </div>
     </Card>
+  </div>
   );
 }
