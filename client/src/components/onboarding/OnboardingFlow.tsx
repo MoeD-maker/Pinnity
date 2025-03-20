@@ -10,9 +10,10 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import RegistrationStepper from "./RegistrationStepper";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ChevronRight, ChevronLeft, Check } from "lucide-react";
+import { Loader2, ChevronRight, ChevronLeft, Check, ShieldAlert } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiPost } from "@/lib/api";
+import useCsrfProtection from "@/hooks/useCsrfProtection";
 
 // Define the user interface
 interface UserData {
@@ -256,12 +257,26 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
   // Authentication state (using HTTP-only cookies)
   const { user: authUser, refreshToken, isAuthenticated } = useAuth();
   
+  // CSRF protection
+  const { 
+    isLoading: csrfLoading, 
+    error: csrfError, 
+    isReady: csrfReady, 
+    refreshCsrfToken, 
+    handleCsrfError,
+    fetchWithProtection
+  } = useCsrfProtection(true); // Auto-fetch token on mount
+  
   // Session timeout handling reference
   const sessionTimeoutRef = useRef<number | null>(null);
   
-  // Check authentication on component mount
+  // Flag to track if security setup is complete (both auth and CSRF)
+  const [securitySetupComplete, setSecuritySetupComplete] = useState(false);
+  
+  // Check authentication and CSRF on component mount
   useEffect(() => {
-    const verifyAuthentication = async () => {
+    const verifySecuritySetup = async () => {
+      // Check authentication first
       if (!isAuthenticated) {
         console.log('Not authenticated, redirecting to auth page');
         toast({
@@ -275,6 +290,7 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
       
       // Perform a token refresh to ensure the token is valid for the duration of onboarding
       try {
+        // Refresh auth token
         const refreshSuccessful = await refreshToken();
         
         if (!refreshSuccessful) {
@@ -288,20 +304,48 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
           return;
         }
         
+        // Now refresh CSRF token
+        console.log('Fetching CSRF token for secure form submission...');
+        const csrfSuccessful = await refreshCsrfToken();
+        
+        if (!csrfSuccessful) {
+          console.log('CSRF token fetch failed');
+          toast({
+            title: "Security setup failed",
+            description: "Unable to secure the connection. Please refresh the page and try again.",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        // Both authentication and CSRF protection are set up
+        console.log('Security setup complete: Authentication and CSRF protection ready');
+        setSecuritySetupComplete(true);
+        
         // Set up session timeout handler to prompt re-authentication after inactivity
         setupSessionTimeoutHandler();
       } catch (error) {
-        console.error('Authentication verification error:', error);
+        console.error('Security setup error:', error);
         toast({
-          title: "Authentication error",
-          description: "Please log in again to continue",
+          title: "Security setup error",
+          description: "Please refresh the page and try again",
           variant: "destructive"
         });
-        setLocation("/auth");
+        
+        // Determine if it's an auth error or CSRF error
+        if (error instanceof Error) {
+          if (error.message.includes('CSRF') || error.message.includes('security')) {
+            // Handle as CSRF error
+            handleCsrfError(error);
+          } else {
+            // Handle as auth error
+            setLocation("/auth");
+          }
+        }
       }
     };
     
-    verifyAuthentication();
+    verifySecuritySetup();
     
     // Clean up session timeout handler on unmount
     return () => {
@@ -309,7 +353,7 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
         window.clearTimeout(sessionTimeoutRef.current);
       }
     };
-  }, [isAuthenticated, refreshToken, setLocation, toast]);
+  }, [isAuthenticated, refreshToken, refreshCsrfToken, handleCsrfError, setLocation, toast]);
   
   // Set up session timeout handler for inactivity
   const setupSessionTimeoutHandler = () => {
@@ -350,17 +394,34 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
     resetSessionTimeout(); // Reset the inactivity timer
     
     try {
-      // Perform a token refresh to ensure it's valid before completing
-      const refreshSuccessful = await refreshToken();
-      
-      if (!refreshSuccessful) {
-        toast({
-          title: "Session expired",
-          description: "Please log in again to complete your setup",
-          variant: "destructive"
-        });
-        setLocation("/auth");
-        return;
+      // Perform security checks before saving preferences
+      if (!securitySetupComplete) {
+        console.log('Security setup not complete, refreshing tokens...');
+        
+        // Try to refresh auth token
+        const refreshSuccessful = await refreshToken();
+        
+        if (!refreshSuccessful) {
+          toast({
+            title: "Session expired",
+            description: "Please log in again to complete your setup",
+            variant: "destructive"
+          });
+          setLocation("/auth");
+          return;
+        }
+        
+        // Try to refresh CSRF token
+        const csrfSuccessful = await refreshCsrfToken();
+        
+        if (!csrfSuccessful) {
+          toast({
+            title: "Security validation failed",
+            description: "Unable to secure the connection. Please refresh the page and try again.",
+            variant: "destructive"
+          });
+          return;
+        }
       }
       
       // Save preferences based on user type
@@ -368,10 +429,16 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
         ? individualPreferences 
         : businessPreferences;
       
-      // Save preferences using apiPost (which handles CSRF and auth cookies)
-      await apiPost(`/api/v1/user/${user.id}/preferences`, {
-        userType,
-        preferences: preferencesData
+      // Save preferences using the CSRF-protected fetch from our hook
+      await fetchWithProtection(`/api/v1/user/${user.id}/preferences`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          userType,
+          preferences: preferencesData
+        })
       });
       
       toast({
@@ -396,6 +463,12 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
           variant: "destructive"
         });
         setLocation("/auth");
+      } else if (error instanceof Error && 
+                (error.message.includes('CSRF') || 
+                 error.message.includes('security') || 
+                 (error as any).status === 403)) {
+        // Handle CSRF validation errors
+        handleCsrfError(error);
       } else {
         toast({
           title: "Error saving preferences",
