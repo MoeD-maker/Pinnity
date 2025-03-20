@@ -1,34 +1,54 @@
-import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
-import { motion } from "framer-motion";
-import { useEffect } from "react";
-import { useLocation } from "wouter";
+import React, { useEffect, useState } from 'react';
+import { useLocation } from 'wouter';
+import ResetPasswordForm from '@/components/auth/ResetPasswordForm';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 export function ResetPasswordPage() {
-  const [, setLocation] = useLocation();
-  
-  // Check if token is missing from URL, and if so, redirect to forgot password page
+  const [token, setToken] = useState('');
+  const [location, navigate] = useLocation();
+  const { toast } = useToast();
+
   useEffect(() => {
+    // Extract token from URL query parameters
     const params = new URLSearchParams(window.location.search);
-    const token = params.get("token");
-    
-    if (!token) {
-      setLocation("/forgot-password");
+    const tokenParam = params.get('token');
+
+    if (!tokenParam) {
+      toast({
+        title: 'Error',
+        description: 'No reset token found. Please request a new password reset link.',
+        variant: 'destructive',
+      });
+      navigate('/forgot-password');
+      return;
     }
-  }, [setLocation]);
+
+    setToken(tokenParam);
+  }, [navigate, toast]);
 
   return (
-    <div className="container flex flex-col items-center justify-center min-h-screen py-12">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="text-center mb-8"
-      >
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Pinnity</h1>
-        <p className="text-muted-foreground">Local Deals, Global Community</p>
-      </motion.div>
-      
-      <ResetPasswordForm />
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Reset Password</h1>
+          <p className="mt-2 text-gray-600">
+            Create a new password for your account.
+          </p>
+        </div>
+        {token && <ResetPasswordForm token={token} />}
+        <div className="text-center mt-6">
+          <Button 
+            variant="link" 
+            onClick={() => navigate('/login')}
+            className="text-sm text-primary"
+          >
+            Return to Login
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
+
+export default ResetPasswordPage;

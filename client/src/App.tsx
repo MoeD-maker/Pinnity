@@ -15,6 +15,8 @@ import TestPage from "@/pages/test-page";
 import MinimalPage from "@/pages/minimal";
 import TermsOfServicePage from "@/pages/terms";
 import PrivacyPolicyPage from "@/pages/privacy";
+import { ForgotPasswordPage } from "@/pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
 import UpdateNotification from "@/components/pwa/UpdateNotification";
@@ -310,6 +312,8 @@ function Router() {
     <Switch>
       {/* Public routes - no authentication required */}
       <Route path="/auth" component={AuthPage}/>
+      <Route path="/forgot-password" component={ForgotPasswordPage}/>
+      <Route path="/reset-password" component={ResetPasswordPage}/>
       <Route path="/terms" component={TermsOfServicePage}/>
       <Route path="/privacy" component={PrivacyPolicyPage}/>
       <Route path="/onboarding/:userType/:userId" component={OnboardingPage}/>
