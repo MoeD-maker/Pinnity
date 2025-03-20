@@ -3,7 +3,7 @@
 importScripts('https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js');
 
 // Version is used to trigger updates when changed
-const APP_VERSION = 'v1.1.0';
+const APP_VERSION = 'v1.2.0'; // Bumped version for offline capabilities
 const CACHE_NAME = `pinnity-cache-${APP_VERSION}`;
 const DEAL_CACHE_MAX_AGE = 3600000; // 1 hour in milliseconds
 const OFFLINE_PAGE = '/offline.html';
@@ -22,17 +22,72 @@ const CACHE_ASSETS = [
   '/localforage.min.js'
 ];
 
+// Enhanced offline capabilities
+const OFFLINE_QUEUE_STORE = 'requestQueue';
+const OFFLINE_FORM_STORE = 'formData';
+const OFFLINE_METADATA_STORE = 'offlineMetadata';
+const OFFLINE_DATA_CACHE = 'dataCache';
+
+// Create separate stores for different data types
+const stores = {
+  // For queued API requests
+  requestQueue: localforage.createInstance({
+    name: 'pinnity',
+    storeName: OFFLINE_QUEUE_STORE,
+    description: 'Queue for API requests made while offline'
+  }),
+  
+  // For form data persistence
+  formData: localforage.createInstance({
+    name: 'pinnity',
+    storeName: OFFLINE_FORM_STORE,
+    description: 'Persistent storage for form data'
+  }),
+  
+  // For metadata about offline status
+  offlineMetadata: localforage.createInstance({
+    name: 'pinnity',
+    storeName: OFFLINE_METADATA_STORE,
+    description: 'Metadata for offline mode and sync status'
+  }),
+  
+  // For data cache
+  dataCache: localforage.createInstance({
+    name: 'pinnity',
+    storeName: OFFLINE_DATA_CACHE,
+    description: 'Cache for data that might be needed offline'
+  })
+};
+
 // Install event - cache assets and initialize localforage
 self.addEventListener('install', (event) => {
   console.log('[Service Worker] Installing Service Worker', event);
   
-  // Initialize localforage if available
+  // Initialize localforage instances
   console.log('[Service Worker] LocalForage availability check:', typeof localforage !== 'undefined');
   if (typeof localforage !== 'undefined') {
+    // Initialize main localforage
     localforage.config({
       name: 'Pinnity Offline Storage',
       storeName: 'offline_data'
     });
+    
+    // Initialize all stores
+    Promise.all([
+      stores.requestQueue.ready(),
+      stores.formData.ready(),
+      stores.offlineMetadata.ready(),
+      stores.dataCache.ready()
+    ]).then(() => {
+      console.log('[Service Worker] All offline storage instances initialized successfully');
+      
+      // Set up initial offline metadata
+      stores.offlineMetadata.setItem('lastOnline', Date.now());
+      stores.offlineMetadata.setItem('pendingRequests', 0);
+    }).catch(err => {
+      console.error('[Service Worker] Failed to initialize offline storage instances', err);
+    });
+    
     console.log('[Service Worker] LocalForage initialized successfully');
   } else {
     console.error('[Service Worker] LocalForage failed to load!');
@@ -50,7 +105,7 @@ self.addEventListener('install', (event) => {
             return caches.match(OFFLINE_PAGE);
           })
           .then((offlineResponse) => {
-            if (offlineResponse.type === 'basic') {
+            if (offlineResponse && offlineResponse.type === 'basic') {
               return cache.put(OFFLINE_PAGE, offlineResponse.clone());
             }
             return cache.addAll(CACHE_ASSETS);
@@ -313,6 +368,115 @@ const syncRedemptions = async () => {
   }
 };
 
+// Process the generic request queue
+const processRequestQueue = async () => {
+  try {
+    console.log('[Service Worker] Processing request queue');
+    
+    // Get all pending requests
+    const requests = [];
+    await stores.requestQueue.iterate((value, key) => {
+      if (value.status === 'pending' || value.status === 'failed') {
+        requests.push({ key, ...value });
+      }
+    });
+    
+    if (requests.length === 0) {
+      console.log('[Service Worker] No pending requests to process');
+      return { success: 0, failed: 0 };
+    }
+    
+    console.log(`[Service Worker] Found ${requests.length} pending requests`);
+    
+    // Sort by priority and timestamp
+    requests.sort((a, b) => {
+      const priorityOrder = { high: 0, medium: 1, low: 2 };
+      const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
+      return priorityDiff !== 0 ? priorityDiff : a.timestamp - b.timestamp;
+    });
+    
+    // Process each request
+    let succeeded = 0;
+    let failed = 0;
+    
+    for (const request of requests) {
+      try {
+        console.log(`[Service Worker] Processing request: ${request.method} ${request.url}`);
+        
+        // Update request status
+        request.status = 'processing';
+        request.lastAttempt = Date.now();
+        await stores.requestQueue.setItem(request.key, request);
+        
+        // Make the request
+        const response = await fetch(request.url, {
+          method: request.method,
+          headers: {
+            'Content-Type': 'application/json',
+            ...request.headers
+          },
+          body: request.method !== 'GET' && request.body ? JSON.stringify(request.body) : undefined
+        });
+        
+        if (response.ok) {
+          console.log(`[Service Worker] Request succeeded: ${request.method} ${request.url}`);
+          request.status = 'succeeded';
+          succeeded++;
+        } else {
+          console.error(`[Service Worker] Request failed with status ${response.status}: ${request.method} ${request.url}`);
+          request.status = 'failed';
+          request.retryCount++;
+          request.error = `Server returned ${response.status}`;
+          failed++;
+        }
+      } catch (error) {
+        console.error(`[Service Worker] Error processing request: ${request.method} ${request.url}`, error);
+        request.status = 'failed';
+        request.retryCount++;
+        request.error = error.message || 'Unknown error';
+        failed++;
+      }
+      
+      // Update the request in storage
+      await stores.requestQueue.setItem(request.key, request);
+    }
+    
+    // Clean up succeeded requests
+    let cleanedUp = 0;
+    await stores.requestQueue.iterate((value, key) => {
+      if (value.status === 'succeeded') {
+        stores.requestQueue.removeItem(key);
+        cleanedUp++;
+      }
+    });
+    
+    console.log(`[Service Worker] Cleaned up ${cleanedUp} completed requests`);
+    
+    // Update metadata
+    const remaining = await stores.requestQueue.length();
+    await stores.offlineMetadata.setItem('pendingRequests', remaining);
+    await stores.offlineMetadata.setItem('lastSyncCompletion', Date.now());
+    
+    // Notify clients
+    self.clients.matchAll().then(clients => {
+      clients.forEach(client => {
+        client.postMessage({
+          type: 'QUEUE_PROCESSED',
+          success: succeeded,
+          failed: failed,
+          remaining: remaining
+        });
+      });
+    });
+    
+    return { success: succeeded, failed: failed };
+    
+  } catch (error) {
+    console.error('[Service Worker] Failed to process request queue:', error);
+    return { success: 0, failed: 0 };
+  }
+};
+
 // Listen for sync events
 self.addEventListener('sync', (event) => {
   console.log('[Service Worker] Background Sync', event.tag);
@@ -321,6 +485,9 @@ self.addEventListener('sync', (event) => {
     event.waitUntil(syncFavorites());
   } else if (event.tag === 'sync-redemptions') {
     event.waitUntil(syncRedemptions());
+  } else if (event.tag === 'pinnity-sync') {
+    // Process all queued requests
+    event.waitUntil(processRequestQueue());
   }
 });
 
