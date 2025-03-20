@@ -132,6 +132,9 @@ export class MemStorage implements IStorage {
   // Rating collection
   private redemptionRatings: Map<number, RedemptionRating>;
   
+  // Password reset tokens
+  private passwordResetTokens: Map<string, PasswordResetToken>;
+  
   private currentUserId: number;
   private currentBusinessId: number;
   private currentDealId: number;
@@ -160,6 +163,9 @@ export class MemStorage implements IStorage {
     
     // Initialize ratings collection
     this.redemptionRatings = new Map();
+    
+    // Initialize password reset tokens
+    this.passwordResetTokens = new Map();
     
     this.currentUserId = 1;
     this.currentBusinessId = 1;
@@ -637,6 +643,91 @@ export class MemStorage implements IStorage {
   
   async getAllUsers(): Promise<User[]> {
     return Array.from(this.users.values());
+  }
+  
+  // Password reset methods
+  async createPasswordResetToken(email: string, clientInfo?: { ipAddress?: string, userAgent?: string }): Promise<{ token: string, user: User } | null> {
+    // Find user by email
+    const user = await this.getUserByEmail(email);
+    if (!user) {
+      return null;
+    }
+    
+    // Generate a random token
+    const crypto = require('crypto');
+    const token = crypto.randomBytes(32).toString('hex');
+    
+    // Set expiration (1 hour from now)
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1);
+    
+    // Store the token (in a real implementation, this would be in a database)
+    // For the memory implementation, we'll just use a Map
+    if (!this.passwordResetTokens) {
+      this.passwordResetTokens = new Map();
+    }
+    
+    this.passwordResetTokens.set(token, {
+      id: Math.floor(Math.random() * 10000), // Simple ID for memory implementation
+      userId: user.id,
+      token: token,
+      createdAt: new Date(),
+      expiresAt: expiresAt,
+      usedAt: null,
+      ipAddress: clientInfo?.ipAddress || null,
+      userAgent: clientInfo?.userAgent || null
+    });
+    
+    return { token, user };
+  }
+  
+  async validatePasswordResetToken(token: string): Promise<User | null> {
+    if (!this.passwordResetTokens) {
+      return null;
+    }
+    
+    const resetToken = this.passwordResetTokens.get(token);
+    
+    // Check if token exists, is not expired, and has not been used
+    if (!resetToken || resetToken.expiresAt < new Date() || resetToken.usedAt) {
+      return null;
+    }
+    
+    // Get the associated user
+    const user = await this.getUser(resetToken.userId);
+    return user || null;
+  }
+  
+  async resetPasswordWithToken(token: string, newPassword: string): Promise<boolean> {
+    if (!this.passwordResetTokens) {
+      return false;
+    }
+    
+    const resetToken = this.passwordResetTokens.get(token);
+    
+    // Check if token exists, is not expired, and has not been used
+    if (!resetToken || resetToken.expiresAt < new Date() || resetToken.usedAt) {
+      return false;
+    }
+    
+    // Update the user's password
+    const user = await this.getUser(resetToken.userId);
+    if (!user) {
+      return false;
+    }
+    
+    const updatedUser = {
+      ...user,
+      password: hashPassword(newPassword)
+    };
+    
+    this.users.set(user.id, updatedUser);
+    
+    // Mark token as used
+    resetToken.usedAt = new Date();
+    this.passwordResetTokens.set(token, resetToken);
+    
+    return true;
   }
   
   // Admin methods
@@ -1603,6 +1694,85 @@ export class DatabaseStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     return await db.select().from(users);
+  }
+  
+  // Password reset methods implementation
+  async createPasswordResetToken(email: string, clientInfo?: { ipAddress?: string, userAgent?: string }): Promise<{ token: string, user: User } | null> {
+    // 1. Find the user by email
+    const user = await this.getUserByEmail(email);
+    if (!user) {
+      return null;
+    }
+    
+    // 2. Generate a secure random token
+    const crypto = require('crypto');
+    const token = crypto.randomBytes(32).toString('hex');
+    
+    // 3. Set expiration time (usually 1 hour from now)
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1);
+    
+    // 4. Delete any existing tokens for this user to prevent token pollution
+    await db.delete(passwordResetTokens)
+      .where(eq(passwordResetTokens.userId, user.id));
+    
+    // 5. Store the new token
+    await db.insert(passwordResetTokens).values({
+      userId: user.id,
+      token: token,
+      expiresAt: expiresAt,
+      ipAddress: clientInfo?.ipAddress || null,
+      userAgent: clientInfo?.userAgent || null
+    });
+    
+    return { token, user };
+  }
+  
+  async validatePasswordResetToken(token: string): Promise<User | null> {
+    // 1. Find the token and ensure it's not expired or used
+    const [resetToken] = await db.select()
+      .from(passwordResetTokens)
+      .where(and(
+        eq(passwordResetTokens.token, token),
+        sql`${passwordResetTokens.expiresAt} > NOW()`,
+        sql`${passwordResetTokens.usedAt} IS NULL`
+      ));
+    
+    if (!resetToken) {
+      return null; // Token not found, expired, or already used
+    }
+    
+    // 2. Get the associated user
+    const user = await this.getUser(resetToken.userId);
+    
+    return user || null;
+  }
+  
+  async resetPasswordWithToken(token: string, newPassword: string): Promise<boolean> {
+    // 1. Find and validate the token
+    const [resetToken] = await db.select()
+      .from(passwordResetTokens)
+      .where(and(
+        eq(passwordResetTokens.token, token),
+        sql`${passwordResetTokens.expiresAt} > NOW()`,
+        sql`${passwordResetTokens.usedAt} IS NULL`
+      ));
+    
+    if (!resetToken) {
+      return false; // Token not found, expired, or already used
+    }
+    
+    // 2. Update the user's password
+    await db.update(users)
+      .set({ password: hashPassword(newPassword) })
+      .where(eq(users.id, resetToken.userId));
+    
+    // 3. Mark the token as used
+    await db.update(passwordResetTokens)
+      .set({ usedAt: new Date() })
+      .where(eq(passwordResetTokens.id, resetToken.id));
+    
+    return true;
   }
 
   async adminCreateUser(userData: Omit<InsertUser, "id">, password: string): Promise<User> {
