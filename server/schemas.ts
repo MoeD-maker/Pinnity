@@ -12,7 +12,9 @@ import {
   insertBusinessDocumentSchema,
   insertRedemptionRatingSchema,
   loginUserSchema,
-  ratingSchema
+  ratingSchema,
+  passwordResetRequestSchema,
+  passwordResetVerifySchema
 } from '../shared/schema';
 import { passwordSchema } from './utils/passwordValidation';
 
@@ -53,6 +55,16 @@ export const authSchemas = {
       message: "Passwords don't match",
       path: ["confirmPassword"],
     })
+  }),
+  
+  // Password reset request schema (forgot password)
+  passwordResetRequest: z.object({
+    body: passwordResetRequestSchema
+  }),
+  
+  // Password reset verification and new password submission
+  passwordResetVerify: z.object({
+    body: passwordResetVerifySchema
   })
 };
 

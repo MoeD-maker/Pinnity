@@ -1,7 +1,7 @@
 import type { Express, Request, Response, CookieOptions } from "express";
 import { storage } from "../storage";
 import { z } from "zod";
-import { generateToken } from "../auth";
+import { generateToken, comparePassword, hashPassword } from "../auth";
 import { getUploadMiddleware } from "../uploadMiddleware";
 import fs from 'fs';
 import { validate } from "../middleware/validationMiddleware";
@@ -506,6 +506,176 @@ export function authRoutes(app: Express): void {
           return res.status(400).json({ message: error.message });
         }
         console.error("Business registration error (legacy route):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+  
+  // Create versioned and legacy routes for password reset request
+  const [versionedPasswordResetRequestPath, legacyPasswordResetRequestPath] = createVersionedRoutes('/auth/password-reset/request');
+  
+  // Versioned route for password reset request
+  app.post(
+    versionedPasswordResetRequestPath,
+    versionHeadersMiddleware(),
+    authRateLimiter, // Apply rate limiting to prevent abuse
+    securityRateLimiter, // Apply security rate limiting
+    validate(authSchemas.passwordResetRequest),
+    async (req: Request, res: Response) => {
+      try {
+        // Extract the client info for security tracking
+        const clientInfo = {
+          ipAddress: req.ip || req.socket.remoteAddress,
+          userAgent: req.headers['user-agent'] || 'unknown'
+        };
+        
+        // Generate password reset token
+        const { email } = req.body;
+        const result = await storage.createPasswordResetToken(email, clientInfo);
+        
+        if (!result) {
+          // For security reasons, always return success even if email doesn't exist
+          // This prevents user enumeration attacks
+          return res.status(200).json({ 
+            message: "If your email is registered, you will receive a password reset link shortly." 
+          });
+        }
+        
+        const { token, user } = result;
+        
+        // In a real application, here we would send an email with the reset link
+        // For now, just return the token in development (in production, we would not expose this)
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`Password reset token for ${email}: ${token}`);
+          
+          return res.status(200).json({
+            message: "Password reset link generated successfully.",
+            // Only in development, include the token in the response
+            resetToken: token,
+            userId: user.id
+          });
+        }
+        
+        return res.status(200).json({ 
+          message: "If your email is registered, you will receive a password reset link shortly." 
+        });
+      } catch (error) {
+        console.error("Password reset request error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+  
+  // Legacy route for password reset request
+  app.post(
+    legacyPasswordResetRequestPath,
+    versionHeadersMiddleware(),
+    authRateLimiter,
+    securityRateLimiter,
+    validate(authSchemas.passwordResetRequest),
+    async (req: Request, res: Response) => {
+      try {
+        // Extract the client info for security tracking
+        const clientInfo = {
+          ipAddress: req.ip || req.socket.remoteAddress,
+          userAgent: req.headers['user-agent'] || 'unknown'
+        };
+        
+        // Generate password reset token
+        const { email } = req.body;
+        const result = await storage.createPasswordResetToken(email, clientInfo);
+        
+        if (!result) {
+          // For security reasons, always return success even if email doesn't exist
+          // This prevents user enumeration attacks
+          return res.status(200).json({ 
+            message: "If your email is registered, you will receive a password reset link shortly." 
+          });
+        }
+        
+        const { token, user } = result;
+        
+        // In a real application, here we would send an email with the reset link
+        // For now, just return the token in development (in production, we would not expose this)
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`Password reset token for ${email}: ${token}`);
+          
+          return res.status(200).json({
+            message: "Password reset link generated successfully.",
+            // Only in development, include the token in the response
+            resetToken: token,
+            userId: user.id
+          });
+        }
+        
+        return res.status(200).json({ 
+          message: "If your email is registered, you will receive a password reset link shortly." 
+        });
+      } catch (error) {
+        console.error("Password reset request error (legacy route):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+  
+  // Create versioned and legacy routes for password reset verification and setting new password
+  const [versionedPasswordResetVerifyPath, legacyPasswordResetVerifyPath] = createVersionedRoutes('/auth/password-reset/verify');
+  
+  // Versioned route for password reset verification and setting new password
+  app.post(
+    versionedPasswordResetVerifyPath,
+    versionHeadersMiddleware(),
+    authRateLimiter,
+    securityRateLimiter,
+    validate(authSchemas.passwordResetVerify),
+    async (req: Request, res: Response) => {
+      try {
+        const { token, newPassword } = req.body;
+        
+        // Validate the token and set the new password
+        const success = await storage.resetPasswordWithToken(token, newPassword);
+        
+        if (!success) {
+          return res.status(400).json({ 
+            message: "Invalid or expired password reset token." 
+          });
+        }
+        
+        return res.status(200).json({ 
+          message: "Password has been reset successfully. You can now log in with your new password." 
+        });
+      } catch (error) {
+        console.error("Password reset verification error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+  
+  // Legacy route for password reset verification and setting new password
+  app.post(
+    legacyPasswordResetVerifyPath,
+    versionHeadersMiddleware(),
+    authRateLimiter,
+    securityRateLimiter,
+    validate(authSchemas.passwordResetVerify),
+    async (req: Request, res: Response) => {
+      try {
+        const { token, newPassword } = req.body;
+        
+        // Validate the token and set the new password
+        const success = await storage.resetPasswordWithToken(token, newPassword);
+        
+        if (!success) {
+          return res.status(400).json({ 
+            message: "Invalid or expired password reset token." 
+          });
+        }
+        
+        return res.status(200).json({ 
+          message: "Password has been reset successfully. You can now log in with your new password." 
+        });
+      } catch (error) {
+        console.error("Password reset verification error (legacy route):", error);
         return res.status(500).json({ message: "Internal server error" });
       }
     }
