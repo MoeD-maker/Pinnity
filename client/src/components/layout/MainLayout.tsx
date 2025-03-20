@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { 
   Home, Search, Heart, User, MapPin, Menu, LogOut, Bell, 
@@ -14,6 +14,12 @@ import {
   DropdownMenuItem, 
   DropdownMenuSeparator 
 } from '@/components/ui/dropdown-menu';
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from '@/components/ui/popover';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface MainLayoutProps {
@@ -23,6 +29,20 @@ interface MainLayoutProps {
 export default function MainLayout({ children }: MainLayoutProps) {
   const [location, navigate] = useLocation();
   const { user, logout } = useAuth();
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState([
+    { id: 1, text: "New deal available from your favorite store", read: false },
+    { id: 2, text: "Your favorite deal is about to expire", read: false },
+    { id: 3, text: "Pinnity: Explore new deals in your area!", read: true }
+  ]);
+
+  const handleShowNotifications = () => {
+    setNotificationsOpen(!notificationsOpen);
+    // Mark notifications as read when opened
+    if (!notificationsOpen && notifications.some(n => !n.read)) {
+      setNotifications(notifications.map(n => ({ ...n, read: true })));
+    }
+  };
   
   // Define navigation items based on user type
   const getNavigationItems = () => {
@@ -166,9 +186,62 @@ export default function MainLayout({ children }: MainLayoutProps) {
           </div>
           
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon">
-              <Bell className="h-5 w-5" />
-            </Button>
+            <Popover open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={handleShowNotifications}
+                  aria-label="Show notifications"
+                  className="relative"
+                >
+                  <Bell className="h-5 w-5" />
+                  {notifications.some(n => !n.read) && (
+                    <Badge 
+                      className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]" 
+                      variant="destructive"
+                    >
+                      {notifications.filter(n => !n.read).length}
+                    </Badge>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0">
+                <div className="p-2 font-medium border-b">
+                  Notifications
+                </div>
+                <div className="max-h-[300px] overflow-y-auto">
+                  {notifications.length > 0 ? (
+                    <div className="divide-y">
+                      {notifications.map(notification => (
+                        <div 
+                          key={notification.id} 
+                          className={`p-3 text-sm ${notification.read ? 'opacity-70' : 'bg-muted/50'}`}
+                        >
+                          {notification.text}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center text-muted-foreground">
+                      No notifications
+                    </div>
+                  )}
+                </div>
+                {notifications.length > 0 && (
+                  <div className="p-2 border-t">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-full text-xs" 
+                      onClick={() => setNotifications([])}
+                    >
+                      Clear all
+                    </Button>
+                  </div>
+                )}
+              </PopoverContent>
+            </Popover>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
