@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react';
+import { Eye, EyeOff, CheckCircle, XCircle, ShieldCheck, ShieldAlert, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface PasswordRequirement {
   regex: RegExp;
@@ -12,6 +13,8 @@ interface PasswordRequirement {
 interface PasswordFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   showRequirements?: boolean;
   className?: string;
+  securityStatus?: 'secure' | 'insecure' | 'loading' | 'none';
+  securityMessage?: string;
 }
 
 export function PasswordField({
@@ -20,6 +23,8 @@ export function PasswordField({
   value = '',
   onChange,
   onBlur,
+  securityStatus = 'none',
+  securityMessage = '',
   ...props
 }: PasswordFieldProps) {
   const [showPassword, setShowPassword] = useState(false);
@@ -39,6 +44,50 @@ export function PasswordField({
 
   // Check if requirement is met
   const checkRequirement = (regex: RegExp) => regex.test(passwordValue);
+
+  // Security status indicator
+  const renderSecurityStatus = () => {
+    if (securityStatus === 'none') return null;
+    
+    return (
+      <div className="mt-2 flex items-center">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center text-xs font-medium">
+                {securityStatus === 'secure' && (
+                  <>
+                    <ShieldCheck className="h-4 w-4 mr-1.5 text-green-600" />
+                    <span className="text-green-600">Secure connection</span>
+                  </>
+                )}
+                {securityStatus === 'insecure' && (
+                  <>
+                    <ShieldAlert className="h-4 w-4 mr-1.5 text-amber-500" />
+                    <span className="text-amber-500">Insecure connection</span>
+                  </>
+                )}
+                {securityStatus === 'loading' && (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-1.5 text-blue-500 animate-spin" />
+                    <span className="text-blue-500">Establishing secure connection...</span>
+                  </>
+                )}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs text-xs">
+              {securityMessage || (securityStatus === 'secure' 
+                ? 'Your connection is secured with CSRF protection and encrypted transmission'
+                : securityStatus === 'insecure'
+                ? 'Unable to establish secure connection. Your data may not be protected'
+                : 'Establishing security protocols...'
+              )}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+    );
+  };
 
   return (
     <div className="w-full space-y-2">
@@ -71,6 +120,8 @@ export function PasswordField({
           <span className="sr-only">{showPassword ? 'Hide password' : 'Show password'}</span>
         </Button>
       </div>
+      
+      {renderSecurityStatus()}
       
       {showRequirements && (passwordValue.length > 0 || focused) && (
         <div className="pt-2 space-y-2">
