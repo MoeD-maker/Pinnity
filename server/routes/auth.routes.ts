@@ -1,14 +1,22 @@
 import type { Express, Request, Response, CookieOptions } from "express";
 import { storage } from "../storage";
 import { z } from "zod";
-import { generateToken, comparePassword, hashPassword } from "../auth";
+import { 
+  generateToken, 
+  comparePassword, 
+  hashPassword, 
+  verifyRefreshToken, 
+  extractRefreshTokenFromCookies,
+  createTokenPair,
+  isTokenAboutToExpire
+} from "../auth";
 import { getUploadMiddleware } from "../uploadMiddleware";
 import fs from 'fs';
 import { validate } from "../middleware/validationMiddleware";
 import { authSchemas } from "../schemas";
 import { authRateLimiter, securityRateLimiter } from "../middleware/rateLimit";
 import { setAuthCookie, clearCookie } from "../utils/cookieUtils";
-import { withCustomAge } from "../utils/cookieConfig";
+import { withCustomAge, authCookieConfig } from "../utils/cookieConfig";
 import { 
   createVersionedRoutes, 
   versionHeadersMiddleware
@@ -680,4 +688,157 @@ export function authRoutes(app: Express): void {
       }
     }
   );
+  
+  // Create versioned and legacy routes for token refresh
+  const [versionedRefreshPath, legacyRefreshPath] = createVersionedRoutes('/auth/refresh-token');
+  
+  // Versioned route (primary) - token refresh
+  app.post(versionedRefreshPath, versionHeadersMiddleware(), async (req: Request, res: Response) => {
+    try {
+      console.log('Processing token refresh request');
+      
+      // Extract refresh token from cookies
+      const refreshTokenPayload = extractRefreshTokenFromCookies(req.cookies, req.signedCookies);
+      
+      if (!refreshTokenPayload) {
+        console.warn('Token refresh failed: No valid refresh token found');
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+      
+      // Get user ID from refresh token
+      const userId = refreshTokenPayload.userId;
+      
+      // Get the associated refresh token from storage
+      const refreshToken = await storage.getRefreshToken(refreshTokenPayload.jti);
+      
+      // Verify token hasn't been revoked
+      if (!refreshToken || refreshToken.isRevoked) {
+        console.warn(`Token refresh failed: Token ${refreshToken ? 'revoked' : 'not found'}`);
+        
+        // Clear existing cookies
+        clearCookie(res, 'auth_token');
+        clearCookie(res, 'refresh_token');
+        
+        return res.status(401).json({ message: 'Invalid or expired session' });
+      }
+      
+      // Get the user
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        console.warn(`Token refresh failed: User ${userId} not found`);
+        return res.status(401).json({ message: 'User not found' });
+      }
+      
+      // Generate a new token pair
+      const crypto = require('crypto');
+      const jti = `refresh-${user.id}-${Date.now()}-${crypto.randomBytes(16).toString('hex')}`;
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+      
+      // Rotate the refresh token (revoke the old one, create a new one)
+      await storage.rotateRefreshToken(refreshTokenPayload.jti, jti, expiresAt);
+      
+      // Create new token pair
+      const { accessToken, refreshToken: newRefreshToken } = createTokenPair(user);
+      
+      // Set new tokens in cookies
+      setAuthCookie(res, 'auth_token', accessToken, {
+        maxAge: 24 * 60 * 60 * 1000 // 1 day for access token
+      });
+      
+      setAuthCookie(res, 'refresh_token', newRefreshToken, {
+        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days for refresh token
+      });
+      
+      // Update the last used timestamp
+      if (refreshToken.id) {
+        await storage.getRefreshToken(refreshTokenPayload.jti);
+      }
+      
+      // Return minimal user info for UI updates
+      return res.status(200).json({
+        message: 'Token refreshed successfully',
+        userId: user.id,
+        userType: user.userType
+      });
+    } catch (error) {
+      console.error('Token refresh error:', error);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+  
+  // Legacy route (for backward compatibility) - token refresh
+  app.post(legacyRefreshPath, versionHeadersMiddleware(), async (req: Request, res: Response) => {
+    try {
+      console.log('Processing token refresh request (legacy route)');
+      
+      // Extract refresh token from cookies
+      const refreshTokenPayload = extractRefreshTokenFromCookies(req.cookies, req.signedCookies);
+      
+      if (!refreshTokenPayload) {
+        console.warn('Token refresh failed: No valid refresh token found');
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+      
+      // Get user ID from refresh token
+      const userId = refreshTokenPayload.userId;
+      
+      // Get the associated refresh token from storage
+      const refreshToken = await storage.getRefreshToken(refreshTokenPayload.jti);
+      
+      // Verify token hasn't been revoked
+      if (!refreshToken || refreshToken.isRevoked) {
+        console.warn(`Token refresh failed: Token ${refreshToken ? 'revoked' : 'not found'}`);
+        
+        // Clear existing cookies
+        clearCookie(res, 'auth_token');
+        clearCookie(res, 'refresh_token');
+        
+        return res.status(401).json({ message: 'Invalid or expired session' });
+      }
+      
+      // Get the user
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        console.warn(`Token refresh failed: User ${userId} not found`);
+        return res.status(401).json({ message: 'User not found' });
+      }
+      
+      // Generate a new token pair
+      const crypto = require('crypto');
+      const jti = `refresh-${user.id}-${Date.now()}-${crypto.randomBytes(16).toString('hex')}`;
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+      
+      // Rotate the refresh token (revoke the old one, create a new one)
+      await storage.rotateRefreshToken(refreshTokenPayload.jti, jti, expiresAt);
+      
+      // Create new token pair
+      const { accessToken, refreshToken: newRefreshToken } = createTokenPair(user);
+      
+      // Set new tokens in cookies
+      setAuthCookie(res, 'auth_token', accessToken, {
+        maxAge: 24 * 60 * 60 * 1000 // 1 day for access token
+      });
+      
+      setAuthCookie(res, 'refresh_token', newRefreshToken, {
+        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days for refresh token
+      });
+      
+      // Update the last used timestamp
+      if (refreshToken.id) {
+        await storage.getRefreshToken(refreshTokenPayload.jti);
+      }
+      
+      // Return minimal user info for UI updates
+      return res.status(200).json({
+        message: 'Token refreshed successfully',
+        userId: user.id,
+        userType: user.userType
+      });
+    } catch (error) {
+      console.error('Token refresh error:', error);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  });
 }
