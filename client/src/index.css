@@ -67,4 +67,16 @@
   .mobile-nav {
     padding-bottom: env(safe-area-inset-bottom, 0);
   }
+  
+  /* Accessibility focus styles */
+  button:focus-visible, 
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [role="button"]:focus-visible,
+  [tabindex="0"]:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
 }
