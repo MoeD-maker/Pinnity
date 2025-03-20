@@ -62,4 +62,9 @@
       @apply max-w-[120px] truncate;
     }
   }
+  
+  /* Environment-specific padding for safe areas */
+  .mobile-nav {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
 }
