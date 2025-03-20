@@ -1,6 +1,5 @@
 import { ReactNode } from "react";
 import { MapPin, Shield } from "lucide-react";
-import TestimonialCarousel from "./TestimonialCarousel";
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -90,10 +89,6 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
             </div>
           </div>
           
-          {/* Testimonial Carousel */}
-          <div className="max-w-lg mx-auto">
-            <TestimonialCarousel />
-          </div>
           
           {/* Trust badges */}
           <div className="mt-6 flex justify-center space-x-6">
