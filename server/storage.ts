@@ -34,6 +34,13 @@ export interface IStorage {
   validatePasswordResetToken(token: string): Promise<User | null>;
   resetPasswordWithToken(token: string, newPassword: string): Promise<boolean>;
   
+  // Refresh token methods
+  createRefreshToken(userId: number, token: string, expiresAt: Date, clientInfo?: { ipAddress?: string, userAgent?: string, deviceInfo?: string }): Promise<RefreshToken>;
+  getRefreshToken(token: string): Promise<RefreshToken | undefined>;
+  revokeRefreshToken(token: string): Promise<boolean>;
+  revokeAllUserRefreshTokens(userId: number): Promise<number>;
+  rotateRefreshToken(oldToken: string, newToken: string, expiresAt: Date): Promise<RefreshToken | null>;
+  
   // Admin methods
   adminCreateUser(userData: Omit<InsertUser, "id">, password: string): Promise<User>;
   adminUpdateUser(userId: number, userData: Partial<Omit<InsertUser, "id">>): Promise<User>;
@@ -135,6 +142,9 @@ export class MemStorage implements IStorage {
   // Password reset tokens
   private passwordResetTokens: Map<string, PasswordResetToken>;
   
+  // Refresh tokens
+  private refreshTokens: Map<string, RefreshToken>;
+  
   private currentUserId: number;
   private currentBusinessId: number;
   private currentDealId: number;
@@ -166,6 +176,9 @@ export class MemStorage implements IStorage {
     
     // Initialize password reset tokens
     this.passwordResetTokens = new Map();
+    
+    // Initialize refresh tokens
+    this.refreshTokens = new Map();
     
     this.currentUserId = 1;
     this.currentBusinessId = 1;

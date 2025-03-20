@@ -159,6 +159,20 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
   userAgent: text("user_agent"),
 });
 
+// Refresh tokens for authentication
+export const refreshTokens = pgTable("refresh_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  isRevoked: boolean("is_revoked").default(false).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  lastUsedAt: timestamp("last_used_at"),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  deviceInfo: text("device_info"),
+});
+
 // Create Zod schemas for insertion
 export const insertUserSchema = createInsertSchema(users);
 export const insertBusinessSchema = createInsertSchema(businesses);
@@ -172,6 +186,7 @@ export const insertBusinessSocialSchema = createInsertSchema(businessSocial);
 export const insertBusinessDocumentSchema = createInsertSchema(businessDocuments);
 export const insertRedemptionRatingSchema = createInsertSchema(redemptionRatings);
 export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens);
+export const insertRefreshTokenSchema = createInsertSchema(refreshTokens);
 
 // Login schema
 export const loginUserSchema = z.object({
@@ -218,6 +233,10 @@ export type InsertRedemptionRating = typeof redemptionRatings.$inferInsert;
 // Password reset types
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
+
+// Refresh token types
+export type RefreshToken = typeof refreshTokens.$inferSelect;
+export type InsertRefreshToken = typeof refreshTokens.$inferInsert;
 
 // Form schema types
 export type LoginUser = z.infer<typeof loginUserSchema>;
