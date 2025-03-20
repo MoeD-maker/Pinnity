@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import RegistrationStepper from "./RegistrationStepper";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ChevronRight, ChevronLeft, Check } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { apiPost } from "@/lib/api";
 
 // Define the user interface
 interface UserData {
@@ -118,6 +120,8 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
   
   // Handle category toggle for individual preferences
   const handleCategoryToggle = (category: string) => {
+    resetSessionTimeout(); // Reset the inactivity timer
+    
     setIndividualPreferences({
       ...individualPreferences,
       categories: {
@@ -129,6 +133,8 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
   
   // Handle notification toggle for individual preferences
   const handleNotificationToggle = (key: string) => {
+    resetSessionTimeout(); // Reset the inactivity timer
+    
     setIndividualPreferences({
       ...individualPreferences,
       notifications: {
@@ -140,6 +146,8 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
   
   // Handle location preference changes for individual preferences
   const handleLocationChange = (key: string, value: any) => {
+    resetSessionTimeout(); // Reset the inactivity timer
+    
     setIndividualPreferences({
       ...individualPreferences,
       location: {
@@ -151,6 +159,8 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
   
   // Handle offerings toggle for business preferences
   const handleOfferingToggle = (offering: string) => {
+    resetSessionTimeout(); // Reset the inactivity timer
+    
     setBusinessPreferences({
       ...businessPreferences,
       offerings: {
@@ -162,6 +172,8 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
   
   // Handle demographic toggle for business preferences
   const handleDemographicToggle = (group: string, category: string = 'ageGroups') => {
+    resetSessionTimeout(); // Reset the inactivity timer
+    
     if (category === 'ageGroups') {
       setBusinessPreferences({
         ...businessPreferences,
@@ -190,6 +202,8 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
     field: 'open' | 'close' | 'closed', 
     value: string | boolean
   ) => {
+    resetSessionTimeout(); // Reset the inactivity timer
+    
     setBusinessPreferences({
       ...businessPreferences,
       businessHours: {
@@ -204,6 +218,8 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
   
   // Handle next step
   const handleNext = () => {
+    resetSessionTimeout(); // Reset the inactivity timer
+    
     if (step < steps.length) {
       setStep(step + 1);
     } else {
@@ -213,6 +229,8 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
   
   // Handle previous step
   const handlePrevious = () => {
+    resetSessionTimeout(); // Reset the inactivity timer
+    
     if (step > 1) {
       setStep(step - 1);
     }
@@ -220,6 +238,8 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
   
   // Handle skipping onboarding
   const handleSkip = () => {
+    resetSessionTimeout(); // Reset the inactivity timer
+    
     toast({
       title: "Onboarding skipped",
       description: "You can always update your preferences in settings",
@@ -233,15 +253,114 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
     }
   };
   
+  // Authentication state (using HTTP-only cookies)
+  const { user: authUser, refreshToken, isAuthenticated } = useAuth();
+  
+  // Session timeout handling reference
+  const sessionTimeoutRef = useRef<number | null>(null);
+  
+  // Check authentication on component mount
+  useEffect(() => {
+    const verifyAuthentication = async () => {
+      if (!isAuthenticated) {
+        console.log('Not authenticated, redirecting to auth page');
+        toast({
+          title: "Authentication required",
+          description: "Please log in to continue with onboarding",
+          variant: "destructive"
+        });
+        setLocation("/auth");
+        return;
+      }
+      
+      // Perform a token refresh to ensure the token is valid for the duration of onboarding
+      try {
+        const refreshSuccessful = await refreshToken();
+        
+        if (!refreshSuccessful) {
+          console.log('Token refresh failed, redirecting to auth page');
+          toast({
+            title: "Session expired",
+            description: "Please log in again to continue with onboarding",
+            variant: "destructive"
+          });
+          setLocation("/auth");
+          return;
+        }
+        
+        // Set up session timeout handler to prompt re-authentication after inactivity
+        setupSessionTimeoutHandler();
+      } catch (error) {
+        console.error('Authentication verification error:', error);
+        toast({
+          title: "Authentication error",
+          description: "Please log in again to continue",
+          variant: "destructive"
+        });
+        setLocation("/auth");
+      }
+    };
+    
+    verifyAuthentication();
+    
+    // Clean up session timeout handler on unmount
+    return () => {
+      if (sessionTimeoutRef.current) {
+        window.clearTimeout(sessionTimeoutRef.current);
+      }
+    };
+  }, [isAuthenticated, refreshToken, setLocation, toast]);
+  
+  // Set up session timeout handler for inactivity
+  const setupSessionTimeoutHandler = () => {
+    // Clear any existing timeout
+    if (sessionTimeoutRef.current) {
+      window.clearTimeout(sessionTimeoutRef.current);
+    }
+    
+    // Set new timeout for 25 minutes (slightly shorter than the token lifetime)
+    sessionTimeoutRef.current = window.setTimeout(async () => {
+      console.log('Session timeout due to inactivity');
+      
+      // Try to refresh the token silently
+      const refreshSuccessful = await refreshToken();
+      
+      if (!refreshSuccessful) {
+        toast({
+          title: "Session expired",
+          description: "Your session has expired due to inactivity. Please log in again to continue.",
+          variant: "destructive"
+        });
+        setLocation("/auth");
+      } else {
+        // If refresh successful, set up a new timeout
+        setupSessionTimeoutHandler();
+      }
+    }, 25 * 60 * 1000); // 25 minutes
+  };
+  
+  // Reset the session timeout on user interaction
+  const resetSessionTimeout = () => {
+    setupSessionTimeoutHandler();
+  };
+  
   // Handle completing onboarding
   const handleComplete = async () => {
     setLoading(true);
+    resetSessionTimeout(); // Reset the inactivity timer
     
     try {
-      // Get the token from localStorage
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
+      // Perform a token refresh to ensure it's valid before completing
+      const refreshSuccessful = await refreshToken();
+      
+      if (!refreshSuccessful) {
+        toast({
+          title: "Session expired",
+          description: "Please log in again to complete your setup",
+          variant: "destructive"
+        });
+        setLocation("/auth");
+        return;
       }
       
       // Save preferences based on user type
@@ -249,22 +368,11 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
         ? individualPreferences 
         : businessPreferences;
       
-      // Save preferences to the server
-      const response = await fetch(`/api/user/${user.id}/preferences`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userType,
-          preferences: preferencesData
-        })
+      // Save preferences using apiPost (which handles CSRF and auth cookies)
+      await apiPost(`/api/v1/user/${user.id}/preferences`, {
+        userType,
+        preferences: preferencesData
       });
-      
-      if (!response.ok) {
-        throw new Error('Failed to save preferences');
-      }
       
       toast({
         title: "Setup complete!",
@@ -279,17 +387,28 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
       }
     } catch (error) {
       console.error('Error saving preferences:', error);
-      toast({
-        title: "Error saving preferences",
-        description: "We'll use default settings for now. You can update later in settings.",
-        variant: "destructive"
-      });
       
-      // Redirect anyway
-      if (userType === 'individual') {
-        setLocation("/");
+      // Check if error is due to authentication
+      if (error instanceof Error && (error as any).status === 401) {
+        toast({
+          title: "Authentication error",
+          description: "Your session has expired. Please log in again to complete setup.",
+          variant: "destructive"
+        });
+        setLocation("/auth");
       } else {
-        setLocation("/vendor");
+        toast({
+          title: "Error saving preferences",
+          description: "We'll use default settings for now. You can update later in settings.",
+          variant: "destructive"
+        });
+        
+        // Redirect anyway
+        if (userType === 'individual') {
+          setLocation("/");
+        } else {
+          setLocation("/vendor");
+        }
       }
     } finally {
       setLoading(false);
