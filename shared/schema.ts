@@ -147,6 +147,18 @@ export const redemptionRatings = pgTable("redemption_ratings", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Password reset tokens
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  token: text("token").notNull().unique(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+});
+
 // Create Zod schemas for insertion
 export const insertUserSchema = createInsertSchema(users);
 export const insertBusinessSchema = createInsertSchema(businesses);
@@ -159,6 +171,7 @@ export const insertBusinessHoursSchema = createInsertSchema(businessHours);
 export const insertBusinessSocialSchema = createInsertSchema(businessSocial);
 export const insertBusinessDocumentSchema = createInsertSchema(businessDocuments);
 export const insertRedemptionRatingSchema = createInsertSchema(redemptionRatings);
+export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens);
 
 // Login schema
 export const loginUserSchema = z.object({
@@ -202,5 +215,33 @@ export type InsertBusinessDocument = typeof businessDocuments.$inferInsert;
 export type RedemptionRating = typeof redemptionRatings.$inferSelect;
 export type InsertRedemptionRating = typeof redemptionRatings.$inferInsert;
 
+// Password reset types
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
+
+// Form schema types
 export type LoginUser = z.infer<typeof loginUserSchema>;
 export type RatingData = z.infer<typeof ratingSchema>;
+
+// Password reset request schema
+export const passwordResetRequestSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+});
+
+// Password reset verification schema
+export const passwordResetVerifySchema = z.object({
+  token: z.string().min(1, "Token is required"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters long")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number")
+    .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character"),
+  confirmPassword: z.string().min(1, "Please confirm your password"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+export type PasswordResetRequestData = z.infer<typeof passwordResetRequestSchema>;
+export type PasswordResetVerifyData = z.infer<typeof passwordResetVerifySchema>;

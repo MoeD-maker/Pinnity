@@ -27,6 +27,11 @@ export interface IStorage {
   changePassword(userId: number, currentPassword: string, newPassword: string): Promise<boolean>;
   getAllUsers(): Promise<User[]>;
   
+  // Password reset methods
+  createPasswordResetToken(email: string, clientInfo?: { ipAddress?: string, userAgent?: string }): Promise<{ token: string, user: User } | null>;
+  validatePasswordResetToken(token: string): Promise<User | null>;
+  resetPasswordWithToken(token: string, newPassword: string): Promise<boolean>;
+  
   // Admin methods
   adminCreateUser(userData: Omit<InsertUser, "id">, password: string): Promise<User>;
   adminUpdateUser(userId: number, userData: Partial<Omit<InsertUser, "id">>): Promise<User>;
