@@ -32,6 +32,7 @@ const Profile = lazy(() => import("@/pages/profile"));
 const Settings = lazy(() => import("@/pages/settings"));
 const Explore = lazy(() => import("@/pages/explore"));
 const Map = lazy(() => import("@/pages/map"));
+const FormValidationDemo = lazy(() => import("@/pages/FormValidationDemo"));
 
 // Admin pages
 const AdminDashboard = lazy(() => import("@/pages/admin"));
@@ -297,6 +298,7 @@ function Router() {
     path === '/test-page' || 
     path === '/simple-explore' || 
     path === '/test-login' ||
+    path === '/form-validation-demo' ||
     path.startsWith('/test')
   ) {
     console.log("Rendering diagnostic page directly:", path);
@@ -306,6 +308,11 @@ function Router() {
     if (path === '/test-page') return <TestPage />;
     if (path === '/simple-explore') return <SimpleExplorePage />;
     if (path === '/test-login') return <TestLogin />;
+    if (path === '/form-validation-demo') return (
+      <Suspense fallback={<LoadingFallback />}>
+        <FormValidationDemo />
+      </Suspense>
+    );
   }
   
   return (
@@ -321,6 +328,13 @@ function Router() {
       <Route path="/simple-explore" component={SimpleExplorePage}/>
       <Route path="/test-page" component={TestPage}/>
       <Route path="/minimal" component={MinimalPage}/>
+      <Route path="/form-validation-demo">
+        {(params) => (
+          <Suspense fallback={<LoadingFallback />}>
+            <FormValidationDemo />
+          </Suspense>
+        )}
+      </Route>
       
       {/* Protected routes */}
       <Route path="/">
