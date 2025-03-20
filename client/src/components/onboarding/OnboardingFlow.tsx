@@ -32,14 +32,32 @@ interface UserData {
 export interface OnboardingFlowProps {
   userType: 'individual' | 'business';
   user: UserData;
+  // Added props for offline-aware version
+  initialStep?: number;
+  onStepChange?: (step: number) => void;
+  individualPreferences?: any;
+  setIndividualPreferences?: (prefs: any) => void;
+  businessPreferences?: any;
+  setBusinessPreferences?: (prefs: any) => void;
+  restoringSession?: boolean;
 }
 
-export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) {
+export default function OnboardingFlow({ 
+  userType, 
+  user, 
+  initialStep, 
+  onStepChange,
+  individualPreferences: externalIndividualPreferences,
+  setIndividualPreferences: externalSetIndividualPreferences,
+  businessPreferences: externalBusinessPreferences,
+  setBusinessPreferences: externalSetBusinessPreferences,
+  restoringSession: externalRestoringSession
+}: OnboardingFlowProps) {
   const [location, setLocation] = useLocation();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(initialStep || 1);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const [restoringSession, setRestoringSession] = useState(false);
+  const [restoringSession, setRestoringSession] = useState(Boolean(externalRestoringSession));
 
   // Initialize default preferences
   const defaultIndividualPreferences = {
@@ -71,8 +89,10 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
     }
   };
   
-  // Initialize the state with the default values
-  const [individualPreferences, setIndividualPreferences] = useState(defaultIndividualPreferences);
+  // Initialize the state with the default or externally provided values
+  const [internalIndividualPreferences, setInternalIndividualPreferences] = useState(
+    externalIndividualPreferences || defaultIndividualPreferences
+  );
   
   // Default business preferences
   const defaultBusinessPreferences = {
@@ -110,8 +130,10 @@ export default function OnboardingFlow({ userType, user }: OnboardingFlowProps) 
     }
   };
   
-  // Initialize the business preferences state
-  const [businessPreferences, setBusinessPreferences] = useState(defaultBusinessPreferences);
+  // Initialize the business preferences state with default or externally provided values
+  const [internalBusinessPreferences, setInternalBusinessPreferences] = useState(
+    externalBusinessPreferences || defaultBusinessPreferences
+  );
 
   // Define steps for each user type
   const individualSteps = [
