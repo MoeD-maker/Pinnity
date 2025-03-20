@@ -206,7 +206,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-80 p-0">
+              <PopoverContent 
+                className="w-80 p-0" 
+                sideOffset={5}
+                alignOffset={-5}
+                align="end"
+              >
                 <div className="p-2 font-medium border-b">
                   Notifications
                 </div>
@@ -250,7 +255,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent 
+                align="end"
+                sideOffset={5}
+                className="w-56"
+                alignOffset={-5}
+              >
                 <DropdownMenuItem onClick={() => navigate('/profile')}>
                   Profile
                 </DropdownMenuItem>
@@ -323,7 +333,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
                     <Menu className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent 
+                  align="end"
+                  sideOffset={5}
+                  className="w-56"
+                  alignOffset={-5}
+                >
                   <DropdownMenuItem onClick={() => navigate('/profile')}>
                     Profile
                   </DropdownMenuItem>
