@@ -117,9 +117,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
                   </div>
                   <nav className="flex flex-col gap-1">
                     {navigationItems.map((item) => (
-                      <div
+                      <button
                         key={item.path}
-                        className={`flex items-center gap-3 px-2 py-2 rounded-md text-sm cursor-pointer ${
+                        aria-current={isActive(item.path) ? "page" : undefined}
+                        className={`flex items-center gap-3 px-2 py-2 rounded-md text-sm w-full text-left ${
                           isActive(item.path) 
                             ? 'bg-primary/10 text-primary font-medium' 
                             : 'text-muted-foreground hover:bg-muted'
@@ -127,16 +128,16 @@ export default function MainLayout({ children }: MainLayoutProps) {
                         onClick={() => navigate(item.path)}
                       >
                         {item.icon}
-                        {item.label}
-                      </div>
+                        <span>{item.label}</span>
+                      </button>
                     ))}
-                    <div 
-                      className="flex items-center gap-3 px-2 py-2 rounded-md text-sm text-muted-foreground hover:bg-muted"
+                    <button 
+                      className="flex items-center gap-3 px-2 py-2 rounded-md text-sm text-muted-foreground hover:bg-muted w-full text-left"
                       onClick={() => navigate('/settings')}
                     >
                       <Settings className="w-5 h-5" />
-                      Settings
-                    </div>
+                      <span>Settings</span>
+                    </button>
                     <button 
                       className="flex items-center gap-3 px-2 py-2 rounded-md text-sm text-muted-foreground hover:bg-muted mt-4"
                       onClick={handleLogout}
@@ -216,9 +217,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
           
           <div className="flex-1 flex flex-col gap-1">
             {navigationItems.map((item) => (
-              <div
+              <button
                 key={item.path}
-                className={`flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer ${
+                aria-current={isActive(item.path) ? "page" : undefined}
+                className={`flex items-center gap-3 px-3 py-2 rounded-md text-left ${
                   isActive(item.path) 
                     ? 'bg-primary/10 text-primary font-medium' 
                     : 'text-muted-foreground hover:bg-muted'
@@ -226,8 +228,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 onClick={() => navigate(item.path)}
               >
                 {item.icon}
-                {item.label}
-              </div>
+                <span>{item.label}</span>
+              </button>
             ))}
           </div>
           
@@ -278,9 +280,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-10 mobile-nav">
         <div className="flex justify-around">
           {navigationItems.map((item) => (
-            <div
+            <button
               key={item.path}
-              className={`flex flex-col items-center py-2 px-3 cursor-pointer ${
+              aria-current={isActive(item.path) ? "page" : undefined}
+              className={`flex flex-col items-center py-2 px-3 ${
                 isActive(item.path) 
                   ? 'text-primary' 
                   : 'text-muted-foreground'
@@ -289,7 +292,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
             >
               {item.icon}
               <span className="text-xs mt-1">{item.label}</span>
-            </div>
+            </button>
           ))}
         </div>
       </nav>
