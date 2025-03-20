@@ -265,7 +265,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
           </div>
         </nav>
         
-        <main className="flex-1 md:ml-60">
+        <main className="flex-1 md:ml-60 pb-16 md:pb-0">
           {children}
         </main>
       </div>
