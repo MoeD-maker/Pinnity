@@ -88,11 +88,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     try {
       console.log('Refreshing authentication token...');
-      const response = await apiPost<{
+      
+      // Use new API endpoint with versioning
+      const response = await apiRequest('/api/v1/auth/refresh', {
+        method: 'POST'
+      }) as {
         userId: number;
         userType: string;
         message: string;
-      }>('/api/auth/refresh-token');
+      };
       
       if (response && response.userId) {
         // Update the user information
@@ -100,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // Fetch complete user data if needed
         if (!user || user.id !== response.userId) {
-          const userData = await apiRequest(`/api/user/${response.userId}`);
+          const userData = await apiRequest(`/api/v1/user/${response.userId}`);
           setUser(userData);
         }
         
@@ -137,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       return false;
     }
-  }, [user]);
+  }, [user, setLocation]);
   
   // Silent refresh that doesn't disrupt user experience
   const silentRefresh = useCallback(async (): Promise<boolean> => {
@@ -210,7 +214,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Our JWT token is in a secure HTTP-only cookie
             // so we just need to make the request and the browser will 
             // automatically include the cookie
-            const userData = await apiRequest(`/api/user/${userId}`);
+            const userData = await apiRequest(`/api/v1/user/${userId}`);
             
             if (userData) {
               console.log('User data received successfully');
@@ -286,11 +290,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Use CSRF-protected API call
       console.log('Attempting login with credentials...');
-      const response = await apiPost<{
+      const response = await apiPost('/api/v1/auth/login', { email, password, rememberMe }) as {
         message: string;
         userId: number;
         userType: string;
-      }>('/api/auth/login', { email, password, rememberMe });
+      };
 
       if (response && response.userId) {
         console.log('Login successful, user ID:', response.userId);
@@ -300,7 +304,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // Fetch complete user data
         console.log('Fetching complete user data...');
-        const userData = await apiRequest(`/api/user/${response.userId}`);
+        const userData = await apiRequest(`/api/v1/user/${response.userId}`);
         console.log('User data received:', userData ? 'Yes' : 'No');
         setUser(userData);
         
@@ -339,7 +343,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       
       // Make a request to invalidate the session and clear the secure HTTP-only cookie
-      await apiPost('/api/auth/logout');
+      await apiPost('/api/v1/auth/logout');
       
       // Clear user data from state
       setUser(null);

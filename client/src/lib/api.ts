@@ -277,9 +277,10 @@ function enqueueFailedRequest(url: string, config: RequestInit): Promise<Respons
  * @param context Additional context for the error message
  * @param url Original request URL
  * @param options Original request options
+ * @returns Promise resolving to retried Response on successful token refresh, or never (throws error)
  * @throws Enhanced error object with status and detailed information
  */
-async function processApiError(
+export async function processApiError(
   response: Response, 
   context: string, 
   url?: string, 
@@ -296,7 +297,8 @@ async function processApiError(
       // Check for token expired message from server
       if (errorData.error === 'token_expired' || 
           errorData.message?.includes('expired') ||
-          errorData.code === 'auth/id-token-expired') {
+          errorData.code === 'auth/id-token-expired' ||
+          status === 401) { // Always try refresh on 401
             
         console.log('Access token expired. Attempting refresh...');
         
@@ -313,6 +315,7 @@ async function processApiError(
       }
     } catch (e) {
       // If we can't parse the response as JSON, continue with standard error handling
+      console.log('Could not parse error response as JSON, continuing with standard error handling', e);
     }
   }
   
@@ -389,6 +392,9 @@ async function processApiError(
   // Add additional context from the server if available
   if (errorData.error) error.code = errorData.error;
   if (errorData.data) error.data = errorData.data;
+  
+  // Log and handle the error appropriately
+  handleError(error);
   
   throw error;
 }
