@@ -1,0 +1,26 @@
+Please perform an audit of my authentication and onboarding system to determine which security and user experience features are already implemented. For each item, provide a status (Implemented, Partially Implemented, or Missing) and brief evidence from the codebase.
+
+1. Token Storage Security: Check if authentication tokens are stored in HTTP-only cookies rather than localStorage. Look in AuthContext.tsx and login-related components.
+
+2. Form Validation: Examine login and signup forms for client-side validation using libraries like Zod, Yup, or custom validation logic. Check for validation error messages displayed to users.
+
+3. Authentication State Management: Review AuthContext.tsx for proper handling of loading states, error states, user persistence, and logout functionality.
+
+4. Offline Authentication: Look for code that caches authentication state for offline use in service workers or related PWA files. Check for connection restoration handling in auth-related files.
+
+5. Role-Based Access Control: Identify if there's a centralized permission system or if access control is scattered throughout components. Look for permission checks in routes and components.
+
+6. Password Policy: Check signup and password change forms for strong password requirements, minimum length enforcement, and visual password strength indicators.
+
+7. Loading States: Verify if authentication actions (login, signup, etc.) show loading indicators, disable buttons during processing, and prevent multiple submissions.
+
+8. Account Recovery: Look for password reset flows including email verification mechanisms, secure reset tokens, and rate limiting.
+
+9. Onboarding Experience: Assess the onboarding flow for progress indicators, save/continue functionality, and personalization based on user type.
+
+For each item, please specify:
+- Status: Implemented/Partially Implemented/Missing
+- Evidence: File names and relevant code snippets
+- Suggestions: If partially implemented, what's needed to complete it
+
+Please organize your findings in a table or clearly structured format so I can quickly see what needs to be prioritized.
