@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { MapPin, Shield } from "lucide-react";
+import { MapPin, Shield, Tag, Star } from "lucide-react";
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -17,6 +17,25 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
             <h1 className="ml-2 text-2xl font-bold text-gray-700">Pinnity</h1>
           </div>
           <p className="text-sm text-gray-400 mt-1">Discover Local</p>
+        </div>
+        
+        {/* Mobile brand reinforcement */}
+        <div className="md:hidden mt-2 mb-8 bg-[#00796B] text-white p-4 rounded-lg">
+          <h3 className="font-medium">Why Join Pinnity?</h3>
+          <ul className="mt-2 text-sm">
+            <li className="flex items-center mt-2">
+              <MapPin className="h-4 w-4 mr-2 text-[#FF9800]" />
+              <span>Discover local businesses and experiences</span>
+            </li>
+            <li className="flex items-center mt-2">
+              <Tag className="h-4 w-4 mr-2 text-[#FF9800]" />
+              <span>Exclusive deals you won't find anywhere else</span>
+            </li>
+            <li className="flex items-center mt-2">
+              <Star className="h-4 w-4 mr-2 text-[#FF9800]" />
+              <span>Save on your favorite local spots</span>
+            </li>
+          </ul>
         </div>
 
         {/* Auth Container */}
