@@ -382,9 +382,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error(`[${errorTimestamp}] Auth status check failed:`, err);
         setAuthState('unauthenticated');
       } finally {
-        // Mark authentication check as complete, regardless of result
-        setAuthStatusChecked(true);
-        setIsLoading(false);
+        // Use a delay before marking authentication check as complete
+        // This ensures we don't prematurely update state during transitions
+        setTimeout(() => {
+          // Only update if component is still mounted
+          if (isMountedRef.current) {
+            // Mark authentication check as complete after ensuring all state updates are processed
+            setAuthStatusChecked(true);
+            setIsLoading(false);
+            console.log(`[${new Date().toISOString().split('T')[1].split('.')[0]}] Auth status check completed`);
+          }
+        }, 300);
       }
     };
 
@@ -466,20 +474,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setRedirectPath(targetPath);
         setAuthState('redirecting');
         
-        // Use setTimeout to add a small delay before redirecting
+        // Use setTimeout to add a meaningful delay before redirecting to prevent rapid state changes
         setTimeout(() => {
           if (isMountedRef.current) {
             console.log(`[${timestamp}] Executing redirect to ${targetPath}`);
             setLocation(targetPath);
             
-            // Reset redirection flag after redirect is complete
+            // Reset redirection flag after redirect is complete with longer delay
             setTimeout(() => {
               setAuthState('authenticated');
               setIsRedirecting(false);
               console.log(`[${timestamp}] Redirection completed, returning to authenticated state`);
-            }, 100);
+            }, 500);
           }
-        }, 50);
+        }, 300);
       } else {
         setAuthState('unauthenticated');
         setIsRedirecting(false);
@@ -527,20 +535,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Set redirect path
       setRedirectPath('/auth');
       
-      // Add a small delay before redirect
+      // Add a meaningful delay before redirect to prevent rapid state changes
       setTimeout(() => {
         if (isMountedRef.current) {
           console.log(`[${timestamp}] Executing logout redirect to /auth`);
           setLocation('/auth');
           
-          // Reset redirection flag after a short delay
+          // Reset redirection flag after a longer delay to avoid flickering
           setTimeout(() => {
             setAuthState('unauthenticated');
             setIsRedirecting(false);
             console.log(`[${timestamp}] Logout redirect completed, state set to unauthenticated`);
-          }, 100);
+          }, 500);
         }
-      }, 50);
+      }, 300);
     } catch (err) {
       console.error(`[${timestamp}] Logout error:`, err);
       setAuthState('unauthenticated');

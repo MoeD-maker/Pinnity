@@ -225,6 +225,24 @@ function AuthenticatedRoute({ component: Component, ...rest }: any) {
   React.useEffect(() => {
     const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
     
+    // Create a debounce mechanism to prevent rapid state changes
+    // This ensures we don't have multiple redirects or state changes in quick succession
+    let redirectTimer: number | null = null;
+    
+    // Function to execute redirect with debounce
+    const executeRedirect = (path: string) => {
+      // Clear any pending redirect
+      if (redirectTimer) {
+        window.clearTimeout(redirectTimer);
+      }
+      
+      // Schedule the new redirect with a delay
+      redirectTimer = window.setTimeout(() => {
+        console.log(`[${timestamp}] Executing debounced redirect to ${path}`);
+        setLocation(path);
+      }, 300); // Significant delay to stabilize redirects
+    };
+    
     // Only process redirection logic if:
     // 1. Auth status check is complete (prevents premature redirects)
     // 2. Not currently loading
@@ -235,7 +253,7 @@ function AuthenticatedRoute({ component: Component, ...rest }: any) {
       // Handle unauthenticated state
       if (!isAuthenticated) {
         console.log(`[${timestamp}] User not authenticated, redirecting to /auth`);
-        setLocation("/auth");
+        executeRedirect("/auth");
         return;
       }
       
@@ -245,35 +263,37 @@ function AuthenticatedRoute({ component: Component, ...rest }: any) {
       // Only redirect if the path is different
       if (targetPath !== location) {
         console.log(`[${timestamp}] Redirecting from ${location} to ${targetPath}`);
-        setLocation(targetPath);
+        executeRedirect(targetPath);
         return;
       }
       
       // If we get here, we should render the component
-      console.log(`[${timestamp}] Path ${location} is valid for user, proceeding to render`);
-      setShouldRender(true);
+      // Use a timeout to ensure this happens after any pending state updates
+      setTimeout(() => {
+        console.log(`[${timestamp}] Path ${location} is valid for user, proceeding to render`);
+        setShouldRender(true);
+      }, 100);
     }
+    
+    // Cleanup function to clear any pending timeouts
+    return () => {
+      if (redirectTimer) {
+        window.clearTimeout(redirectTimer);
+      }
+    };
   }, [isLoading, isAuthenticated, user, authStatusChecked, isRedirecting, location, setLocation, authState, redirectPath, getAppropriateRedirectPath]);
   
   // Render the AuthTransition component based on current auth state
+  // Use a single stable loading component to prevent flickering
   if (!shouldRender || isLoading || !authStatusChecked || isRedirecting) {
-    // Determine the appropriate message based on auth state
-    let message = "Checking authentication...";
-    
-    if (isRedirecting) {
-      message = "Taking you to the right place...";
-    } else if (authState === 'initializing') {
-      message = "Starting up...";
-    } else if (authState === 'authenticating') {
-      message = "Verifying your identity...";
-    } else if (authState === 'redirecting') {
-      message = "Redirecting...";
-    }
-    
+    // Use a single consistent message for all loading states to prevent flashing
+    // The AuthTransition component will handle the animation and visual feedback
     return (
       <AuthTransition 
         state={authState}
-        message={message}
+        message="Preparing your dashboard..."
+        // Adding a key that doesn't change during the auth process to prevent re-renders
+        key="auth-transition-stable"
       />
     );
   }
