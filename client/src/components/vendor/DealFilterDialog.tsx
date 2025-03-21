@@ -156,6 +156,43 @@ export default function DealFilterDialog({
     }
   }, []);
   
+  // Function to save current filter settings
+  const saveCurrentFilter = () => {
+    if (!filterName.trim()) return;
+    
+    const newFilter: SavedFilter = {
+      id: Date.now().toString(),
+      name: filterName.trim(),
+      filters: { ...filters }
+    };
+    
+    const updatedFilters = [...savedFilters, newFilter];
+    setSavedFilters(updatedFilters);
+    
+    // Save to localStorage
+    localStorage.setItem(SAVED_FILTERS_KEY, JSON.stringify(updatedFilters));
+    
+    // Reset form
+    setFilterName('');
+    setShowSaveDialog(false);
+  };
+  
+  // Function to apply a saved filter
+  const applySavedFilter = (savedFilter: SavedFilter) => {
+    setFilters(savedFilter.filters);
+  };
+  
+  // Function to delete a saved filter
+  const deleteSavedFilter = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    
+    const updatedFilters = savedFilters.filter(filter => filter.id !== id);
+    setSavedFilters(updatedFilters);
+    
+    // Update localStorage
+    localStorage.setItem(SAVED_FILTERS_KEY, JSON.stringify(updatedFilters));
+  };
+  
   // Count active filters for badge display
   const countActiveFilters = (): number => {
     let count = 0;
@@ -450,13 +487,42 @@ export default function DealFilterDialog({
             </TabsContent>
           </Tabs>
         </div>
+        {/* Saved Filters section - appears when there are saved filters */}
+        {savedFilters.length > 0 && (
+          <div className="mb-6 border rounded-md p-4">
+            <h3 className="text-sm font-medium mb-3">Saved Filters</h3>
+            <div className="flex flex-wrap gap-2">
+              {savedFilters.map((filter) => (
+                <Badge 
+                  key={filter.id} 
+                  variant="outline" 
+                  className="py-1.5 pl-3 pr-2 cursor-pointer hover:bg-gray-100"
+                  onClick={() => applySavedFilter(filter)}
+                >
+                  {filter.name}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-4 w-4 p-0 ml-1.5"
+                    onClick={(e) => deleteSavedFilter(filter.id, e)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
         
         {/* Desktop layout with all filters visible */}
         <div className="hidden sm:block">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Status filters */}
             <div className="space-y-4">
-              <h3 className="text-sm font-medium">Deal Status</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium">Deal Status</h3>
+                <span className="text-xs text-gray-500">(Select multiple)</span>
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex items-center space-x-2">
                   <Checkbox 
@@ -464,7 +530,10 @@ export default function DealFilterDialog({
                     checked={filters.status.active}
                     onCheckedChange={(checked) => updateStatusFilter('active', checked as boolean)}
                   />
-                  <Label htmlFor="desktop-filter-active" className="text-sm">Active</Label>
+                  <Label htmlFor="desktop-filter-active" className="text-sm">
+                    Active
+                    <span className="text-xs text-gray-400 ml-1">({STATUS_COUNTS.active})</span>
+                  </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox 
@@ -472,7 +541,10 @@ export default function DealFilterDialog({
                     checked={filters.status.upcoming}
                     onCheckedChange={(checked) => updateStatusFilter('upcoming', checked as boolean)}
                   />
-                  <Label htmlFor="desktop-filter-upcoming" className="text-sm">Upcoming</Label>
+                  <Label htmlFor="desktop-filter-upcoming" className="text-sm">
+                    Upcoming
+                    <span className="text-xs text-gray-400 ml-1">({STATUS_COUNTS.upcoming})</span>
+                  </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox 
@@ -480,7 +552,10 @@ export default function DealFilterDialog({
                     checked={filters.status.expired}
                     onCheckedChange={(checked) => updateStatusFilter('expired', checked as boolean)}
                   />
-                  <Label htmlFor="desktop-filter-expired" className="text-sm">Expired</Label>
+                  <Label htmlFor="desktop-filter-expired" className="text-sm">
+                    Expired
+                    <span className="text-xs text-gray-400 ml-1">({STATUS_COUNTS.expired})</span>
+                  </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox 
@@ -488,7 +563,10 @@ export default function DealFilterDialog({
                     checked={filters.status.pending}
                     onCheckedChange={(checked) => updateStatusFilter('pending', checked as boolean)}
                   />
-                  <Label htmlFor="desktop-filter-pending" className="text-sm">Pending</Label>
+                  <Label htmlFor="desktop-filter-pending" className="text-sm">
+                    Pending
+                    <span className="text-xs text-gray-400 ml-1">({STATUS_COUNTS.pending})</span>
+                  </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox 
@@ -496,14 +574,20 @@ export default function DealFilterDialog({
                     checked={filters.status.rejected}
                     onCheckedChange={(checked) => updateStatusFilter('rejected', checked as boolean)}
                   />
-                  <Label htmlFor="desktop-filter-rejected" className="text-sm">Rejected</Label>
+                  <Label htmlFor="desktop-filter-rejected" className="text-sm">
+                    Rejected
+                    <span className="text-xs text-gray-400 ml-1">({STATUS_COUNTS.rejected})</span>
+                  </Label>
                 </div>
               </div>
             </div>
             
             {/* Time frame filters */}
             <div className="space-y-4">
-              <h3 className="text-sm font-medium">Time Frame</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium">Time Frame</h3>
+                <span className="text-xs text-gray-500">(Select one)</span>
+              </div>
               <RadioGroup 
                 value={filters.timeFrame}
                 onValueChange={(value) => setFilters(prev => ({ ...prev, timeFrame: value as any }))}
@@ -526,11 +610,59 @@ export default function DealFilterDialog({
                   <Label htmlFor="desktop-time-custom" className="text-sm">Custom date range</Label>
                 </div>
               </RadioGroup>
+              
+              {/* Date picker for custom range */}
+              {filters.timeFrame === 'custom' && (
+                <div className="mt-4 border p-3 rounded-md bg-gray-50 space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="start-date" className="text-xs">Start date</Label>
+                    <DatePicker
+                      selected={filters.customDateRange?.startDate}
+                      onChange={(date) => setFilters(prev => ({
+                        ...prev,
+                        customDateRange: {
+                          ...prev.customDateRange,
+                          startDate: date
+                        }
+                      }))}
+                      selectsStart
+                      startDate={filters.customDateRange?.startDate}
+                      endDate={filters.customDateRange?.endDate}
+                      placeholderText="Select start date"
+                      className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                      dateFormat="MM/dd/yyyy"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="end-date" className="text-xs">End date</Label>
+                    <DatePicker
+                      selected={filters.customDateRange?.endDate}
+                      onChange={(date) => setFilters(prev => ({
+                        ...prev,
+                        customDateRange: {
+                          ...prev.customDateRange,
+                          endDate: date
+                        }
+                      }))}
+                      selectsEnd
+                      startDate={filters.customDateRange?.startDate}
+                      endDate={filters.customDateRange?.endDate}
+                      minDate={filters.customDateRange?.startDate}
+                      placeholderText="Select end date"
+                      className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                      dateFormat="MM/dd/yyyy"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* Performance filters */}
             <div className="space-y-4">
-              <h3 className="text-sm font-medium">Performance</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium">Performance</h3>
+                <span className="text-xs text-gray-500">(Select one)</span>
+              </div>
               <RadioGroup 
                 value={filters.performance}
                 onValueChange={(value) => setFilters(prev => ({ ...prev, performance: value as any }))}
@@ -542,26 +674,41 @@ export default function DealFilterDialog({
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="most-viewed" id="desktop-perf-most-viewed" />
-                  <Label htmlFor="desktop-perf-most-viewed" className="text-sm">Most viewed</Label>
+                  <Label htmlFor="desktop-perf-most-viewed" className="text-sm">
+                    Most viewed
+                    <span className="text-xs text-gray-400 ml-1">({PERFORMANCE_COUNTS['most-viewed']})</span>
+                  </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="most-redeemed" id="desktop-perf-most-redeemed" />
-                  <Label htmlFor="desktop-perf-most-redeemed" className="text-sm">Most redeemed</Label>
+                  <Label htmlFor="desktop-perf-most-redeemed" className="text-sm">
+                    Most redeemed
+                    <span className="text-xs text-gray-400 ml-1">({PERFORMANCE_COUNTS['most-redeemed']})</span>
+                  </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="most-saved" id="desktop-perf-most-saved" />
-                  <Label htmlFor="desktop-perf-most-saved" className="text-sm">Most saved</Label>
+                  <Label htmlFor="desktop-perf-most-saved" className="text-sm">
+                    Most saved
+                    <span className="text-xs text-gray-400 ml-1">({PERFORMANCE_COUNTS['most-saved']})</span>
+                  </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="least-performing" id="desktop-perf-least-performing" />
-                  <Label htmlFor="desktop-perf-least-performing" className="text-sm">Least performing</Label>
+                  <Label htmlFor="desktop-perf-least-performing" className="text-sm">
+                    Least performing
+                    <span className="text-xs text-gray-400 ml-1">({PERFORMANCE_COUNTS['least-performing']})</span>
+                  </Label>
                 </div>
               </RadioGroup>
             </div>
             
             {/* Deal type filters */}
             <div className="space-y-4">
-              <h3 className="text-sm font-medium">Deal Type</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium">Deal Type</h3>
+                <span className="text-xs text-gray-500">(Select multiple)</span>
+              </div>
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
                   <Checkbox 
@@ -569,7 +716,10 @@ export default function DealFilterDialog({
                     checked={filters.dealTypes.percent_off}
                     onCheckedChange={(checked) => updateDealTypeFilter('percent_off', checked as boolean)}
                   />
-                  <Label htmlFor="desktop-type-percent" className="text-sm">Percentage discount</Label>
+                  <Label htmlFor="desktop-type-percent" className="text-sm">
+                    Percentage discount
+                    <span className="text-xs text-gray-400 ml-1">({DEAL_TYPE_COUNTS.percent_off})</span>
+                  </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox 
@@ -577,7 +727,10 @@ export default function DealFilterDialog({
                     checked={filters.dealTypes.fixed_amount}
                     onCheckedChange={(checked) => updateDealTypeFilter('fixed_amount', checked as boolean)}
                   />
-                  <Label htmlFor="desktop-type-fixed" className="text-sm">Fixed amount discount</Label>
+                  <Label htmlFor="desktop-type-fixed" className="text-sm">
+                    Fixed amount discount
+                    <span className="text-xs text-gray-400 ml-1">({DEAL_TYPE_COUNTS.fixed_amount})</span>
+                  </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox 
@@ -585,7 +738,10 @@ export default function DealFilterDialog({
                     checked={filters.dealTypes.bogo}
                     onCheckedChange={(checked) => updateDealTypeFilter('bogo', checked as boolean)}
                   />
-                  <Label htmlFor="desktop-type-bogo" className="text-sm">Buy one get one</Label>
+                  <Label htmlFor="desktop-type-bogo" className="text-sm">
+                    Buy one get one
+                    <span className="text-xs text-gray-400 ml-1">({DEAL_TYPE_COUNTS.bogo})</span>
+                  </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox 
@@ -593,7 +749,10 @@ export default function DealFilterDialog({
                     checked={filters.dealTypes.free_item}
                     onCheckedChange={(checked) => updateDealTypeFilter('free_item', checked as boolean)}
                   />
-                  <Label htmlFor="desktop-type-free" className="text-sm">Free item/service</Label>
+                  <Label htmlFor="desktop-type-free" className="text-sm">
+                    Free item/service
+                    <span className="text-xs text-gray-400 ml-1">({DEAL_TYPE_COUNTS.free_item})</span>
+                  </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox 
@@ -601,7 +760,10 @@ export default function DealFilterDialog({
                     checked={filters.dealTypes.special_offer}
                     onCheckedChange={(checked) => updateDealTypeFilter('special_offer', checked as boolean)}
                   />
-                  <Label htmlFor="desktop-type-special" className="text-sm">Special offer</Label>
+                  <Label htmlFor="desktop-type-special" className="text-sm">
+                    Special offer
+                    <span className="text-xs text-gray-400 ml-1">({DEAL_TYPE_COUNTS.special_offer})</span>
+                  </Label>
                 </div>
               </div>
             </div>
