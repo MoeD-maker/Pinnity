@@ -102,18 +102,37 @@ export default function VendorDashboard() {
             
             // Fetch deals if business exists
             if (businessResponse.id) {
-              const dealsData = await apiRequest(`/api/business/${businessResponse.id}/deals`);
-              setDeals(dealsData || []);
+              const dealsResponse = await apiRequest(`/api/business/${businessResponse.id}/deals`);
+              
+              // Convert the response to an array if it's an object with numeric keys
+              let dealsArray: any[] = [];
+              
+              if (dealsResponse) {
+                // Check if it's already an array
+                if (Array.isArray(dealsResponse)) {
+                  dealsArray = dealsResponse;
+                } 
+                // Check if it's an object with numeric keys
+                else if (typeof dealsResponse === 'object' && dealsResponse !== null) {
+                  // Filter out non-numeric keys like 'apiVersion'
+                  dealsArray = Object.keys(dealsResponse)
+                    .filter(key => !isNaN(Number(key)))
+                    .map(key => dealsResponse[key]);
+                }
+              }
+              
+              setDeals(dealsArray);
+              console.log("Processed deals array:", dealsArray);
               
               // Calculate stats
-              const activeDeals = dealsData ? dealsData.filter((deal: any) => 
+              const activeDeals = dealsArray.filter((deal: any) => 
                 new Date(deal.endDate) >= new Date() && deal.status === 'approved'
-              ).length : 0;
+              ).length;
               
               // Sum up counts
-              const viewCount = dealsData ? dealsData.reduce((sum: number, deal: any) => sum + (deal.viewCount || 0), 0) : 0;
-              const redemptionCount = dealsData ? dealsData.reduce((sum: number, deal: any) => sum + (deal.redemptionCount || 0), 0) : 0;
-              const savesCount = dealsData ? dealsData.reduce((sum: number, deal: any) => sum + (deal.saveCount || 0), 0) : 0;
+              const viewCount = dealsArray.reduce((sum: number, deal: any) => sum + (deal.viewCount || 0), 0);
+              const redemptionCount = dealsArray.reduce((sum: number, deal: any) => sum + (deal.redemptionCount || 0), 0);
+              const savesCount = dealsArray.reduce((sum: number, deal: any) => sum + (deal.saveCount || 0), 0);
               
               setStats({
                 activeDeals,
