@@ -50,6 +50,8 @@ interface AuthContextType {
   refreshToken: () => Promise<boolean>;
   isAuthenticated: boolean;
   silentRefresh: () => Promise<boolean>;
+  authStatusChecked: boolean; // Flag to indicate initial auth check is complete
+  isRedirecting: boolean; // Flag to prevent multiple redirects
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
