@@ -4,6 +4,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { useReducedMotion } from "@/hooks/use-motion"
 
 const Sheet = SheetPrimitive.Root
 
@@ -16,16 +17,26 @@ const SheetPortal = SheetPrimitive.Portal
 const SheetOverlay = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof SheetPrimitive.Overlay>
->(({ className, ...props }, ref) => (
-  <SheetPrimitive.Overlay
-    className={cn(
-      "fixed inset-0 z-50 bg-black/80 backdrop-blur-[2px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 safe-area-padding-horizontal",
-      className
-    )}
-    {...props}
-    ref={ref}
-  />
-))
+>(({ className, ...props }, ref) => {
+  const reducedMotion = useReducedMotion();
+  
+  return (
+    <SheetPrimitive.Overlay
+      className={cn(
+        "fixed inset-0 z-50 bg-black/80 backdrop-blur-[2px] safe-area-padding-horizontal",
+        // Apply animations only if reduced motion is not preferred
+        !reducedMotion && "transition-all",
+        !reducedMotion && "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+        className
+      )}
+      style={!reducedMotion ? {
+        transitionDuration: 'var(--animation-normal)'
+      } : undefined}
+      {...props}
+      ref={ref}
+    />
+  );
+})
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName
 
 /**
@@ -35,8 +46,11 @@ SheetOverlay.displayName = SheetPrimitive.Overlay.displayName
  * - Handles landscape orientation with responsive sizing
  * - Better utilizes available space across different devices
  */
+/**
+ * Adaptive sheet variants with improved responsive behavior and reduced motion support
+ */
 const sheetVariants = cva(
-  "fixed z-50 gap-3 sm:gap-4 bg-background p-4 sm:p-5 md:p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-500 overflow-y-auto",
+  "fixed z-50 gap-3 sm:gap-4 bg-background p-4 sm:p-5 md:p-6 shadow-lg overflow-y-auto",
   {
     variants: {
       side: {
@@ -118,26 +132,42 @@ const SheetContent = React.forwardRef<
   className, 
   children, 
   ...props 
-}, ref) => (
-  <SheetPortal>
-    <SheetOverlay />
-    <SheetPrimitive.Content
-      ref={ref}
-      className={cn(
-        sheetVariants({ side, size, fullOnMobile }), 
-        className,
-        size === "full" ? "landscape:h-[98vh]" : ""
-      )}
-      {...props}
-    >
-      {children}
-      <SheetPrimitive.Close className="absolute right-2 top-2 sm:right-3 sm:top-3 md:right-4 md:top-4 rounded-full p-2 sm:p-2.5 md:p-2 opacity-70 bg-background/90 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation">
-        <X className="h-4 w-4 sm:h-5 sm:w-5" />
-        <span className="sr-only">Close</span>
-      </SheetPrimitive.Close>
-    </SheetPrimitive.Content>
-  </SheetPortal>
-))
+}, ref) => {
+  const reducedMotion = useReducedMotion();
+  
+  return (
+    <SheetPortal>
+      <SheetOverlay />
+      <SheetPrimitive.Content
+        ref={ref}
+        className={cn(
+          sheetVariants({ side, size, fullOnMobile }), 
+          // Apply animations only if reduced motion is not preferred
+          !reducedMotion && "transition ease-in-out",
+          !reducedMotion && "data-[state=open]:animate-in data-[state=closed]:animate-out",
+          !reducedMotion && {
+            "data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top": side === "top",
+            "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom": side === "bottom",
+            "data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left": side === "left",
+            "data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right": side === "right",
+          },
+          className,
+          size === "full" ? "landscape:h-[98vh]" : ""
+        )}
+        style={!reducedMotion ? {
+          transitionDuration: 'var(--animation-normal)'
+        } : undefined}
+        {...props}
+      >
+        {children}
+        <SheetPrimitive.Close className="absolute right-2 top-2 sm:right-3 sm:top-3 md:right-4 md:top-4 rounded-full p-2 sm:p-2.5 md:p-2 opacity-70 bg-background/90 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation">
+          <X className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span className="sr-only">Close</span>
+        </SheetPrimitive.Close>
+      </SheetPrimitive.Content>
+    </SheetPortal>
+  );
+})
 SheetContent.displayName = SheetPrimitive.Content.displayName
 
 const SheetHeader = ({
