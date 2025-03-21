@@ -116,7 +116,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     <div className="min-h-screen flex flex-col">
       {/* Mobile header */}
       <header className="md:hidden sticky top-0 z-10 bg-background/95 backdrop-blur border-b">
-        <div className="container flex items-center justify-between h-14">
+        <div className="container flex items-center justify-between h-14 px-3">
           <div className="flex items-center">
             <Sheet>
               <SheetTrigger asChild>
@@ -187,7 +187,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
             </div>
           </div>
           
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2 pr-1">
             <Popover open={notificationsOpen} onOpenChange={setNotificationsOpen}>
               <PopoverTrigger asChild>
                 <Button 
