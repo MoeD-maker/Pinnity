@@ -250,10 +250,17 @@ function AuthenticatedRoute({ component: Component, ...rest }: any) {
     if (authStatusChecked && !isLoading && !isRedirecting) {
       console.log(`[${timestamp}] Route evaluation: authState=${authState}, path=${location}`);
       
-      // Handle unauthenticated state
-      if (!isAuthenticated) {
+      // Prevent redirect loops by checking current path
+      if (!isAuthenticated && location !== '/auth') {
         console.log(`[${timestamp}] User not authenticated, redirecting to /auth`);
         executeRedirect("/auth");
+        return;
+      }
+      
+      // Prevent redirect when already on auth page
+      if (isAuthenticated && location === '/auth') {
+        console.log(`[${timestamp}] User authenticated, redirecting from auth page`);
+        executeRedirect("/");
         return;
       }
       
@@ -284,16 +291,15 @@ function AuthenticatedRoute({ component: Component, ...rest }: any) {
   }, [isLoading, isAuthenticated, user, authStatusChecked, isRedirecting, location, setLocation, authState, redirectPath, getAppropriateRedirectPath]);
   
   // Render the AuthTransition component based on current auth state
-  // Use a single stable loading component to prevent flickering
+  // Use a single stable loading component with state persistence
   if (!shouldRender || isLoading || !authStatusChecked || isRedirecting) {
-    // Use a single consistent message for all loading states to prevent flashing
-    // The AuthTransition component will handle the animation and visual feedback
+    // Persist the loading state to prevent flashing
     return (
       <AuthTransition 
         state={authState}
         message="Preparing your dashboard..."
-        // Adding a key that doesn't change during the auth process to prevent re-renders
-        key="auth-transition-stable"
+        key={`auth-transition-${isAuthenticated ? 'authenticated' : 'unauthenticated'}`}
+        persistent={true}
       />
     );
   }
