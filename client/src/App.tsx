@@ -290,21 +290,40 @@ function AuthenticatedRoute({ component: Component, ...rest }: any) {
     };
   }, [isLoading, isAuthenticated, user, authStatusChecked, isRedirecting, location, setLocation, authState, redirectPath, getAppropriateRedirectPath]);
   
-  // Render the AuthTransition component based on current auth state
-  // Use a single stable loading component with state persistence
-  if (!shouldRender || isLoading || !authStatusChecked || isRedirecting) {
-    // Persist the loading state to prevent flashing
+  // Single stable loading state during transitions
+  if (!authStatusChecked || isLoading) {
     return (
       <AuthTransition 
-        state={authState}
-        message="Preparing your dashboard..."
-        key={`auth-transition-${isAuthenticated ? 'authenticated' : 'unauthenticated'}`}
-        persistent={true}
+        state="initializing"
+        message="Loading..."
+        key="auth-transition-init"
       />
     );
   }
-  
-  // If not authenticated and not loading, don't render anything during the redirect
+
+  // Handle redirection state with visual feedback
+  if (isRedirecting) {
+    return (
+      <AuthTransition
+        state={authState} 
+        message="Redirecting..."
+        key="auth-transition-redirect"
+      />
+    );
+  }
+
+  // Handle authentication check complete
+  if (!shouldRender) {
+    return (
+      <AuthTransition
+        state={authState}
+        message={isAuthenticated ? "Preparing your dashboard..." : "Please log in"}
+        key="auth-transition-check"
+      />
+    );
+  }
+
+  // Only check authentication after all states are stable
   if (!isAuthenticated) {
     return null;
   }

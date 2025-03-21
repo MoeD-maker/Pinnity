@@ -384,15 +384,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } finally {
         // Use a delay before marking authentication check as complete
         // This ensures we don't prematurely update state during transitions
-        setTimeout(() => {
-          // Only update if component is still mounted
+        // Ensure state updates happen in correct order
+        setIsLoading(false);
+        requestAnimationFrame(() => {
           if (isMountedRef.current) {
-            // Mark authentication check as complete after ensuring all state updates are processed
             setAuthStatusChecked(true);
-            setIsLoading(false);
             console.log(`[${new Date().toISOString().split('T')[1].split('.')[0]}] Auth status check completed`);
           }
-        }, 300);
+        });
       }
     };
 
