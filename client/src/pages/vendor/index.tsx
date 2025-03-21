@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { 
   PlusCircle, BarChart3, Calendar, Tag, Settings, FileText, Store, 
   PackageOpen, Bell, CheckCircle, AlertCircle, Clock, HelpCircle, Star,
-  Search, Copy
+  Search, Copy, Filter as FilterIcon
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import BusinessRatingSummary from '@/components/ratings/BusinessRatingSummary';
+import DealFilterDialog, { FilterOptions } from '@/components/vendor/DealFilterDialog';
 
 // Define status colors for consistent use across components
 const statusColors: Record<string, string> = {
@@ -37,6 +38,8 @@ export default function VendorDashboard() {
   const [deals, setDeals] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const { toast } = useToast();
+  const [filterOpen, setFilterOpen] = useState<boolean>(false);
+  const [activeFilters, setActiveFilters] = useState<any>({}); // Store applied filters
   const [stats, setStats] = useState({
     activeDeals: 0,
     viewCount: 0,
@@ -131,8 +134,67 @@ export default function VendorDashboard() {
 
   const isBusinessApproved = business?.verificationStatus === 'verified';
 
+  // Function to handle applying filters
+  const handleApplyFilters = (filters: FilterOptions) => {
+    console.log('Applied filters:', filters);
+    setActiveFilters(filters);
+    // Here you would implement actual filtering logic based on the filter options
+    // For now we'll just log the filters and store them
+    
+    // Example of how you might filter deals based on the FilterOptions
+    // This is just a placeholder and would need to be implemented based on your actual data
+    /*
+    let filteredDeals = [...dealsArray]; // Start with all deals
+    
+    // Filter by status
+    if (filters.status.active || filters.status.upcoming || filters.status.expired || 
+        filters.status.pending || filters.status.rejected) {
+      filteredDeals = filteredDeals.filter(deal => {
+        const isTimeActive = new Date(deal.endDate) >= new Date() && new Date(deal.startDate) <= new Date();
+        const isUpcoming = new Date(deal.startDate) > new Date();
+        const isExpired = new Date(deal.endDate) < new Date();
+        
+        return (filters.status.active && isTimeActive && deal.status === 'approved') ||
+               (filters.status.upcoming && isUpcoming) ||
+               (filters.status.expired && isExpired) ||
+               (filters.status.pending && deal.status === 'pending') ||
+               (filters.status.rejected && deal.status === 'rejected');
+      });
+    }
+    
+    // Apply other filters (deal type, time frame, etc.)
+    // ...
+    
+    // Sort deals
+    switch (filters.sortBy) {
+      case 'newest':
+        filteredDeals.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        break;
+      case 'oldest':
+        filteredDeals.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        break;
+      // Add other sort options...
+    }
+    
+    setDeals(filteredDeals);
+    */
+    
+    toast({
+      title: "Filters Applied",
+      description: "Your deals have been filtered according to your criteria",
+    });
+  };
+
   return (
     <div className="w-full max-w-[1200px] mx-auto container-responsive mb-12 sm:mb-24 overflow-x-hidden">
+      {/* Filter dialog */}
+      <DealFilterDialog 
+        open={filterOpen}
+        onOpenChange={setFilterOpen}
+        onApplyFilters={handleApplyFilters}
+        initialFilters={activeFilters}
+      />
+      
       {/* Welcome and approval status banner */}
       <header className="mb-6 sm:mb-8">
         <div className="flex-responsive justify-between sm:items-start mb-4 sm:mb-2 gap-3 sm:gap-0">
@@ -215,8 +277,13 @@ export default function VendorDashboard() {
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
             <h2 className="text-xl font-semibold truncate max-w-full sm:max-w-[230px]">Your Deals</h2>
             <div className="flex gap-2 w-full sm:w-auto">
-              <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                <Settings className="h-4 w-4 mr-2" /> Filter
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full sm:w-auto"
+                onClick={() => setFilterOpen(true)}
+              >
+                <FilterIcon className="h-4 w-4 mr-2" /> Filter
               </Button>
               <Button 
                 className="bg-[#00796B] hover:bg-[#004D40] w-full sm:w-auto"
