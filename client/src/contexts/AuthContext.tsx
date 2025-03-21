@@ -41,6 +41,17 @@ interface User {
   // Add other user properties as needed
 }
 
+/**
+ * Authentication state machine states
+ * Represents the different states in the authentication flow
+ */
+export type AuthState = 
+  | 'initializing'   // Initial state when app first loads
+  | 'authenticating' // Actively verifying credentials  
+  | 'authenticated'  // User is verified and logged in
+  | 'unauthenticated' // User is not logged in
+  | 'redirecting';    // Navigation in progress
+
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
@@ -52,9 +63,97 @@ interface AuthContextType {
   silentRefresh: () => Promise<boolean>;
   authStatusChecked: boolean; // Flag to indicate initial auth check is complete
   isRedirecting: boolean; // Flag to prevent multiple redirects
+  authState: AuthState; // Current state in the authentication state machine
+  redirectPath: string | null; // Path to redirect to after authentication
+  getAppropriateRedirectPath: (user: User | null, currentPath: string) => string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+/**
+ * Determines the appropriate redirect path based on user type and current location
+ * This centralizes all redirection logic in one place for consistency
+ * 
+ * @param user The current user object or null if not authenticated
+ * @param currentPath The current application path
+ * @returns The path to redirect to
+ */
+function getAppropriateRedirectPathImpl(user: User | null, currentPath: string): string {
+  // Debug logging with timestamps
+  const timestamp = new Date().toISOString().split('T')[1].split('.')[0]; // Extract HH:MM:SS
+  console.log(`[${timestamp}] Computing redirect: user=${user?.userType || 'null'}, path=${currentPath}`);
+  
+  // If no user (not authenticated), always go to auth page
+  if (!user) {
+    console.log(`[${timestamp}] No user, redirecting to /auth`);
+    return '/auth';
+  }
+  
+  // Skip redirection for diagnostic routes
+  if (
+    currentPath === '/test-page' || 
+    currentPath === '/simple-explore' || 
+    currentPath === '/test-login' ||
+    currentPath === '/minimal' ||
+    currentPath.startsWith('/test')
+  ) {
+    console.log(`[${timestamp}] Diagnostic page ${currentPath}, no redirect needed`);
+    return currentPath;
+  }
+  
+  // For authenticated users, redirect based on user type
+  const { userType } = user;
+  
+  // User is on the auth page but already logged in - redirect based on role
+  if (currentPath === '/auth') {
+    if (userType === 'admin') {
+      console.log(`[${timestamp}] Authenticated admin on /auth, redirecting to /admin`);
+      return '/admin';
+    } else if (userType === 'business') {
+      console.log(`[${timestamp}] Authenticated business on /auth, redirecting to /vendor`);
+      return '/vendor';
+    } else {
+      console.log(`[${timestamp}] Authenticated individual on /auth, redirecting to /`);
+      return '/';
+    }
+  }
+  
+  // User is on the homepage but needs role-specific page
+  if (currentPath === '/') {
+    if (userType === 'admin') {
+      console.log(`[${timestamp}] Admin on /, redirecting to /admin`);
+      return '/admin';
+    } else if (userType === 'business') {
+      console.log(`[${timestamp}] Business on /, redirecting to /vendor`);
+      return '/vendor';
+    }
+    // Individual users stay on homepage
+    return '/';
+  }
+  
+  // Enforce role-based access to sections
+  if (userType === 'business' && !currentPath.startsWith('/vendor') && 
+      currentPath !== '/profile' && currentPath !== '/settings') {
+    console.log(`[${timestamp}] Business trying to access ${currentPath}, redirecting to /vendor`);
+    return '/vendor';
+  }
+  
+  if (userType === 'admin' && !currentPath.startsWith('/admin') && 
+      currentPath !== '/profile' && currentPath !== '/settings') {
+    console.log(`[${timestamp}] Admin trying to access ${currentPath}, redirecting to /admin`);
+    return '/admin';
+  }
+  
+  if (userType === 'individual' && 
+      (currentPath.startsWith('/vendor') || currentPath.startsWith('/admin'))) {
+    console.log(`[${timestamp}] Individual trying to access ${currentPath}, redirecting to /`);
+    return '/';
+  }
+  
+  // No redirection needed, user can access current path
+  console.log(`[${timestamp}] No redirection needed for ${userType} on ${currentPath}`);
+  return currentPath;
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -62,6 +161,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [authStatusChecked, setAuthStatusChecked] = useState<boolean>(false);
   const [isRedirecting, setIsRedirecting] = useState<boolean>(false);
+  const [authState, setAuthState] = useState<AuthState>('initializing');
+  const [redirectPath, setRedirectPath] = useState<string | null>(null);
   const [, setLocation] = useLocation();
   
   // Reference to the auto-refresh timer
@@ -69,6 +170,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   
   // Track if component is mounted (for cleanup)
   const isMountedRef = useRef<boolean>(true);
+  
+  // Function to determine appropriate redirect path
+  const getAppropriateRedirectPath = useCallback((user: User | null, currentPath: string): string => {
+    return getAppropriateRedirectPathImpl(user, currentPath);
+  }, []);
 
   // Check if user is already logged in
   // Clean up effect to cancel refresh timer on unmount
@@ -171,24 +277,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
+        // Set initial state
         setIsLoading(true);
-        console.log('Checking authentication status...');
+        setAuthState('initializing');
+        const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+        console.log(`[${timestamp}] Checking authentication status...`);
         
         // First, get a CSRF token so we can make authenticated requests
         try {
-          console.log('Fetching CSRF token...');
+          console.log(`[${timestamp}] Fetching CSRF token...`);
           const csrfResponse = await fetch('/api/csrf-token', { credentials: 'include' });
           const csrfData = await csrfResponse.json();
-          console.log('CSRF token obtained for session:', csrfData.csrfToken ? 'Yes' : 'No');
+          console.log(`[${timestamp}] CSRF token obtained for session:`, csrfData.csrfToken ? 'Yes' : 'No');
         } catch (csrfErr) {
-          console.error('Error fetching CSRF token:', csrfErr);
+          console.error(`[${timestamp}] Error fetching CSRF token:`, csrfErr);
           // Continue anyway - we may still be able to use existing tokens
         }
+        
+        // Update state to show we're authenticating
+        setAuthState('authenticating');
         
         // Check for stored user ID
         const storedUserId = getUserId();
         const storedUserType = localStorage.getItem(USER_TYPE_KEY);
-        console.log('Stored user ID:', storedUserId ? 'Present' : 'Not found');
+        console.log(`[${timestamp}] Stored user ID:`, storedUserId ? 'Present' : 'Not found');
         
         // Also check for legacy storage (backward compatibility)
         let legacyUserId = null;
@@ -200,7 +312,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           // If found in legacy storage, migrate to new storage keys
           if (legacyUserId && legacyUserType) {
-            console.log('Found legacy user data, migrating...');
+            console.log(`[${timestamp}] Found legacy user data, migrating...`);
             saveUserData(legacyUserId, legacyUserType);
             // Clean up legacy storage
             localStorage.removeItem('userId');
@@ -214,15 +326,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (userId) {
           try {
-            console.log('Attempting to fetch user data with ID:', userId);
+            console.log(`[${timestamp}] Attempting to fetch user data with ID:`, userId);
             // Our JWT token is in a secure HTTP-only cookie
             // so we just need to make the request and the browser will 
             // automatically include the cookie
             const userData = await apiRequest(`/api/v1/user/${userId}`);
             
             if (userData) {
-              console.log('User data received successfully');
+              console.log(`[${timestamp}] User data received successfully`);
+              
+              // Update authenticated state before setting user to prevent flash
+              setAuthState('authenticated');
               setUser(userData);
+              
+              // Determine the appropriate redirect path but don't redirect yet
+              const currentPath = window.location.pathname;
+              const targetPath = getAppropriateRedirectPathImpl(userData, currentPath);
+              
+              // Only set redirect path if it's different from current path
+              if (targetPath !== currentPath) {
+                console.log(`[${timestamp}] Setting redirect path from ${currentPath} to ${targetPath}`);
+                setRedirectPath(targetPath);
+              }
               
               // Make sure we have the user ID and type stored
               if (userData.id) {
@@ -236,36 +361,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   silentRefresh();
                 }, 55 * 60 * 1000); // 55 minutes
                 
-                console.log('Token refresh timer scheduled');
-              }
-              
-              // We don't redirect here anymore - this prevents double redirects
-              // The AuthenticatedRoute component will handle redirects once
-              // authStatusChecked is set to true
-              
-              const path = window.location.pathname;
-              if ((path === '/' || path === '/auth') && !isRedirecting) {
-                if (userData.userType === 'admin' || userType === 'admin') {
-                  console.log('User is admin type, redirection will be handled by AuthenticatedRoute');
-                } else if (userData.userType === 'business' || userType === 'business') {
-                  console.log('User is business type, redirection will be handled by AuthenticatedRoute');
-                } else {
-                  console.log('User is individual type, keeping on homepage');
-                }
+                console.log(`[${timestamp}] Token refresh timer scheduled`);
               }
             } else {
-              console.warn('No user data returned from API');
+              console.warn(`[${timestamp}] No user data returned from API`);
+              setAuthState('unauthenticated');
             }
           } catch (err) {
-            console.error('Error fetching user data:', err);
+            console.error(`[${timestamp}] Error fetching user data:`, err);
             // If this fails, user is not authenticated
             removeUserData();
+            setAuthState('unauthenticated');
           }
         } else {
-          console.log('No user ID found in storage, user is not logged in');
+          console.log(`[${timestamp}] No user ID found in storage, user is not logged in`);
+          setAuthState('unauthenticated');
         }
       } catch (err) {
-        console.error('Auth status check failed:', err);
+        const errorTimestamp = new Date().toISOString().split('T')[1].split('.')[0];
+        console.error(`[${errorTimestamp}] Auth status check failed:`, err);
+        setAuthState('unauthenticated');
       } finally {
         // Mark authentication check as complete, regardless of result
         setAuthStatusChecked(true);
@@ -277,28 +392,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [silentRefresh]);
 
   const login = async (email: string, password: string, rememberMe = false) => {
+    const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
     try {
+      // Update state for login process
       setIsLoading(true);
       setError(null);
+      setAuthState('authenticating');
       
       // Prevent multiple redirects by setting flag
       setIsRedirecting(true);
 
       // First, get a CSRF token
-      console.log('Fetching CSRF token before login...');
+      console.log(`[${timestamp}] Fetching CSRF token before login...`);
       try {
         const csrfResponse = await fetch('/api/csrf-token', { credentials: 'include' });
         const csrfData = await csrfResponse.json();
-        console.log('CSRF token obtained successfully:', csrfData.csrfToken ? 'Yes' : 'No');
+        console.log(`[${timestamp}] CSRF token obtained successfully:`, csrfData.csrfToken ? 'Yes' : 'No');
         // The fetchWithCSRF function will use this token automatically
         resetCSRFToken(); // Clear any existing token
       } catch (csrfErr) {
-        console.error('Error fetching CSRF token:', csrfErr);
+        console.error(`[${timestamp}] Error fetching CSRF token:`, csrfErr);
         // Continue with login anyway, but it will likely fail
       }
 
       // Use CSRF-protected API call
-      console.log('Attempting login with credentials...');
+      console.log(`[${timestamp}] Attempting login with credentials...`);
       const response = await apiPost('/api/v1/auth/login', { email, password, rememberMe }) as {
         message: string;
         userId: number;
@@ -306,15 +424,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
 
       if (response && response.userId) {
-        console.log('Login successful, user ID:', response.userId);
+        console.log(`[${timestamp}] Login successful, user ID:`, response.userId);
         // Store user ID and type in localStorage for client-side reference
         // The actual authentication token is in a secure HTTP-only cookie
         saveUserData(response.userId.toString(), response.userType);
         
         // Fetch complete user data
-        console.log('Fetching complete user data...');
+        console.log(`[${timestamp}] Fetching complete user data...`);
         const userData = await apiRequest(`/api/v1/user/${response.userId}`);
-        console.log('User data received:', userData ? 'Yes' : 'No');
+        console.log(`[${timestamp}] User data received:`, userData ? 'Yes' : 'No');
+        
+        // Update authentication state before setting user data to prevent UI flashing
+        setAuthState('authenticated');
         setUser(userData);
         
         // Start token refresh timer - in case the user stays logged in for a long time
@@ -324,41 +445,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             silentRefresh();
           }, 55 * 60 * 1000); // 55 minutes
           
-          console.log('Token refresh timer scheduled after login');
+          console.log(`[${timestamp}] Token refresh timer scheduled after login`);
         }
 
         // Add a small delay before redirect to ensure all state updates have propagated
-        console.log('Preparing redirection after login...');
+        console.log(`[${timestamp}] Preparing redirection after login...`);
+        
+        // Determine appropriate redirect path
+        const currentPath = window.location.pathname;
+        let targetPath = '/';
+        
+        if (response.userType === 'admin') {
+          targetPath = '/admin';
+        } else if (response.userType === 'business') {
+          targetPath = '/vendor';
+        }
+        
+        // Set redirect path and state
+        console.log(`[${timestamp}] Setting redirect path to ${targetPath}`);
+        setRedirectPath(targetPath);
+        setAuthState('redirecting');
         
         // Use setTimeout to add a small delay before redirecting
         setTimeout(() => {
           if (isMountedRef.current) {
-            console.log('Redirecting after login based on user type:', response.userType);
-            // Redirect based on user type
-            if (response.userType === 'admin') {
-              console.log('Redirecting to admin dashboard');
-              setLocation('/admin');
-            } else if (response.userType === 'business') {
-              console.log('Redirecting to vendor dashboard');
-              setLocation('/vendor');
-            } else {
-              console.log('Redirecting to homepage');
-              setLocation('/');
-            }
+            console.log(`[${timestamp}] Executing redirect to ${targetPath}`);
+            setLocation(targetPath);
             
             // Reset redirection flag after redirect is complete
             setTimeout(() => {
+              setAuthState('authenticated');
               setIsRedirecting(false);
+              console.log(`[${timestamp}] Redirection completed, returning to authenticated state`);
             }, 100);
           }
         }, 50);
       } else {
+        setAuthState('unauthenticated');
         setIsRedirecting(false);
         throw new Error('Login failed: Invalid response');
       }
     } catch (err) {
-      console.error('Login error:', err);
+      console.error(`[${timestamp}] Login error:`, err);
       setError(err instanceof Error ? err.message : 'Login failed');
+      setAuthState('unauthenticated');
       setIsRedirecting(false);
       throw err;
     } finally {
@@ -431,7 +561,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         silentRefresh,
         isAuthenticated: !!user,
         authStatusChecked,
-        isRedirecting
+        isRedirecting,
+        authState,
+        redirectPath,
+        getAppropriateRedirectPath
       }}
     >
       {children}
