@@ -68,6 +68,26 @@
     padding-bottom: env(safe-area-inset-bottom, 0);
   }
   
+  /* Utility class for fixed position elements that need safe area insets */
+  .safe-area-fixed-bottom {
+    @apply fixed bottom-0 left-0 right-0;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  
+  .safe-area-padding-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .safe-area-margin-bottom {
+    margin-bottom: env(safe-area-inset-bottom, 0);
+  }
+  
+  /* Support for notch-based devices */
+  .safe-area-padding-horizontal {
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
+  }
+  
   /* Accessibility focus styles */
   button:focus-visible, 
   a:focus-visible,

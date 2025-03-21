@@ -361,17 +361,19 @@ export default function MainLayout({ children }: MainLayoutProps) {
           </div>
         </nav>
         
-        <main className="flex-1 md:ml-60 pb-16 md:pb-0">
+        <main className="flex-1 md:ml-60 pb-16 md:pb-0 safe-area-padding-horizontal">
           <div className="flex-grow flex flex-col">
             <div className="w-full flex flex-col">
               {children}
             </div>
+            {/* Add bottom spacing on mobile to prevent content being hidden behind the navigation bar */}
+            <div className="h-16 md:hidden safe-area-margin-bottom"></div>
           </div>
         </main>
       </div>
       
       {/* Mobile bottom navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-10 mobile-nav">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-10 safe-area-fixed-bottom">
         <div className="flex justify-around">
           {navigationItems.map((item) => (
             <button
