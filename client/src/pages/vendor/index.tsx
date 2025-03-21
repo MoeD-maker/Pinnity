@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { 
   PlusCircle, BarChart3, Calendar, Tag, Settings, FileText, Store, 
   PackageOpen, Bell, CheckCircle, AlertCircle, Clock, HelpCircle, Star,
-  Search, Copy, Filter as FilterIcon
+  Search, Copy, Filter as FilterIcon, X, MapPin, Share2
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -40,6 +40,8 @@ export default function VendorDashboard() {
   const { toast } = useToast();
   const [filterOpen, setFilterOpen] = useState<boolean>(false);
   const [activeFilters, setActiveFilters] = useState<any>({}); // Store applied filters
+  const [allDeals, setAllDeals] = useState<any[]>([]); // Store all deals for filtering
+  const [filteredDeals, setFilteredDeals] = useState<any[]>([]); // Store filtered deals
   const [stats, setStats] = useState({
     activeDeals: 0,
     viewCount: 0,
@@ -88,7 +90,10 @@ export default function VendorDashboard() {
                 }
               }
               
+              // Store both the original and filtered deals
+              setAllDeals(dealsArray);
               setDeals(dealsArray);
+              setFilteredDeals(dealsArray);
               console.log("Processed deals array:", dealsArray);
               
               // Calculate stats
@@ -133,27 +138,66 @@ export default function VendorDashboard() {
   }
 
   const isBusinessApproved = business?.verificationStatus === 'verified';
+  
+  // Count active filters for badge display
+  const countActiveFilters = (): number => {
+    if (!activeFilters || Object.keys(activeFilters).length === 0) return 0;
+    
+    let count = 0;
+    
+    // Status filters
+    if (activeFilters.status) {
+      Object.values(activeFilters.status).forEach(value => {
+        if (value) count++;
+      });
+      
+      // Don't count active status if it's the only one selected (default state)
+      if (count === 1 && activeFilters.status.active && 
+          !activeFilters.status.upcoming && 
+          !activeFilters.status.expired && 
+          !activeFilters.status.pending && 
+          !activeFilters.status.rejected) {
+        count = 0;
+      }
+    }
+    
+    // Time filters
+    if (activeFilters.timeFrame && activeFilters.timeFrame !== 'all') count++;
+    
+    // Deal type filters
+    if (activeFilters.dealTypes) {
+      Object.values(activeFilters.dealTypes).forEach(value => {
+        if (value) count++;
+      });
+    }
+    
+    // Performance filters
+    if (activeFilters.performance && activeFilters.performance !== 'all') count++;
+    
+    // Sorting (don't count default 'newest' sort)
+    if (activeFilters.sortBy && activeFilters.sortBy !== 'newest') count++;
+    
+    return count;
+  };
 
   // Function to handle applying filters
   const handleApplyFilters = (filters: FilterOptions) => {
     console.log('Applied filters:', filters);
     setActiveFilters(filters);
-    // Here you would implement actual filtering logic based on the filter options
-    // For now we'll just log the filters and store them
     
-    // Example of how you might filter deals based on the FilterOptions
-    // This is just a placeholder and would need to be implemented based on your actual data
-    /*
-    let filteredDeals = [...dealsArray]; // Start with all deals
+    // Start with all deals
+    let filteredResults = [...allDeals];
+    const now = new Date();
     
-    // Filter by status
-    if (filters.status.active || filters.status.upcoming || filters.status.expired || 
-        filters.status.pending || filters.status.rejected) {
-      filteredDeals = filteredDeals.filter(deal => {
-        const isTimeActive = new Date(deal.endDate) >= new Date() && new Date(deal.startDate) <= new Date();
-        const isUpcoming = new Date(deal.startDate) > new Date();
-        const isExpired = new Date(deal.endDate) < new Date();
+    // Filter by status if any status filters are selected
+    const hasStatusFilters = Object.values(filters.status).some(status => status);
+    if (hasStatusFilters) {
+      filteredResults = filteredResults.filter(deal => {
+        const isTimeActive = new Date(deal.endDate) >= now && new Date(deal.startDate) <= now;
+        const isUpcoming = new Date(deal.startDate) > now;
+        const isExpired = new Date(deal.endDate) < now;
         
+        // Only include deals that match the selected status filters
         return (filters.status.active && isTimeActive && deal.status === 'approved') ||
                (filters.status.upcoming && isUpcoming) ||
                (filters.status.expired && isExpired) ||
@@ -162,26 +206,101 @@ export default function VendorDashboard() {
       });
     }
     
-    // Apply other filters (deal type, time frame, etc.)
-    // ...
-    
-    // Sort deals
-    switch (filters.sortBy) {
-      case 'newest':
-        filteredDeals.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        break;
-      case 'oldest':
-        filteredDeals.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-        break;
-      // Add other sort options...
+    // Filter by deal type if any type filters are selected
+    const hasDealTypeFilters = Object.values(filters.dealTypes).some(type => type);
+    if (hasDealTypeFilters) {
+      filteredResults = filteredResults.filter(deal => {
+        return (filters.dealTypes.percent_off && deal.dealType === 'percent_off') ||
+               (filters.dealTypes.fixed_amount && deal.dealType === 'fixed_amount') ||
+               (filters.dealTypes.bogo && deal.dealType === 'bogo') ||
+               (filters.dealTypes.free_item && deal.dealType === 'free_item') ||
+               (filters.dealTypes.special_offer && deal.dealType === 'special_offer');
+      });
     }
     
-    setDeals(filteredDeals);
-    */
+    // Apply time frame filters
+    if (filters.timeFrame !== 'all') {
+      const today = new Date();
+      const oneWeekFromNow = new Date();
+      oneWeekFromNow.setDate(today.getDate() + 7);
+      
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(today.getDate() - 30);
+      
+      switch (filters.timeFrame) {
+        case 'ending-soon':
+          // Deals ending in the next 7 days
+          filteredResults = filteredResults.filter(deal => {
+            const endDate = new Date(deal.endDate);
+            return endDate >= today && endDate <= oneWeekFromNow;
+          });
+          break;
+        case 'recent':
+          // Deals created in the last 30 days
+          filteredResults = filteredResults.filter(deal => {
+            return new Date(deal.createdAt) >= thirtyDaysAgo;
+          });
+          break;
+        // For 'custom' time range, we'd need date pickers in the UI
+        // This would be implemented when that UI is added
+      }
+    }
+    
+    // Apply performance filters
+    if (filters.performance !== 'all') {
+      // Sort by the appropriate performance metric
+      switch (filters.performance) {
+        case 'most-viewed':
+          filteredResults.sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
+          break;
+        case 'most-redeemed':
+          filteredResults.sort((a, b) => (b.redemptionCount || 0) - (a.redemptionCount || 0));
+          break;
+        case 'most-saved':
+          filteredResults.sort((a, b) => (b.saveCount || 0) - (a.saveCount || 0));
+          break;
+        case 'least-performing':
+          // Combined metric for least performing (views + redemptions + saves)
+          filteredResults.sort((a, b) => {
+            const aScore = (a.viewCount || 0) + (a.redemptionCount || 0) + (a.saveCount || 0);
+            const bScore = (b.viewCount || 0) + (b.redemptionCount || 0) + (b.saveCount || 0);
+            return aScore - bScore;
+          });
+          break;
+      }
+      
+      // Limit to top 10 for performance filters if there are more than 10 items
+      if (filteredResults.length > 10) {
+        filteredResults = filteredResults.slice(0, 10);
+      }
+    } else {
+      // Apply general sorting if not sorted by performance
+      switch (filters.sortBy) {
+        case 'newest':
+          filteredResults.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          break;
+        case 'oldest':
+          filteredResults.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          break;
+        case 'alphabetical':
+          filteredResults.sort((a, b) => a.title.localeCompare(b.title));
+          break;
+        case 'end-date':
+          filteredResults.sort((a, b) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime());
+          break;
+        case 'popularity':
+          filteredResults.sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
+          break;
+      }
+    }
+    
+    // Update the filtered deals state
+    setDeals(filteredResults);
+    setFilteredDeals(filteredResults);
     
     toast({
       title: "Filters Applied",
-      description: "Your deals have been filtered according to your criteria",
+      description: `Showing ${filteredResults.length} deals based on your filters`,
     });
   };
 
@@ -277,14 +396,44 @@ export default function VendorDashboard() {
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
             <h2 className="text-xl font-semibold truncate max-w-full sm:max-w-[230px]">Your Deals</h2>
             <div className="flex gap-2 w-full sm:w-auto">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full sm:w-auto"
-                onClick={() => setFilterOpen(true)}
-              >
-                <FilterIcon className="h-4 w-4 mr-2" /> Filter
-              </Button>
+              {Object.keys(activeFilters).length > 0 ? (
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full sm:w-auto"
+                    onClick={() => setFilterOpen(true)}
+                  >
+                    <FilterIcon className="h-4 w-4 mr-2" /> Filter
+                    <Badge variant="secondary" className="ml-1 bg-gray-200">{countActiveFilters()}</Badge>
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-auto"
+                    onClick={() => {
+                      setActiveFilters({});
+                      setDeals(allDeals);
+                      setFilteredDeals(allDeals);
+                      toast({
+                        title: "Filters Reset",
+                        description: "Showing all deals"
+                      });
+                    }}
+                  >
+                    <X className="h-4 w-4 mr-1" /> Reset
+                  </Button>
+                </div>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full sm:w-auto"
+                  onClick={() => setFilterOpen(true)}
+                >
+                  <FilterIcon className="h-4 w-4 mr-2" /> Filter
+                </Button>
+              )}
               <Button 
                 className="bg-[#00796B] hover:bg-[#004D40] w-full sm:w-auto"
                 disabled={!isBusinessApproved}
