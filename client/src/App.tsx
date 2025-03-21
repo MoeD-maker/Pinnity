@@ -290,13 +290,15 @@ function AuthenticatedRoute({ component: Component, ...rest }: any) {
     };
   }, [isLoading, isAuthenticated, user, authStatusChecked, isRedirecting, location, setLocation, authState, redirectPath, getAppropriateRedirectPath]);
   
-  // Single stable loading state during transitions
+  // Prevent rapid re-renders during auth check
+  const [stableAuthState] = useState(authState);
+  
   if (!authStatusChecked || isLoading) {
     return (
       <AuthTransition 
-        state="initializing"
+        state={stableAuthState}
         message="Loading..."
-        key="auth-transition-init"
+        key="stable-auth-transition"
       />
     );
   }

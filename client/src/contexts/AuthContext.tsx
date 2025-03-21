@@ -382,16 +382,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error(`[${errorTimestamp}] Auth status check failed:`, err);
         setAuthState('unauthenticated');
       } finally {
-        // Use a delay before marking authentication check as complete
-        // This ensures we don't prematurely update state during transitions
-        // Ensure state updates happen in correct order
-        setIsLoading(false);
-        requestAnimationFrame(() => {
-          if (isMountedRef.current) {
+        // Batch state updates together to prevent re-renders
+        if (isMountedRef.current) {
+          Promise.resolve().then(() => {
+            setIsLoading(false);
             setAuthStatusChecked(true);
             console.log(`[${new Date().toISOString().split('T')[1].split('.')[0]}] Auth status check completed`);
-          }
-        });
+          });
+        }
       }
     };
 
