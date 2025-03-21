@@ -91,6 +91,7 @@ export default function VendorDashboard() {
               }
               
               // Store both the original and filtered deals
+              console.log("Original dealsArray with status:", dealsArray.map(d => ({id: d.id, title: d.title, status: d.status})));
               setAllDeals(dealsArray);
               setDeals(dealsArray);
               setFilteredDeals(dealsArray);
@@ -197,8 +198,17 @@ export default function VendorDashboard() {
         const isUpcoming = new Date(deal.startDate) > now;
         const isExpired = new Date(deal.endDate) < now;
         
+        // Special case: If only 'active' is selected (default state), show all deals
+        if (filters.status.active && 
+            !filters.status.upcoming && 
+            !filters.status.expired && 
+            !filters.status.pending && 
+            !filters.status.rejected) {
+          return true;
+        }
+        
         // Only include deals that match the selected status filters
-        return (filters.status.active && isTimeActive && deal.status === 'approved') ||
+        return (filters.status.active && isTimeActive && (deal.status === 'approved' || deal.status === 'active')) ||
                (filters.status.upcoming && isUpcoming) ||
                (filters.status.expired && isExpired) ||
                (filters.status.pending && deal.status === 'pending') ||
@@ -413,6 +423,8 @@ export default function VendorDashboard() {
                     className="w-auto"
                     onClick={() => {
                       setActiveFilters({});
+                      // Add console logging
+                      console.log("Resetting filters, allDeals:", allDeals);
                       setDeals(allDeals);
                       setFilteredDeals(allDeals);
                       toast({
