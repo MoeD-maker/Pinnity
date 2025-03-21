@@ -25,9 +25,9 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
   
   // Fetch the deal details
   const { data: deal, isLoading, refetch } = useQuery({
-    queryKey: ['/api/deals', dealId],
+    queryKey: ['/api/v1/deals', dealId],
     queryFn: async () => {
-      return apiRequest(`/api/deals/${dealId}`);
+      return apiRequest(`/api/v1/deals/${dealId}`);
     }
   });
 
@@ -38,7 +38,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       const userId = user?.id || 1;
       
-      return apiRequest(`/api/user/${userId}/favorites`, {
+      return apiRequest(`/api/v1/user/${userId}/favorites`, {
         method: 'POST',
         data: { dealId }
       });
@@ -50,7 +50,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
       });
       
       // Invalidate favorites query
-      queryClient.invalidateQueries({ queryKey: ['/api/user/favorites'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/v1/user/favorites'] });
     },
     onError: (error) => {
       toast({
@@ -67,7 +67,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
     refetch();
     
     // Update any other data that might be affected
-    queryClient.invalidateQueries({ queryKey: ['/api/user/redemptions'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/v1/user/redemptions'] });
     
     // Show a success toast
     toast({

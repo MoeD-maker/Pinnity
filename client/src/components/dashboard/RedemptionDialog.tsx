@@ -48,7 +48,7 @@ export default function RedemptionDialog({
     setErrorMessage('');
 
     try {
-      const response = await apiRequest(`/api/deals/${dealId}/verify-code`, {
+      const response = await apiRequest(`/api/v1/deals/${dealId}/verify-code`, {
         method: 'POST',
         data: { code: redemptionCode.trim() }
       });
@@ -59,7 +59,7 @@ export default function RedemptionDialog({
         // After successful verification, create the redemption
         const userId = JSON.parse(localStorage.getItem('user') || '{}')?.id;
         if (userId) {
-          await apiRequest(`/api/user/${userId}/redemptions`, {
+          await apiRequest(`/api/v1/user/${userId}/redemptions`, {
             method: 'POST',
             data: { dealId }
           });
