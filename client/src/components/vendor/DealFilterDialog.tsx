@@ -119,6 +119,14 @@ const DEAL_TYPE_COUNTS = {
   special_offer: 3
 };
 
+const PERFORMANCE_COUNTS = {
+  'all': 0,
+  'most-viewed': 10,
+  'most-redeemed': 8,
+  'most-saved': 6,
+  'least-performing': 3
+};
+
 // Local storage key for saved filters
 const SAVED_FILTERS_KEY = 'pinnity_saved_filters';
 
@@ -621,8 +629,8 @@ export default function DealFilterDialog({
                       onChange={(date) => setFilters(prev => ({
                         ...prev,
                         customDateRange: {
-                          ...prev.customDateRange,
-                          startDate: date
+                          startDate: date,
+                          endDate: prev.customDateRange?.endDate || null
                         }
                       }))}
                       selectsStart
@@ -640,14 +648,14 @@ export default function DealFilterDialog({
                       onChange={(date) => setFilters(prev => ({
                         ...prev,
                         customDateRange: {
-                          ...prev.customDateRange,
+                          startDate: prev.customDateRange?.startDate || null,
                           endDate: date
                         }
                       }))}
                       selectsEnd
                       startDate={filters.customDateRange?.startDate}
                       endDate={filters.customDateRange?.endDate}
-                      minDate={filters.customDateRange?.startDate}
+                      minDate={filters.customDateRange?.startDate || undefined}
                       placeholderText="Select end date"
                       className="w-full border border-gray-300 rounded-md p-2 text-sm"
                       dateFormat="MM/dd/yyyy"
@@ -773,7 +781,10 @@ export default function DealFilterDialog({
           
           {/* Sort options */}
           <div className="space-y-4">
-            <h3 className="text-sm font-medium">Sort By</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium">Sort By</h3>
+              <span className="text-xs text-gray-500">(Select one)</span>
+            </div>
             <RadioGroup 
               value={filters.sortBy}
               onValueChange={(value) => setFilters(prev => ({ ...prev, sortBy: value as any }))}
