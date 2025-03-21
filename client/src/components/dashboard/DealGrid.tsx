@@ -226,11 +226,11 @@ export function FavoriteButton({ dealId }: FavoriteButtonProps) {
   
   // Check if this deal is already in favorites
   const { data: favorites } = useQuery({
-    queryKey: ['/api/user', user?.id, 'favorites'],
+    queryKey: ['/api/v1/user', user?.id, 'favorites'],
     queryFn: async () => {
       if (!user) return [];
       try {
-        const response = await apiRequest(`/api/user/${user.id}/favorites`);
+        const response = await apiRequest(`/api/v1/user/${user.id}/favorites`);
         return response;
       } catch (error) {
         console.error('Error fetching favorites:', error);
@@ -252,7 +252,7 @@ export function FavoriteButton({ dealId }: FavoriteButtonProps) {
   const addToFavorites = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error('Not authenticated');
-      return apiRequest(`/api/user/${user.id}/favorites`, {
+      return apiRequest(`/api/v1/user/${user.id}/favorites`, {
         method: 'POST',
         data: { dealId }
       });
@@ -264,7 +264,7 @@ export function FavoriteButton({ dealId }: FavoriteButtonProps) {
         description: 'Deal has been added to your favorites',
       });
       // Invalidate favorites query to fetch updated list
-      queryClient.invalidateQueries({ queryKey: ['/api/user', user?.id, 'favorites'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/v1/user', user?.id, 'favorites'] });
     },
     onError: (error) => {
       console.error('Error adding to favorites:', error);
@@ -280,7 +280,7 @@ export function FavoriteButton({ dealId }: FavoriteButtonProps) {
   const removeFromFavorites = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error('Not authenticated');
-      return apiRequest(`/api/user/${user.id}/favorites/${dealId}`, {
+      return apiRequest(`/api/v1/user/${user.id}/favorites/${dealId}`, {
         method: 'DELETE',
       });
     },
@@ -291,7 +291,7 @@ export function FavoriteButton({ dealId }: FavoriteButtonProps) {
         description: 'Deal has been removed from your favorites',
       });
       // Invalidate favorites query to fetch updated list
-      queryClient.invalidateQueries({ queryKey: ['/api/user', user?.id, 'favorites'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/v1/user', user?.id, 'favorites'] });
     },
     onError: (error) => {
       console.error('Error removing from favorites:', error);

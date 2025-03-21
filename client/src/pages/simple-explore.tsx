@@ -10,7 +10,7 @@ export default function SimpleExplorePage() {
     async function fetchDeals() {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/deals');
+        const response = await fetch('/api/v1/deals');
         
         if (!response.ok) {
           throw new Error(`API Error: ${response.status}`);
