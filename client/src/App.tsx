@@ -204,12 +204,16 @@ function useOfflineData() {
 // Authenticated route wrapper
 function AuthenticatedRoute({ component: Component, ...rest }: any) {
   const [location, setLocation] = useLocation();
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading, user, authStatusChecked, isRedirecting } = useAuth();
   
   // Use useEffect to handle the redirect instead of doing it during render
   // Always declare hooks before any conditional returns
   React.useEffect(() => {
-    if (!isLoading) {
+    // Only process redirection logic if:
+    // 1. Auth status check is complete (prevents premature redirects)
+    // 2. Not currently loading
+    // 3. Not already in a redirection process (prevents double redirects)
+    if (authStatusChecked && !isLoading && !isRedirecting) {
       // Redirect to auth if not authenticated
       if (!isAuthenticated) {
         console.log("User not authenticated, redirecting to /auth");
@@ -255,13 +259,16 @@ function AuthenticatedRoute({ component: Component, ...rest }: any) {
         return;
       }
     }
-  }, [isLoading, isAuthenticated, user, location, setLocation]);
+  }, [isLoading, isAuthenticated, user, authStatusChecked, isRedirecting, location, setLocation]);
   
-  // Show loading indicator while checking auth status
-  if (isLoading) {
+  // Show loading indicator while checking auth status or during active redirection
+  if (isLoading || !authStatusChecked || isRedirecting) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        {isRedirecting && (
+          <p className="text-sm text-muted-foreground ml-3">Redirecting...</p>
+        )}
       </div>
     );
   }

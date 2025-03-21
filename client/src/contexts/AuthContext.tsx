@@ -60,6 +60,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [authStatusChecked, setAuthStatusChecked] = useState<boolean>(false);
+  const [isRedirecting, setIsRedirecting] = useState<boolean>(false);
   const [, setLocation] = useLocation();
   
   // Reference to the auto-refresh timer
@@ -237,19 +239,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 console.log('Token refresh timer scheduled');
               }
               
-              // If we're on the root path or auth page, redirect based on user type 
+              // We don't redirect here anymore - this prevents double redirects
+              // The AuthenticatedRoute component will handle redirects once
+              // authStatusChecked is set to true
+              
               const path = window.location.pathname;
-              if (path === '/' || path === '/auth') {
+              if ((path === '/' || path === '/auth') && !isRedirecting) {
                 if (userData.userType === 'admin' || userType === 'admin') {
-                  console.log('Redirecting to admin dashboard');
-                  setLocation('/admin');
+                  console.log('User is admin type, redirection will be handled by AuthenticatedRoute');
                 } else if (userData.userType === 'business' || userType === 'business') {
-                  console.log('Redirecting to vendor dashboard');
-                  setLocation('/vendor');
+                  console.log('User is business type, redirection will be handled by AuthenticatedRoute');
                 } else {
                   console.log('User is individual type, keeping on homepage');
                 }
-                // Keep individual users on the homepage if that's where they are
               }
             } else {
               console.warn('No user data returned from API');
@@ -265,6 +267,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (err) {
         console.error('Auth status check failed:', err);
       } finally {
+        // Mark authentication check as complete, regardless of result
+        setAuthStatusChecked(true);
         setIsLoading(false);
       }
     };
@@ -276,6 +280,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true);
       setError(null);
+      
+      // Prevent multiple redirects by setting flag
+      setIsRedirecting(true);
 
       // First, get a CSRF token
       console.log('Fetching CSRF token before login...');
@@ -320,20 +327,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log('Token refresh timer scheduled after login');
         }
 
-        // Redirect based on user type
-        if (response.userType === 'admin') {
-          setLocation('/admin');
-        } else if (response.userType === 'business') {
-          setLocation('/vendor');
-        } else {
-          setLocation('/');
-        }
+        // Add a small delay before redirect to ensure all state updates have propagated
+        console.log('Preparing redirection after login...');
+        
+        // Use setTimeout to add a small delay before redirecting
+        setTimeout(() => {
+          if (isMountedRef.current) {
+            console.log('Redirecting after login based on user type:', response.userType);
+            // Redirect based on user type
+            if (response.userType === 'admin') {
+              console.log('Redirecting to admin dashboard');
+              setLocation('/admin');
+            } else if (response.userType === 'business') {
+              console.log('Redirecting to vendor dashboard');
+              setLocation('/vendor');
+            } else {
+              console.log('Redirecting to homepage');
+              setLocation('/');
+            }
+            
+            // Reset redirection flag after redirect is complete
+            setTimeout(() => {
+              setIsRedirecting(false);
+            }, 100);
+          }
+        }, 50);
       } else {
+        setIsRedirecting(false);
         throw new Error('Login failed: Invalid response');
       }
     } catch (err) {
       console.error('Login error:', err);
       setError(err instanceof Error ? err.message : 'Login failed');
+      setIsRedirecting(false);
       throw err;
     } finally {
       setIsLoading(false);
@@ -343,6 +369,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       setIsLoading(true);
+      setIsRedirecting(true);
       
       // Make a request to invalidate the session and clear the secure HTTP-only cookie
       await apiPost('/api/v1/auth/logout');
@@ -360,10 +387,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Reset CSRF token
       resetCSRFToken();
       
-      // Redirect to login
-      setLocation('/auth');
+      console.log('Logout successful, redirecting to login page...');
+      
+      // Add a small delay before redirect
+      setTimeout(() => {
+        // Redirect to login
+        setLocation('/auth');
+        
+        // Reset redirecting flag after a short delay
+        setTimeout(() => {
+          setIsRedirecting(false);
+        }, 100);
+      }, 50);
     } catch (err) {
       console.error('Logout error:', err);
+      setIsRedirecting(false);
     } finally {
       setIsLoading(false);
     }
@@ -391,7 +429,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout: enhancedLogout,
         refreshToken,
         silentRefresh,
-        isAuthenticated: !!user
+        isAuthenticated: !!user,
+        authStatusChecked,
+        isRedirecting
       }}
     >
       {children}
