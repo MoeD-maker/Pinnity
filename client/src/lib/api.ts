@@ -300,32 +300,36 @@ export async function processApiError(
   
   // Handle authentication errors with token refresh
   if (status === 401 && url && options) {
-    // Check if this response has specific indication that refresh token is needed
-    try {
-      const errorData = await response.clone().json();
-      
-      // Check for token expired message from server
-      if (errorData.error === 'token_expired' || 
-          errorData.message?.includes('expired') ||
-          errorData.code === 'auth/id-token-expired' ||
-          status === 401) { // Always try refresh on 401
-            
-        console.log('Access token expired. Attempting refresh...');
+    // Skip token refresh for login attempts - we want to show "Invalid credentials" instead
+    if (url.includes('/auth/login')) {
+      console.log('Login failed with 401 status - invalid credentials');
+    } else {
+      // This is a 401 on a non-login endpoint, so it's likely a session expiration
+      try {
+        const errorData = await response.clone().json();
         
-        // Try to refresh the token
-        const refreshSuccess = await refreshAuthToken();
-        
-        if (refreshSuccess) {
-          // If refresh was successful, retry the original request
-          console.log('Retrying request after token refresh');
+        // Check for token expired message from server
+        if (errorData.error === 'token_expired' || 
+            errorData.message?.includes('expired') ||
+            errorData.code === 'auth/id-token-expired') {
+              
+          console.log('Access token expired. Attempting refresh...');
           
-          // Don't immediately retry - enqueue it to avoid race conditions
-          return enqueueFailedRequest(url, options);
+          // Try to refresh the token
+          const refreshSuccess = await refreshAuthToken();
+          
+          if (refreshSuccess) {
+            // If refresh was successful, retry the original request
+            console.log('Retrying request after token refresh');
+            
+            // Don't immediately retry - enqueue it to avoid race conditions
+            return enqueueFailedRequest(url, options);
+          }
         }
+      } catch (e) {
+        // If we can't parse the response as JSON, continue with standard error handling
+        console.log('Could not parse error response as JSON, continuing with standard error handling', e);
       }
-    } catch (e) {
-      // If we can't parse the response as JSON, continue with standard error handling
-      console.log('Could not parse error response as JSON, continuing with standard error handling', e);
     }
   }
   
@@ -355,21 +359,27 @@ export async function processApiError(
       break;
       
     case 401:
-      error.message = 'Your session has expired';
-      error.details = 'Please log in again to continue';
+      // Differentiate between login failures and session expirations
+      if (url && url.includes('/auth/login')) {
+        error.message = 'Invalid email or password';
+        error.details = 'Please check your credentials and try again';
+      } else {
+        error.message = 'Your session has expired';
+        error.details = 'Please log in again to continue';
+      }
       error.category = ErrorCategory.AUTHENTICATION;
       break;
       
     case 403:
       error.message = 'Permission denied';
       error.details = errorData.message || 'You do not have permission to perform this action';
-      error.category = ErrorCategory.PERMISSION;
+      error.category = ErrorCategory.AUTHORIZATION;
       break;
       
     case 404:
       error.message = 'Resource not found';
       error.details = errorData.message || `The requested ${context.toLowerCase()} could not be found`;
-      error.category = ErrorCategory.NOT_FOUND;
+      error.category = ErrorCategory.CLIENT;
       break;
       
     case 422:
