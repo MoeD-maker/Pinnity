@@ -22,6 +22,7 @@ import InstallPrompt from "@/components/pwa/InstallPrompt";
 import UpdateNotification from "@/components/pwa/UpdateNotification";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { WifiOff, Wifi, X } from "lucide-react";
+import { AuthTransition } from "@/components/auth/AuthTransition";
 
 // Debug logs
 console.log("App.tsx module loading");
@@ -204,72 +205,76 @@ function useOfflineData() {
 // Authenticated route wrapper
 function AuthenticatedRoute({ component: Component, ...rest }: any) {
   const [location, setLocation] = useLocation();
-  const { isAuthenticated, isLoading, user, authStatusChecked, isRedirecting } = useAuth();
+  const { 
+    isAuthenticated, 
+    isLoading, 
+    user, 
+    authStatusChecked, 
+    isRedirecting, 
+    authState, 
+    redirectPath,
+    getAppropriateRedirectPath 
+  } = useAuth();
+  
+  // State to track if the component should actually render
+  // This prevents any content flashing during auth state changes
+  const [shouldRender, setShouldRender] = useState<boolean>(false);
   
   // Use useEffect to handle the redirect instead of doing it during render
   // Always declare hooks before any conditional returns
   React.useEffect(() => {
+    const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+    
     // Only process redirection logic if:
     // 1. Auth status check is complete (prevents premature redirects)
     // 2. Not currently loading
     // 3. Not already in a redirection process (prevents double redirects)
     if (authStatusChecked && !isLoading && !isRedirecting) {
-      // Redirect to auth if not authenticated
+      console.log(`[${timestamp}] Route evaluation: authState=${authState}, path=${location}`);
+      
+      // Handle unauthenticated state
       if (!isAuthenticated) {
-        console.log("User not authenticated, redirecting to /auth");
+        console.log(`[${timestamp}] User not authenticated, redirecting to /auth`);
         setLocation("/auth");
         return;
       }
       
-      // Skip role-based routing for diagnostic pages
-      const path = location;
-      // Skip role checks for diagnostic and test pages
-      if (
-        path === '/minimal' || 
-        path === '/test-page' || 
-        path === '/simple-explore' || 
-        path === '/test-login' ||
-        path.startsWith('/test')
-      ) {
-        console.log("Accessing diagnostic page:", path);
+      // Determine appropriate redirect path using the centralized function
+      const targetPath = getAppropriateRedirectPath(user, location);
+      
+      // Only redirect if the path is different
+      if (targetPath !== location) {
+        console.log(`[${timestamp}] Redirecting from ${location} to ${targetPath}`);
+        setLocation(targetPath);
         return;
       }
       
-      const userType = user?.userType;
-      console.log("Authenticated user type:", userType, "at path:", path);
-      
-      // Vendor trying to access non-vendor routes
-      if (userType === 'business' && !path.startsWith('/vendor') && path !== '/profile' && path !== '/settings') {
-        console.log("Business user redirected to /vendor");
-        setLocation('/vendor');
-        return;
-      }
-      
-      // Admin trying to access non-admin routes
-      if (userType === 'admin' && !path.startsWith('/admin') && path !== '/profile' && path !== '/settings') {
-        console.log("Admin user redirected to /admin");
-        setLocation('/admin');
-        return;
-      }
-      
-      // Individual user trying to access vendor or admin routes
-      if (userType === 'individual' && (path.startsWith('/vendor') || path.startsWith('/admin'))) {
-        console.log("Individual user redirected to /");
-        setLocation('/');
-        return;
-      }
+      // If we get here, we should render the component
+      console.log(`[${timestamp}] Path ${location} is valid for user, proceeding to render`);
+      setShouldRender(true);
     }
-  }, [isLoading, isAuthenticated, user, authStatusChecked, isRedirecting, location, setLocation]);
+  }, [isLoading, isAuthenticated, user, authStatusChecked, isRedirecting, location, setLocation, authState, redirectPath, getAppropriateRedirectPath]);
   
-  // Show loading indicator while checking auth status or during active redirection
-  if (isLoading || !authStatusChecked || isRedirecting) {
+  // Render the AuthTransition component based on current auth state
+  if (!shouldRender || isLoading || !authStatusChecked || isRedirecting) {
+    // Determine the appropriate message based on auth state
+    let message = "Checking authentication...";
+    
+    if (isRedirecting) {
+      message = "Taking you to the right place...";
+    } else if (authState === 'initializing') {
+      message = "Starting up...";
+    } else if (authState === 'authenticating') {
+      message = "Verifying your identity...";
+    } else if (authState === 'redirecting') {
+      message = "Redirecting...";
+    }
+    
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        {isRedirecting && (
-          <p className="text-sm text-muted-foreground ml-3">Redirecting...</p>
-        )}
-      </div>
+      <AuthTransition 
+        state={authState}
+        message={message}
+      />
     );
   }
   

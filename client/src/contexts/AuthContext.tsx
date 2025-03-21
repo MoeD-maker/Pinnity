@@ -497,9 +497,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
+    const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
     try {
+      // Set state to indicate logout in progress
       setIsLoading(true);
       setIsRedirecting(true);
+      setAuthState('redirecting');
+      
+      console.log(`[${timestamp}] Logout initiated`);
       
       // Make a request to invalidate the session and clear the secure HTTP-only cookie
       await apiPost('/api/v1/auth/logout');
@@ -517,20 +522,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Reset CSRF token
       resetCSRFToken();
       
-      console.log('Logout successful, redirecting to login page...');
+      console.log(`[${timestamp}] Logout successful, preparing redirect to login page...`);
+      
+      // Set redirect path
+      setRedirectPath('/auth');
       
       // Add a small delay before redirect
       setTimeout(() => {
-        // Redirect to login
-        setLocation('/auth');
-        
-        // Reset redirecting flag after a short delay
-        setTimeout(() => {
-          setIsRedirecting(false);
-        }, 100);
+        if (isMountedRef.current) {
+          console.log(`[${timestamp}] Executing logout redirect to /auth`);
+          setLocation('/auth');
+          
+          // Reset redirection flag after a short delay
+          setTimeout(() => {
+            setAuthState('unauthenticated');
+            setIsRedirecting(false);
+            console.log(`[${timestamp}] Logout redirect completed, state set to unauthenticated`);
+          }, 100);
+        }
       }, 50);
     } catch (err) {
-      console.error('Logout error:', err);
+      console.error(`[${timestamp}] Logout error:`, err);
+      setAuthState('unauthenticated');
       setIsRedirecting(false);
     } finally {
       setIsLoading(false);

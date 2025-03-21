@@ -1,106 +1,145 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useMotion } from '@/hooks/use-motion';
+import { AuthState } from '@/contexts/AuthContext';
 
 interface AuthTransitionProps {
+  state: AuthState;
   message?: string;
-  state: 'initializing' | 'authenticating' | 'redirecting' | 'authenticated' | 'unauthenticated';
 }
 
 /**
- * AuthTransition Component
- * 
- * Displays a smooth transition screen during authentication state changes
- * to prevent abrupt visual changes and improve perceived performance.
- * 
- * Features:
- * - Respects reduced motion preferences
- * - Provides different visual feedback based on authentication state
- * - Uses staggered animations for smoother transitions
+ * AuthTransition component displays a smooth animation during authentication state transitions
+ * This component shows different visuals based on the current authentication state
+ * to provide visual feedback during login, logout, and redirections
  */
-export function AuthTransition({ message, state }: AuthTransitionProps) {
+export function AuthTransition({ state, message = 'Loading...' }: AuthTransitionProps) {
   const { shouldReduceMotion } = useMotion();
   
-  // Default messages based on state
-  const defaultMessages = {
-    initializing: 'Starting up...',
-    authenticating: 'Checking authentication...',
-    redirecting: 'Taking you to the right place...',
-    authenticated: 'Successfully logged in...',
-    unauthenticated: 'Please log in...'
+  // Animation variants based on auth state
+  const containerVariants = {
+    initializing: {
+      opacity: 1,
+    },
+    authenticating: {
+      opacity: 1,
+    },
+    redirecting: {
+      opacity: shouldReduceMotion ? 1 : [1, 0.9, 1],
+      transition: {
+        opacity: {
+          repeat: Infinity,
+          duration: 1.5
+        }
+      }
+    },
+    authenticated: {
+      opacity: 1,
+    },
+    unauthenticated: {
+      opacity: 1,
+    },
+    exit: {
+      opacity: 0,
+      transition: { duration: 0.3 }
+    }
   };
   
-  // Use provided message or default based on state
-  const displayMessage = message || defaultMessages[state];
-  
-  // Define different spinner animations based on state
+  // Spinner animation variants
   const spinnerVariants = {
-    initializing: { borderColor: 'var(--primary-300)' },
-    authenticating: { borderColor: 'var(--primary-500)' },
-    redirecting: { borderColor: 'var(--primary-600)' },
-    authenticated: { borderColor: 'var(--success-500)' },
-    unauthenticated: { borderColor: 'var(--warning-500)' }
+    initializing: {
+      rotate: shouldReduceMotion ? 0 : 360,
+      transition: {
+        repeat: Infinity,
+        duration: 1,
+        ease: "linear"
+      }
+    },
+    authenticating: {
+      rotate: shouldReduceMotion ? 0 : 360,
+      scale: [1, 1.1, 1],
+      transition: {
+        rotate: {
+          repeat: Infinity,
+          duration: 1,
+          ease: "linear"
+        },
+        scale: {
+          repeat: Infinity,
+          duration: 1.5
+        }
+      }
+    },
+    redirecting: {
+      rotate: shouldReduceMotion ? 0 : 360,
+      transition: {
+        repeat: Infinity,
+        duration: 0.8,
+        ease: "linear"
+      }
+    },
+    authenticated: {
+      rotate: 0,
+    },
+    unauthenticated: {
+      rotate: 0,
+    }
+  };
+  
+  // Text animation variants
+  const textVariants = {
+    initializing: {
+      opacity: 1,
+    },
+    authenticating: {
+      opacity: shouldReduceMotion ? 1 : [1, 0.7, 1],
+      transition: {
+        opacity: {
+          repeat: Infinity,
+          duration: 2
+        }
+      }
+    },
+    redirecting: {
+      opacity: shouldReduceMotion ? 1 : [1, 0.8, 1],
+      transition: {
+        opacity: {
+          repeat: Infinity,
+          duration: 1
+        }
+      }
+    },
+    authenticated: {
+      opacity: 1,
+    },
+    unauthenticated: {
+      opacity: 1,
+    }
   };
   
   return (
     <motion.div
-      className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ 
-        duration: shouldReduceMotion ? 0.1 : 0.4,
-        ease: 'easeInOut'
-      }}
+      className="flex flex-col items-center justify-center min-h-screen bg-background"
+      variants={containerVariants}
+      initial="initializing"
+      animate={state}
+      exit="exit"
     >
-      <div className="flex flex-col items-center gap-6 max-w-md text-center px-4">
-        <motion.div
-          className="relative"
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ 
-            delay: shouldReduceMotion ? 0 : 0.1,
-            duration: shouldReduceMotion ? 0.1 : 0.5 
-          }}
-        >
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-t-2 border-primary"></div>
-          <motion.div 
-            className="absolute inset-0 rounded-full border-2"
-            variants={spinnerVariants}
-            animate={state}
-            transition={{ duration: shouldReduceMotion ? 0.1 : 0.8 }}
-          />
-        </motion.div>
-        
-        <motion.div
-          className="space-y-2"
-          initial={{ y: 10, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ 
-            delay: shouldReduceMotion ? 0 : 0.2,
-            duration: shouldReduceMotion ? 0.1 : 0.5 
-          }}
-        >
-          <motion.h3 
-            className="text-xl font-semibold text-foreground"
-          >
-            {displayMessage}
-          </motion.h3>
-          <motion.p 
-            className="text-sm text-muted-foreground"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ 
-              delay: shouldReduceMotion ? 0 : 0.3,
-              duration: shouldReduceMotion ? 0.1 : 0.5 
-            }}
-          >
-            This will only take a moment
-          </motion.p>
-        </motion.div>
-      </div>
+      <motion.div
+        className="w-12 h-12 rounded-full border-t-2 border-b-2 border-primary"
+        variants={spinnerVariants}
+        initial="initializing"
+        animate={state}
+      />
+      
+      <motion.p 
+        className="text-sm text-muted-foreground mt-4"
+        variants={textVariants}
+        initial="initializing"
+        animate={state}
+      >
+        {message}
+      </motion.p>
     </motion.div>
   );
 }
-
-export default AuthTransition;
