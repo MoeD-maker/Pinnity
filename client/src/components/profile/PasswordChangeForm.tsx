@@ -37,7 +37,7 @@ export default function PasswordChangeForm({ userId }: PasswordChangeFormProps) 
 
   const { mutate, isPending, isError, error } = useMutation({
     mutationFn: async (data: PasswordChangeFormValues) => {
-      return apiRequest(`/api/user/${userId}/change-password`, {
+      return apiRequest(`/api/v1/user/${userId}/change-password`, {
         method: 'POST',
         data,
       });
@@ -157,6 +157,8 @@ export default function PasswordChangeForm({ userId }: PasswordChangeFormProps) 
                     <PasswordStrengthIndicator
                       score={passwordStrength.score}
                       feedback={passwordStrength.feedback}
+                      password={form.watch('newPassword')}
+                      showRequirements={true}
                     />
                   )}
                 </FormItem>

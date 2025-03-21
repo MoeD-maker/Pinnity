@@ -33,14 +33,14 @@ export function useCreateRating() {
 
   return useMutation({
     mutationFn: async ({ redemptionId, data }: { redemptionId: number; data: RatingData }) => {
-      return await apiRequest(`/api/redemptions/${redemptionId}/ratings`, {
+      return await apiRequest(`/api/v1/redemptions/${redemptionId}/ratings`, {
         method: 'POST',
         data: data,
       });
     },
     onSuccess: () => {
       // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/v1/user'] });
       
       toast({
         title: 'Thank you for your feedback!',
@@ -59,7 +59,7 @@ export function useCreateRating() {
 
 export function useUserRatings(userId: number) {
   return useQuery<UserRatingItem[]>({
-    queryKey: ['/api/user', userId, 'ratings'],
+    queryKey: ['/api/v1/user', userId, 'ratings'],
     queryFn: getQueryFn({ on401: 'returnNull' }),
     enabled: !!userId,
   });
@@ -67,7 +67,7 @@ export function useUserRatings(userId: number) {
 
 export function useBusinessRatings(businessId: number) {
   return useQuery<UserRatingItem[]>({
-    queryKey: ['/api/business', businessId, 'ratings'],
+    queryKey: ['/api/v1/business', businessId, 'ratings'],
     queryFn: getQueryFn({ on401: 'returnNull' }),
     enabled: !!businessId,
   });
@@ -75,7 +75,7 @@ export function useBusinessRatings(businessId: number) {
 
 export function useBusinessRatingSummary(businessId: number) {
   return useQuery<BusinessRatingSummary>({
-    queryKey: ['/api/business', businessId, 'ratings', 'summary'],
+    queryKey: ['/api/v1/business', businessId, 'ratings', 'summary'],
     queryFn: getQueryFn({ on401: 'returnNull' }),
     enabled: !!businessId,
   });

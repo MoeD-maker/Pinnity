@@ -12,36 +12,45 @@ import PasswordChangeForm from '@/components/profile/PasswordChangeForm';
 import UserRatingsList from '@/components/ratings/UserRatingsList';
 import RecentRedemptionsRatingPrompt from '@/components/ratings/RecentRedemptionsRatingPrompt';
 import { Link } from 'wouter';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ProfilePage() {
-  // For demo purposes, hardcoded user ID
-  const userId = 1;
+  // Get the authenticated user ID from AuthContext
+  const { user: authUser } = useAuth();
+  const userId = authUser?.id;
   
   // Fetch user data
   const { data: user, isLoading: isLoadingUser } = useQuery({
-    queryKey: ['/api/user', userId],
+    queryKey: ['/api/v1/user', userId],
     queryFn: async () => {
-      const response = await apiRequest(`/api/user/${userId}`);
+      // Only fetch if we have a userId
+      if (!userId) return null;
+      const response = await apiRequest(`/api/v1/user/${userId}`);
       return response;
     },
+    enabled: !!userId, // Only run query if userId exists
   });
 
   // Fetch user notification preferences
   const { data: preferences, isLoading: isLoadingPreferences } = useQuery({
-    queryKey: ['/api/user', userId, 'notification-preferences'],
+    queryKey: ['/api/v1/user', userId, 'notification-preferences'],
     queryFn: async () => {
-      const response = await apiRequest(`/api/user/${userId}/notification-preferences`);
+      if (!userId) return null;
+      const response = await apiRequest(`/api/v1/user/${userId}/notification-preferences`);
       return response;
     },
+    enabled: !!userId,
   });
 
   // Fetch user redemptions
   const { data: redemptions, isLoading: isLoadingRedemptions } = useQuery({
-    queryKey: ['/api/user', userId, 'redemptions'],
+    queryKey: ['/api/v1/user', userId, 'redemptions'],
     queryFn: async () => {
-      const response = await apiRequest(`/api/user/${userId}/redemptions`);
+      if (!userId) return null;
+      const response = await apiRequest(`/api/v1/user/${userId}/redemptions`);
       return response;
     },
+    enabled: !!userId,
   });
 
   const isLoading = isLoadingUser || isLoadingPreferences || isLoadingRedemptions;
