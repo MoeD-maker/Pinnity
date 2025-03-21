@@ -115,7 +115,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Mobile header */}
-      <header className="md:hidden sticky top-0 z-10 bg-background/95 backdrop-blur border-b">
+      <header className="md:hidden sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
         <div className="container flex items-center justify-between h-14 px-3">
           <div className="flex items-center">
             <Sheet>
@@ -124,7 +124,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-[250px] sm:w-[300px]">
+              <SheetContent side="left" className="w-[250px] sm:w-[300px] z-[9999]">
                 <div className="py-4">
                   <div className="flex items-center gap-2 mb-6 px-2">
                     <Avatar>
@@ -209,7 +209,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 </Button>
               </PopoverTrigger>
               <PopoverContent 
-                className="w-80 p-0" 
+                className="w-80 p-0 z-[9999]" 
                 sideOffset={5}
                 alignOffset={-5}
                 align="end"
@@ -262,7 +262,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
               <DropdownMenuContent 
                 align="end"
                 sideOffset={5}
-                className="w-56"
+                className="w-56 z-[9999]"
                 alignOffset={-5}
               >
                 <DropdownMenuItem onClick={() => navigate('/profile')}>
@@ -342,7 +342,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 <DropdownMenuContent 
                   align="end"
                   sideOffset={5}
-                  className="w-56"
+                  className="w-56 z-[9999]"
                   alignOffset={-5}
                 >
                   <DropdownMenuItem onClick={() => navigate('/profile')}>
@@ -373,7 +373,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
       </div>
       
       {/* Mobile bottom navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-10 safe-area-fixed-bottom">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-50 safe-area-fixed-bottom">
         <div className="flex justify-around">
           {navigationItems.map((item) => (
             <button
