@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { 
   ChevronDown, 
   Check, 
@@ -17,13 +18,23 @@ import {
   Percent, 
   Clock, 
   X,
-  RefreshCcw
+  RefreshCcw,
+  Save,
+  Trash2
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export interface FilterOptions {
   // Status filters
@@ -36,6 +47,10 @@ export interface FilterOptions {
   };
   // Time filters
   timeFrame: 'all' | 'ending-soon' | 'recent' | 'custom';
+  customDateRange?: {
+    startDate: Date | null;
+    endDate: Date | null;
+  };
   // Sort options
   sortBy: 'newest' | 'oldest' | 'alphabetical' | 'end-date' | 'popularity';
   // Deal type filters
@@ -48,6 +63,12 @@ export interface FilterOptions {
   };
   // Performance filters
   performance: 'all' | 'most-viewed' | 'most-redeemed' | 'most-saved' | 'least-performing';
+}
+
+interface SavedFilter {
+  id: string;
+  name: string;
+  filters: FilterOptions;
 }
 
 interface DealFilterDialogProps {
@@ -66,6 +87,10 @@ const DEFAULT_FILTERS: FilterOptions = {
     rejected: false
   },
   timeFrame: 'all',
+  customDateRange: {
+    startDate: null,
+    endDate: null
+  },
   sortBy: 'newest',
   dealTypes: {
     percent_off: false,
@@ -76,6 +101,26 @@ const DEFAULT_FILTERS: FilterOptions = {
   },
   performance: 'all'
 };
+
+// For static demo counts
+const STATUS_COUNTS = {
+  active: 12,
+  upcoming: 3,
+  expired: 5,
+  pending: 2,
+  rejected: 1
+};
+
+const DEAL_TYPE_COUNTS = {
+  percent_off: 8,
+  fixed_amount: 4,
+  bogo: 3,
+  free_item: 2,
+  special_offer: 3
+};
+
+// Local storage key for saved filters
+const SAVED_FILTERS_KEY = 'pinnity_saved_filters';
 
 export default function DealFilterDialog({ 
   open, 
@@ -88,11 +133,28 @@ export default function DealFilterDialog({
     ...DEFAULT_FILTERS,
     ...initialFilters,
     status: { ...DEFAULT_FILTERS.status, ...initialFilters.status },
-    dealTypes: { ...DEFAULT_FILTERS.dealTypes, ...initialFilters.dealTypes }
+    dealTypes: { ...DEFAULT_FILTERS.dealTypes, ...initialFilters.dealTypes },
+    customDateRange: initialFilters.customDateRange || DEFAULT_FILTERS.customDateRange
   };
 
   const [filters, setFilters] = useState<FilterOptions>(mergedInitialFilters);
   const [activeTab, setActiveTab] = useState('status');
+  const [savedFilters, setSavedFilters] = useState<SavedFilter[]>([]);
+  const [filterName, setFilterName] = useState('');
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  
+  // Load saved filters from localStorage
+  useEffect(() => {
+    const savedFiltersString = localStorage.getItem(SAVED_FILTERS_KEY);
+    if (savedFiltersString) {
+      try {
+        const parsedFilters = JSON.parse(savedFiltersString);
+        setSavedFilters(parsedFilters);
+      } catch (e) {
+        console.error('Error loading saved filters:', e);
+      }
+    }
+  }, []);
   
   // Count active filters for badge display
   const countActiveFilters = (): number => {
