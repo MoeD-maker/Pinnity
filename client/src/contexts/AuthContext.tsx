@@ -168,7 +168,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Reference to the auto-refresh timer
   const refreshTimerRef = useRef<number | null>(null);
   
-  // Track if component is mounted (for cleanup)
+  // Reference to track component mounted state
   const isMountedRef = useRef<boolean>(true);
   
   // Function to determine appropriate redirect path
