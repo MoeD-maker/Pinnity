@@ -102,10 +102,10 @@ export default function Dashboard() {
 
   // Fetch all deals
   const { data: deals, isLoading: isLoadingDeals, refetch: refetchDeals } = useQuery({
-    queryKey: ['/api/deals'],
+    queryKey: ['/api/v1/deals'],
     queryFn: async () => {
       try {
-        const response = await fetch('/api/deals');
+        const response = await fetch('/api/v1/deals');
         
         // Use centralized cache utility to check cache status
         const cacheStatus = getCacheStatusFromResponse(response);
@@ -123,10 +123,10 @@ export default function Dashboard() {
 
   // Fetch featured deals
   const { data: featuredDeals, isLoading: isLoadingFeatured, refetch: refetchFeaturedDeals } = useQuery({
-    queryKey: ['/api/deals/featured'],
+    queryKey: ['/api/v1/deals/featured'],
     queryFn: async () => {
       try {
-        const response = await fetch('/api/deals/featured?limit=5');
+        const response = await fetch('/api/v1/deals/featured?limit=5');
         
         // Use centralized cache utility to check cache status
         const cacheStatus = getCacheStatusFromResponse(response);
