@@ -163,7 +163,7 @@ export default function MapPage() {
                 )}
               </Button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="h-[80vh] rounded-t-xl">
+            <SheetContent side="bottom" className="h-[80vh] rounded-t-xl z-[9999]">
               <SheetHeader className="text-left">
                 <div className="flex items-center justify-between">
                   <SheetTitle>Filter Deals</SheetTitle>
