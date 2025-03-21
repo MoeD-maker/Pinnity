@@ -57,7 +57,7 @@ export function useCreateRating() {
   });
 }
 
-export function useUserRatings(userId: number) {
+export function useUserRatings(userId: number | undefined) {
   return useQuery<UserRatingItem[]>({
     queryKey: ['/api/v1/user', userId, 'ratings'],
     queryFn: getQueryFn({ on401: 'returnNull' }),

@@ -69,11 +69,11 @@ export default function ExplorePage() {
   
   // Fetch all deals
   const { data: deals = [], isLoading, error, refetch: refetchDeals } = useQuery({
-    queryKey: ['/api/deals'],
+    queryKey: ['/api/v1/deals'],
     queryFn: async () => {
       try {
         // Use the raw fetch instead of apiRequest to access headers
-        const response = await fetch('/api/deals');
+        const response = await fetch('/api/v1/deals');
         
         // Check if response is from cache using centralized utility
         const cacheStatus = getCacheStatusFromResponse(response);

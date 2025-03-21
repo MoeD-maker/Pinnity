@@ -20,7 +20,7 @@ interface Redemption {
 }
 
 interface RecentRedemptionsRatingPromptProps {
-  userId: number;
+  userId: number | undefined;
 }
 
 export default function RecentRedemptionsRatingPrompt({ userId }: RecentRedemptionsRatingPromptProps) {
@@ -30,7 +30,7 @@ export default function RecentRedemptionsRatingPrompt({ userId }: RecentRedempti
 
   // Fetch user's recent redemptions
   const { data: redemptions, isLoading } = useQuery<Redemption[]>({
-    queryKey: ['/api/user', userId, 'redemptions'],
+    queryKey: ['/api/v1/user', userId, 'redemptions'],
     queryFn: getQueryFn({ on401: 'returnNull' }),
     enabled: !!userId,
   });
