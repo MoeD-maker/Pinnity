@@ -16,7 +16,7 @@ import { calculatePasswordStrength } from '@/lib/utils';
 import PasswordStrengthIndicator from '@/components/auth/PasswordStrengthIndicator';
 
 interface PasswordChangeFormProps {
-  userId: number;
+  userId: number | undefined;
 }
 
 export default function PasswordChangeForm({ userId }: PasswordChangeFormProps) {

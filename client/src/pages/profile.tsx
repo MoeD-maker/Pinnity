@@ -207,13 +207,13 @@ export default function ProfilePage() {
         </Card>
         
         {/* Password Change Form */}
-        <PasswordChangeForm userId={userId} />
+        {userId && <PasswordChangeForm userId={userId} />}
         
         {/* Recent Redemptions Ratings Prompt */}
-        <RecentRedemptionsRatingPrompt userId={userId} />
+        {userId && <RecentRedemptionsRatingPrompt userId={userId} />}
         
         {/* User Ratings List */}
-        <UserRatingsList userId={userId} />
+        {userId && <UserRatingsList userId={userId} />}
         
         <Card>
           <CardHeader>

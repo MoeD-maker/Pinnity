@@ -7,7 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 
 interface UserRatingsListProps {
-  userId: number;
+  userId: number | undefined;
 }
 
 export default function UserRatingsList({ userId }: UserRatingsListProps) {
