@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from "react";
+import React, { useState, useEffect, Suspense, lazy, useMemo, useRef } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -23,6 +23,7 @@ import UpdateNotification from "@/components/pwa/UpdateNotification";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { WifiOff, Wifi, X } from "lucide-react";
 import { AuthTransition } from "@/components/auth/AuthTransition";
+import { AnimatePresence } from "framer-motion";
 
 // Debug logs
 console.log("App.tsx module loading");
@@ -202,6 +203,8 @@ function useOfflineData() {
   return isOffline;
 }
 
+// Use AnimatePresence for smoother transitions
+
 // Authenticated route wrapper
 function AuthenticatedRoute({ component: Component, ...rest }: any) {
   const [location, setLocation] = useLocation();
@@ -220,14 +223,37 @@ function AuthenticatedRoute({ component: Component, ...rest }: any) {
   // This prevents any content flashing during auth state changes
   const [shouldRender, setShouldRender] = useState<boolean>(false);
   
+  // Generate a stable key for the current auth transition to prevent re-renders
+  const transitionKey = useMemo(() => {
+    if (!authStatusChecked) return 'initializing';
+    if (isRedirecting) return 'redirecting';
+    if (!shouldRender) return 'preparing';
+    return 'complete';
+  }, [authStatusChecked, isRedirecting, shouldRender]);
+  
+  // Stable reference to auth state to prevent re-renders
+  const authStateRef = useRef(authState);
+  
+  // Update the ref only when auth state changes significantly
+  useEffect(() => {
+    // Only update the ref for major state changes
+    if (
+      (authState === 'authenticated' && authStateRef.current !== 'authenticated') ||
+      (authState === 'unauthenticated' && authStateRef.current !== 'unauthenticated')
+    ) {
+      authStateRef.current = authState;
+    }
+  }, [authState]);
+  
   // Use useEffect to handle the redirect instead of doing it during render
   // Always declare hooks before any conditional returns
-  React.useEffect(() => {
+  useEffect(() => {
     const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
     
     // Create a debounce mechanism to prevent rapid state changes
     // This ensures we don't have multiple redirects or state changes in quick succession
     let redirectTimer: number | null = null;
+    let renderTimer: number | null = null;
     
     // Function to execute redirect with debounce
     const executeRedirect = (path: string) => {
@@ -240,7 +266,7 @@ function AuthenticatedRoute({ component: Component, ...rest }: any) {
       redirectTimer = window.setTimeout(() => {
         console.log(`[${timestamp}] Executing debounced redirect to ${path}`);
         setLocation(path);
-      }, 300); // Significant delay to stabilize redirects
+      }, 500); // Increased delay to stabilize redirects
     };
     
     // Only process redirection logic if:
@@ -275,11 +301,15 @@ function AuthenticatedRoute({ component: Component, ...rest }: any) {
       }
       
       // If we get here, we should render the component
-      // Use a timeout to ensure this happens after any pending state updates
-      setTimeout(() => {
+      // Use a longer timeout to ensure this happens after any pending state updates
+      if (renderTimer) {
+        window.clearTimeout(renderTimer);
+      }
+      
+      renderTimer = window.setTimeout(() => {
         console.log(`[${timestamp}] Path ${location} is valid for user, proceeding to render`);
         setShouldRender(true);
-      }, 100);
+      }, 300);
     }
     
     // Cleanup function to clear any pending timeouts
@@ -287,59 +317,44 @@ function AuthenticatedRoute({ component: Component, ...rest }: any) {
       if (redirectTimer) {
         window.clearTimeout(redirectTimer);
       }
+      if (renderTimer) {
+        window.clearTimeout(renderTimer);
+      }
     };
   }, [isLoading, isAuthenticated, user, authStatusChecked, isRedirecting, location, setLocation, authState, redirectPath, getAppropriateRedirectPath]);
   
-  // Prevent rapid re-renders during auth check
-  const [stableAuthState] = useState(authState);
+  // Get appropriate loading message based on current state
+  const getLoadingMessage = () => {
+    if (!authStatusChecked) return "Loading...";
+    if (isRedirecting) return "Redirecting...";
+    return isAuthenticated ? "Preparing your dashboard..." : "Please log in";
+  };
   
-  if (!authStatusChecked || isLoading) {
-    return (
-      <AuthTransition 
-        state={stableAuthState}
-        message="Loading..."
-        key="stable-auth-transition"
-      />
-    );
-  }
-
-  // Handle redirection state with visual feedback
-  if (isRedirecting) {
-    return (
-      <AuthTransition
-        state={authState} 
-        message="Redirecting..."
-        key="auth-transition-redirect"
-      />
-    );
-  }
-
-  // Handle authentication check complete
-  if (!shouldRender) {
-    return (
-      <AuthTransition
-        state={authState}
-        message={isAuthenticated ? "Preparing your dashboard..." : "Please log in"}
-        key="auth-transition-check"
-      />
-    );
-  }
-
-  // Only check authentication after all states are stable
-  if (!isAuthenticated) {
-    return null;
-  }
+  // Determine whether to show loading or content
+  const showContent = authStatusChecked && !isLoading && !isRedirecting && shouldRender && isAuthenticated;
   
   // For admin routes, don't wrap with MainLayout since they already use AdminLayout
-  if (location.startsWith('/admin')) {
-    return <Component {...rest} />;
-  }
+  const RenderedComponent = showContent ? (
+    location.startsWith('/admin') ? (
+      <Component {...rest} key="admin-component" />
+    ) : (
+      <MainLayout key="main-layout">
+        <Component {...rest} />
+      </MainLayout>
+    )
+  ) : null;
   
-  // For non-admin routes, use MainLayout
+  // Use AnimatePresence to smoothly transition between loading and content states
   return (
-    <MainLayout>
-      <Component {...rest} />
-    </MainLayout>
+    <AnimatePresence mode="wait">
+      {!showContent ? (
+        <AuthTransition
+          key={`auth-transition-${transitionKey}`}
+          state={authStateRef.current}
+          message={getLoadingMessage()}
+        />
+      ) : RenderedComponent}
+    </AnimatePresence>
   );
 }
 

@@ -274,6 +274,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refreshToken]);
   
   // Setup initial authentication check and refresh timer
+  // Track API request to prevent excessive calls
+  const pendingUserRequestRef = useRef<boolean>(false);
+  const userDataCacheRef = useRef<User | null>(null);
+  const lastUserRequestTimeRef = useRef<number>(0);
+  
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
@@ -326,48 +331,98 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (userId) {
           try {
-            console.log(`[${timestamp}] Attempting to fetch user data with ID:`, userId);
-            // Our JWT token is in a secure HTTP-only cookie
-            // so we just need to make the request and the browser will 
-            // automatically include the cookie
-            const userData = await apiRequest(`/api/v1/user/${userId}`);
+            // To prevent excessive API calls, add request tracking and caching
+            const now = Date.now();
             
-            if (userData) {
-              console.log(`[${timestamp}] User data received successfully`);
+            // Check if we already have a pending request or have made a request very recently (within 2 seconds)
+            if (pendingUserRequestRef.current || (now - lastUserRequestTimeRef.current < 2000 && userDataCacheRef.current)) {
+              console.log(`[${timestamp}] Using cached user data to prevent excessive requests`);
               
-              // Update authenticated state before setting user to prevent flash
-              setAuthState('authenticated');
-              setUser(userData);
-              
-              // Determine the appropriate redirect path but don't redirect yet
-              const currentPath = window.location.pathname;
-              const targetPath = getAppropriateRedirectPathImpl(userData, currentPath);
-              
-              // Only set redirect path if it's different from current path
-              if (targetPath !== currentPath) {
-                console.log(`[${timestamp}] Setting redirect path from ${currentPath} to ${targetPath}`);
-                setRedirectPath(targetPath);
-              }
-              
-              // Make sure we have the user ID and type stored
-              if (userData.id) {
-                saveUserData(userData.id.toString(), userData.userType);
-              }
-              
-              // Start token refresh timer
-              if (isMountedRef.current) {
-                // Schedule refresh for 5 minutes before token expiry
-                refreshTimerRef.current = window.setTimeout(() => {
-                  silentRefresh();
-                }, 55 * 60 * 1000); // 55 minutes
+              // If we have cached data, use it instead of making a new request
+              if (userDataCacheRef.current) {
+                console.log(`[${timestamp}] Using cached user data`);
+                setAuthState('authenticated');
+                setUser(userDataCacheRef.current);
                 
-                console.log(`[${timestamp}] Token refresh timer scheduled`);
+                // Still update redirect path using cached data
+                const currentPath = window.location.pathname;
+                const targetPath = getAppropriateRedirectPathImpl(userDataCacheRef.current, currentPath);
+                
+                if (targetPath !== currentPath) {
+                  console.log(`[${timestamp}] Setting redirect path from ${currentPath} to ${targetPath} (using cache)`);
+                  setRedirectPath(targetPath);
+                }
+                
+                // Continue with token refresh scheduling
+                if (isMountedRef.current) {
+                  refreshTimerRef.current = window.setTimeout(() => {
+                    silentRefresh();
+                  }, 55 * 60 * 1000); // 55 minutes
+                  
+                  console.log(`[${timestamp}] Token refresh timer scheduled (using cached data)`);
+                }
+              } else {
+                // If no cached data but request is pending, wait for it to complete
+                console.log(`[${timestamp}] Waiting for pending user data request to complete`);
               }
             } else {
-              console.warn(`[${timestamp}] No user data returned from API`);
-              setAuthState('unauthenticated');
+              // Mark that we're making a request
+              pendingUserRequestRef.current = true;
+              lastUserRequestTimeRef.current = now;
+              
+              console.log(`[${timestamp}] Attempting to fetch user data with ID:`, userId);
+              
+              // Our JWT token is in a secure HTTP-only cookie
+              // so we just need to make the request and the browser will 
+              // automatically include the cookie
+              const userData = await apiRequest(`/api/v1/user/${userId}`);
+              
+              // Request complete
+              pendingUserRequestRef.current = false;
+              
+              if (userData) {
+                console.log(`[${timestamp}] User data received successfully`);
+                
+                // Cache the user data to prevent excessive requests
+                userDataCacheRef.current = userData;
+                
+                // Update authenticated state before setting user to prevent flash
+                setAuthState('authenticated');
+                setUser(userData);
+                
+                // Determine the appropriate redirect path but don't redirect yet
+                const currentPath = window.location.pathname;
+                const targetPath = getAppropriateRedirectPathImpl(userData, currentPath);
+                
+                // Only set redirect path if it's different from current path
+                if (targetPath !== currentPath) {
+                  console.log(`[${timestamp}] Setting redirect path from ${currentPath} to ${targetPath}`);
+                  setRedirectPath(targetPath);
+                }
+                
+                // Make sure we have the user ID and type stored
+                if (userData.id) {
+                  saveUserData(userData.id.toString(), userData.userType);
+                }
+                
+                // Start token refresh timer
+                if (isMountedRef.current) {
+                  // Schedule refresh for 5 minutes before token expiry
+                  refreshTimerRef.current = window.setTimeout(() => {
+                    silentRefresh();
+                  }, 55 * 60 * 1000); // 55 minutes
+                  
+                  console.log(`[${timestamp}] Token refresh timer scheduled`);
+                }
+              } else {
+                console.warn(`[${timestamp}] No user data returned from API`);
+                setAuthState('unauthenticated');
+              }
             }
           } catch (err) {
+            // Request complete even if it failed
+            pendingUserRequestRef.current = false;
+            
             console.error(`[${timestamp}] Error fetching user data:`, err);
             // If this fails, user is not authenticated
             removeUserData();
@@ -384,11 +439,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } finally {
         // Batch state updates together to prevent re-renders
         if (isMountedRef.current) {
-          Promise.resolve().then(() => {
+          // Add a slight delay to ensure all auth state updates are processed
+          setTimeout(() => {
             setIsLoading(false);
             setAuthStatusChecked(true);
             console.log(`[${new Date().toISOString().split('T')[1].split('.')[0]}] Auth status check completed`);
-          });
+          }, 500); // 500ms delay to stabilize state
         }
       }
     };
