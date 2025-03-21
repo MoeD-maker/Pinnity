@@ -133,6 +133,20 @@
       @apply touch-none;
     }
     
+    /* Improve dropdown menu width handling */
+    [data-radix-popper-content-wrapper] > div {
+      width: fit-content !important;
+      max-width: calc(100vw - 32px) !important;
+      min-width: 10rem !important;
+    }
+    
+    /* Prevent text wrapping in dropdown menu items when possible */
+    [role="menuitem"] > span:not(.ml-auto),
+    [role="menu"] [role="menuitemcheckbox"] > span:not([class*="left"]),
+    [role="menu"] [role="menuitemradio"] > span:not([class*="left"]) {
+      @apply whitespace-nowrap;
+    }
+    
     /* Increased spacing between dropdown items */
     [role="menuitem"],
     [role="menu"] [role="menuitemcheckbox"],
@@ -193,6 +207,29 @@
   .safe-area-padding-horizontal {
     padding-left: env(safe-area-inset-left, 0);
     padding-right: env(safe-area-inset-right, 0);
+  }
+  
+  /* Dropdown menu responsive sizing utilities */
+  .dropdown-menu-wider {
+    min-width: 12rem !important;
+  }
+  
+  .dropdown-menu-wide {
+    min-width: 16rem !important;
+  }
+  
+  .dropdown-menu-extra-wide {
+    min-width: 20rem !important;
+  }
+  
+  /* Content-based width classes */
+  .menu-width-content {
+    width: fit-content !important;
+    white-space: nowrap;
+  }
+  
+  .menu-width-fixed {
+    width: var(--menu-width, 12rem) !important;
   }
   
   /* Accessibility focus styles */
