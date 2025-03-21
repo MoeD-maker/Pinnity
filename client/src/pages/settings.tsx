@@ -30,17 +30,30 @@ export default function SettingsPage() {
   
   // Fetch user notification preferences
   const { data: preferences, isLoading: isLoadingPreferences } = useQuery({
-    queryKey: ['/api/user', userId, 'notification-preferences'],
+    queryKey: ['/api/v1/user', userId, 'notification-preferences'],
     queryFn: async () => {
-      const response = await apiRequest(`/api/user/${userId}/notification-preferences`);
-      return response;
+      try {
+        const response = await apiRequest(`/api/v1/user/${userId}/notification-preferences`);
+        return response;
+      } catch (error: any) {
+        // If no preferences exist yet, return default preferences
+        if (error.status === 404) {
+          return {
+            emailNotifications: false,
+            pushNotifications: false,
+            dealAlerts: false,
+            weeklyNewsletter: false
+          };
+        }
+        throw error;
+      }
     },
   });
 
   // Mutation for updating notification preferences
   const { mutate: updatePreferences, isPending } = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest(`/api/user/${userId}/notification-preferences`, {
+      return apiRequest(`/api/v1/user/${userId}/notification-preferences`, {
         method: 'PUT',
         data,
       });
@@ -51,7 +64,7 @@ export default function SettingsPage() {
         description: 'Your preferences have been saved successfully.',
         duration: 3000,
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/user', userId, 'notification-preferences'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/v1/user', userId, 'notification-preferences'] });
     },
     onError: () => {
       toast({

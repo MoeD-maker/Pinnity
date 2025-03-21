@@ -36,8 +36,21 @@ export default function ProfilePage() {
     queryKey: ['/api/v1/user', userId, 'notification-preferences'],
     queryFn: async () => {
       if (!userId) return null;
-      const response = await apiRequest(`/api/v1/user/${userId}/notification-preferences`);
-      return response;
+      try {
+        const response = await apiRequest(`/api/v1/user/${userId}/notification-preferences`);
+        return response;
+      } catch (error: any) {
+        // If no preferences exist yet, return default preferences
+        if (error.status === 404) {
+          return {
+            emailNotifications: false,
+            pushNotifications: false,
+            dealAlerts: false,
+            weeklyNewsletter: false
+          };
+        }
+        throw error;
+      }
     },
     enabled: !!userId,
   });
