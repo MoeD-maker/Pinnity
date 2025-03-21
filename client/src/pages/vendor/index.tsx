@@ -44,51 +44,15 @@ export default function VendorDashboard() {
     savesCount: 0
   });
 
-  // Notifications for demo purposes
+  // Notification system will be implemented in the header bell icon
+  // This is a placeholder for the notification system
   const [notifications, setNotifications] = useState<Array<{
     id: number;
     type: string;
     message: string;
     read: boolean;
     createdAt?: Date;
-  }>>([
-    { 
-      id: 1, 
-      type: 'approval', 
-      message: 'Your business profile has been approved!', 
-      read: false,
-      createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000) // Random date in the last 30 days for demo
-    },
-    { 
-      id: 2, 
-      type: 'deal', 
-      message: 'Your "Summer Sale" deal is expiring in 3 days', 
-      read: true,
-      createdAt: new Date() // Today
-    }
-  ]);
-
-  // Filter out approval notifications that are older than 24 hours
-  useEffect(() => {
-    const now = new Date();
-    const ONE_DAY_MS = 24 * 60 * 60 * 1000;
-    
-    // Filter notifications - remove approval notifications older than 24 hours
-    const filteredNotifications = notifications.filter(notification => {
-      // If it's an approval notification, check its age
-      if (notification.type === 'approval' && notification.createdAt) {
-        const timeDiff = now.getTime() - new Date(notification.createdAt).getTime();
-        return timeDiff <= ONE_DAY_MS; // Keep if less than 24 hours old
-      }
-      // Keep all other notification types
-      return true;
-    });
-    
-    // Only update if there are notifications to be removed to prevent infinite loop
-    if (filteredNotifications.length !== notifications.length) {
-      setNotifications(filteredNotifications);
-    }
-  }, []); // Run once on component mount
+  }>>([]);
 
   useEffect(() => {
     async function fetchBusinessData() {
@@ -202,19 +166,7 @@ export default function VendorDashboard() {
           </Alert>
         )}
 
-        {/* Notification area */}
-        {notifications.length > 0 && (
-          <div className="mt-4 space-y-2">
-            {notifications.map(notification => (
-              <Alert key={notification.id} className={`${notification.read ? 'bg-gray-50' : 'bg-blue-50 border-blue-200'}`}>
-                <Bell className={`h-4 w-4 ${notification.read ? 'text-gray-500' : 'text-blue-500'}`} />
-                <AlertDescription className={`${notification.read ? 'text-gray-700' : 'text-blue-700'}`}>
-                  {notification.message}
-                </AlertDescription>
-              </Alert>
-            ))}
-          </div>
-        )}
+        {/* Notifications will be handled by the bell icon in the header */}
       </header>
 
       {/* Stats Row */}
