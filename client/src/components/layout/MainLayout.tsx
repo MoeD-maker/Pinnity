@@ -128,7 +128,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 <div className="py-4">
                   <div className="flex items-center gap-2 mb-6 px-2">
                     <Avatar>
-                      <AvatarFallback>{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
+                      <AvatarFallback>
+                        {user?.firstName?.[0] || user?.email?.[0] || 'U'}{user?.lastName?.[0] || ''}
+                      </AvatarFallback>
                     </Avatar>
                     <div>
                       <p className="font-medium">{user?.firstName} {user?.lastName}</p>
@@ -251,7 +253,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
                   <Avatar className="h-8 w-8">
-                    <AvatarFallback>{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
+                    <AvatarFallback>
+                      {user?.firstName?.[0] || user?.email?.[0] || 'U'}{user?.lastName?.[0] || ''}
+                    </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
@@ -320,7 +324,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Avatar>
-                  <AvatarFallback>{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
+                  <AvatarFallback>
+                    {user?.firstName?.[0] || user?.email?.[0] || 'U'}{user?.lastName?.[0] || ''}
+                  </AvatarFallback>
                 </Avatar>
                 <div>
                   <p className="font-medium text-sm">{user?.firstName} {user?.lastName}</p>
