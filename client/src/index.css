@@ -128,6 +128,18 @@
       @apply py-3 px-3;
     }
     
+    /* Improve dropdown menu spacing on touch devices */
+    [data-radix-popper-content-wrapper] {
+      @apply touch-none;
+    }
+    
+    /* Increased spacing between dropdown items */
+    [role="menuitem"],
+    [role="menu"] [role="menuitemcheckbox"],
+    [role="menu"] [role="menuitemradio"] {
+      @apply mb-1 min-h-[44px];
+    }
+    
     /* Increased spacing for interactive elements */
     input, 
     select, 
