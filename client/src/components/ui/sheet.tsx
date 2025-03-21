@@ -28,21 +28,78 @@ const SheetOverlay = React.forwardRef<
 ))
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName
 
+/**
+ * Enhanced sheet variants with improved responsive behavior:
+ * - Added multiple size variants (xs, sm, md, lg, xl, full) for more control
+ * - Improves mobile experience with adaptive sizing
+ * - Handles landscape orientation with responsive sizing
+ * - Better utilizes available space across different devices
+ */
 const sheetVariants = cva(
   "fixed z-50 gap-3 sm:gap-4 bg-background p-4 sm:p-5 md:p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-500 overflow-y-auto",
   {
     variants: {
       side: {
-        top: "inset-x-0 top-0 border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top max-h-[85vh]",
+        top: "inset-x-0 top-0 border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top max-h-[85vh] landscape:max-h-[90vh]",
         bottom:
-          "inset-x-0 bottom-0 border-t pb-[calc(1rem+env(safe-area-inset-bottom))] sm:pb-[calc(1.25rem+env(safe-area-inset-bottom))] md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom max-h-[85vh]",
-        left: "inset-y-0 left-0 h-full w-[80%] border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm pl-[calc(0.5rem+env(safe-area-inset-left))]",
+          "inset-x-0 bottom-0 border-t pb-[calc(1rem+env(safe-area-inset-bottom))] sm:pb-[calc(1.25rem+env(safe-area-inset-bottom))] md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom max-h-[85vh] landscape:max-h-[90vh]",
+        left: "inset-y-0 left-0 h-full border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left pl-[calc(0.5rem+env(safe-area-inset-left))]",
         right:
-          "inset-y-0 right-0 h-full w-[80%] border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm pr-[calc(0.5rem+env(safe-area-inset-right))]",
+          "inset-y-0 right-0 h-full border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right pr-[calc(0.5rem+env(safe-area-inset-right))]",
+      },
+      size: {
+        xs: "w-[85%] sm:w-[385px] sm:max-w-[385px]",
+        sm: "w-[90%] sm:w-[450px] sm:max-w-[450px]",
+        md: "w-[92%] sm:w-[550px] sm:max-w-[550px]",
+        lg: "w-[95%] sm:w-[650px] sm:max-w-[650px]",
+        xl: "w-[98%] sm:w-[800px] sm:max-w-[800px]",
+        full: "w-full h-full sm:w-full sm:max-w-full",
+      },
+      fullOnMobile: {
+        true: "w-full sm:w-auto landscape:w-[90%]",
       },
     },
+    compoundVariants: [
+      {
+        side: ["left", "right"],
+        size: "xs",
+        className: "w-[85%] sm:w-[385px] sm:max-w-[385px]",
+      },
+      {
+        side: ["left", "right"],
+        size: "sm",
+        className: "w-[90%] sm:w-[450px] sm:max-w-[450px]",
+      },
+      {
+        side: ["left", "right"],
+        size: "md",
+        className: "w-[92%] sm:w-[550px] sm:max-w-[550px]",
+      },
+      {
+        side: ["left", "right"],
+        size: "lg",
+        className: "w-[95%] sm:w-[650px] sm:max-w-[650px]",
+      },
+      {
+        side: ["left", "right"],
+        size: "xl",
+        className: "w-[98%] sm:w-[800px] sm:max-w-[800px]",
+      },
+      {
+        side: ["left", "right"],
+        size: "full",
+        className: "w-full h-full",
+      },
+      {
+        side: ["left", "right"],
+        fullOnMobile: true,
+        className: "w-full sm:w-auto landscape:w-[90%]",
+      },
+    ],
     defaultVariants: {
       side: "right",
+      size: "md",
+      fullOnMobile: false,
     },
   }
 )
@@ -54,12 +111,23 @@ interface SheetContentProps
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ side = "right", className, children, ...props }, ref) => (
+>(({ 
+  side = "right", 
+  size = "md", 
+  fullOnMobile = false, 
+  className, 
+  children, 
+  ...props 
+}, ref) => (
   <SheetPortal>
     <SheetOverlay />
     <SheetPrimitive.Content
       ref={ref}
-      className={cn(sheetVariants({ side }), className)}
+      className={cn(
+        sheetVariants({ side, size, fullOnMobile }), 
+        className,
+        size === "full" ? "landscape:h-[98vh]" : ""
+      )}
       {...props}
     >
       {children}
@@ -124,13 +192,41 @@ const SheetDescription = React.forwardRef<
 ))
 SheetDescription.displayName = SheetPrimitive.Description.displayName
 
+/**
+ * Enhanced scrollable content container for sheets
+ * - Improves mobile experience with adaptive height
+ * - Properly handles landscape orientation with adjusted height
+ * - Provides smooth scrolling experience on touch devices
+ */
 const ScrollableSheetContent = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, children, ...props }, ref) => (
+  React.HTMLAttributes<HTMLDivElement> & {
+    /**
+     * Maximum height of the scrollable area
+     * - Defaults to 70vh on mobile, 80vh on larger screens
+     * - Set to 'auto' to use container height
+     */
+    maxHeight?: string;
+    /** Add padding to bottom to account for safe area insets */
+    withSafeAreaPadding?: boolean;
+  }
+>(({ 
+  className, 
+  children, 
+  maxHeight,
+  withSafeAreaPadding = false,
+  ...props 
+}, ref) => (
   <div
     ref={ref}
-    className={cn("modal-scroll-container", className)}
+    className={cn(
+      "modal-scroll-container overflow-y-auto overscroll-contain -mx-4 px-4 sm:-mx-5 sm:px-5 md:-mx-6 md:px-6",
+      withSafeAreaPadding && "safe-area-padding-bottom pb-2",
+      maxHeight ? "" : "max-h-[70vh] sm:max-h-[80vh] landscape:max-h-[85vh]",
+      "landscape-sheet-adjust",
+      className
+    )}
+    style={maxHeight ? { maxHeight } : undefined}
     {...props}
   >
     {children}

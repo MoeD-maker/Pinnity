@@ -75,6 +75,30 @@
   /* Dialog and sheet container for small screens */
   .modal-scroll-container {
     @apply max-h-[70vh] sm:max-h-[75vh] md:max-h-[85vh] overflow-y-auto pr-1 -mr-1;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted) / 0.5) transparent;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    overscroll-behavior: contain;
+    
+    /* Customized scrollbar for WebKit browsers */
+    &::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background-color: hsl(var(--muted) / 0.5);
+      border-radius: 3px;
+    }
+    
+    &::-webkit-scrollbar-thumb:hover {
+      background-color: hsl(var(--muted));
+    }
   }
   
   /* Fix table layout on mobile */
@@ -209,6 +233,26 @@
     padding-right: env(safe-area-inset-right, 0);
   }
   
+  /* Sheet component landscape orientation adjustments */
+  @media (orientation: landscape) and (max-height: 600px) {
+    .landscape-sheet-adjust {
+      max-height: 90vh !important;
+      height: 90vh !important;
+    }
+    
+    [data-side="top"],
+    [data-side="bottom"] {
+      max-height: 85vh !important;
+      height: auto !important;
+    }
+    
+    [data-side="left"],
+    [data-side="right"] {
+      max-width: 50% !important;
+      width: 50% !important;
+    }
+  }
+  
   /* Dropdown menu responsive sizing utilities */
   .dropdown-menu-wider {
     min-width: 12rem !important;
@@ -242,5 +286,48 @@
   [tabindex="0"]:focus-visible {
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
+  }
+  
+  /* Touch device optimizations */
+  @media (pointer: coarse) {
+    /* Enlarged touch targets for interactive elements */
+    button,
+    a,
+    [role="button"],
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    
+    /* Improved scrolling experience */
+    .touch-scroll,
+    .modal-scroll-container {
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+      overscroll-behavior: contain;
+    }
+    
+    /* Prevent text selection during touch interactions */
+    .touch-manipulation {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    
+    /* Special sheet scrollbar handling for touch devices */
+    .modal-scroll-container::-webkit-scrollbar {
+      width: 2px;
+    }
+    
+    /* Enhanced sheet positioning for touch devices */
+    [data-state="open"][data-side="bottom"],
+    [data-state="open"][data-side="top"] {
+      min-height: 150px;
+    }
+    
+    /* Add padding to bottom sheet for easier swiping/scrolling */
+    [data-side="bottom"] .modal-scroll-container {
+      padding-bottom: calc(8px + env(safe-area-inset-bottom, 0));
+    }
   }
 }
