@@ -51,6 +51,32 @@
     @apply flex flex-col sm:flex-row;
   }
   
+  /* Very small device support */
+  .xs-text-center {
+    @apply text-center sm:text-left;
+  }
+  
+  .xs-full-width {
+    @apply w-full sm:w-auto;
+  }
+  
+  .xs-text-xs {
+    @apply text-xs sm:text-sm;
+  }
+  
+  .xs-stack {
+    @apply flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4;
+  }
+  
+  .xs-p-smaller {
+    @apply p-3 sm:p-4 md:p-6;
+  }
+  
+  /* Dialog and sheet container for small screens */
+  .modal-scroll-container {
+    @apply max-h-[70vh] sm:max-h-[75vh] md:max-h-[85vh] overflow-y-auto pr-1 -mr-1;
+  }
+  
   /* Fix table layout on mobile */
   @media (max-width: 640px) {
     .table-fixed-mobile th,
@@ -60,6 +86,29 @@
     
     .truncate-mobile {
       @apply max-w-[120px] truncate;
+    }
+  }
+  
+  /* Extra small device breakpoint */
+  @media (max-width: 320px) {
+    .xs-hidden {
+      @apply hidden;
+    }
+    
+    .xs-stack > * {
+      @apply w-full;
+    }
+    
+    .xs-text-smaller {
+      @apply text-xs leading-tight;
+    }
+    
+    .xs-p-smallest {
+      @apply p-2;
+    }
+    
+    .modal-scroll-container {
+      max-height: 65vh;
     }
   }
   
