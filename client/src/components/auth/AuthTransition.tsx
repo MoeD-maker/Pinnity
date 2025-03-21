@@ -10,133 +10,69 @@ interface AuthTransitionProps {
 
 /**
  * AuthTransition component displays a smooth animation during authentication state transitions
- * This component shows different visuals based on the current authentication state
- * to provide visual feedback during login, logout, and redirections
+ * This component provides a stable visual during auth state changes to prevent flickering
+ * and creates a more professional user experience
  */
 export function AuthTransition({ state, message = 'Loading...' }: AuthTransitionProps) {
   const { shouldReduceMotion } = useMotion();
   
-  // Animation variants based on auth state
+  // We're using a simplified animation approach to prevent flickering
+  // during rapid state changes. Instead of having different animations
+  // for each auth state, we use a consistent animation pattern.
+  
+  // Single animation variant for the container
+  // This avoids re-animations when state changes rapidly
   const containerVariants = {
-    initializing: {
-      opacity: 1,
-    },
-    authenticating: {
-      opacity: 1,
-    },
-    redirecting: {
-      opacity: shouldReduceMotion ? 1 : [1, 0.9, 1],
-      transition: {
-        opacity: {
-          repeat: Infinity,
-          duration: 1.5
-        }
-      }
-    },
-    authenticated: {
-      opacity: 1,
-    },
-    unauthenticated: {
+    // All states use the same animation to prevent flickering
+    animate: {
       opacity: 1,
     },
     exit: {
       opacity: 0,
-      transition: { duration: 0.3 }
+      transition: { duration: 0.5 }
     }
   };
   
-  // Spinner animation variants
+  // Simplified spinner animation that doesn't change with auth state
+  // This creates a consistent experience during state transitions
   const spinnerVariants = {
-    initializing: {
+    animate: {
       rotate: shouldReduceMotion ? 0 : 360,
       transition: {
         repeat: Infinity,
-        duration: 1,
+        duration: 1.2,
         ease: "linear"
       }
-    },
-    authenticating: {
-      rotate: shouldReduceMotion ? 0 : 360,
-      scale: [1, 1.1, 1],
-      transition: {
-        rotate: {
-          repeat: Infinity,
-          duration: 1,
-          ease: "linear"
-        },
-        scale: {
-          repeat: Infinity,
-          duration: 1.5
-        }
-      }
-    },
-    redirecting: {
-      rotate: shouldReduceMotion ? 0 : 360,
-      transition: {
-        repeat: Infinity,
-        duration: 0.8,
-        ease: "linear"
-      }
-    },
-    authenticated: {
-      rotate: 0,
-    },
-    unauthenticated: {
-      rotate: 0,
     }
   };
   
-  // Text animation variants
+  // Simplified text animation that doesn't change with auth state
   const textVariants = {
-    initializing: {
-      opacity: 1,
-    },
-    authenticating: {
-      opacity: shouldReduceMotion ? 1 : [1, 0.7, 1],
-      transition: {
-        opacity: {
-          repeat: Infinity,
-          duration: 2
-        }
-      }
-    },
-    redirecting: {
-      opacity: shouldReduceMotion ? 1 : [1, 0.8, 1],
-      transition: {
-        opacity: {
-          repeat: Infinity,
-          duration: 1
-        }
-      }
-    },
-    authenticated: {
-      opacity: 1,
-    },
-    unauthenticated: {
+    animate: {
       opacity: 1,
     }
   };
   
   return (
     <motion.div
-      className="flex flex-col items-center justify-center min-h-screen bg-background"
+      className="fixed inset-0 flex flex-col items-center justify-center min-h-screen bg-background z-50"
       variants={containerVariants}
-      initial="initializing"
-      animate={state}
+      initial="animate" 
+      animate="animate"
       exit="exit"
     >
       <motion.div
-        className="w-12 h-12 rounded-full border-t-2 border-b-2 border-primary"
+        className="w-16 h-16 rounded-full border-t-4 border-b-4 border-primary"
         variants={spinnerVariants}
-        initial="initializing"
-        animate={state}
+        initial="animate"
+        animate="animate"
       />
       
       <motion.p 
-        className="text-sm text-muted-foreground mt-4"
+        className="text-base text-foreground font-medium mt-6"
         variants={textVariants}
-        initial="initializing"
-        animate={state}
+        initial="animate"
+        animate="animate"
       >
         {message}
       </motion.p>
