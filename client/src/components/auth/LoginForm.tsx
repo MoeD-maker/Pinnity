@@ -48,11 +48,7 @@ export default function LoginForm() {
       // Attempt to login
       await login(data.email, data.password, data.rememberMe);
       
-      console.log('Login successful, showing success toast');
-      toast({
-        title: "Success",
-        description: "You have successfully logged in",
-      });
+      console.log('Login successful, not showing success toast');
     } catch (error) {
       console.error("Login form submission error:", error);
       
