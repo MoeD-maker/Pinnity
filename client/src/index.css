@@ -13,6 +13,17 @@
 }
 
 @layer base {
+  :root {
+    /* Animation variables with default values - will be updated by JS */
+    --animation-scale: 1;
+    --animation-shorter: 150ms;
+    --animation-short: 250ms;
+    --animation-normal: 350ms;
+    --animation-long: 500ms; 
+    --animation-longer: 700ms;
+    --low-battery: false;
+  }
+
   * {
     @apply border-border;
   }
@@ -22,6 +33,34 @@
     overflow-x: hidden;
     width: 100vw;
     position: relative;
+  }
+
+  /* Reduced motion styles */
+  @media (prefers-reduced-motion: reduce) {
+    :root {
+      --animation-scale: 0;
+      --animation-shorter: 10ms;
+      --animation-short: 10ms;
+      --animation-normal: 10ms;
+      --animation-long: 10ms;
+      --animation-longer: 10ms;
+    }
+  }
+
+  /* Battery-aware animation adjustments */
+  :root[style*="--low-battery: true"] {
+    --animation-scale: 0.5;
+    --animation-shorter: 75ms;
+    --animation-short: 125ms;
+    --animation-normal: 175ms;
+    --animation-long: 250ms;
+    --animation-longer: 350ms;
+  }
+
+  /* Helper class to disable animations */
+  .reduce-motion * {
+    transition-duration: 10ms !important;
+    animation-duration: 10ms !important;
   }
 }
 
