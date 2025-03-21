@@ -112,6 +112,52 @@
     }
   }
   
+  /* Touch device specific enhancements */
+  @media (pointer: coarse) {
+    /* Larger touch targets for buttons */
+    button, 
+    [role="button"],
+    .button,
+    a.button,
+    .touch-target {
+      @apply min-h-[44px] min-w-[44px] touch-manipulation;
+    }
+    
+    /* Increase padding for better touch targets */
+    .dropdown-menu-item {
+      @apply py-3 px-3;
+    }
+    
+    /* Increased spacing for interactive elements */
+    input, 
+    select, 
+    textarea {
+      @apply py-2.5 px-3.5;
+    }
+    
+    /* Radio and checkbox inputs get larger touch areas */
+    input[type="checkbox"] + label,
+    input[type="radio"] + label {
+      @apply min-h-[44px] flex items-center;
+    }
+    
+    /* Links in text get more spacing for easier tapping */
+    p a, li a, td a {
+      @apply inline-block py-0.5;
+    }
+    
+    /* Avoid accidental taps with more space between elements */
+    .touch-spaced > * + * {
+      @apply mt-2;
+    }
+    
+    /* Tab targets need to be larger */
+    .tab-button, 
+    [role="tab"] {
+      @apply min-h-[44px] py-2.5 px-3;
+    }
+  }
+  
   /* Environment-specific padding for safe areas */
   .mobile-nav {
     padding-bottom: env(safe-area-inset-bottom, 0);
