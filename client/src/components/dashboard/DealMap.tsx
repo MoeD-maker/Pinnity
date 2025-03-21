@@ -142,13 +142,24 @@ interface DealMarkerProps {
 function DealMarker({ deal, onSelect }: DealMarkerProps) {
   const { business } = deal;
   
-  if (!business.latitude || !business.longitude) {
+  // Guard against missing location data or invalid coordinates
+  if (!business || !business.latitude || !business.longitude) {
+    console.log(`Deal "${deal.title}" is missing location data`);
+    return null;
+  }
+  
+  // Validate that latitude and longitude are valid numbers
+  const lat = parseFloat(business.latitude.toString());
+  const lng = parseFloat(business.longitude.toString());
+  
+  if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    console.log(`Deal "${deal.title}" has invalid location data: (${lat}, ${lng})`);
     return null;
   }
   
   return (
     <Marker 
-      position={[business.latitude, business.longitude]} 
+      position={[lat, lng]} 
       icon={dealIcon}
     >
       <Popup>

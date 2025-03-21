@@ -54,7 +54,9 @@ export default function MapPage() {
   const { data: deals = [], isLoading } = useQuery({
     queryKey: ['/api/deals'],
     queryFn: async () => {
-      return apiRequest('/api/deals');
+      const response = await apiRequest('/api/deals');
+      // Ensure we're working with an array of deals
+      return Array.isArray(response) ? response : [];
     },
   });
   

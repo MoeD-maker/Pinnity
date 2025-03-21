@@ -7,9 +7,11 @@ async function checkDealLocations() {
     const response = await fetch('http://localhost:5000/api/deals');
     const data = await response.json();
     
-    console.log(JSON.stringify(data, null, 2).substring(0, 1000) + "...");
+    // Log the structure type
+    console.log("Response data structure type:", Array.isArray(data) ? "Array" : typeof data);
     
-    const deals = Array.isArray(data) ? data : [];
+    // Convert to array format if needed
+    const deals = Array.isArray(data) ? data : Object.values(data);
     
     console.log(`Found ${deals.length} deals`);
     

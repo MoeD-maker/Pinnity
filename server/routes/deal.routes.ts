@@ -12,6 +12,11 @@ export function dealRoutes(app: Express): void {
   app.get("/api/deals", async (req: Request, res: Response) => {
     try {
       const deals = await storage.getDeals();
+      // Ensure we're returning an array of deals
+      if (!Array.isArray(deals)) {
+        console.error("Warning: Deals is not an array");
+        return res.status(200).json([]);
+      }
       return res.status(200).json(deals);
     } catch (error) {
       console.error("Get deals error:", error);
