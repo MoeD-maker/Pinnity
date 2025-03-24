@@ -342,10 +342,10 @@ export default function EnhancedExplorePage() {
         
         <div className="flex gap-2 w-full sm:w-auto">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
               placeholder="Search deals..."
-              className="pl-10 h-12 text-base"
+              className="pl-10 h-12 text-base sm:text-sm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -376,7 +376,7 @@ export default function EnhancedExplorePage() {
         selectedCategories={selectedCategories}
         onChange={handleCategoryChange}
         dealCounts={categoryCounter}
-        className="mb-6"
+        className="mb-4 sm:mb-6"
       />
       
       {/* Mobile filters */}
@@ -426,7 +426,7 @@ export default function EnhancedExplorePage() {
       )}
       
       {/* Sort options */}
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <SortOptions 
           selectedSort={sortOption}
           onChange={setSortOption}
@@ -435,34 +435,34 @@ export default function EnhancedExplorePage() {
       </div>
       
       {/* Location indicator */}
-      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground mb-6">
+      <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-sm text-muted-foreground mb-4 sm:mb-6">
         <MapPin className="h-4 w-4 flex-shrink-0" />
         <span className="mr-1">Showing deals near San Francisco, CA</span>
-        <Button variant="link" className="p-0 h-auto" size="sm">
+        <Button variant="link" className="p-0 h-auto text-xs sm:text-sm">
           Change
         </Button>
       </div>
       
       {/* Display mode buttons (grid/large/swipeable) */}
-      <div className="flex justify-center sm:justify-end mb-6 gap-1 sm:gap-2">
+      <div className="flex justify-center sm:justify-end mb-4 sm:mb-6 gap-1 sm:gap-2">
         <Button 
           variant={viewMode === 'grid' ? 'default' : 'outline'} 
           onClick={() => setViewMode('grid')}
-          className="px-3 sm:px-4 h-10 text-xs sm:text-sm flex-1 sm:flex-none"
+          className="px-2 sm:px-4 h-10 text-xs sm:text-sm flex-1 sm:flex-none max-w-[110px] sm:max-w-none"
         >
           Grid View
         </Button>
         <Button 
           variant={viewMode === 'large' ? 'default' : 'outline'} 
           onClick={() => setViewMode('large')}
-          className="px-3 sm:px-4 h-10 text-xs sm:text-sm flex-1 sm:flex-none"
+          className="px-2 sm:px-4 h-10 text-xs sm:text-sm flex-1 sm:flex-none max-w-[110px] sm:max-w-none"
         >
           Large Cards
         </Button>
         <Button 
           variant={viewMode === 'swipeable' ? 'default' : 'outline'} 
           onClick={() => setViewMode('swipeable')}
-          className="px-3 sm:px-4 h-10 text-xs sm:text-sm flex-1 sm:flex-none"
+          className="px-2 sm:px-4 h-10 text-xs sm:text-sm flex-1 sm:flex-none max-w-[110px] sm:max-w-none"
         >
           Swipe Mode
         </Button>
@@ -529,7 +529,7 @@ export default function EnhancedExplorePage() {
           if (!open) setSelectedDealId(null);
         }}
       >
-        <DialogContent className="sm:max-w-2xl p-4 sm:p-6 max-h-[85vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl p-3 sm:p-6 max-h-[90vh] sm:max-h-[85vh] overflow-y-auto">
           {selectedDealId && (
             <DealDetail
               dealId={selectedDealId}

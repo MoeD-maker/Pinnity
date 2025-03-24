@@ -103,19 +103,21 @@ export default function SortOptions({
     return (
       <div className={className}>
         <Select value={selectedSort} onValueChange={(value) => onChange(value as SortOption)}>
-          <SelectTrigger className="w-full h-11">
+          <SelectTrigger className="w-full h-11 px-3">
             <div className="flex items-center gap-2">
+              <ArrowUpDown className="h-4 w-4 text-muted-foreground mr-1" />
+              <span className="text-sm font-medium">Sort:</span>
               {sortOptions.find(opt => opt.id === selectedSort)?.icon}
               <SelectValue placeholder="Select sort order" />
             </div>
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent position="popper" className="min-w-[240px]">
             {sortOptions.map(option => (
-              <SelectItem key={option.id} value={option.id}>
+              <SelectItem key={option.id} value={option.id} className="py-2">
                 <div className="flex items-center gap-2">
                   {option.icon}
                   <div>
-                    <div>{option.label}</div>
+                    <div className="font-medium">{option.label}</div>
                     <div className="text-xs text-muted-foreground">
                       {option.description}
                     </div>
