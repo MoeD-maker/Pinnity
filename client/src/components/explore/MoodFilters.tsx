@@ -88,7 +88,7 @@ export default function MoodFilters({ selectedMoods, onChange, className = '' }:
   
   return (
     <div className={className}>
-      <h3 className="text-sm font-medium mb-2">Filter by mood & occasion</h3>
+      <h3 className="text-sm sm:text-base font-medium mb-2">Filter by mood & occasion</h3>
       <div className="flex flex-wrap gap-2">
         {moodOptions.map(mood => {
           const isSelected = selectedMoods.includes(mood.id);
@@ -97,14 +97,14 @@ export default function MoodFilters({ selectedMoods, onChange, className = '' }:
             <Badge 
               key={mood.id}
               variant="outline"
-              className={`cursor-pointer px-2 py-1 ${mood.color} ${
+              className={`cursor-pointer px-3 py-1.5 ${mood.color} ${
                 isSelected ? 'ring-1 ring-offset-1 ring-primary' : ''
-              }`}
+              } h-9`}
               onClick={() => onChange(mood.id)}
             >
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-1.5">
                 {mood.icon}
-                <span>{mood.label}</span>
+                <span className="font-medium">{mood.label}</span>
               </span>
             </Badge>
           );

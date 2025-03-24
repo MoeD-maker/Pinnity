@@ -74,15 +74,15 @@ export default function SortOptions({
           onValueChange={(value) => onChange(value as SortOption)}
           className="w-full"
         >
-          <TabsList className="w-full grid grid-cols-4">
+          <TabsList className="w-full grid grid-cols-4 h-11">
             {sortOptions.map(option => (
               <TabsTrigger 
                 key={option.id} 
                 value={option.id}
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 py-2.5"
               >
                 <span className="hidden sm:inline">{option.icon}</span>
-                <span className="text-xs sm:text-sm">{option.label}</span>
+                <span className="text-xs sm:text-sm truncate">{option.label}</span>
               </TabsTrigger>
             ))}
           </TabsList>

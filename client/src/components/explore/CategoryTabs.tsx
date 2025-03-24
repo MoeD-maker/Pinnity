@@ -38,24 +38,24 @@ export default function CategoryTabs({
       {/* Left scroll button */}
       <Button
         variant="ghost"
-        size="icon"
-        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white/90 shadow-sm hidden sm:flex"
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white/90 shadow-sm h-9 w-9 p-0 hidden sm:flex items-center justify-center"
         onClick={() => handleScroll('left')}
+        aria-label="Scroll categories left"
       >
-        <ChevronLeft className="h-4 w-4" />
+        <ChevronLeft className="h-5 w-5" />
       </Button>
       
       {/* Scrollable tabs container */}
       <div 
         ref={scrollContainerRef}
-        className="flex overflow-x-auto pb-2 pt-1 px-1 scrollbar-hide snap-x"
+        className="flex overflow-x-auto pb-3 pt-1 px-1 scrollbar-hide snap-x"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {/* All categories tab */}
-        <div className="snap-start shrink-0 first:pl-4 last:pr-8">
+        <div className="snap-start shrink-0 first:pl-2 sm:first:pl-10 last:pr-8">
           <Badge
             variant={selectedCategories.length === 0 ? "default" : "outline"}
-            className="cursor-pointer px-3 py-1 text-sm font-semibold whitespace-nowrap"
+            className="cursor-pointer px-3 py-1.5 text-sm font-semibold whitespace-nowrap h-9"
             onClick={() => onChange('all')}
           >
             All Categories {dealCounts['all'] > 0 && `(${dealCounts['all']})`}
@@ -67,7 +67,7 @@ export default function CategoryTabs({
           <div key={category.id} className="snap-start shrink-0 ml-2">
             <Badge
               variant={selectedCategories.includes(category.id) ? "default" : "outline"}
-              className="cursor-pointer px-3 py-1 text-sm font-semibold whitespace-nowrap"
+              className="cursor-pointer px-3 py-1.5 text-sm font-semibold whitespace-nowrap h-9"
               onClick={() => onChange(category.id)}
             >
               {category.name} {dealCounts[category.id] > 0 && `(${dealCounts[category.id]})`}
@@ -79,11 +79,11 @@ export default function CategoryTabs({
       {/* Right scroll button */}
       <Button
         variant="ghost"
-        size="icon"
-        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white/90 shadow-sm hidden sm:flex"
+        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white/90 shadow-sm h-9 w-9 p-0 hidden sm:flex items-center justify-center"
         onClick={() => handleScroll('right')}
+        aria-label="Scroll categories right"
       >
-        <ChevronRight className="h-4 w-4" />
+        <ChevronRight className="h-5 w-5" />
       </Button>
       
       {/* Custom scrollbar hide CSS */}

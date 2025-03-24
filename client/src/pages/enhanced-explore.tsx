@@ -342,10 +342,10 @@ export default function EnhancedExplorePage() {
         
         <div className="flex gap-2 w-full sm:w-auto">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
             <Input
               placeholder="Search deals..."
-              className="pl-9"
+              className="pl-10 h-12 text-base"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -353,20 +353,20 @@ export default function EnhancedExplorePage() {
           
           <Button 
             variant="outline" 
-            size="icon"
             onClick={() => setShowFilters(!showFilters)}
-            className="flex-shrink-0"
+            className={`flex-shrink-0 h-12 w-12 p-0 ${showFilters ? 'bg-muted' : ''}`}
+            aria-label="Toggle filters"
           >
-            <FilterIcon className="h-4 w-4" />
+            <FilterIcon className="h-5 w-5" />
           </Button>
           
           <Button
             variant="outline"
-            size="icon"
             onClick={handleRefresh}
-            className="flex-shrink-0"
+            className="flex-shrink-0 h-12 w-12 p-0"
+            aria-label="Refresh deals"
           >
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw className="h-5 w-5" />
           </Button>
         </div>
       </div>
@@ -382,10 +382,15 @@ export default function EnhancedExplorePage() {
       {/* Mobile filters */}
       {showFilters && (
         <Card className="mb-6">
-          <CardContent className="p-4 space-y-4">
+          <CardContent className="p-4 sm:p-6 space-y-5">
             <div className="flex justify-between items-center">
-              <h3 className="font-semibold">Filters</h3>
-              <Button variant="ghost" size="sm" onClick={handleClearFilters}>
+              <h3 className="text-base sm:text-lg font-semibold">Filters</h3>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleClearFilters}
+                className="h-9 text-sm"
+              >
                 Clear all
               </Button>
             </div>
@@ -396,9 +401,10 @@ export default function EnhancedExplorePage() {
             <MoodFilters 
               selectedMoods={selectedMoods}
               onChange={handleMoodChange}
+              className="pt-1"
             />
             
-            <Separator />
+            <Separator className="my-1" />
             
             {/* Visual category selection */}
             <CategoryCards
@@ -406,6 +412,15 @@ export default function EnhancedExplorePage() {
               onChange={handleCategoryChange}
               dealCounts={categoryCounter}
             />
+            
+            <div className="pt-2">
+              <Button 
+                onClick={() => setShowFilters(false)} 
+                className="w-full sm:w-auto h-11"
+              >
+                Apply Filters
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -429,28 +444,25 @@ export default function EnhancedExplorePage() {
       </div>
       
       {/* Display mode buttons (grid/large/swipeable) */}
-      <div className="flex justify-end mb-6 gap-2">
+      <div className="flex justify-center sm:justify-end mb-6 gap-1 sm:gap-2">
         <Button 
           variant={viewMode === 'grid' ? 'default' : 'outline'} 
-          size="sm"
           onClick={() => setViewMode('grid')}
-          className="text-xs"
+          className="px-3 sm:px-4 h-10 text-xs sm:text-sm flex-1 sm:flex-none"
         >
           Grid View
         </Button>
         <Button 
           variant={viewMode === 'large' ? 'default' : 'outline'} 
-          size="sm"
           onClick={() => setViewMode('large')}
-          className="text-xs"
+          className="px-3 sm:px-4 h-10 text-xs sm:text-sm flex-1 sm:flex-none"
         >
           Large Cards
         </Button>
         <Button 
           variant={viewMode === 'swipeable' ? 'default' : 'outline'} 
-          size="sm"
           onClick={() => setViewMode('swipeable')}
-          className="text-xs"
+          className="px-3 sm:px-4 h-10 text-xs sm:text-sm flex-1 sm:flex-none"
         >
           Swipe Mode
         </Button>
