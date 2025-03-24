@@ -34,7 +34,7 @@ export default function CategoryTabs({
   };
   
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative w-full overflow-hidden ${className}`}>
       {/* Left scroll button - hidden on mobile */}
       <Button
         variant="ghost"
@@ -48,18 +48,19 @@ export default function CategoryTabs({
       {/* Scrollable tabs container - enhanced for mobile touch scrolling */}
       <div 
         ref={scrollContainerRef}
-        className="flex overflow-x-auto pb-3 pt-1 px-1 scrollbar-hide snap-x scroll-smooth"
+        className="flex overflow-x-auto pb-2 pt-1 px-0 sm:px-1 scrollbar-hide snap-x scroll-smooth w-full"
         style={{ 
           scrollbarWidth: 'none', 
           msOverflowStyle: 'none',
-          WebkitOverflowScrolling: 'touch' // Enable momentum scrolling on iOS
+          WebkitOverflowScrolling: 'touch', // Enable momentum scrolling on iOS
+          overflowX: 'auto'
         }}
       >
         {/* All categories tab - padding adjusted for mobile */}
-        <div className="snap-start shrink-0 pl-2 sm:pl-10 pr-1">
+        <div className="snap-start shrink-0 pl-1 sm:pl-2 md:pl-10 pr-1">
           <Badge
             variant={selectedCategories.length === 0 ? "default" : "outline"}
-            className="cursor-pointer px-3 py-1.5 text-sm font-semibold whitespace-nowrap h-10 sm:h-9 flex items-center justify-center"
+            className="cursor-pointer px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold whitespace-nowrap h-8 sm:h-9 flex items-center justify-center"
             onClick={() => onChange('all')}
           >
             All Categories {dealCounts['all'] > 0 && `(${dealCounts['all']})`}
@@ -68,10 +69,10 @@ export default function CategoryTabs({
         
         {/* Individual category tabs - improved touch targets */}
         {CATEGORIES.filter(cat => cat.id !== 'all').map((category) => (
-          <div key={category.id} className="snap-start shrink-0 ml-2">
+          <div key={category.id} className="snap-start shrink-0 ml-1 sm:ml-2">
             <Badge
               variant={selectedCategories.includes(category.id) ? "default" : "outline"}
-              className="cursor-pointer px-3 py-1.5 text-sm font-semibold whitespace-nowrap h-10 sm:h-9 flex items-center justify-center"
+              className="cursor-pointer px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold whitespace-nowrap h-8 sm:h-9 flex items-center justify-center"
               onClick={() => onChange(category.id)}
             >
               {category.name} {dealCounts[category.id] > 0 && `(${dealCounts[category.id]})`}
@@ -80,7 +81,7 @@ export default function CategoryTabs({
         ))}
         
         {/* Add right padding to allow last item to be centered when scrolled fully */}
-        <div className="shrink-0 w-4 sm:w-10 pr-4 sm:pr-10"></div>
+        <div className="shrink-0 w-2 sm:w-4 md:w-10"></div>
       </div>
       
       {/* Right scroll button - hidden on mobile */}
@@ -93,10 +94,24 @@ export default function CategoryTabs({
         <ChevronRight className="h-5 w-5" />
       </Button>
       
-      {/* Custom scrollbar hide CSS */}
+      {/* Custom scrollbar hide CSS - enhanced for cross-browser compatibility */}
       <style>{`
         .scrollbar-hide::-webkit-scrollbar {
           display: none;
+          width: 0;
+          height: 0;
+        }
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+          scroll-behavior: smooth;
+          -webkit-overflow-scrolling: touch;
+        }
+        @media (max-width: 640px) {
+          .scrollbar-hide {
+            scroll-snap-type: x mandatory;
+            scroll-padding: 0.25rem;
+          }
         }
       `}</style>
     </div>
