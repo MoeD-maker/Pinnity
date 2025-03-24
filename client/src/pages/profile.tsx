@@ -1,13 +1,14 @@
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { apiRequest } from '@/lib/queryClient';
-import { User as UserIcon } from 'lucide-react';
+import { apiRequest, queryClient } from '@/lib/queryClient';
+import { Bell, Shield, User as UserIcon } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import PasswordChangeForm from '@/components/profile/PasswordChangeForm';
 import UserRatingsList from '@/components/ratings/UserRatingsList';
 import RecentRedemptionsRatingPrompt from '@/components/ratings/RecentRedemptionsRatingPrompt';
@@ -17,6 +18,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function ProfilePage() {
   // Get the authenticated user ID from AuthContext
   const { user: authUser } = useAuth();
+  const { toast } = useToast();
   const userId = authUser?.id;
   
   // Fetch user data
@@ -65,6 +67,41 @@ export default function ProfilePage() {
     },
     enabled: !!userId,
   });
+
+  // Mutation for updating notification preferences
+  const { mutate: updatePreferences, isPending } = useMutation({
+    mutationFn: async (data: any) => {
+      return apiRequest(`/api/v1/user/${userId}/notification-preferences`, {
+        method: 'PUT',
+        data,
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Settings updated',
+        description: 'Your preferences have been saved successfully.',
+        duration: 3000,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/v1/user', userId, 'notification-preferences'] });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to update settings. Please try again.',
+        variant: 'destructive',
+        duration: 5000,
+      });
+    },
+  });
+
+  const handleToggleChange = (field: string, value: boolean) => {
+    if (!preferences) return;
+    
+    updatePreferences({
+      ...preferences,
+      [field]: value,
+    });
+  };
 
   const isLoading = isLoadingUser || isLoadingPreferences || isLoadingRedemptions;
 
@@ -117,7 +154,10 @@ export default function ProfilePage() {
       <div className="grid grid-cols-1 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Personal Information</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <UserIcon className="h-5 w-5" />
+              Personal Information
+            </CardTitle>
             <CardDescription>Manage your account details</CardDescription>
           </CardHeader>
           <CardContent>
@@ -159,61 +199,113 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
         
+        {/* Notification Settings - Now directly on profile page */}
         <Card>
           <CardHeader>
-            <CardTitle>Notification Preferences</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5" />
+              Notification Settings
+            </CardTitle>
             <CardDescription>Manage how you receive notifications</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {/* Simplified notification summary */}
-              <div className="bg-muted/50 rounded-lg p-4">
-                <h4 className="font-medium mb-2">Active Notifications</h4>
-                <ul className="space-y-2 text-sm">
-                  {preferences?.emailNotifications && (
-                    <li className="flex items-center">
-                      <span className="text-green-600 mr-2">✓</span>
-                      Email notifications
-                    </li>
-                  )}
-                  {preferences?.pushNotifications && (
-                    <li className="flex items-center">
-                      <span className="text-green-600 mr-2">✓</span>
-                      Push notifications
-                    </li>
-                  )}
-                  {preferences?.dealAlerts && (
-                    <li className="flex items-center">
-                      <span className="text-green-600 mr-2">✓</span>
-                      Deal alerts
-                    </li>
-                  )}
-                  {preferences?.weeklyNewsletter && (
-                    <li className="flex items-center">
-                      <span className="text-green-600 mr-2">✓</span>
-                      Weekly newsletter
-                    </li>
-                  )}
-                  {!preferences?.emailNotifications && 
-                   !preferences?.pushNotifications && 
-                   !preferences?.dealAlerts && 
-                   !preferences?.weeklyNewsletter && (
-                    <li className="text-muted-foreground italic">
-                      No notifications enabled
-                    </li>
-                  )}
-                </ul>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="email-notifications">Email Notifications</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Receive notifications via email
+                  </p>
+                </div>
+                <Switch 
+                  id="email-notifications" 
+                  checked={preferences?.emailNotifications ?? false}
+                  onCheckedChange={(checked) => handleToggleChange('emailNotifications', checked)}
+                  disabled={isPending || isLoadingPreferences}
+                />
+              </div>
+              
+              <Separator />
+              
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="push-notifications">Push Notifications</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Receive push notifications on your device
+                  </p>
+                </div>
+                <Switch 
+                  id="push-notifications" 
+                  checked={preferences?.pushNotifications ?? false}
+                  onCheckedChange={(checked) => handleToggleChange('pushNotifications', checked)}
+                  disabled={isPending || isLoadingPreferences}
+                />
+              </div>
+              
+              <Separator />
+              
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="deal-alerts">Deal Alerts</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Get notified about new deals in your area
+                  </p>
+                </div>
+                <Switch 
+                  id="deal-alerts" 
+                  checked={preferences?.dealAlerts ?? false}
+                  onCheckedChange={(checked) => handleToggleChange('dealAlerts', checked)}
+                  disabled={isPending || isLoadingPreferences}
+                />
+              </div>
+              
+              <Separator />
+              
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="weekly-newsletter">Weekly Newsletter</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Receive our weekly newsletter with top deals
+                  </p>
+                </div>
+                <Switch 
+                  id="weekly-newsletter" 
+                  checked={preferences?.weeklyNewsletter ?? false}
+                  onCheckedChange={(checked) => handleToggleChange('weeklyNewsletter', checked)}
+                  disabled={isPending || isLoadingPreferences}
+                />
               </div>
             </div>
-            
-            <div className="mt-6">
-              <Link href="/settings?tab=notifications">
-                <Button variant="default" className="w-full">
-                  Manage Notification Settings
-                </Button>
-              </Link>
-              <p className="text-xs text-muted-foreground text-center mt-2">
-                Update your notification preferences in the settings page
+          </CardContent>
+        </Card>
+        
+        {/* Privacy Settings - Simplified on profile page */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Privacy Settings
+            </CardTitle>
+            <CardDescription>Manage your privacy preferences</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="location-sharing">Location Sharing</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Allow the app to access your location for personalized deals
+                  </p>
+                </div>
+                <Switch 
+                  id="location-sharing" 
+                  checked={true}
+                  disabled={true}
+                />
+              </div>
+              
+              <p className="text-xs text-muted-foreground mt-4">
+                We value your privacy. Your data is securely stored and only used to provide you with personalized deals and services.
               </p>
             </div>
           </CardContent>
