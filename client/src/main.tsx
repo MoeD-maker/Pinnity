@@ -1,6 +1,8 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
+// Import Leaflet CSS globally to ensure it's available for map components
+import 'leaflet/dist/leaflet.css';
 
 console.log("Main.tsx is executing");
 

@@ -8,17 +8,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Navigation } from 'lucide-react';
 
-// Import Leaflet CSS
+// Import Leaflet CSS at the component level to ensure it's loaded
+// when the component is rendered
 import 'leaflet/dist/leaflet.css';
 
 // Fix marker icon issues in React Leaflet
-// @see https://github.com/PaulLeCam/react-leaflet/issues/453
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-});
+// Direct icon settings without prototype modification to avoid TypeScript errors
+// Create a global custom icon for Leaflet to use instead of trying to modify default
 
 // Custom marker icon for deals
 const dealIcon = new L.Icon({

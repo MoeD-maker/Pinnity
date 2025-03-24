@@ -63,6 +63,11 @@ const mapCategoryToId = (category: string): string => {
 
 export default function Dashboard() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  
+  // Add logging to track view mode changes
+  useEffect(() => {
+    console.log(`View mode changed to: ${viewMode}`);
+  }, [viewMode]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(true); // Default to true to show filters
@@ -328,6 +333,7 @@ export default function Dashboard() {
               variant={viewMode === 'grid' ? 'default' : 'ghost'} 
               onClick={() => setViewMode('grid')}
               className="rounded-none"
+              aria-label="Show as grid"
             >
               <GridIcon className="h-4 w-4" />
             </Button>
@@ -335,6 +341,7 @@ export default function Dashboard() {
               variant={viewMode === 'map' ? 'default' : 'ghost'} 
               onClick={() => setViewMode('map')}
               className="rounded-none"
+              aria-label="Show on map"
             >
               <MapIcon className="h-4 w-4" />
             </Button>
