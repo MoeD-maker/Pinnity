@@ -6,6 +6,7 @@ import {
   ThumbsUp, 
   ArrowUpDown
 } from 'lucide-react';
+import useWindowSize from '@/hooks/use-window-size';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -65,8 +66,10 @@ export default function SortOptions({
     }
   ];
   
+  // Use our custom hook for better device detection
+  const { isMobile } = useWindowSize();
+  
   // On small screens, use select variant for better mobile UX
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
   const effectiveVariant = isMobile ? 'select' : variant;
   
   // Render as tabs (default on desktop)
@@ -96,12 +99,15 @@ export default function SortOptions({
   }
   
   // Render as a select dropdown
-  if (variant === 'select') {
+  if (effectiveVariant === 'select') {
     return (
       <div className={className}>
         <Select value={selectedSort} onValueChange={(value) => onChange(value as SortOption)}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select sort order" />
+          <SelectTrigger className="w-full h-11">
+            <div className="flex items-center gap-2">
+              {sortOptions.find(opt => opt.id === selectedSort)?.icon}
+              <SelectValue placeholder="Select sort order" />
+            </div>
           </SelectTrigger>
           <SelectContent>
             {sortOptions.map(option => (
@@ -125,17 +131,17 @@ export default function SortOptions({
   
   // Render as buttons
   return (
-    <div className={`flex flex-wrap gap-2 ${className}`}>
+    <div className={`flex flex-wrap gap-2 sm:gap-2 ${className}`}>
       {sortOptions.map(option => (
         <Button 
           key={option.id}
           variant={selectedSort === option.id ? 'default' : 'outline'}
           size="sm"
           onClick={() => onChange(option.id)}
-          className="flex items-center gap-1"
+          className="flex items-center gap-1 h-10 sm:h-9 px-2 sm:px-3 flex-1 sm:flex-none"
         >
           {option.icon}
-          <span>{option.label}</span>
+          <span className="text-xs sm:text-sm">{option.label}</span>
         </Button>
       ))}
     </div>
