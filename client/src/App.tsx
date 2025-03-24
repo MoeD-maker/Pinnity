@@ -450,6 +450,14 @@ function Router() {
         )}
       </Route>
       
+      <Route path="/enhanced-explore">
+        {(params) => (
+          <Suspense fallback={<LoadingFallback />}>
+            <AuthenticatedRoute component={EnhancedExplore} params={params} />
+          </Suspense>
+        )}
+      </Route>
+      
       <Route path="/map">
         {(params) => (
           <Suspense fallback={<LoadingFallback />}>

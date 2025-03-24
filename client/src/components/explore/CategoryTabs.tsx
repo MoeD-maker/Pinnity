@@ -87,7 +87,7 @@ export default function CategoryTabs({
       </Button>
       
       {/* Custom scrollbar hide CSS */}
-      <style jsx global>{`
+      <style>{`
         .scrollbar-hide::-webkit-scrollbar {
           display: none;
         }

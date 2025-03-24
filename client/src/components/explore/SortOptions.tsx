@@ -42,7 +42,7 @@ export default function SortOptions({
     { 
       id: 'trending' as SortOption, 
       label: 'Trending Now', 
-      icon: <Trending className="h-4 w-4" />,
+      icon: <TrendingUp className="h-4 w-4" />,
       description: 'Deals with high views and saves'
     },
     { 
