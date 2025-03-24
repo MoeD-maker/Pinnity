@@ -83,12 +83,53 @@ export default function EnhancedDealGrid({
   };
 
   if (isLoading) {
+    // Show fewer items on mobile for faster rendering
+    const skeletonCount = viewMode === 'large' ? 
+      { mobile: 2, desktop: 4 } : 
+      { mobile: 3, desktop: 6 };
+    
+    const count = typeof window !== 'undefined' && window.innerWidth < 640 ? 
+      skeletonCount.mobile : skeletonCount.desktop;
+    
+    // For swipeable view, show a single card loader
+    if (viewMode === 'swipeable') {
+      return (
+        <div className="max-w-md mx-auto pb-16">
+          <div className="text-xs text-muted-foreground flex justify-between mb-4">
+            <span>← Swipe left to skip</span>
+            <span>Swipe right to save →</span>
+          </div>
+          <Card className="overflow-hidden shadow-lg w-full">
+            <div className="aspect-square relative">
+              <Skeleton className="h-full w-full" />
+            </div>
+            <CardHeader className="p-4">
+              <Skeleton className="h-6 w-3/4 mb-2" />
+              <Skeleton className="h-4 w-1/2" />
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <Skeleton className="h-4 w-full mb-2" />
+              <Skeleton className="h-4 w-full mb-2" />
+              <Skeleton className="h-4 w-2/3 mb-4" />
+              <div className="flex justify-between">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-3 w-16" />
+              </div>
+            </CardContent>
+            <CardFooter className="p-4 pt-0">
+              <Skeleton className="h-10 w-full" />
+            </CardFooter>
+          </Card>
+        </div>
+      );
+    }
+    
     return (
       <div className={viewMode === 'large' 
-        ? "grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full pb-16" 
+        ? "grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6 w-full pb-16" 
         : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 w-full pb-16"
       }>
-        {Array.from({ length: viewMode === 'large' ? 4 : 6 }).map((_, i) => (
+        {Array.from({ length: count }).map((_, i) => (
           <DealCardSkeleton key={i} isLarge={viewMode === 'large'} />
         ))}
       </div>
@@ -294,7 +335,7 @@ function DealCard({
         <CardFooter className="p-3 sm:p-4 pt-0">
           <Button 
             onClick={onSelect} 
-            className="w-full text-sm h-10 sm:h-9 text-base sm:text-sm"
+            className="w-full h-11 sm:h-9 text-sm"
           >
             View Deal
           </Button>
@@ -444,9 +485,10 @@ function FavoriteButton({ dealId }: FavoriteButtonProps) {
     <Button 
       size="icon" 
       variant="ghost" 
-      className="absolute top-2 left-2 bg-white/80 hover:bg-white h-9 w-9 sm:h-8 sm:w-8"
+      className="absolute top-2 left-2 bg-white/80 hover:bg-white h-10 w-10 sm:h-8 sm:w-8 shadow-sm"
       onClick={handleToggleFavorite}
       disabled={isPending}
+      aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
     >
       <Heart className={`h-5 w-5 sm:h-4 sm:w-4 ${isFavorite ? 'text-red-500 fill-red-500' : 'text-muted-foreground'}`} />
     </Button>
@@ -631,10 +673,10 @@ function SwipeableDealCards({ deals, onSelect }: { deals: DealWithBusiness[], on
         </motion.div>
       </AnimatePresence>
       
-      <div className="mt-4 flex justify-between">
+      <div className="mt-4 flex justify-between items-center">
         <Button 
           variant="outline" 
-          size="sm"
+          size="lg"
           onClick={() => {
             setDirection('left');
             setTimeout(() => {
@@ -644,17 +686,18 @@ function SwipeableDealCards({ deals, onSelect }: { deals: DealWithBusiness[], on
               }
             }, 300);
           }}
+          className="h-12 w-24 sm:h-10 sm:w-20 text-base sm:text-sm"
         >
           Skip
         </Button>
         
-        <div className="text-sm text-center text-muted-foreground">
+        <div className="text-sm text-center text-muted-foreground px-2">
           {currentIndex + 1} / {deals.length}
         </div>
         
         <Button 
-          variant="outline"
-          size="sm" 
+          variant="default"
+          size="lg" 
           onClick={() => {
             setDirection('right');
             setTimeout(() => {
@@ -665,6 +708,7 @@ function SwipeableDealCards({ deals, onSelect }: { deals: DealWithBusiness[], on
               }
             }, 300);
           }}
+          className="h-12 w-24 sm:h-10 sm:w-20 text-base sm:text-sm"
         >
           Save
         </Button>
