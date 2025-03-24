@@ -32,8 +32,7 @@ console.log("App.tsx module loading");
 const Favorites = lazy(() => import("@/pages/favorites"));
 const Profile = lazy(() => import("@/pages/profile"));
 const Settings = lazy(() => import("@/pages/settings"));
-const Explore = lazy(() => import("@/pages/explore"));
-const EnhancedExplore = lazy(() => import("@/pages/enhanced-explore"));
+const Explore = lazy(() => import("@/pages/enhanced-explore"));
 const Map = lazy(() => import("@/pages/map"));
 const FormValidationDemo = lazy(() => import("@/pages/FormValidationDemo"));
 
@@ -450,13 +449,7 @@ function Router() {
         )}
       </Route>
       
-      <Route path="/enhanced-explore">
-        {(params) => (
-          <Suspense fallback={<LoadingFallback />}>
-            <AuthenticatedRoute component={EnhancedExplore} params={params} />
-          </Suspense>
-        )}
-      </Route>
+
       
       <Route path="/map">
         {(params) => (

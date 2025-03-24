@@ -67,7 +67,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
       return [
         { icon: <Home className="w-5 h-5" />, label: 'Home', path: '/' },
         { icon: <Search className="w-5 h-5" />, label: 'Explore', path: '/explore' },
-        { icon: <Search className="w-5 h-5" />, label: 'Enhanced', path: '/enhanced-explore' },
         { icon: <MapPin className="w-5 h-5" />, label: 'Map', path: '/map' },
         { icon: <Heart className="w-5 h-5" />, label: 'Favorites', path: '/favorites' },
         { icon: <User className="w-5 h-5" />, label: 'Profile', path: '/profile' },
