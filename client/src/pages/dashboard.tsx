@@ -4,16 +4,12 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { 
   Search, 
   Filter as ListFilterIcon, 
-  Map as MapIcon, 
-  Grid as GridIcon,
   ChevronUp,
   ChevronDown,
   Clock,
@@ -34,7 +30,6 @@ import {
 
 // Use the barrel export for dashboard components
 import { 
-  DealMap, 
   DealGrid, 
   FeaturedDeals, 
   CategoryFilter, 
@@ -42,8 +37,6 @@ import {
   CATEGORIES
 } from '@/components/dashboard';
 import { Deal } from '@shared/schema';
-
-// Removed view mode type since we're only using grid view
 
 // Map API categories to our internal category IDs
 const mapCategoryToId = (category: string): string => {
@@ -322,25 +315,6 @@ export default function Dashboard() {
               <ChevronDown className="h-3 w-3 ml-0.5" />
             )}
           </Button>
-          
-          <div className="hidden md:flex border rounded-md overflow-hidden">
-            <Button 
-              variant={viewMode === 'grid' ? 'default' : 'ghost'} 
-              onClick={() => setViewMode('grid')}
-              className="rounded-none"
-              aria-label="Show as grid"
-            >
-              <GridIcon className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant={viewMode === 'map' ? 'default' : 'ghost'} 
-              onClick={() => setViewMode('map')}
-              className="rounded-none"
-              aria-label="Show on map"
-            >
-              <MapIcon className="h-4 w-4" />
-            </Button>
-          </div>
         </div>
       </div>
 
@@ -376,7 +350,7 @@ export default function Dashboard() {
       )}
 
       {/* Featured deals section */}
-      {viewMode === 'grid' && filteredDeals.length > 0 && (
+      {filteredDeals.length > 0 && (
         <div className="mb-8">
           <h2 className="text-2xl font-semibold mb-4">Featured Deals</h2>
           <FeaturedDeals 
@@ -402,16 +376,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Mobile view selector */}
-      {isMobile && (
-        <Tabs defaultValue="grid" className="mb-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="grid" onClick={() => setViewMode('grid')}>List View</TabsTrigger>
-            <TabsTrigger value="map" onClick={() => setViewMode('map')}>Map View</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      )}
-
       {/* No results message */}
       {filteredDeals.length === 0 && !isLoadingDeals && (
         <div className="text-center py-12 pb-16">
@@ -423,63 +387,47 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Main content based on view mode */}
+      {/* Main content */}
       {filteredDeals.length > 0 && (
-        viewMode === 'grid' ? (
-          <>
-            <DealGrid 
-              deals={currentDeals} 
-              isLoading={isLoadingDeals}
-              onSelect={handleDealSelect}
-              isCached={dealsCacheStatus.isCached}
-              cacheDate={dealsCacheStatus.cacheDate}
-              onRefresh={() => refetchDeals()}
-            />
-            
-            {/* Pagination controls */}
-            {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-2 mt-8 mb-4">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  Previous
-                </Button>
-                
-                <div className="flex items-center mx-2">
-                  <span className="text-sm">{currentPage} of {totalPages}</span>
-                </div>
-                
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
+        <>
+          <DealGrid 
+            deals={currentDeals} 
+            isLoading={isLoadingDeals}
+            onSelect={handleDealSelect}
+            isCached={dealsCacheStatus.isCached}
+            cacheDate={dealsCacheStatus.cacheDate}
+            onRefresh={() => refetchDeals()}
+          />
+          
+          {/* Pagination controls */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2 mt-8 mb-4">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Previous
+              </Button>
+              
+              <div className="flex items-center mx-2">
+                <span className="text-sm">{currentPage} of {totalPages}</span>
               </div>
-            )}
-          </>
-        ) : (
-          <>
-            <div className="mb-4 flex items-center gap-2">
-              <h2 className="text-2xl font-semibold">Map View</h2>
-              <Badge variant="outline" className="ml-2">
-                Showing {filteredDeals.length} deal{filteredDeals.length !== 1 ? 's' : ''}
-              </Badge>
+              
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
             </div>
-            <DealMap 
-              deals={filteredDeals} 
-              isLoading={isLoadingDeals}
-              onSelect={handleDealSelect}
-            />
-          </>
-        )
+          )}
+        </>
       )}
 
       {/* Deal detail modal */}
