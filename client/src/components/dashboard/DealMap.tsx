@@ -73,6 +73,7 @@ export default function DealMap({ deals, isLoading, onSelect }: DealMapProps) {
       <CardContent className="p-0">
         <div className="h-[70vh]">
           <MapContainer
+            key={`map-${mapCenter[0]}-${mapCenter[1]}-${deals.length}`}
             center={mapCenter}
             zoom={13}
             style={{ height: '100%', width: '100%' }}

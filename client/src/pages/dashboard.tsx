@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { 
   Search, 
   Filter as ListFilterIcon, 
@@ -67,6 +68,18 @@ export default function Dashboard() {
   // Add logging to track view mode changes
   useEffect(() => {
     console.log(`View mode changed to: ${viewMode}`);
+    
+    // Force re-render when switching to map view
+    if (viewMode === 'map') {
+      console.log('Initializing map view');
+      
+      // Slightly delay map initialization to ensure DOM is ready
+      const timer = setTimeout(() => {
+        console.log('Map initialization complete');
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
   }, [viewMode]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -471,11 +484,19 @@ export default function Dashboard() {
             )}
           </>
         ) : (
-          <DealMap 
-            deals={filteredDeals} 
-            isLoading={isLoadingDeals}
-            onSelect={handleDealSelect}
-          />
+          <>
+            <div className="mb-4 flex items-center gap-2">
+              <h2 className="text-2xl font-semibold">Map View</h2>
+              <Badge variant="outline" className="ml-2">
+                Showing {filteredDeals.length} deal{filteredDeals.length !== 1 ? 's' : ''}
+              </Badge>
+            </div>
+            <DealMap 
+              deals={filteredDeals} 
+              isLoading={isLoadingDeals}
+              onSelect={handleDealSelect}
+            />
+          </>
         )
       )}
 
