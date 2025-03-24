@@ -10,6 +10,7 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Bell, Shield, User as UserIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import PasswordChangeForm from '@/components/profile/PasswordChangeForm';
+import EditProfileDialog from '@/components/profile/EditProfileDialog';
 import UserRatingsList from '@/components/ratings/UserRatingsList';
 import RecentRedemptionsRatingPrompt from '@/components/ratings/RecentRedemptionsRatingPrompt';
 import { Link } from 'wouter';
@@ -194,7 +195,13 @@ export default function ProfilePage() {
             </div>
             
             <div className="mt-6">
-              <Button variant="outline">Edit Profile</Button>
+              {userId && user && (
+                <EditProfileDialog
+                  userId={userId}
+                  user={user}
+                  trigger={<Button variant="outline">Edit Profile</Button>}
+                />
+              )}
             </div>
           </CardContent>
         </Card>
