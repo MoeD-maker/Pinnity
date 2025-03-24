@@ -299,8 +299,9 @@ export default function ProfilePage() {
                 </div>
                 <Switch 
                   id="location-sharing" 
-                  checked={true}
-                  disabled={true}
+                  checked={preferences?.locationSharing ?? true}
+                  onCheckedChange={(checked) => handleToggleChange('locationSharing', checked)}
+                  disabled={isPending || isLoadingPreferences}
                 />
               </div>
               

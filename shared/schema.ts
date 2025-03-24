@@ -88,6 +88,7 @@ export const userNotificationPreferences = pgTable("user_notification_preference
   expiringDealReminders: boolean("expiring_deal_reminders").default(true), // New field for expiring deal reminders
   expiringDealReminderHours: integer("expiring_deal_reminder_hours").default(48), // Hours before expiration to send reminder
   weeklyNewsletter: boolean("weekly_newsletter").default(true),
+  locationSharing: boolean("location_sharing").default(true), // Privacy setting for location sharing
 });
 
 // Deal approval workflow
