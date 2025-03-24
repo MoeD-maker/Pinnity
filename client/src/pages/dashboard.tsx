@@ -43,7 +43,7 @@ import {
 } from '@/components/dashboard';
 import { Deal } from '@shared/schema';
 
-type ViewMode = 'grid' | 'map';
+// Removed view mode type since we're only using grid view
 
 // Map API categories to our internal category IDs
 const mapCategoryToId = (category: string): string => {
@@ -63,24 +63,7 @@ const mapCategoryToId = (category: string): string => {
 };
 
 export default function Dashboard() {
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  
-  // Add logging to track view mode changes
-  useEffect(() => {
-    console.log(`View mode changed to: ${viewMode}`);
-    
-    // Force re-render when switching to map view
-    if (viewMode === 'map') {
-      console.log('Initializing map view');
-      
-      // Slightly delay map initialization to ensure DOM is ready
-      const timer = setTimeout(() => {
-        console.log('Map initialization complete');
-      }, 100);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [viewMode]);
+  // No longer using viewMode state since we're only showing grid view
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(true); // Default to true to show filters
