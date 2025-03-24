@@ -164,13 +164,13 @@ export default function ProfilePage() {
           <CardContent>
             <div className="flex items-center space-x-4">
               <Avatar className="h-16 w-16">
-                <AvatarImage src={user?.avatarUrl || ''} alt={user?.name} />
+                <AvatarImage src={user?.avatarUrl || ''} alt={user ? `${user.firstName} ${user.lastName}` : 'User'} />
                 <AvatarFallback className="bg-primary text-white">
-                  {user?.name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
+                  {user ? (user.firstName?.[0] || '') + (user.lastName?.[0] || '') : 'U'}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <h3 className="text-lg font-medium">{user?.name}</h3>
+                <h3 className="text-lg font-medium">{user?.firstName} {user?.lastName}</h3>
                 <p className="text-sm text-muted-foreground">{user?.email}</p>
               </div>
             </div>
@@ -180,7 +180,7 @@ export default function ProfilePage() {
             <div className="space-y-4">
               <div>
                 <Label htmlFor="name">Full Name</Label>
-                <div className="mt-1 text-sm">{user?.name}</div>
+                <div className="mt-1 text-sm">{user?.firstName} {user?.lastName}</div>
               </div>
               
               <div>
