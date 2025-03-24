@@ -107,8 +107,10 @@ export default function SortOptions({
             <div className="flex items-center gap-2">
               <ArrowUpDown className="h-4 w-4 text-muted-foreground mr-1" />
               <span className="text-sm font-medium">Sort:</span>
-              {sortOptions.find(opt => opt.id === selectedSort)?.icon}
-              <SelectValue placeholder="Select sort order" />
+              <span className="flex items-center">
+                {sortOptions.find(opt => opt.id === selectedSort)?.icon}
+                <span className="ml-1">{sortOptions.find(opt => opt.id === selectedSort)?.label}</span>
+              </span>
             </div>
           </SelectTrigger>
           <SelectContent position="popper" className="min-w-[240px]">
