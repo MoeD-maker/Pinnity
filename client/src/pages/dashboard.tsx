@@ -63,7 +63,6 @@ const mapCategoryToId = (category: string): string => {
 };
 
 export default function Dashboard() {
-  // No longer using viewMode state since we're only showing grid view
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(true); // Default to true to show filters
