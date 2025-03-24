@@ -65,8 +65,12 @@ export default function SortOptions({
     }
   ];
   
-  // Render as tabs (default)
-  if (variant === 'tabs') {
+  // On small screens, use select variant for better mobile UX
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+  const effectiveVariant = isMobile ? 'select' : variant;
+  
+  // Render as tabs (default on desktop)
+  if (effectiveVariant === 'tabs') {
     return (
       <div className={className}>
         <Tabs 
@@ -74,12 +78,12 @@ export default function SortOptions({
           onValueChange={(value) => onChange(value as SortOption)}
           className="w-full"
         >
-          <TabsList className="w-full grid grid-cols-4 h-11">
+          <TabsList className="w-full grid grid-cols-4 h-12 sm:h-11">
             {sortOptions.map(option => (
               <TabsTrigger 
                 key={option.id} 
                 value={option.id}
-                className="flex items-center gap-1 py-2.5"
+                className="flex items-center justify-center gap-1 py-2.5 px-1"
               >
                 <span className="hidden sm:inline">{option.icon}</span>
                 <span className="text-xs sm:text-sm truncate">{option.label}</span>

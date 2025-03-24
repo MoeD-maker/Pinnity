@@ -35,7 +35,7 @@ export default function CategoryTabs({
   
   return (
     <div className={`relative ${className}`}>
-      {/* Left scroll button */}
+      {/* Left scroll button - hidden on mobile */}
       <Button
         variant="ghost"
         className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white/90 shadow-sm h-9 w-9 p-0 hidden sm:flex items-center justify-center"
@@ -45,38 +45,45 @@ export default function CategoryTabs({
         <ChevronLeft className="h-5 w-5" />
       </Button>
       
-      {/* Scrollable tabs container */}
+      {/* Scrollable tabs container - enhanced for mobile touch scrolling */}
       <div 
         ref={scrollContainerRef}
-        className="flex overflow-x-auto pb-3 pt-1 px-1 scrollbar-hide snap-x"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        className="flex overflow-x-auto pb-3 pt-1 px-1 scrollbar-hide snap-x scroll-smooth"
+        style={{ 
+          scrollbarWidth: 'none', 
+          msOverflowStyle: 'none',
+          WebkitOverflowScrolling: 'touch' // Enable momentum scrolling on iOS
+        }}
       >
-        {/* All categories tab */}
-        <div className="snap-start shrink-0 first:pl-2 sm:first:pl-10 last:pr-8">
+        {/* All categories tab - padding adjusted for mobile */}
+        <div className="snap-start shrink-0 pl-2 sm:pl-10 pr-1">
           <Badge
             variant={selectedCategories.length === 0 ? "default" : "outline"}
-            className="cursor-pointer px-3 py-1.5 text-sm font-semibold whitespace-nowrap h-9"
+            className="cursor-pointer px-3 py-1.5 text-sm font-semibold whitespace-nowrap h-10 sm:h-9 flex items-center justify-center"
             onClick={() => onChange('all')}
           >
             All Categories {dealCounts['all'] > 0 && `(${dealCounts['all']})`}
           </Badge>
         </div>
         
-        {/* Individual category tabs */}
+        {/* Individual category tabs - improved touch targets */}
         {CATEGORIES.filter(cat => cat.id !== 'all').map((category) => (
           <div key={category.id} className="snap-start shrink-0 ml-2">
             <Badge
               variant={selectedCategories.includes(category.id) ? "default" : "outline"}
-              className="cursor-pointer px-3 py-1.5 text-sm font-semibold whitespace-nowrap h-9"
+              className="cursor-pointer px-3 py-1.5 text-sm font-semibold whitespace-nowrap h-10 sm:h-9 flex items-center justify-center"
               onClick={() => onChange(category.id)}
             >
               {category.name} {dealCounts[category.id] > 0 && `(${dealCounts[category.id]})`}
             </Badge>
           </div>
         ))}
+        
+        {/* Add right padding to allow last item to be centered when scrolled fully */}
+        <div className="shrink-0 w-4 sm:w-10 pr-4 sm:pr-10"></div>
       </div>
       
-      {/* Right scroll button */}
+      {/* Right scroll button - hidden on mobile */}
       <Button
         variant="ghost"
         className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white/90 shadow-sm h-9 w-9 p-0 hidden sm:flex items-center justify-center"

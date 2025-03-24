@@ -85,8 +85,8 @@ export default function EnhancedDealGrid({
   if (isLoading) {
     return (
       <div className={viewMode === 'large' 
-        ? "grid grid-cols-1 sm:grid-cols-2 gap-6 w-full pb-16" 
-        : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full pb-16"
+        ? "grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full pb-16" 
+        : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 w-full pb-16"
       }>
         {Array.from({ length: viewMode === 'large' ? 4 : 6 }).map((_, i) => (
           <DealCardSkeleton key={i} isLarge={viewMode === 'large'} />
@@ -117,8 +117,8 @@ export default function EnhancedDealGrid({
         <SwipeableDealCards deals={deals} onSelect={onSelect} />
       ) : (
         <div className={viewMode === 'large' 
-          ? "grid grid-cols-1 sm:grid-cols-2 gap-6 w-full pb-16" 
-          : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full pb-16"
+          ? "grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full pb-16" 
+          : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 w-full pb-16"
         }>
           {deals.map((deal, index) => (
             <DealCard 
@@ -292,7 +292,10 @@ function DealCard({
         </CardContent>
         
         <CardFooter className="p-3 sm:p-4 pt-0">
-          <Button onClick={onSelect} className="w-full text-sm h-9">
+          <Button 
+            onClick={onSelect} 
+            className="w-full text-sm h-10 sm:h-9 text-base sm:text-sm"
+          >
             View Deal
           </Button>
         </CardFooter>
@@ -441,11 +444,11 @@ function FavoriteButton({ dealId }: FavoriteButtonProps) {
     <Button 
       size="icon" 
       variant="ghost" 
-      className="absolute top-2 left-2 bg-white/80 hover:bg-white"
+      className="absolute top-2 left-2 bg-white/80 hover:bg-white h-9 w-9 sm:h-8 sm:w-8"
       onClick={handleToggleFavorite}
       disabled={isPending}
     >
-      <Heart className={`h-4 w-4 ${isFavorite ? 'text-red-500 fill-red-500' : 'text-muted-foreground'}`} />
+      <Heart className={`h-5 w-5 sm:h-4 sm:w-4 ${isFavorite ? 'text-red-500 fill-red-500' : 'text-muted-foreground'}`} />
     </Button>
   );
 }
