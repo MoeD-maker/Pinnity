@@ -329,7 +329,7 @@ export default function EnhancedExplorePage() {
   const { isMobile } = useWindowSize();
   
   return (
-    <div className="container max-w-7xl mx-auto px-2 sm:px-4 md:px-6 pt-3 pb-16 min-h-screen">
+    <div className="container max-w-7xl mx-auto px-2 sm:px-4 md:px-6 pt-3 pb-16 min-h-screen overflow-hidden">
       {/* Breadcrumbs navigation */}
       <Breadcrumbs 
         pathLabels={commonPathLabels} 
