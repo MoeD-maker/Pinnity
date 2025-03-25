@@ -224,4 +224,22 @@ export function adminRoutes(app: Express): void {
       return res.status(500).json({ message: "Error updating deal status" });
     }
   });
+
+  // Toggle featured status for a deal (admin only)
+  app.put("/api/deals/:id/featured", authenticate, authorize(['admin']), async (req: Request, res: Response) => {
+    try {
+      const dealId = parseInt(req.params.id);
+      const { featured } = req.body;
+      
+      if (typeof featured !== 'boolean') {
+        return res.status(400).json({ message: "Featured status must be a boolean value" });
+      }
+      
+      const deal = await storage.updateDeal(dealId, { featured });
+      return res.status(200).json(deal);
+    } catch (error) {
+      console.error("Error updating deal featured status:", error);
+      return res.status(500).json({ message: "Error updating deal featured status" });
+    }
+  });
 }

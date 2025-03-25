@@ -237,7 +237,7 @@ function DealCard({
       ref={ref} 
       className={`overflow-hidden transition-all hover:shadow-md cursor-pointer w-full ${
         isLarge ? 'flex flex-col sm:flex-row h-full' : ''
-      }`}
+      } ${deal.featured ? 'border-2 border-primary/20 relative' : ''}`}
       onClick={onSelect}
     >
       {inView ? (
@@ -312,6 +312,14 @@ function DealCard({
                   <Badge variant="outline" className="bg-pink-100 text-pink-700 border-pink-200 text-xs flex items-center gap-1">
                     <ArrowUpRight className="h-3 w-3" />
                     <span>Trending</span>
+                  </Badge>
+                )}
+                
+                {/* Featured badge */}
+                {deal.featured && (
+                  <Badge className="bg-primary text-white flex items-center gap-1 text-xs">
+                    <Sparkles className="h-3 w-3" />
+                    <span>Featured</span>
                   </Badge>
                 )}
               </div>
@@ -626,7 +634,7 @@ function SwipeableDealCards({ deals, onSelect }: { deals: DealWithBusiness[], on
           className="touch-manipulation"
         >
           <Card className="overflow-hidden shadow-lg w-full">
-            <div className="aspect-square relative overflow-hidden">
+            <div className={`aspect-square relative overflow-hidden ${currentDeal.featured ? 'border-2 border-primary/20' : ''}`}>
               <img 
                 src={currentDeal.imageUrl || 'https://images.unsplash.com/photo-1556742111-a301076d9d18?ixlib=rb-4.0.3'} 
                 alt={currentDeal.title}
@@ -637,6 +645,16 @@ function SwipeableDealCards({ deals, onSelect }: { deals: DealWithBusiness[], on
                   {currentDeal.discount || ''}
                 </Badge>
               </div>
+              
+              {/* Featured badge */}
+              {currentDeal.featured && (
+                <div className="absolute top-4 left-4">
+                  <Badge className="bg-primary text-white flex items-center gap-1">
+                    <Sparkles className="h-3 w-3" />
+                    <span>Featured</span>
+                  </Badge>
+                </div>
+              )}
               
               {/* Swipe direction indicators */}
               {direction === 'left' && (
