@@ -5,15 +5,20 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Heart, Database, Sparkles } from 'lucide-react';
-import { isExpired, isExpiringSoon, DealLike } from '@/utils/dealReminders';
-import ExpiredBadge from '@/components/deals/ExpiredBadge';
-import ExpiringSoonBadge from '@/components/deals/ExpiringSoonBadge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import CachedDataAlert from '@/components/ui/CachedDataAlert';
+
+// Utility function to check if a date is within X days from now
+function isWithinDays(date: Date, days: number): boolean {
+  const now = new Date();
+  const diffTime = date.getTime() - now.getTime();
+  const diffDays = diffTime / (1000 * 60 * 60 * 24);
+  return diffDays > 0 && diffDays <= days;
+}
 
 interface DealWithBusiness {
   id: number;
@@ -23,6 +28,7 @@ interface DealWithBusiness {
   imageUrl?: string;
   discount?: string;
   expiresAt?: string | null;
+  endDate?: string | null; // Added for DealLike compatibility
   business: {
     businessName: string;
     [key: string]: any;
@@ -282,10 +288,18 @@ export default function FeaturedDeals({
                 )}
                 
                 {/* Expiration badges */}
-                {isExpired(deal) ? (
-                  <ExpiredBadge deal={deal} className="bg-white/90" />
-                ) : isExpiringSoon(deal) && (
-                  <ExpiringSoonBadge deal={deal} className="bg-white/90" />
+                {deal.expiresAt && (
+                  <>
+                    {new Date(deal.expiresAt) < new Date() ? (
+                      <Badge variant="destructive" className="bg-white/90 text-red-500 border-red-200">
+                        Expired
+                      </Badge>
+                    ) : isWithinDays(new Date(deal.expiresAt), 3) && (
+                      <Badge variant="outline" className="bg-white/90 text-amber-600 border-amber-200">
+                        Expires Soon
+                      </Badge>
+                    )}
+                  </>
                 )}
               </div>
             </div>

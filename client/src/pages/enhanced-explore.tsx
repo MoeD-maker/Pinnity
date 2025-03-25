@@ -503,13 +503,16 @@ export default function EnhancedExplorePage() {
         </div>
       ) : (
         <>
-          {/* Surprise Me section (if not in swipeable mode) */}
+          {/* Featured Deals section (if not in swipeable mode) */}
           {viewMode !== 'swipeable' && (
-            <SurpriseDeals
+            <FeaturedDeals
               deals={deals}
               isLoading={isLoading}
               onSelect={(dealId) => setSelectedDealId(dealId)}
-              title="Surprise Me"
+              isCached={dealsCacheStatus.isCached}
+              cacheDate={dealsCacheStatus.cacheDate}
+              onRefresh={() => refetchDeals()}
+              title="Featured Deals"
             />
           )}
           
