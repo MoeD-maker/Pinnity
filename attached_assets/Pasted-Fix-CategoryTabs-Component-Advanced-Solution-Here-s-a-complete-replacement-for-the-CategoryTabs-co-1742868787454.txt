@@ -1,0 +1,165 @@
+Fix CategoryTabs Component - Advanced Solution
+Here's a complete replacement for the CategoryTabs component that should fix the horizontal scrolling issues:
+jsxCopy// Replace the entire CategoryTabs.tsx component with this implementation
+
+import React, { useRef, useEffect, useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CATEGORIES } from '@/components/dashboard/CategoryFilter';
+import useWindowSize from '@/hooks/use-window-size';
+
+interface CategoryTabsProps {
+  selectedCategories: string[];
+  onChange: (category: string) => void;
+  dealCounts: Record<string, number>;
+  className?: string;
+}
+
+export default function CategoryTabs({ 
+  selectedCategories, 
+  onChange, 
+  dealCounts,
+  className = ''
+}: CategoryTabsProps) {
+  // Reference to the scrollable container
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const outerContainerRef = useRef<HTMLDivElement>(null);
+  const { isMobile } = useWindowSize();
+  const [containerWidth, setContainerWidth] = useState(0);
+  
+  // Update container width on resize
+  useEffect(() => {
+    if (!outerContainerRef.current) return;
+    
+    const updateWidth = () => {
+      if (outerContainerRef.current) {
+        setContainerWidth(outerContainerRef.current.getBoundingClientRect().width);
+      }
+    };
+    
+    // Initial width measurement
+    updateWidth();
+    
+    // Listen for resize events
+    window.addEventListener('resize', updateWidth);
+    
+    return () => {
+      window.removeEventListener('resize', updateWidth);
+    };
+  }, []);
+  
+  // Handle scroll actions
+  const handleScroll = (direction: 'left' | 'right') => {
+    if (!scrollContainerRef.current) return;
+    
+    const scrollAmount = 200; // Pixels to scroll
+    const currentScroll = scrollContainerRef.current.scrollLeft;
+    
+    scrollContainerRef.current.scrollTo({
+      left: direction === 'left' ? currentScroll - scrollAmount : currentScroll + scrollAmount,
+      behavior: 'smooth'
+    });
+  };
+  
+  return (
+    <div 
+      ref={outerContainerRef}
+      className={`relative w-full ${className}`}
+      style={{ overflow: 'hidden' }} // Force overflow hidden with inline style
+    >
+      {/* Left scroll button - hidden on mobile */}
+      <Button
+        variant="ghost"
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white/90 shadow-sm h-9 w-9 p-0 hidden sm:flex items-center justify-center"
+        onClick={() => handleScroll('left')}
+        aria-label="Scroll categories left"
+      >
+        <ChevronLeft className="h-5 w-5" />
+      </Button>
+      
+      {/* Scrollable tabs container - enhanced for mobile touch scrolling */}
+      <div 
+        ref={scrollContainerRef}
+        className="flex overflow-x-auto pb-2 pt-1 scrollbar-hide snap-x scroll-smooth"
+        style={{ 
+          scrollbarWidth: 'none', 
+          msOverflowStyle: 'none',
+          WebkitOverflowScrolling: 'touch', // Enable momentum scrolling on iOS
+          width: containerWidth ? `${containerWidth}px` : '100%',
+          maxWidth: '100%',
+          padding: isMobile ? '0 4px' : '0 8px',
+        }}
+      >
+        {/* All categories tab - padding adjusted for mobile */}
+        <div className="snap-start shrink-0 pr-1.5">
+          <Badge
+            variant={selectedCategories.length === 0 ? "default" : "outline"}
+            className="cursor-pointer px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium whitespace-nowrap h-7 sm:h-9 flex items-center justify-center"
+            onClick={() => onChange('all')}
+          >
+            All{isMobile ? '' : ' Categories'} {dealCounts['all'] > 0 && `(${dealCounts['all']})`}
+          </Badge>
+        </div>
+        
+        {/* Individual category tabs - improved touch targets */}
+        {CATEGORIES.filter(cat => cat.id !== 'all').map((category) => (
+          <div key={category.id} className="snap-start shrink-0 ml-1.5">
+            <Badge
+              variant={selectedCategories.includes(category.id) ? "default" : "outline"}
+              className="cursor-pointer px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium whitespace-nowrap h-7 sm:h-9 flex items-center justify-center"
+              onClick={() => onChange(category.id)}
+            >
+              {/* Shorten text on mobile */}
+              <span className="max-w-[75px] truncate">
+                {isMobile && category.name.length > 10 
+                  ? category.name.substring(0, 9) + '...' 
+                  : category.name}
+              </span>
+              {dealCounts[category.id] > 0 && (
+                <span className="ml-1">({dealCounts[category.id]})</span>
+              )}
+            </Badge>
+          </div>
+        ))}
+        
+        {/* Add right padding to allow last item to be centered when scrolled fully */}
+        <div className="shrink-0 w-4"></div>
+      </div>
+      
+      {/* Right scroll button - hidden on mobile */}
+      <Button
+        variant="ghost"
+        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white/90 shadow-sm h-9 w-9 p-0 hidden sm:flex items-center justify-center"
+        onClick={() => handleScroll('right')}
+        aria-label="Scroll categories right"
+      >
+        <ChevronRight className="h-5 w-5" />
+      </Button>
+      
+      {/* Custom scrollbar hide CSS - enhanced for cross-browser compatibility */}
+      <style jsx>{`
+        /* Important flags to ensure styles are applied */
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none !important;
+          width: 0 !important;
+          height: 0 !important;
+        }
+        .scrollbar-hide {
+          -ms-overflow-style: none !important;
+          scrollbar-width: none !important;
+          scroll-behavior: smooth !important;
+          -webkit-overflow-scrolling: touch !important;
+        }
+      `}</style>
+    </div>
+  );
+}
+This implementation includes several key improvements:
+
+Dynamic width calculation: Uses a ref and effect to measure and update the container width
+Force inline styles: Applies critical styles directly inline to ensure they're not overridden
+Mobile optimization: Shortens category names and removes "Categories" text on mobile
+Improved spacing: Adjusts badge padding and spacing specifically for mobile
+Strong style enforcement: Uses !important flags in the CSS to ensure styles aren't overridden
+Fixed scroll container: Uses fixed width in pixels based on container measurements
