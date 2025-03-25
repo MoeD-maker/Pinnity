@@ -25,6 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import CachedDataAlert from '@/components/ui/CachedDataAlert';
 import { motion, AnimatePresence } from 'framer-motion';
+import useWindowSize from '@/hooks/use-window-size';
 
 // Use a looser type for the API response since it may not match the database schema exactly
 interface DealWithBusiness {
@@ -82,14 +83,16 @@ export default function EnhancedDealGrid({
     return mockDistances[index % mockDistances.length];
   };
 
+  // Use our custom hook for better device detection
+  const { isMobile } = useWindowSize();
+
   if (isLoading) {
     // Show fewer items on mobile for faster rendering
     const skeletonCount = viewMode === 'large' ? 
       { mobile: 2, desktop: 4 } : 
       { mobile: 3, desktop: 6 };
     
-    const count = typeof window !== 'undefined' && window.innerWidth < 640 ? 
-      skeletonCount.mobile : skeletonCount.desktop;
+    const count = isMobile ? skeletonCount.mobile : skeletonCount.desktop;
     
     // For swipeable view, show a single card loader
     if (viewMode === 'swipeable') {
