@@ -392,7 +392,12 @@ function FavoriteButton({ dealId }: FavoriteButtonProps) {
       if (!user) return [];
       try {
         const response = await apiRequest(`/api/v1/user/${user.id}/favorites`);
-        return response;
+        // Convert from object to array if needed (API returns object with numeric keys)
+        if (response && typeof response === 'object' && !Array.isArray(response)) {
+          console.log("Converting favorites from object to array format");
+          return Object.values(response);
+        }
+        return response || [];
       } catch (error) {
         console.error('Error fetching favorites:', error);
         return [];
@@ -403,8 +408,8 @@ function FavoriteButton({ dealId }: FavoriteButtonProps) {
   
   // Set initial favorite state once favorites are loaded
   React.useEffect(() => {
-    if (favorites) {
-      const isFav = favorites.some((fav: any) => fav.deal.id === dealId);
+    if (favorites && Array.isArray(favorites)) {
+      const isFav = favorites.some((fav: any) => fav?.deal?.id === dealId);
       setIsFavorite(isFav);
     }
   }, [favorites, dealId]);
