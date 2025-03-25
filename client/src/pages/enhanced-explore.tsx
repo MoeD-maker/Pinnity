@@ -32,10 +32,10 @@ import {
   MoodFilters,
   SortOptions,
   SurpriseDeals,
-  FeaturedDeals,
   SortOption,
   MoodFilter
 } from '@/components/explore';
+import FeaturedDeals from '@/components/explore/FeaturedDealsFixed';
 
 // Import the CATEGORIES for mapping
 import { CATEGORIES } from '@/components/dashboard/CategoryFilter';
@@ -507,13 +507,9 @@ export default function EnhancedExplorePage() {
           {/* Featured Deals section (if not in swipeable mode) */}
           {viewMode !== 'swipeable' && (
             <FeaturedDeals
-              deals={deals}
-              isLoading={isLoading}
               onSelect={(dealId: number) => setSelectedDealId(dealId)}
-              isCached={dealsCacheStatus.isCached}
-              cacheDate={dealsCacheStatus.cacheDate}
-              onRefresh={() => refetchDeals()}
               title="Featured Deals"
+              limit={3}
             />
           )}
           
