@@ -87,11 +87,6 @@ export default function Dashboard() {
     isCached: false,
     cacheDate: undefined
   });
-  
-  const [featuredDealsCacheStatus, setFeaturedDealsCacheStatus] = useState<CacheStatus>({
-    isCached: false,
-    cacheDate: undefined
-  });
 
   // Fetch all deals
   const { data: deals, isLoading: isLoadingDeals, refetch: refetchDeals } = useQuery({
@@ -114,26 +109,7 @@ export default function Dashboard() {
     },
   });
 
-  // Fetch featured deals
-  const { data: featuredDeals, isLoading: isLoadingFeatured, refetch: refetchFeaturedDeals } = useQuery({
-    queryKey: ['/api/v1/deals/featured'],
-    queryFn: async () => {
-      try {
-        const response = await fetch('/api/v1/deals/featured?limit=5');
-        
-        // Use centralized cache utility to check cache status
-        const cacheStatus = getCacheStatusFromResponse(response);
-        
-        // Update cache status
-        setFeaturedDealsCacheStatus(cacheStatus);
-        
-        return await response.json();
-      } catch (error) {
-        console.error('Error fetching featured deals:', error);
-        throw error;
-      }
-    },
-  });
+  // Note: Featured deals are now fetched directly in the FeaturedDeals component
 
   // Handle category filter changes
   const handleCategoryChange = (category: string) => {
@@ -198,11 +174,9 @@ export default function Dashboard() {
       
       // Set fresh cache status using the utility
       setDealsCacheStatus(getFreshCacheStatus());
-      setFeaturedDealsCacheStatus(getFreshCacheStatus());
       
-      // Refresh all deals data
+      // Refresh deals data
       refetchDeals();
-      refetchFeaturedDeals();
     };
     
     // Use the centralized utility to listen for connection restoration events
@@ -210,7 +184,7 @@ export default function Dashboard() {
     
     // Clean up event listener on unmount
     return cleanup;
-  }, [refetchDeals, refetchFeaturedDeals]);
+  }, [refetchDeals]);
   
   // Filter deals based on search query, selected categories, and expiration status using useMemo
   const filteredDeals = useMemo(() => {
@@ -349,32 +323,14 @@ export default function Dashboard() {
         </Card>
       )}
 
-      {/* Featured deals section */}
-      {filteredDeals.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">Featured Deals</h2>
-          <FeaturedDeals 
-            deals={(featuredDeals || []).filter((deal: any) => {
-              // If user is individual, filter out expired deals
-              if (user?.userType === 'individual' && isExpired(deal)) {
-                return false;
-              }
-              
-              // For business and admin users, show expired deals based on toggle
-              if ((user?.userType === 'business' || user?.userType === 'admin') && isExpired(deal)) {
-                return showExpired;
-              }
-              
-              return true;
-            })} 
-            isLoading={isLoadingFeatured}
-            onSelect={handleDealSelect}
-            isCached={featuredDealsCacheStatus.isCached}
-            cacheDate={featuredDealsCacheStatus.cacheDate}
-            onRefresh={() => refetchFeaturedDeals()}
-          />
-        </div>
-      )}
+      {/* Featured deals section - directly fetches from API */}
+      <div className="mb-8">
+        <FeaturedDeals 
+          onSelect={handleDealSelect}
+          title="Featured Deals"
+          limit={3}
+        />
+      </div>
 
       {/* No results message */}
       {filteredDeals.length === 0 && !isLoadingDeals && (
