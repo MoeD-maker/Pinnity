@@ -83,6 +83,14 @@ export default function ExplorePage() {
         
         const data = await response.json();
         console.log("API Response:", data);
+        
+        // Check if data is an object with numeric keys instead of an array
+        if (data && typeof data === 'object' && !Array.isArray(data)) {
+          console.log('Converting object to array format');
+          // Convert object to array
+          return Object.values(data);
+        }
+        
         return data;
       } catch (error) {
         console.error('Error fetching deals:', error);

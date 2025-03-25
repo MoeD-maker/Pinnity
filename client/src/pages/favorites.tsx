@@ -17,8 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import ExpiringDealsNotification from '@/components/deals/ExpiringDealsNotification';
 
 export default function FavoritesPage() {
-  // For demonstration purposes, hardcoded user ID
-  const userId = 1;
+  // Get the authenticated user from the auth context
   const { user } = useAuth();
   
   // State for notification banner and toggles
@@ -28,11 +27,32 @@ export default function FavoritesPage() {
   
   // Fetch user favorites
   const { data: favorites, isLoading } = useQuery({
-    queryKey: ['/api/user', userId, 'favorites'],
+    queryKey: ['/api/v1/user', user?.id, 'favorites'],
     queryFn: async () => {
-      const response = await apiRequest(`/api/user/${userId}/favorites`);
-      return response;
+      try {
+        // Use the current user's ID from the auth context
+        if (!user?.id) {
+          console.error('No authenticated user found');
+          return [];
+        }
+        
+        const response = await apiRequest(`/api/v1/user/${user.id}/favorites`);
+        
+        // Check if response is an object with numeric keys instead of an array
+        if (response && typeof response === 'object' && !Array.isArray(response)) {
+          console.log('Converting favorites object to array format');
+          // Convert object to array
+          return Object.values(response);
+        }
+        
+        return response;
+      } catch (error) {
+        console.error('Error fetching favorites:', error);
+        return [];
+      }
     },
+    // Only run query when we have a user ID
+    enabled: !!user?.id
   });
 
   // Check for expiring deals when favorites are loaded
@@ -120,7 +140,7 @@ export default function FavoritesPage() {
         </div>
       ) : (
         <DealGrid
-          deals={(favorites?.map((fav: { deal: DealLike }) => fav.deal) || []).filter((deal) => {
+          deals={(favorites?.map((fav: { deal: DealLike }) => fav.deal) || []).filter((deal: DealLike) => {
             // For individual users, filter out expired deals
             if (user?.userType === 'individual' && isExpired(deal)) {
               return false;
