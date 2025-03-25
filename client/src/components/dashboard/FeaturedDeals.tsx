@@ -268,7 +268,7 @@ export default function FeaturedDeals({
         {featuredDeals.map((deal: DealWithBusiness) => (
           <Card 
             key={deal.id} 
-            className="overflow-hidden transition-all hover:shadow-md cursor-pointer"
+            className="overflow-hidden transition-all hover:shadow-md cursor-pointer border-2 border-primary/20 relative"
             onClick={() => onSelect(deal.id)}
           >
             <div className="aspect-video relative overflow-hidden">
@@ -279,6 +279,14 @@ export default function FeaturedDeals({
               />
               <div className="absolute top-2 left-2">
                 <FeaturedDealFavoriteButton dealId={deal.id} />
+              </div>
+              
+              {/* Featured badge in top right corner */}
+              <div className="absolute top-2 right-2">
+                <Badge className="bg-primary text-white flex items-center gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  Featured
+                </Badge>
               </div>
               
               {/* Deal discount badge */}

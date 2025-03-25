@@ -14,7 +14,8 @@ import {
   Star, 
   ArrowUpRight,
   Shuffle,
-  ThumbsUp
+  ThumbsUp,
+  Sparkles
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { isExpiringSoon, getExpirationText, isExpired } from '@/utils/dealReminders';
