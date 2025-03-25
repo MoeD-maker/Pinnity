@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation } from 'wouter';
-import { Link } from 'wouter';
+import { Link as WouterLink } from 'wouter';
 import { Home } from 'lucide-react';
 
 import {
@@ -12,6 +12,11 @@ import {
   BreadcrumbSeparator,
   BreadcrumbEllipsis,
 } from '@/components/ui/breadcrumb';
+
+// Create a simple Link component that wraps WouterLink to avoid React.Fragment props issues
+const Link = ({ href, children, ...props }: { href: string, children: React.ReactNode } & React.HTMLAttributes<HTMLAnchorElement>) => (
+  <WouterLink href={href} {...props}>{children}</WouterLink>
+);
 
 interface BreadcrumbItem {
   href: string;
