@@ -543,21 +543,13 @@ export default function EnhancedExplorePage() {
       )}
 
       {/* Deal detail dialog */}
-      <Dialog 
-        open={selectedDealId !== null} 
-        onOpenChange={(open) => {
-          if (!open) setSelectedDealId(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-2xl p-0 max-h-[90vh] sm:max-h-[85vh] overflow-y-auto">
-          {selectedDealId && (
-            <DealDetail
-              dealId={selectedDealId}
-              onClose={() => setSelectedDealId(null)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* We don't need to add DialogTitle here because DealDetail component has its own */}
+      {selectedDealId && (
+        <DealDetail
+          dealId={selectedDealId}
+          onClose={() => setSelectedDealId(null)}
+        />
+      )}
     </div>
   );
 }

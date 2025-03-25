@@ -1,7 +1,15 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { MapPin, Calendar, Phone, Globe, Clock, Share2, Heart, Award, AlertCircle, CheckCircle } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogFooter,
+  DialogClose
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -100,35 +108,37 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
 
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="w-[calc(100%-24px)] max-h-[90vh] overflow-y-auto mx-auto sm:max-w-[600px] p-3 sm:p-6">
+      <DialogContent className="w-[calc(100%-32px)] max-h-[90vh] overflow-y-auto mx-auto sm:max-w-[600px] p-4 sm:p-6 sm:pt-5 pt-10">
         {isLoading ? (
           <DealDetailSkeleton />
         ) : deal ? (
           <>
-            {/* Moved action buttons to header row for better spacing */}            
-            <DialogHeader className="pb-2 pt-8 sm:pt-4">
-              <div className="flex justify-between items-center mb-2">
+            <DialogClose className="absolute top-5 right-5 rounded-full h-7 w-7 opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground" />
+            
+            {/* Modified header with more spacing and mobile-friendly design */}            
+            <DialogHeader className="pb-2 pt-4 sm:pt-3">
+              <div className="flex justify-between items-center mb-3">
                 <Badge className="text-xs sm:text-sm">{deal.category}</Badge>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3">
                   <Button 
                     variant="outline" 
                     size="icon" 
                     onClick={() => addToFavorites.mutate()} 
-                    className="h-7 w-7 sm:h-8 sm:w-8 bg-white rounded-full"
+                    className="h-8 w-8 sm:h-9 sm:w-9 bg-white rounded-full"
                   >
-                    <Heart className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <Heart className="h-4 w-4 sm:h-5 sm:w-5" />
                   </Button>
                   <Button 
                     variant="outline" 
                     size="icon" 
                     onClick={handleShare} 
-                    className="h-7 w-7 sm:h-8 sm:w-8"
+                    className="h-8 w-8 sm:h-9 sm:w-9 rounded-full"
                   >
-                    <Share2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <Share2 className="h-4 w-4 sm:h-5 sm:w-5" />
                   </Button>
                 </div>
               </div>
-              <DialogTitle className="text-xl sm:text-2xl">{deal.title}</DialogTitle>
+              <DialogTitle className="text-xl sm:text-2xl leading-tight mb-1">{deal.title}</DialogTitle>
               <DialogDescription className="text-sm sm:text-base font-medium">
                 {deal.business.businessName}
               </DialogDescription>

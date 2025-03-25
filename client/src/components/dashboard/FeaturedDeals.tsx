@@ -1,20 +1,40 @@
 import React from 'react';
 import { useInView } from 'react-intersection-observer';
-import { Deal } from '@shared/schema';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Heart, Database } from 'lucide-react';
-import { isExpired, isExpiringSoon } from '@/utils/dealReminders';
-import ExpiredBadge from '@/components/deals/ExpiredBadge';
-import ExpiringSoonBadge from '@/components/deals/ExpiringSoonBadge';
+import { Badge } from '@/components/ui/badge';
+import { Heart, Database, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import CachedDataAlert from '@/components/ui/CachedDataAlert';
+
+// Utility function to check if a date is within X days from now
+function isWithinDays(date: Date, days: number): boolean {
+  const now = new Date();
+  const diffTime = date.getTime() - now.getTime();
+  const diffDays = diffTime / (1000 * 60 * 60 * 24);
+  return diffDays > 0 && diffDays <= days;
+}
+
+interface DealWithBusiness {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  imageUrl?: string;
+  discount?: string;
+  expiresAt?: string | null;
+  endDate?: string | null; // Added for DealLike compatibility
+  business: {
+    businessName: string;
+    [key: string]: any;
+  };
+  [key: string]: any;
+}
 
 // Feature Deal Favorite Button
 interface FeaturedDealFavoriteButtonProps {
@@ -28,12 +48,21 @@ function FeaturedDealFavoriteButton({ dealId }: FeaturedDealFavoriteButtonProps)
   
   // Get user favorites to determine initial state
   const { data: favorites } = useQuery({
-    queryKey: ['/api/user', user?.id, 'favorites'],
+    queryKey: ['/api/v1/user', user?.id, 'favorites'],
     queryFn: async () => {
       if (!user) return [];
       try {
-        const response = await apiRequest(`/api/user/${user.id}/favorites`);
-        return response;
+        const response = await apiRequest(`/api/v1/user/${user.id}/favorites`);
+        if (response && typeof response === 'object') {
+          // Handle both array and object responses
+          if (Array.isArray(response)) {
+            return response;
+          } else {
+            // Convert object with numeric keys to array
+            return Object.values(response);
+          }
+        }
+        return [];
       } catch (error) {
         console.error('Error fetching favorites:', error);
         return [];
@@ -45,7 +74,11 @@ function FeaturedDealFavoriteButton({ dealId }: FeaturedDealFavoriteButtonProps)
   // Set initial favorite state once favorites are loaded
   React.useEffect(() => {
     if (favorites) {
-      const isFav = favorites.some((fav: any) => fav.deal?.id === dealId);
+      // Make sure favorites is an array before calling .some
+      const favoriteArray = Array.isArray(favorites) ? favorites : Object.values(favorites || {});
+      const isFav = favoriteArray.some((fav: any) => 
+        (fav.dealId === dealId) || (fav.deal && fav.deal.id === dealId)
+      );
       setIsFavorite(isFav);
     }
   }, [favorites, dealId]);
@@ -54,7 +87,7 @@ function FeaturedDealFavoriteButton({ dealId }: FeaturedDealFavoriteButtonProps)
   const addToFavorites = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error('Not authenticated');
-      return apiRequest(`/api/user/${user.id}/favorites`, {
+      return apiRequest(`/api/v1/user/${user.id}/favorites`, {
         method: 'POST',
         data: { dealId }
       });
@@ -66,7 +99,7 @@ function FeaturedDealFavoriteButton({ dealId }: FeaturedDealFavoriteButtonProps)
         description: 'Deal has been added to your favorites',
       });
       // Invalidate favorites query to fetch updated list
-      queryClient.invalidateQueries({ queryKey: ['/api/user', user?.id, 'favorites'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/v1/user', user?.id, 'favorites'] });
     },
     onError: (error) => {
       console.error('Error adding to favorites:', error);
@@ -82,7 +115,7 @@ function FeaturedDealFavoriteButton({ dealId }: FeaturedDealFavoriteButtonProps)
   const removeFromFavorites = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error('Not authenticated');
-      return apiRequest(`/api/user/${user.id}/favorites/${dealId}`, {
+      return apiRequest(`/api/v1/user/${user.id}/favorites/${dealId}`, {
         method: 'DELETE',
       });
     },
@@ -93,7 +126,7 @@ function FeaturedDealFavoriteButton({ dealId }: FeaturedDealFavoriteButtonProps)
         description: 'Deal has been removed from your favorites',
       });
       // Invalidate favorites query to fetch updated list
-      queryClient.invalidateQueries({ queryKey: ['/api/user', user?.id, 'favorites'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/v1/user', user?.id, 'favorites'] });
     },
     onError: (error) => {
       console.error('Error removing from favorites:', error);
@@ -140,145 +173,158 @@ function FeaturedDealFavoriteButton({ dealId }: FeaturedDealFavoriteButtonProps)
 
 // Featured Deals Component
 interface FeaturedDealsProps {
-  deals: (Deal & { business: any })[];
-  isLoading: boolean;
   onSelect: (dealId: number) => void;
-  isCached?: boolean;
-  cacheDate?: string | number | Date;
-  onRefresh?: () => void;
+  title?: string;
+  limit?: number;
 }
 
 export default function FeaturedDeals({ 
-  deals, 
-  isLoading, 
   onSelect,
-  isCached = false,
-  cacheDate,
-  onRefresh 
+  title = "Featured Deals",
+  limit = 3
 }: FeaturedDealsProps) {
+  const { toast } = useToast();
+  
+  // Get featured deals from API endpoint
+  const { data: allDeals, isLoading, error, refetch } = useQuery({
+    queryKey: ['/api/v1/deals/featured'],
+    queryFn: async () => {
+      try {
+        const response = await apiRequest('/api/v1/deals/featured');
+        
+        if (response && typeof response === 'object') {
+          // Handle both array and object responses
+          if (Array.isArray(response)) {
+            return response;
+          } else {
+            // Convert object with numeric keys to array
+            return Object.values(response);
+          }
+        }
+        return [];
+      } catch (error) {
+        console.error('Error fetching featured deals:', error);
+        throw error;
+      }
+    }
+  });
+  
+  // Get just the first X featured deals
+  const featuredDeals = React.useMemo(() => {
+    if (!allDeals || !Array.isArray(allDeals)) return [];
+    return allDeals.slice(0, limit);
+  }, [allDeals, limit]);
+
+  if (error) {
+    console.error('Error loading featured deals:', error);
+  }
+
   if (isLoading) {
     return (
-      <div className="flex overflow-x-auto gap-4 pb-4 px-0 max-w-[100vw] hide-scrollbar">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <FeaturedDealSkeleton key={i} />
-        ))}
-      </div>
-    );
-  }
-
-  if (deals.length === 0) {
-    return (
-      <div className="text-center py-6">
-        <p className="text-muted-foreground">No featured deals available</p>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <CachedDataAlert 
-        isCached={isCached} 
-        cachedDate={cacheDate} 
-        onRefresh={onRefresh}
-        className="mb-4"
-      />
-      <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 px-0 sm:px-0 max-w-[100vw] -mx-2 px-2 sm:mx-0 sm:px-0">
-        {deals.map((deal) => (
-          <FeaturedDealCard 
-            key={deal.id} 
-            deal={deal} 
-            onSelect={() => onSelect(deal.id)} 
-            isCached={isCached}
-          />
-        ))}
-      </div>
-    </>
-  );
-}
-
-// Featured Deal Card Component
-interface FeaturedDealCardProps {
-  deal: Deal & { business: any };
-  onSelect: () => void;
-  isCached?: boolean;
-}
-
-function FeaturedDealCard({ deal, onSelect, isCached = false }: FeaturedDealCardProps) {
-  const { ref, inView } = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  });
-
-  // Calculate discount percentage or value
-  const discount = deal.discount || '';
-
-  return (
-    <Card 
-      ref={ref} 
-      className="overflow-hidden flex-shrink-0 w-[200px] xs:w-[250px] sm:w-[280px] cursor-pointer transition-all hover:shadow-md"
-      onClick={onSelect}
-    >
-      {inView ? (
-        <div className="aspect-[4/3] relative">
-          <img 
-            src={deal.imageUrl || 'https://images.unsplash.com/photo-1556742111-a301076d9d18?ixlib=rb-4.0.3'} 
-            alt={deal.title}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-4">
-            <div className="flex flex-wrap gap-2 mb-2">
-              <Badge className="self-start bg-primary text-white">
-                {discount}
-              </Badge>
-              {isExpired(deal) ? (
-                <ExpiredBadge deal={deal} className="bg-white/90" />
-              ) : isExpiringSoon(deal) && (
-                <ExpiringSoonBadge deal={deal} className="bg-white/90" />
-              )}
-            </div>
-            <h3 className="text-white font-semibold line-clamp-1">{deal.title}</h3>
-            <p className="text-white/90 text-sm line-clamp-1">
-              {deal.business.businessName}
-            </p>
-          </div>
-          <div className="absolute top-2 left-2">
-            <FeaturedDealFavoriteButton dealId={deal.id} />
-          </div>
-          
-          {/* Cache indicator for featured deals */}
-          {isCached && (
-            <div className="absolute top-2 right-2">
-              <Badge variant="outline" className="bg-amber-100/90 text-amber-800 border-amber-200 text-xs flex gap-1 items-center px-2 py-0.5">
-                <Database className="h-3 w-3" />
-                <span>Cached</span>
-              </Badge>
-            </div>
-          )}
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            {title}
+          </h2>
         </div>
-      ) : (
-        <div className="aspect-[4/3] bg-muted animate-pulse" />
-      )}
-      
-      <CardContent className="p-3">
-        <p className="text-sm line-clamp-2 text-muted-foreground">
-          {deal.description}
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
-
-// Skeleton for loading state
-function FeaturedDealSkeleton() {
-  return (
-    <Card className="overflow-hidden flex-shrink-0 w-[200px] xs:w-[250px] sm:w-[280px]">
-      <div className="aspect-[4/3]">
-        <Skeleton className="h-full w-full" />
+        
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {Array.from({ length: limit }).map((_, i) => (
+            <Card key={i} className="overflow-hidden">
+              <div className="aspect-video">
+                <Skeleton className="h-full w-full" />
+              </div>
+              <CardContent className="p-3">
+                <Skeleton className="h-5 w-3/4 mb-2" />
+                <Skeleton className="h-4 w-1/2 mb-4" />
+                <Skeleton className="h-4 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
-      <CardContent className="p-3">
-        <Skeleton className="h-4 w-full mb-1" />
-        <Skeleton className="h-4 w-3/4" />
-      </CardContent>
-    </Card>
+    );
+  }
+  
+  if (!featuredDeals || featuredDeals.length === 0) {
+    return null;
+  }
+  
+  return (
+    <div className="space-y-4 mb-8">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-primary" />
+          {title}
+        </h2>
+        
+        <Button variant="outline" size="sm" onClick={() => refetch()}>
+          Refresh
+        </Button>
+      </div>
+      
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {featuredDeals.map((deal: DealWithBusiness) => (
+          <Card 
+            key={deal.id} 
+            className="overflow-hidden transition-all hover:shadow-md cursor-pointer"
+            onClick={() => onSelect(deal.id)}
+          >
+            <div className="aspect-video relative overflow-hidden">
+              <img 
+                src={deal.imageUrl || 'https://images.unsplash.com/photo-1556742111-a301076d9d18?ixlib=rb-4.0.3'} 
+                alt={deal.title}
+                className="w-full h-full object-cover transition-transform hover:scale-105"
+              />
+              <div className="absolute top-2 left-2">
+                <FeaturedDealFavoriteButton dealId={deal.id} />
+              </div>
+              
+              {/* Deal discount badge */}
+              <div className="absolute bottom-2 left-2 flex flex-wrap gap-2">
+                {deal.discount && (
+                  <Badge className="bg-primary text-white">
+                    {deal.discount}
+                  </Badge>
+                )}
+                
+                {/* Expiration badges */}
+                {(deal.expiresAt || deal.endDate) && (
+                  <>
+                    {new Date(deal.expiresAt || deal.endDate || '') < new Date() ? (
+                      <Badge variant="destructive" className="bg-white/90 text-red-500 border-red-200">
+                        Expired
+                      </Badge>
+                    ) : isWithinDays(new Date(deal.expiresAt || deal.endDate || ''), 3) && (
+                      <Badge variant="outline" className="bg-white/90 text-amber-600 border-amber-200">
+                        Expires Soon
+                      </Badge>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+            <CardContent className="p-3">
+              <h3 className="font-semibold text-base line-clamp-1">{deal.title}</h3>
+              <p className="text-xs text-muted-foreground mb-2">{deal.business?.businessName || 'Unknown Business'}</p>
+              <p className="text-sm line-clamp-2">{deal.description}</p>
+            </CardContent>
+            <CardFooter className="p-3 pt-0">
+              <Button 
+                variant="secondary" 
+                className="w-full" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelect(deal.id);
+                }}
+              >
+                View Deal
+              </Button>
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+    </div>
   );
 }
