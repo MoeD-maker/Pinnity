@@ -108,38 +108,45 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
 
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="w-[calc(100%-32px)] max-h-[90vh] overflow-y-auto mx-auto sm:max-w-[600px] p-4 sm:p-6 sm:pt-5 pt-10">
+      <DialogContent 
+        className="w-[calc(100%-32px)] max-h-[90vh] overflow-y-auto mx-auto sm:max-w-[600px] p-4 sm:p-6 sm:pt-5 pt-10"
+        aria-labelledby="deal-detail-title"
+        aria-describedby="deal-detail-description"
+      >
         {isLoading ? (
           <DealDetailSkeleton />
         ) : deal ? (
           <>
+            {/* Close button in top right corner */}
             <DialogClose className="absolute top-5 right-5 rounded-full h-7 w-7 opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground" />
             
+            {/* Heart & Share buttons in top left corner */}
+            <div className="absolute top-5 left-5 flex items-center space-x-2">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={() => addToFavorites.mutate()} 
+                className="h-7 w-7 sm:h-8 sm:w-8 bg-white/90 rounded-full"
+              >
+                <Heart className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              </Button>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={handleShare} 
+                className="h-7 w-7 sm:h-8 sm:w-8 bg-white/90 rounded-full"
+              >
+                <Share2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              </Button>
+            </div>
+            
             {/* Modified header with more spacing and mobile-friendly design */}            
-            <DialogHeader className="pb-2 pt-4 sm:pt-3">
+            <DialogHeader className="pb-2 pt-4 sm:pt-3 mt-6">
               <div className="flex justify-between items-center mb-3">
                 <Badge className="text-xs sm:text-sm">{deal.category}</Badge>
-                <div className="flex items-center space-x-3">
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    onClick={() => addToFavorites.mutate()} 
-                    className="h-8 w-8 sm:h-9 sm:w-9 bg-white rounded-full"
-                  >
-                    <Heart className="h-4 w-4 sm:h-5 sm:w-5" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    onClick={handleShare} 
-                    className="h-8 w-8 sm:h-9 sm:w-9 rounded-full"
-                  >
-                    <Share2 className="h-4 w-4 sm:h-5 sm:w-5" />
-                  </Button>
-                </div>
               </div>
-              <DialogTitle className="text-xl sm:text-2xl leading-tight mb-1">{deal.title}</DialogTitle>
-              <DialogDescription className="text-sm sm:text-base font-medium">
+              <DialogTitle id="deal-detail-title" className="text-xl sm:text-2xl leading-tight mb-1">{deal.title}</DialogTitle>
+              <DialogDescription id="deal-detail-description" className="text-sm sm:text-base font-medium">
                 {deal.business.businessName}
               </DialogDescription>
             </DialogHeader>
