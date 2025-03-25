@@ -648,7 +648,7 @@ function SwipeableDealCards({ deals, onSelect }: { deals: DealWithBusiness[], on
             
             <CardHeader className="p-4">
               <h2 className="text-xl font-bold">{currentDeal.title}</h2>
-              <p className="text-muted-foreground">{currentDeal.business.businessName}</p>
+              <p className="text-muted-foreground">{currentDeal.business?.businessName || 'Unknown Business'}</p>
             </CardHeader>
             
             <CardContent className="p-4 pt-0">
