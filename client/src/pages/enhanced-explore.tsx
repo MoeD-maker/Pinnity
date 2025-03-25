@@ -32,6 +32,7 @@ import {
   MoodFilters,
   SortOptions,
   SurpriseDeals,
+  FeaturedDeals,
   SortOption,
   MoodFilter
 } from '@/components/explore';
@@ -508,7 +509,7 @@ export default function EnhancedExplorePage() {
             <FeaturedDeals
               deals={deals}
               isLoading={isLoading}
-              onSelect={(dealId) => setSelectedDealId(dealId)}
+              onSelect={(dealId: number) => setSelectedDealId(dealId)}
               isCached={dealsCacheStatus.isCached}
               cacheDate={dealsCacheStatus.cacheDate}
               onRefresh={() => refetchDeals()}
@@ -520,7 +521,7 @@ export default function EnhancedExplorePage() {
           <EnhancedDealGrid
             deals={filteredDeals}
             isLoading={isLoading}
-            onSelect={(dealId) => setSelectedDealId(dealId)}
+            onSelect={(dealId: number) => setSelectedDealId(dealId)}
             isCached={dealsCacheStatus.isCached}
             cacheDate={dealsCacheStatus.cacheDate}
             onRefresh={handleRefresh}
