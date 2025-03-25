@@ -129,8 +129,8 @@ export default function EnhancedDealGrid({
     
     return (
       <div className={viewMode === 'large' 
-        ? "grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6 w-full pb-16" 
-        : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 w-full pb-16"
+        ? "grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6 w-full pb-16 max-w-full overflow-hidden" 
+        : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 w-full pb-16 max-w-full overflow-hidden"
       }>
         {Array.from({ length: count }).map((_, i) => (
           <DealCardSkeleton key={i} isLarge={viewMode === 'large'} />
@@ -161,8 +161,8 @@ export default function EnhancedDealGrid({
         <SwipeableDealCards deals={deals} onSelect={onSelect} />
       ) : (
         <div className={viewMode === 'large' 
-          ? "grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full pb-16" 
-          : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 w-full pb-16"
+          ? "grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full pb-16 max-w-full overflow-hidden" 
+          : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 w-full pb-16 max-w-full overflow-hidden"
         }>
           {deals.map((deal, index) => (
             <DealCard 

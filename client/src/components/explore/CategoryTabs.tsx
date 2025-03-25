@@ -53,12 +53,13 @@ export default function CategoryTabs({
       {/* Scrollable tabs container - enhanced for mobile touch scrolling */}
       <div 
         ref={scrollContainerRef}
-        className="flex overflow-x-auto pb-2 pt-1 px-0 sm:px-1 scrollbar-hide snap-x scroll-smooth w-full max-w-[calc(100vw-32px)]"
+        className="flex overflow-x-auto pb-2 pt-1 px-0 sm:px-1 scrollbar-hide snap-x scroll-smooth w-full max-w-[calc(100vw-32px)] sm:max-w-full"
         style={{ 
           scrollbarWidth: 'none', 
           msOverflowStyle: 'none',
           WebkitOverflowScrolling: 'touch', // Enable momentum scrolling on iOS
-          overflowX: 'auto'
+          overflowX: 'auto',
+          touchAction: 'pan-x'
         }}
       >
         {/* All categories tab - optimized for mobile */}
