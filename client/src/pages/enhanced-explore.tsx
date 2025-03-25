@@ -325,27 +325,27 @@ export default function EnhancedExplorePage() {
   };
 
   return (
-    <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-4 pb-16">
+    <div className="container max-w-7xl mx-auto px-4 sm:px-6 py-4 pb-16 min-h-screen">
       {/* Breadcrumbs navigation */}
       <Breadcrumbs 
         pathLabels={commonPathLabels} 
-        className="mb-4" 
+        className="mb-4 overflow-x-auto" 
       />
       
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <div>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 w-full">
+        <div className="w-full sm:w-auto">
           <h1 className="text-2xl sm:text-3xl font-bold text-primary">Explore</h1>
           <p className="text-muted-foreground mt-1">
             Discover amazing local deals
           </p>
         </div>
         
-        <div className="flex gap-2 w-full sm:w-auto">
-          <div className="relative flex-1">
+        <div className="flex gap-2 w-full sm:w-auto max-w-full">
+          <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
               placeholder="Search deals..."
-              className="pl-10 h-12 text-base sm:text-sm"
+              className="pl-10 h-12 text-base sm:text-sm w-full"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
