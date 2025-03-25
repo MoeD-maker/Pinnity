@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { CATEGORIES } from '@/components/dashboard/CategoryFilter';
+import useWindowSize from '@/hooks/use-window-size';
 
 interface CategoryTabsProps {
   selectedCategories: string[];
@@ -20,11 +21,15 @@ export default function CategoryTabs({
   // Reference to the scrollable container
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   
+  // Use our custom hook for better device detection
+  const { isMobile } = useWindowSize();
+  
   // Handle scroll actions
   const handleScroll = (direction: 'left' | 'right') => {
     if (!scrollContainerRef.current) return;
     
-    const scrollAmount = 200; // Pixels to scroll
+    // Use smaller scroll amount on mobile for more precise control
+    const scrollAmount = isMobile ? 120 : 200;
     const currentScroll = scrollContainerRef.current.scrollLeft;
     
     scrollContainerRef.current.scrollTo({
@@ -35,7 +40,7 @@ export default function CategoryTabs({
   
   return (
     <div className={`relative w-full overflow-hidden max-w-full ${className}`}>
-      {/* Left scroll button - hidden on mobile */}
+      {/* Left scroll button - shown only on desktop */}
       <Button
         variant="ghost"
         className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white/90 shadow-sm h-9 w-9 p-0 hidden sm:flex items-center justify-center"
@@ -48,7 +53,7 @@ export default function CategoryTabs({
       {/* Scrollable tabs container - enhanced for mobile touch scrolling */}
       <div 
         ref={scrollContainerRef}
-        className="flex overflow-x-auto pb-2 pt-1 px-0 sm:px-1 scrollbar-hide snap-x scroll-smooth w-full max-w-[calc(100vw-32px)]"
+        className="flex overflow-x-auto pb-2 pt-1 px-0 sm:px-1 scrollbar-hide snap-x scroll-smooth w-full max-w-[calc(100vw-24px)]"
         style={{ 
           scrollbarWidth: 'none', 
           msOverflowStyle: 'none',
@@ -56,24 +61,24 @@ export default function CategoryTabs({
           overflowX: 'auto'
         }}
       >
-        {/* All categories tab - padding adjusted for mobile */}
+        {/* All categories tab - optimized for mobile */}
         <div className="snap-start shrink-0 pl-1 sm:pl-2 md:pl-10 pr-1">
           <Badge
             variant={selectedCategories.length === 0 ? "default" : "outline"}
-            className="cursor-pointer px-1.5 sm:px-3 py-1 text-xs sm:text-sm font-medium whitespace-nowrap h-7 sm:h-9 flex items-center justify-center"
+            className={`cursor-pointer px-1.5 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-sm font-medium whitespace-nowrap ${isMobile ? 'h-6 min-w-[40px]' : 'h-9'} flex items-center justify-center touch-manipulation`}
             onClick={() => onChange('all')}
           >
-            <span className="max-w-[80px] sm:max-w-none truncate">All Categories</span>
+            <span className="max-w-[80px] sm:max-w-none truncate">{isMobile ? 'All' : 'All Categories'}</span>
             {dealCounts['all'] > 0 && <span className="ml-1">({dealCounts['all']})</span>}
           </Badge>
         </div>
         
-        {/* Individual category tabs - improved touch targets */}
+        {/* Individual category tabs - optimized for mobile */}
         {CATEGORIES.filter(cat => cat.id !== 'all').map((category) => (
           <div key={category.id} className="snap-start shrink-0 ml-1 sm:ml-2">
             <Badge
               variant={selectedCategories.includes(category.id) ? "default" : "outline"}
-              className="cursor-pointer px-1.5 sm:px-3 py-1 text-xs sm:text-sm font-medium whitespace-nowrap h-7 sm:h-9 flex items-center justify-center"
+              className={`cursor-pointer px-1.5 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-sm font-medium whitespace-nowrap ${isMobile ? 'h-6 min-w-[40px]' : 'h-9'} flex items-center justify-center touch-manipulation`}
               onClick={() => onChange(category.id)}
             >
               <span className="max-w-[80px] sm:max-w-none truncate">{category.name}</span>
@@ -111,8 +116,16 @@ export default function CategoryTabs({
         }
         @media (max-width: 640px) {
           .scrollbar-hide {
-            scroll-snap-type: x mandatory;
-            scroll-padding: 0.25rem;
+            scroll-snap-type: x proximity; /* proximity instead of mandatory for smoother experience */
+            scroll-padding: 0.5rem;
+            scroll-behavior: smooth !important;
+            touch-action: pan-x !important; /* Optimize for horizontal panning */
+          }
+        }
+        /* Provide momentum scrolling on iOS */
+        @supports (-webkit-overflow-scrolling: touch) {
+          .scrollbar-hide {
+            -webkit-overflow-scrolling: touch !important;
           }
         }
       `}</style>

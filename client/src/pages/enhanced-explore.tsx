@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
+import useWindowSize from '@/hooks/use-window-size';
 import { 
   Search, 
   MapPin, 
@@ -324,8 +325,11 @@ export default function EnhancedExplorePage() {
     refetchDeals();
   };
 
+  // Use the window size hook for responsive behavior
+  const { isMobile } = useWindowSize();
+  
   return (
-    <div className="container max-w-7xl mx-auto px-2 sm:px-4 md:px-6 py-4 pb-16 min-h-screen">
+    <div className="container max-w-7xl mx-auto px-2 sm:px-4 md:px-6 pt-3 pb-16 min-h-screen">
       {/* Breadcrumbs navigation */}
       <Breadcrumbs 
         pathLabels={commonPathLabels} 
