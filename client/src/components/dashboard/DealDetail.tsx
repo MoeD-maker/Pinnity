@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { MapPin, Calendar, Phone, Globe, Clock, Share2, Heart, Award, AlertCircle, CheckCircle } from 'lucide-react';
+import { MapPin, Calendar, Phone, Globe, Clock, Share2, Heart, Award, AlertCircle, CheckCircle, Sparkles } from 'lucide-react';
 import { 
   Dialog, 
   DialogContent, 
@@ -143,7 +143,15 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
             {/* Modified header with more spacing and mobile-friendly design */}            
             <DialogHeader className="pb-2 pt-4 sm:pt-3 mt-6">
               <div className="flex justify-between items-center mb-3">
-                <Badge className="text-xs sm:text-sm">{deal.category}</Badge>
+                <div className="flex items-center gap-2">
+                  <Badge className="text-xs sm:text-sm">{deal.category}</Badge>
+                  {deal.featured && (
+                    <Badge className="bg-primary text-white flex items-center gap-1 text-xs">
+                      <Sparkles className="h-3 w-3" />
+                      <span>Featured</span>
+                    </Badge>
+                  )}
+                </div>
               </div>
               <DialogTitle id="deal-detail-title" className="text-xl sm:text-2xl leading-tight mb-1">{deal.title}</DialogTitle>
               <DialogDescription id="deal-detail-description" className="text-sm sm:text-base font-medium">
@@ -171,12 +179,20 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
               
               <TabsContent value="details" className="space-y-4 mt-4">
                 {/* Show image only in details tab with proper spacing */}
-                <div className="aspect-video rounded-lg overflow-hidden mb-6">
+                <div className={`aspect-video rounded-lg overflow-hidden mb-6 relative ${deal.featured ? 'border-2 border-primary/30' : ''}`}>
                   <img 
                     src={deal.imageUrl || 'https://images.unsplash.com/photo-1556742111-a301076d9d18?ixlib=rb-4.0.3'} 
                     alt={deal.title}
                     className="w-full h-full object-cover"
                   />
+                  {deal.featured && (
+                    <div className="absolute top-3 right-3">
+                      <Badge className="bg-primary text-white flex items-center gap-1">
+                        <Sparkles className="h-3 w-3" />
+                        <span>Featured</span>
+                      </Badge>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="bg-card rounded-lg p-4 sm:p-5 border shadow-sm">
