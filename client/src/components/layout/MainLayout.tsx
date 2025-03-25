@@ -361,9 +361,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
           </div>
         </nav>
         
-        <main className="flex-1 md:ml-60 pb-16 md:pb-0 safe-area-padding-horizontal">
-          <div className="flex-grow flex flex-col">
-            <div className="w-full flex flex-col">
+        <main className="flex-1 md:ml-60 pb-16 md:pb-0 safe-area-padding-horizontal overflow-hidden">
+          <div className="flex-grow flex flex-col overflow-hidden">
+            <div className="w-full flex flex-col overflow-x-hidden">
               {children}
             </div>
             {/* Add bottom spacing on mobile to prevent content being hidden behind the navigation bar */}

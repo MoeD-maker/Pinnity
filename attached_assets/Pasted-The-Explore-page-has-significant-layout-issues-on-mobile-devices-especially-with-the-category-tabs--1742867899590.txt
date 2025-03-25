@@ -1,0 +1,97 @@
+The Explore page has significant layout issues on mobile devices, especially with the category tabs bar and other UI elements being cut off horizontally. Please implement the following urgent fixes:
+1. Fix CategoryTabs Component:
+jsxCopy// In CategoryTabs.tsx
+// Replace the outer container div with:
+<div className={`relative w-full overflow-hidden max-w-full ${className}`}>
+  {/* Left scroll button code remains the same */}
+  
+  {/* Replace the scrollable container div with: */}
+  <div 
+    ref={scrollContainerRef}
+    className="flex overflow-x-auto pb-2 pt-1 px-0 sm:px-1 scrollbar-hide snap-x scroll-smooth w-full max-w-[calc(100vw-32px)]"
+    style={{ 
+      scrollbarWidth: 'none', 
+      msOverflowStyle: 'none',
+      WebkitOverflowScrolling: 'touch',
+      overflowX: 'auto'
+    }}
+  >
+    {/* Other content remains the same */}
+  </div>
+  
+  {/* Right scroll button code remains the same */}
+  
+  {/* Update the scrollbar-hide CSS to be more robust */}
+  <style>{`
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+    }
+    .scrollbar-hide {
+      -ms-overflow-style: none !important;
+      scrollbar-width: none !important;
+      scroll-behavior: smooth !important;
+      -webkit-overflow-scrolling: touch !important;
+    }
+  `}</style>
+</div>
+2. Update the Container in enhanced-explore.tsx:
+jsxCopy// Replace the main container div with:
+<div className="container max-w-7xl mx-auto px-2 sm:px-4 md:px-6 py-4 pb-16 min-h-screen">
+  {/* Content remains the same */}
+</div>
+3. Update Badge Size in CategoryTabs.tsx:
+jsxCopy// Replace the Badge component for categories with:
+<Badge
+  variant={selectedCategories.includes(category.id) ? "default" : "outline"}
+  className="cursor-pointer px-1.5 sm:px-3 py-1 text-xs sm:text-sm font-medium whitespace-nowrap h-7 sm:h-9 flex items-center justify-center"
+  onClick={() => onChange(category.id)}
+>
+  <span className="max-w-[80px] sm:max-w-none truncate">{category.name}</span>
+  {dealCounts[category.id] > 0 && <span className="ml-1">({dealCounts[category.id]})</span>}
+</Badge>
+4. Add Viewport Meta Tag:
+Ensure the following meta tag is correctly set in your HTML head:
+htmlCopy<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+5. Apply Consistent Mobile Detection:
+Update all components in the explore directory to use the useWindowSize hook for consistent mobile detection:
+jsxCopy// At the top of each component file:
+import useWindowSize from '@/hooks/use-window-size';
+
+// Inside component function:
+const { isMobile } = useWindowSize();
+6. Update the MainLayout.tsx component:
+Ensure the main content area has proper overflow handling:
+jsxCopy<main className="flex-1 md:ml-60 pb-16 md:pb-0 safe-area-padding-horizontal overflow-hidden">
+  <div className="flex-grow flex flex-col overflow-hidden">
+    <div className="w-full flex flex-col overflow-x-hidden">
+      {children}
+    </div>
+    {/* Add bottom spacing on mobile */}
+    <div className="h-16 md:hidden safe-area-margin-bottom"></div>
+  </div>
+</main>
+7. Global CSS Fix:
+Add this to your global CSS file:
+cssCopy/* Fix horizontal overflow issues */
+body, #root, .app-container {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Fix for mobile padding */
+@media (max-width: 640px) {
+  .container {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
+These changes will ensure that:
+
+The category tabs container properly constrains its width
+Elements don't overflow the viewport boundaries
+Text is properly truncated on small screens
+Scrolling behavior works correctly on touch devices
+
+Please prioritize implementing these fixes as they're causing serious usability issues on mobile devices.

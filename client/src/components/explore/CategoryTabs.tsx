@@ -34,7 +34,7 @@ export default function CategoryTabs({
   };
   
   return (
-    <div className={`relative w-full overflow-hidden ${className}`}>
+    <div className={`relative w-full overflow-hidden max-w-full ${className}`}>
       {/* Left scroll button - hidden on mobile */}
       <Button
         variant="ghost"
@@ -48,7 +48,7 @@ export default function CategoryTabs({
       {/* Scrollable tabs container - enhanced for mobile touch scrolling */}
       <div 
         ref={scrollContainerRef}
-        className="flex overflow-x-auto pb-2 pt-1 px-0 sm:px-1 scrollbar-hide snap-x scroll-smooth w-full"
+        className="flex overflow-x-auto pb-2 pt-1 px-0 sm:px-1 scrollbar-hide snap-x scroll-smooth w-full max-w-[calc(100vw-32px)]"
         style={{ 
           scrollbarWidth: 'none', 
           msOverflowStyle: 'none',
@@ -60,10 +60,11 @@ export default function CategoryTabs({
         <div className="snap-start shrink-0 pl-1 sm:pl-2 md:pl-10 pr-1">
           <Badge
             variant={selectedCategories.length === 0 ? "default" : "outline"}
-            className="cursor-pointer px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold whitespace-nowrap h-8 sm:h-9 flex items-center justify-center"
+            className="cursor-pointer px-1.5 sm:px-3 py-1 text-xs sm:text-sm font-medium whitespace-nowrap h-7 sm:h-9 flex items-center justify-center"
             onClick={() => onChange('all')}
           >
-            All Categories {dealCounts['all'] > 0 && `(${dealCounts['all']})`}
+            <span className="max-w-[80px] sm:max-w-none truncate">All Categories</span>
+            {dealCounts['all'] > 0 && <span className="ml-1">({dealCounts['all']})</span>}
           </Badge>
         </div>
         
@@ -72,10 +73,11 @@ export default function CategoryTabs({
           <div key={category.id} className="snap-start shrink-0 ml-1 sm:ml-2">
             <Badge
               variant={selectedCategories.includes(category.id) ? "default" : "outline"}
-              className="cursor-pointer px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold whitespace-nowrap h-8 sm:h-9 flex items-center justify-center"
+              className="cursor-pointer px-1.5 sm:px-3 py-1 text-xs sm:text-sm font-medium whitespace-nowrap h-7 sm:h-9 flex items-center justify-center"
               onClick={() => onChange(category.id)}
             >
-              {category.name} {dealCounts[category.id] > 0 && `(${dealCounts[category.id]})`}
+              <span className="max-w-[80px] sm:max-w-none truncate">{category.name}</span>
+              {dealCounts[category.id] > 0 && <span className="ml-1">({dealCounts[category.id]})</span>}
             </Badge>
           </div>
         ))}
@@ -97,15 +99,15 @@ export default function CategoryTabs({
       {/* Custom scrollbar hide CSS - enhanced for cross-browser compatibility */}
       <style>{`
         .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-          width: 0;
-          height: 0;
+          display: none !important;
+          width: 0 !important;
+          height: 0 !important;
         }
         .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-          scroll-behavior: smooth;
-          -webkit-overflow-scrolling: touch;
+          -ms-overflow-style: none !important;
+          scrollbar-width: none !important;
+          scroll-behavior: smooth !important;
+          -webkit-overflow-scrolling: touch !important;
         }
         @media (max-width: 640px) {
           .scrollbar-hide {

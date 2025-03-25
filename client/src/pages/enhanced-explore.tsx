@@ -325,7 +325,7 @@ export default function EnhancedExplorePage() {
   };
 
   return (
-    <div className="container max-w-7xl mx-auto px-4 sm:px-6 py-4 pb-16 min-h-screen">
+    <div className="container max-w-7xl mx-auto px-2 sm:px-4 md:px-6 py-4 pb-16 min-h-screen">
       {/* Breadcrumbs navigation */}
       <Breadcrumbs 
         pathLabels={commonPathLabels} 
