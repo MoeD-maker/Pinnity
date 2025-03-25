@@ -40,7 +40,10 @@ import {
 import { CATEGORIES } from '@/components/dashboard/CategoryFilter';
 
 // Map API categories to our internal category IDs
-const mapCategoryToId = (category: string): string => {
+const mapCategoryToId = (category: string | undefined): string => {
+  // Handle undefined or null category
+  if (!category) return 'other';
+  
   const lowerCategory = category.toLowerCase();
   
   if (lowerCategory.includes('restaurant')) return 'restaurants';
@@ -150,7 +153,7 @@ export default function EnhancedExplorePage() {
     id: number;
     title: string;
     description: string;
-    category: string;
+    category?: string;
     imageUrl?: string;
     startDate: Date | string;
     endDate: Date | string;
@@ -159,8 +162,8 @@ export default function EnhancedExplorePage() {
     saveCount?: number;
     redemptionCount?: number;
     createdAt?: string | Date;
-    business: {
-      businessName: string;
+    business?: {
+      businessName?: string;
       address?: string;
       phone?: string;
       website?: string;
@@ -241,9 +244,10 @@ export default function EnhancedExplorePage() {
       
       // Search query filter
       const matchesSearch = !searchQuery || 
-        deal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        deal.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        deal.business.businessName.toLowerCase().includes(searchQuery.toLowerCase());
+        (deal.title && deal.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (deal.description && deal.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (deal.business && deal.business.businessName && 
+         deal.business.businessName.toLowerCase().includes(searchQuery.toLowerCase()));
       
       // Category filter
       const matchesCategory = selectedCategories.length === 0 || 

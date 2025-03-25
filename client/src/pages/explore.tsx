@@ -24,7 +24,10 @@ import {
 import { Deal } from '@shared/schema';
 
 // Map API categories to our internal category IDs (same as in dashboard.tsx)
-const mapCategoryToId = (category: string): string => {
+const mapCategoryToId = (category: string | undefined): string => {
+  // Handle undefined or null category
+  if (!category) return 'other';
+  
   const lowerCategory = category.toLowerCase();
   
   if (lowerCategory.includes('restaurant')) return 'restaurants';
@@ -126,15 +129,15 @@ export default function ExplorePage() {
   // Define a local Deal & Business interface to avoid TypeScript errors
   interface DealWithBusiness {
     id: number;
-    title: string;
-    description: string;
-    category: string;
+    title?: string;
+    description?: string;
+    category?: string;
     imageUrl?: string;
-    startDate: Date;
-    endDate: Date;
+    startDate?: Date | string;
+    endDate?: Date | string;
     discount?: string;
-    business: {
-      businessName: string;
+    business?: {
+      businessName?: string;
       address?: string;
       phone?: string;
       website?: string;
@@ -166,9 +169,10 @@ export default function ExplorePage() {
         const dealCategoryId = mapCategoryToId(deal.category);
         
         const matchesSearch = !searchQuery || 
-          deal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          deal.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          deal.business.businessName.toLowerCase().includes(searchQuery.toLowerCase());
+          (deal.title && deal.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          (deal.description && deal.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          (deal.business && deal.business.businessName && 
+            deal.business.businessName.toLowerCase().includes(searchQuery.toLowerCase()));
         
         const matchesCategory = selectedCategories.length === 0 || 
           selectedCategories.includes(dealCategoryId);

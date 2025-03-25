@@ -318,7 +318,7 @@ function DealCard({
                 {deal.title}
               </h3>
               <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">
-                {deal.business.businessName}
+                {deal.business?.businessName || 'Unknown Business'}
               </p>
             </div>
           </div>
