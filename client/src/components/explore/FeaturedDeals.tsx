@@ -173,30 +173,58 @@ function FeaturedDealFavoriteButton({ dealId }: FeaturedDealFavoriteButtonProps)
 
 // Featured Deals Component
 interface FeaturedDealsProps {
-  deals: DealWithBusiness[];
-  isLoading: boolean;
   onSelect: (dealId: number) => void;
-  isCached?: boolean;
-  cacheDate?: string | number | Date;
-  onRefresh?: () => void;
   title?: string;
+  limit?: number;
 }
 
 export default function FeaturedDeals({ 
-  deals, 
-  isLoading, 
   onSelect,
-  isCached = false,
-  cacheDate,
-  onRefresh,
-  title = "Featured Deals" 
+  title = "Featured Deals",
+  limit = 3
 }: FeaturedDealsProps) {
-  // Get only featured deals
+  const [isCached, setIsCached] = React.useState(false);
+  const [cacheDate, setCacheDate] = React.useState<Date | undefined>(undefined);
+  
+  // Get featured deals directly from the featured endpoint 
+  const { data: allDeals, isLoading, error, refetch } = useQuery({
+    queryKey: ['/api/v1/deals/featured'],
+    queryFn: async () => {
+      try {
+        // Use the raw fetch instead of apiRequest to access headers
+        const response = await fetch('/api/v1/deals/featured');
+        
+        // Check cache status from response headers
+        const cacheControl = response.headers.get('Cache-Control');
+        const cacheDate = response.headers.get('X-Cache-Date');
+        
+        setIsCached(!!cacheControl && cacheControl.includes('max-age=0'));
+        setCacheDate(cacheDate ? new Date(cacheDate) : undefined);
+        
+        const data = await response.json();
+        
+        if (data && typeof data === 'object') {
+          // Handle both array and object responses
+          if (Array.isArray(data)) {
+            return data;
+          } else {
+            // Convert object with numeric keys to array
+            return Object.values(data);
+          }
+        }
+        return [];
+      } catch (error) {
+        console.error('Error fetching featured deals:', error);
+        throw error;
+      }
+    }
+  });
+  
+  // Get just the first X featured deals
   const featuredDeals = React.useMemo(() => {
-    if (!deals || !Array.isArray(deals)) return [];
-    // First filter for featured deals, then take the first 3
-    return deals.filter(deal => deal.featured === true).slice(0, 3);
-  }, [deals]);
+    if (!allDeals || !Array.isArray(allDeals)) return [];
+    return allDeals.slice(0, limit);
+  }, [allDeals, limit]);
 
   if (isLoading) {
     return (
