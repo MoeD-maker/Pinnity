@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Database, Sparkles, RefreshCw } from 'lucide-react';
-import FeaturedDealFavoriteButton from './FavoriteButton';
+import FeaturedDealFavoriteButton from '@/components/explore/FavoriteButton';
 import { isWithinDays } from '@/utils/dateUtils';
 
 // Cached data alert component for all deal display sections

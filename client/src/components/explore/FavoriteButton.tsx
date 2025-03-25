@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Heart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { useAuthState } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 // FavoriteButton for the EnhancedDealGrid
 interface FavoriteButtonProps {
@@ -18,7 +18,7 @@ interface FavoriteButtonProps {
 export default function FeaturedDealFavoriteButton({ dealId, className = '' }: FavoriteButtonProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { isAuthenticated, user } = useAuthState();
+  const { isAuthenticated, user } = useAuth();
   
   // Get user favorites
   const { data: favorites = [], isLoading } = useQuery({
@@ -57,7 +57,7 @@ export default function FeaturedDealFavoriteButton({ dealId, className = '' }: F
       if (!user?.id) throw new Error('User not authenticated');
       return apiRequest(`/api/v1/user/${user.id}/favorites`, {
         method: 'POST',
-        body: { dealId },
+        data: { dealId },
       });
     },
     onSuccess: () => {
