@@ -1,0 +1,74 @@
+ the scrolling approach continues to be problematic on mobile, we can switch to a completely different UI pattern on small screens:
+jsxCopyimport React, { useRef, useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { CATEGORIES } from '@/components/dashboard/CategoryFilter';
+import useWindowSize from '@/hooks/use-window-size';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+export default function CategoryTabs({ 
+  selectedCategories, 
+  onChange, 
+  dealCounts,
+  className = ''
+}: CategoryTabsProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const { isMobile } = useWindowSize();
+  
+  // Standard scroll handler
+  const handleScroll = (direction: 'left' | 'right') => {
+    if (!scrollContainerRef.current) return;
+    
+    const scrollAmount = 200;
+    const currentScroll = scrollContainerRef.current.scrollLeft;
+    
+    scrollContainerRef.current.scrollTo({
+      left: direction === 'left' ? currentScroll - scrollAmount : currentScroll + scrollAmount,
+      behavior: 'smooth'
+    });
+  };
+  
+  // For mobile, show a select dropdown instead of scrolling tabs
+  if (isMobile) {
+    // Get the active category or default to 'all'
+    const activeCategory = selectedCategories.length > 0 
+      ? selectedCategories[0] 
+      : 'all';
+      
+    return (
+      <div className={className}>
+        <Select value={activeCategory} onValueChange={(value) => onChange(value)}>
+          <SelectTrigger className="w-full h-10">
+            <SelectValue placeholder="Select category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">
+              All Categories ({dealCounts['all'] || 0})
+            </SelectItem>
+            {CATEGORIES.filter(cat => cat.id !== 'all').map((category) => (
+              <SelectItem key={category.id} value={category.id}>
+                {category.name} ({dealCounts[category.id] || 0})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    );
+  }
+  
+  // For desktop, keep the scrolling tabs
+  return (
+    // Original scrolling implementation for desktop
+    <div className={`relative ${className}`}>
+      {/* Same desktop implementation as before */}
+    </div>
+  );
+}
+This completely switches the UI pattern on mobile to avoid the horizontal scrolling issues altogether. The select dropdown is much more mobile-friendly and avoids any overflow problems.
