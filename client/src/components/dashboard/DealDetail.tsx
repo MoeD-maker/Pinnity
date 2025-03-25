@@ -106,7 +106,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
         ) : deal ? (
           <>
             {/* Moved action buttons to header row for better spacing */}            
-            <DialogHeader>
+            <DialogHeader className="pb-2 pt-8 sm:pt-4">
               <div className="flex justify-between items-center mb-2">
                 <Badge className="text-xs sm:text-sm">{deal.category}</Badge>
                 <div className="flex items-center space-x-2">

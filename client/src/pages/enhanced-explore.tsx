@@ -549,7 +549,7 @@ export default function EnhancedExplorePage() {
           if (!open) setSelectedDealId(null);
         }}
       >
-        <DialogContent className="sm:max-w-2xl p-3 sm:p-6 max-h-[90vh] sm:max-h-[85vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl p-0 max-h-[90vh] sm:max-h-[85vh] overflow-y-auto">
           {selectedDealId && (
             <DealDetail
               dealId={selectedDealId}
