@@ -191,10 +191,11 @@ export default function FeaturedDeals({
   onRefresh,
   title = "Featured Deals" 
 }: FeaturedDealsProps) {
-  // Get just the first 3 featured deals
+  // Get only featured deals
   const featuredDeals = React.useMemo(() => {
     if (!deals || !Array.isArray(deals)) return [];
-    return deals.slice(0, 3);
+    // First filter for featured deals, then take the first 3
+    return deals.filter(deal => deal.featured === true).slice(0, 3);
   }, [deals]);
 
   if (isLoading) {
@@ -256,7 +257,7 @@ export default function FeaturedDeals({
         {featuredDeals.map(deal => (
           <Card 
             key={deal.id} 
-            className="overflow-hidden transition-all hover:shadow-md cursor-pointer"
+            className="overflow-hidden transition-all hover:shadow-md cursor-pointer border-2 border-primary/20 relative"
             onClick={() => onSelect(deal.id)}
           >
             <div className="aspect-video relative overflow-hidden">
@@ -269,9 +270,17 @@ export default function FeaturedDeals({
                 <FeaturedDealFavoriteButton dealId={deal.id} />
               </div>
               
+              {/* Featured badge */}
+              <div className="absolute top-2 right-2">
+                <Badge className="bg-primary text-white flex items-center gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  <span>Featured</span>
+                </Badge>
+              </div>
+              
               {/* Cache indicator */}
               {isCached && (
-                <div className="absolute top-2 right-2">
+                <div className="absolute top-10 right-2">
                   <Badge variant="outline" className="bg-amber-100/90 text-amber-800 border-amber-200 text-xs flex gap-1 items-center px-2 py-0.5">
                     <Database className="h-3 w-3" />
                     <span>Cached</span>
