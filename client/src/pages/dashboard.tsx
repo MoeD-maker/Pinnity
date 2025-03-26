@@ -344,10 +344,10 @@ export default function Dashboard() {
       )}
 
       {/* Main content */}
-      {filteredDeals.length > 0 && (
+      {filteredDeals.length > 0 ? (
         <>
           <DealGrid 
-            deals={currentDeals} 
+            deals={currentDeals}
             isLoading={isLoadingDeals}
             onSelect={handleDealSelect}
             isCached={dealsCacheStatus.isCached}
@@ -384,7 +384,7 @@ export default function Dashboard() {
             </div>
           )}
         </>
-      )}
+      ) : null}
 
       {/* Deal detail modal */}
       <Dialog
