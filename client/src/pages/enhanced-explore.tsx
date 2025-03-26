@@ -7,6 +7,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import useWindowSize from '@/hooks/use-window-size';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   Search, 
   MapPin, 
@@ -23,6 +24,7 @@ import {
   listenForConnectionRestoration,
   CacheStatus
 } from '@/utils/dealsCacheManager';
+import { isExpired } from '@/utils/dealReminders';
 
 // Import our new components
 import {
@@ -235,11 +237,31 @@ export default function EnhancedExplorePage() {
     return results;
   }, [deals, sortOption]);
   
-  // Filter deals based on search query, selected categories, and moods
+  // Filter deals based on search query, selected categories, moods, and expiration status
   const filteredDeals = useMemo(() => {
     if (!Array.isArray(processedDeals)) return [];
     
     return processedDeals.filter((deal: DealWithBusiness) => {
+      // Skip invalid deals
+      if (!deal || typeof deal !== 'object') return false;
+      
+      // Check if deal is expired
+      const isExpired = () => {
+        if (!deal.endDate) return false;
+        const now = new Date();
+        const endDate = new Date(deal.endDate);
+        return endDate < now;
+      };
+      
+      // For regular users, hide expired deals
+      // Import user context to check user type
+      const userType = localStorage.getItem('user_type') || 'individual';
+      
+      // Hide expired deals for individual users
+      if (userType === 'individual' && isExpired()) {
+        return false;
+      }
+      
       // Map API category to our category system
       const dealCategoryId = mapCategoryToId(deal.category);
       
