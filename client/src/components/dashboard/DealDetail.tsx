@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow, format } from 'date-fns';
 import { queryClient } from '@/lib/queryClient';
+import { isExpired, isExpiringSoon, getExpirationText } from '@/utils/dateUtils';
 import { apiRequest } from '@/lib/queryClient';
 import RedemptionDialog from './RedemptionDialog';
 
@@ -241,8 +242,10 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                     </div>
                     <div className="mt-0.5 sm:mt-1">
                       <p className="text-xs sm:text-sm">Valid until {format(new Date(deal.endDate), 'MMMM d, yyyy')}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Expires {formatDistanceToNow(new Date(deal.endDate), { addSuffix: true })}
+                      <p className={`text-xs ${isExpired(deal) ? 'text-red-500 font-medium' : 'text-muted-foreground'}`}>
+                        {isExpired(deal) ? 'Expired' : isExpiringSoon(deal) ? 
+                          `Expires soon (${getExpirationText(deal)})` : 
+                          `Expires ${formatDistanceToNow(new Date(deal.endDate), { addSuffix: true })}`}
                       </p>
                     </div>
                   </div>

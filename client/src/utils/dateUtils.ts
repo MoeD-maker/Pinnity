@@ -3,6 +3,55 @@
  */
 
 /**
+ * Check if a deal is expired based on its endDate
+ * This function handles different date input formats safely
+ * @param deal Object with an endDate property (string, Date, or undefined)
+ * @returns Boolean indicating if the deal is expired
+ */
+export function isExpired(deal: { endDate?: string | Date | null } | null | undefined): boolean {
+  if (!deal || !deal.endDate) return false;
+  
+  try {
+    const now = new Date();
+    const endDate = new Date(deal.endDate);
+    return endDate < now;
+  } catch (error) {
+    console.error('Error checking if deal is expired:', error);
+    return false; // Safe fallback, assume not expired
+  }
+}
+
+/**
+ * Check if a deal is expiring soon (within 7 days by default)
+ * @param deal Object with an endDate property
+ * @param daysThreshold Number of days threshold (default: 7)
+ * @returns Boolean indicating if the deal is expiring soon
+ */
+export function isExpiringSoon(
+  deal: { endDate?: string | Date | null } | null | undefined, 
+  daysThreshold: number = 7
+): boolean {
+  if (!deal || !deal.endDate) return false;
+  
+  try {
+    const now = new Date();
+    const endDate = new Date(deal.endDate);
+    
+    // If already expired, it's not "expiring soon"
+    if (endDate < now) return false;
+    
+    // Calculate difference in days
+    const diffTime = endDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays <= daysThreshold;
+  } catch (error) {
+    console.error('Error checking if deal is expiring soon:', error);
+    return false; // Safe fallback
+  }
+}
+
+/**
  * Check if a date is within a specified number of days from today
  * @param date Date to check
  * @param days Number of days threshold
@@ -93,6 +142,31 @@ export function getRelativeTime(date: Date | string | number): string {
     if (diffHour < 24) return `in ${diffHour} hour${diffHour === 1 ? '' : 's'}`;
     if (diffDay < 7) return `in ${diffDay} day${diffDay === 1 ? '' : 's'}`;
     return `on ${formatDate(date)}`;
+  }
+}
+
+/**
+ * Get standardized expiration text for a deal
+ * @param deal The deal object containing endDate property
+ * @returns Formatted expiration text
+ */
+export function getExpirationText(deal: { endDate?: string | Date | null } | null | undefined): string {
+  if (!deal || !deal.endDate) return 'No expiration';
+  
+  try {
+    const now = new Date();
+    const endDate = new Date(deal.endDate);
+    
+    // Deal is expired
+    if (endDate < now) {
+      return 'Expired';
+    }
+    
+    // Deal is active, show time remaining
+    return getTimeRemaining(endDate);
+  } catch (error) {
+    console.error('Error getting expiration text:', error);
+    return 'Unknown';
   }
 }
 
