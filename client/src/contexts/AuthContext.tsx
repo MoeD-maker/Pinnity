@@ -455,6 +455,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string, rememberMe = false) => {
     const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
     try {
+      // Normalize email to lowercase for consistency
+      const normalizedEmail = email.toLowerCase();
+      
       // Update state for login process
       setIsLoading(true);
       setError(null);
@@ -465,48 +468,116 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // First, get a CSRF token
       console.log(`[${timestamp}] Fetching CSRF token before login...`);
-      try {
-        const csrfResponse = await fetch('/api/csrf-token', { credentials: 'include' });
-        const csrfData = await csrfResponse.json();
-        console.log(`[${timestamp}] CSRF token obtained successfully:`, csrfData.csrfToken ? 'Yes' : 'No');
-        // The fetchWithCSRF function will use this token automatically
-        resetCSRFToken(); // Clear any existing token
-      } catch (csrfErr) {
-        console.error(`[${timestamp}] Error fetching CSRF token:`, csrfErr);
-        // Continue with login anyway, but it will likely fail
+      let csrfAttempts = 0;
+      const maxCsrfAttempts = 3;
+      let csrfSuccess = false;
+      
+      while (csrfAttempts < maxCsrfAttempts && !csrfSuccess) {
+        try {
+          csrfAttempts++;
+          const csrfResponse = await fetch('/api/csrf-token', { 
+            credentials: 'include',
+            headers: {
+              'Cache-Control': 'no-cache, no-store',
+              'Pragma': 'no-cache'
+            },
+            // Add cache-busting parameter to avoid cached responses
+            cache: 'no-store'
+          });
+          
+          if (!csrfResponse.ok) {
+            console.warn(`[${timestamp}] CSRF token fetch failed with status ${csrfResponse.status}`);
+            
+            if (csrfAttempts < maxCsrfAttempts) {
+              // Wait before retrying
+              await new Promise(resolve => setTimeout(resolve, 500 * csrfAttempts));
+              continue;
+            }
+          }
+          
+          const csrfData = await csrfResponse.json();
+          console.log(`[${timestamp}] CSRF token obtained successfully:`, csrfData.csrfToken ? 'Yes' : 'No');
+          
+          // The fetchWithCSRF function will use this token automatically
+          resetCSRFToken(); // Clear any existing token
+          csrfSuccess = true;
+        } catch (csrfErr) {
+          console.error(`[${timestamp}] Error fetching CSRF token (attempt ${csrfAttempts}/${maxCsrfAttempts}):`, csrfErr);
+          
+          if (csrfAttempts < maxCsrfAttempts) {
+            // Wait longer for each retry
+            await new Promise(resolve => setTimeout(resolve, 500 * csrfAttempts));
+          }
+        }
+      }
+      
+      if (!csrfSuccess) {
+        console.warn(`[${timestamp}] Proceeding without CSRF token after ${maxCsrfAttempts} failed attempts`);
       }
 
       // Use CSRF-protected API call
-      console.log(`[${timestamp}] Attempting login with credentials...`);
-      const response = await apiPost('/api/v1/auth/login', { email, password, rememberMe }) as {
+      console.log(`[${timestamp}] Attempting login with credentials for email: ${normalizedEmail}...`);
+      
+      // Add a short delay before sending login request to ensure CSRF token is processed
+      await new Promise(resolve => setTimeout(resolve, 300)); 
+      
+      const response = await apiPost('/api/v1/auth/login', { 
+        email: normalizedEmail, 
+        password, 
+        rememberMe 
+      }) as {
         message: string;
         userId: number;
         userType: string;
       };
 
       if (response && response.userId) {
-        console.log(`[${timestamp}] Login successful, user ID:`, response.userId);
+        console.log(`[${timestamp}] Login successful, user ID: ${response.userId}, type: ${response.userType}`);
+        
         // Store user ID and type in localStorage for client-side reference
         // The actual authentication token is in a secure HTTP-only cookie
         saveUserData(response.userId.toString(), response.userType);
         
+        // Add a short delay to allow cookie processing
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
         // Fetch complete user data
         console.log(`[${timestamp}] Fetching complete user data...`);
-        const userData = await apiRequest(`/api/v1/user/${response.userId}`);
-        console.log(`[${timestamp}] User data received:`, userData ? 'Yes' : 'No');
-        
-        // Update authentication state before setting user data to prevent UI flashing
-        setAuthState('authenticated');
-        setUser(userData);
-        
-        // Start token refresh timer - in case the user stays logged in for a long time
-        if (isMountedRef.current) {
-          // Schedule refresh for 5 minutes before token expiry
-          refreshTimerRef.current = window.setTimeout(() => {
-            silentRefresh();
-          }, 55 * 60 * 1000); // 55 minutes
+        try {
+          const userData = await apiRequest(`/api/v1/user/${response.userId}`);
+          console.log(`[${timestamp}] User data received:`, userData ? 'Successfully' : 'Failed');
           
-          console.log(`[${timestamp}] Token refresh timer scheduled after login`);
+          // Update authentication state before setting user data to prevent UI flashing
+          setAuthState('authenticated');
+          setUser(userData);
+          
+          // Start token refresh timer - in case the user stays logged in for a long time
+          if (isMountedRef.current) {
+            // Schedule refresh for 5 minutes before token expiry
+            refreshTimerRef.current = window.setTimeout(() => {
+              silentRefresh();
+            }, 55 * 60 * 1000); // 55 minutes
+            
+            console.log(`[${timestamp}] Token refresh timer scheduled after login`);
+          }
+        } catch (userDataErr) {
+          console.error(`[${timestamp}] Error fetching user data:`, userDataErr);
+          // Still mark as authenticated even if we couldn't fetch complete user data
+          // We can retry fetching user data later
+          setAuthState('authenticated');
+          
+          // Set minimal user data from login response
+          setUser({
+            id: response.userId,
+            userType: response.userType as any,
+            email: normalizedEmail,
+            firstName: '',
+            lastName: '',
+            username: '',
+            phone: '',
+            address: '',
+            created_at: new Date().toISOString()
+          });
         }
 
         // Add a small delay before redirect to ensure all state updates have propagated

@@ -68,22 +68,49 @@ export function authRoutes(app: Express): void {
     validate(authSchemas.login),
     async (req: Request, res: Response) => {
       try {
-        // Log the validated request body
-        console.log("Login attempt with validated data:", JSON.stringify(req.body, null, 2));
+        // Get timestamp for consistent logging
+        const timestamp = new Date().toISOString();
+        
+        // Log the validated request body with sanitized password
+        const sanitizedBody = { ...req.body, password: '******' };
+        console.log(`[${timestamp}] Login attempt with validated data:`, JSON.stringify(sanitizedBody, null, 2));
         
         // Request is already validated by middleware
         const { email, password, rememberMe } = req.body;
         
+        // Normalize email to lowercase for consistency
+        const normalizedEmail = email.toLowerCase().trim();
+        console.log(`[${timestamp}] Normalized email for login: ${normalizedEmail}`);
+        
         // Verify credentials
-        const user = await storage.verifyLogin(email, password);
+        console.time('verifyLogin');
+        const user = await storage.verifyLogin(normalizedEmail, password);
+        console.timeEnd('verifyLogin');
         
         if (!user) {
-          console.warn(`Failed login attempt for email: ${email}`);
-          return res.status(401).json({ message: "Invalid email or password" });
+          console.warn(`[${timestamp}] Failed login attempt for email: ${normalizedEmail}`);
+          // Return a detailed error for debugging but generic message to the user
+          return res.status(401).json({ 
+            message: "Invalid email or password",
+            detail: "The credentials provided do not match our records",
+            errorCode: "INVALID_CREDENTIALS"
+          });
         }
         
-        // Generate JWT token
+        // Additional check for account status (if implemented)
+        if (user.status === 'inactive') {
+          console.warn(`[${timestamp}] Login attempt for inactive account: ${normalizedEmail}`);
+          return res.status(403).json({ 
+            message: "Account inactive",
+            detail: "This account has been deactivated",
+            errorCode: "ACCOUNT_INACTIVE"
+          });
+        }
+        
+        // Generate JWT token with enhanced security
+        console.time('generateToken');
         const token = generateToken(user);
+        console.timeEnd('generateToken');
         
         // Set secure HTTP-only cookie with the token using withCustomAge helper
         // If rememberMe is true, set a longer expiration
@@ -94,10 +121,10 @@ export function authRoutes(app: Express): void {
         // Use the withCustomAge helper which properly sets all properties
         const cookieOptions = withCustomAge({}, maxAge);
         
-        console.log('Setting auth cookie with options:', cookieOptions);
+        console.log(`[${timestamp}] Setting auth cookie with expiration: ${new Date(Date.now() + maxAge).toISOString()}`);
         setAuthCookie(res, 'auth_token', token, cookieOptions);
         
-        console.log(`Successful login for user ID: ${user.id}, Type: ${user.userType}`);
+        console.log(`[${timestamp}] Successful login for user ID: ${user.id}, Type: ${user.userType}`);
         
         // Return success with user info (token is in HTTP-only cookie)
         return res.status(200).json({ 
