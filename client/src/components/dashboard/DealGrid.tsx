@@ -108,11 +108,22 @@ function DealCard({ deal, onSelect, isCached = false }: DealCardProps) {
     threshold: 0.1,
   });
 
+  // Apply defensive programming by providing defaults for missing values
+  const safeTitle = deal?.title || 'Untitled Deal';
+  const safeDescription = deal?.description || 'No description available';
+  const safeCategory = deal?.category || 'Other';
+  const safeImageUrl = deal?.imageUrl || 'https://images.unsplash.com/photo-1556742111-a301076d9d18?ixlib=rb-4.0.3';
+  const safeId = deal?.id || 0;
+  
+  // Get business name safely
+  const safeBusiness = deal?.business || {};
+  const safeBusinessName = safeBusiness?.businessName || 'Unknown Business';
+  
   // Get formatted expiration text
   const expirationText = getExpirationText(deal);
   
   // Calculate discount percentage or value
-  const discount = deal.discount || '';
+  const discount = deal?.discount || '';
 
   return (
     <Card 
@@ -123,8 +134,8 @@ function DealCard({ deal, onSelect, isCached = false }: DealCardProps) {
       {inView ? (
         <div className="aspect-video relative overflow-hidden">
           <img 
-            src={deal.imageUrl || 'https://images.unsplash.com/photo-1556742111-a301076d9d18?ixlib=rb-4.0.3'} 
-            alt={deal.title}
+            src={safeImageUrl} 
+            alt={safeTitle}
             className="w-full h-full object-cover transition-transform hover:scale-105"
           />
           <div className="absolute top-2 right-2">
@@ -132,7 +143,7 @@ function DealCard({ deal, onSelect, isCached = false }: DealCardProps) {
               {discount}
             </Badge>
           </div>
-          <FavoriteButton dealId={deal.id} />
+          <FavoriteButton dealId={safeId} />
           
           {/* Cache indicator for individual deal cards */}
           {isCached && (
@@ -153,17 +164,17 @@ function DealCard({ deal, onSelect, isCached = false }: DealCardProps) {
           <div className="w-full">
             <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-2">
               <Badge variant="outline" className="text-xs">
-                {deal.category}
+                {safeCategory}
               </Badge>
-              {isExpired(deal) ? (
+              {deal && isExpired(deal) ? (
                 <ExpiredBadge deal={deal} />
-              ) : isExpiringSoon(deal) && (
+              ) : deal && isExpiringSoon(deal) && (
                 <ExpiringSoonBadge deal={deal} />
               )}
             </div>
-            <h3 className="font-semibold text-base sm:text-lg line-clamp-1">{deal.title}</h3>
+            <h3 className="font-semibold text-base sm:text-lg line-clamp-1">{safeTitle}</h3>
             <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">
-              {deal.business.businessName}
+              {safeBusinessName}
             </p>
           </div>
         </div>
@@ -171,7 +182,7 @@ function DealCard({ deal, onSelect, isCached = false }: DealCardProps) {
       
       <CardContent className="p-3 sm:p-4 pt-0">
         <p className="text-xs sm:text-sm line-clamp-2 mb-2">
-          {deal.description}
+          {safeDescription}
         </p>
         
         <div className="flex items-center text-xs text-muted-foreground">

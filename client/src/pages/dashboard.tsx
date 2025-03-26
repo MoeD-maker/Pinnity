@@ -39,20 +39,28 @@ import {
 import { Deal } from '@shared/schema';
 
 // Map API categories to our internal category IDs
-const mapCategoryToId = (category: string): string => {
-  const lowerCategory = category.toLowerCase();
+const mapCategoryToId = (category: string | undefined | null): string => {
+  // Handle undefined or null category
+  if (!category) return 'other';
   
-  if (lowerCategory.includes('restaurant')) return 'restaurants';
-  if (lowerCategory.includes('café') || lowerCategory.includes('cafe') || lowerCategory.includes('coffee')) return 'cafes';
-  if (lowerCategory.includes('retail') || lowerCategory.includes('shop')) return 'retail';
-  if (lowerCategory.includes('beauty') || lowerCategory.includes('spa') || lowerCategory.includes('salon')) return 'beauty';
-  if (lowerCategory.includes('health') || lowerCategory.includes('fitness') || lowerCategory.includes('gym')) return 'health';
-  if (lowerCategory.includes('entertainment') || lowerCategory.includes('movie') || lowerCategory.includes('theater')) return 'entertainment';
-  if (lowerCategory.includes('service')) return 'services';
-  if (lowerCategory.includes('travel') || lowerCategory.includes('hotel') || lowerCategory.includes('accommodation')) return 'travel';
-  if (lowerCategory.includes('bar') || lowerCategory.includes('club') || lowerCategory.includes('nightlife')) return 'nightlife';
-  
-  return 'other';
+  try {
+    const lowerCategory = category.toLowerCase();
+    
+    if (lowerCategory.includes('restaurant')) return 'restaurants';
+    if (lowerCategory.includes('café') || lowerCategory.includes('cafe') || lowerCategory.includes('coffee')) return 'cafes';
+    if (lowerCategory.includes('retail') || lowerCategory.includes('shop')) return 'retail';
+    if (lowerCategory.includes('beauty') || lowerCategory.includes('spa') || lowerCategory.includes('salon')) return 'beauty';
+    if (lowerCategory.includes('health') || lowerCategory.includes('fitness') || lowerCategory.includes('gym')) return 'health';
+    if (lowerCategory.includes('entertainment') || lowerCategory.includes('movie') || lowerCategory.includes('theater')) return 'entertainment';
+    if (lowerCategory.includes('service')) return 'services';
+    if (lowerCategory.includes('travel') || lowerCategory.includes('hotel') || lowerCategory.includes('accommodation')) return 'travel';
+    if (lowerCategory.includes('bar') || lowerCategory.includes('club') || lowerCategory.includes('nightlife')) return 'nightlife';
+    
+    return 'other';
+  } catch (e) {
+    console.error('Error mapping category:', e);
+    return 'other';
+  }
 };
 
 export default function Dashboard() {
@@ -202,32 +210,46 @@ export default function Dashboard() {
     if (!deals || !Array.isArray(deals)) return [];
     
     return deals.filter((deal: Deal & { business: any }) => {
-      // Map API category to our category system
-      const dealCategoryId = mapCategoryToId(deal.category);
-      
-      const matchesSearch = searchQuery === '' || 
-        deal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        deal.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        deal.business.businessName.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchesCategory = selectedCategories.length === 0 || 
-        selectedCategories.includes(dealCategoryId);
-      
-      // For individual users, filter out expired deals
-      // For business and admin users, show expired deals based on toggle
-      const dealExpired = isExpired(deal);
-      
-      // For individual users (non-business, non-admin)
-      if (user?.userType === 'individual' && dealExpired) {
-        return false; // Hide expired deals for regular users
+      try {
+        // Skip invalid deals
+        if (!deal || typeof deal !== 'object') return false;
+        
+        // Ensure deal has required properties with defaults
+        const dealTitle = deal.title || '';
+        const dealDescription = deal.description || '';
+        const dealBusiness = deal.business || {};
+        const dealBusinessName = dealBusiness?.businessName || '';
+        
+        // Map API category to our category system
+        const dealCategoryId = mapCategoryToId(deal.category);
+        
+        const matchesSearch = searchQuery === '' || 
+          dealTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          dealDescription.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          dealBusinessName.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        const matchesCategory = selectedCategories.length === 0 || 
+          selectedCategories.includes(dealCategoryId);
+        
+        // For individual users, filter out expired deals
+        // For business and admin users, show expired deals based on toggle
+        const dealExpired = isExpired(deal);
+        
+        // For individual users (non-business, non-admin)
+        if (user?.userType === 'individual' && dealExpired) {
+          return false; // Hide expired deals for regular users
+        }
+        
+        // For business and admin users
+        if ((user?.userType === 'business' || user?.userType === 'admin') && dealExpired) {
+          return showExpired; // Only show if toggle is enabled
+        }
+        
+        return matchesSearch && matchesCategory;
+      } catch (e) {
+        console.error('Error filtering deal:', e, deal);
+        return false;
       }
-      
-      // For business and admin users
-      if ((user?.userType === 'business' || user?.userType === 'admin') && dealExpired) {
-        return showExpired; // Only show if toggle is enabled
-      }
-      
-      return matchesSearch && matchesCategory;
     });
   }, [deals, searchQuery, selectedCategories, showExpired, user?.userType]);
   
