@@ -254,8 +254,23 @@ export function FavoriteButton({ dealId }: FavoriteButtonProps) {
   // Set initial favorite state once favorites are loaded
   React.useEffect(() => {
     if (favorites) {
-      const isFav = favorites.some((fav: any) => fav.deal.id === dealId);
-      setIsFavorite(isFav);
+      try {
+        // Safely check if favorites is array-like and has the some method
+        const favoritesArray = Array.isArray(favorites) 
+          ? favorites 
+          : (typeof favorites === 'object' && favorites !== null)
+            ? Object.values(favorites)
+            : [];
+            
+        // Use our normalized array to check if the deal is a favorite
+        const isFav = favoritesArray.some((fav: any) => 
+          fav && typeof fav === 'object' && fav.deal && fav.deal.id === dealId
+        );
+        setIsFavorite(isFav);
+      } catch (error) {
+        console.error('Error checking favorite status:', error);
+        setIsFavorite(false); // Default to not favorite on error
+      }
     }
   }, [favorites, dealId]);
   
