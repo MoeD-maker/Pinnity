@@ -38,14 +38,23 @@ export default function FavoritesPage() {
         
         const response = await apiRequest(`/api/v1/user/${user.id}/favorites`);
         
-        // Check if response is an object with numeric keys instead of an array
-        if (response && typeof response === 'object' && !Array.isArray(response)) {
-          console.log('Converting favorites object to array format');
-          // Convert object to array
-          return Object.values(response);
+        // Ensure we always return an array, even if the API returns an object
+        if (response) {
+          // If it's already an array, return it
+          if (Array.isArray(response)) {
+            return response;
+          }
+          
+          // If it's an object (not null) with numeric keys, convert to array
+          if (typeof response === 'object') {
+            console.log('Converting favorites object to array format');
+            return Object.values(response);
+          }
         }
         
-        return response;
+        // Default fallback - return empty array
+        console.log('No valid favorites data, returning empty array');
+        return [];
       } catch (error) {
         console.error('Error fetching favorites:', error);
         return [];
@@ -57,35 +66,48 @@ export default function FavoritesPage() {
 
   // Check for expiring deals when favorites are loaded
   useEffect(() => {
-    if (favorites && favorites.length > 0) {
+    if (favorites) {
       try {
-        const deals = favorites.map((fav: { deal: any }) => fav.deal);
-        
-        // Use our own implementation of expiring soon to avoid type issues
-        const isExpiringSoon = (deal: { endDate?: string | Date }) => {
-          if (!deal || !deal.endDate) return false;
+        // Ensure favorites is an array and handle object format
+        const favsArray = Array.isArray(favorites) 
+          ? favorites 
+          : (typeof favorites === 'object' && favorites !== null)
+            ? Object.values(favorites)
+            : [];
+            
+        // Only proceed if we have valid favorites
+        if (favsArray.length > 0) {
+          // Extract deals from favorites and filter out any invalid entries
+          const deals = favsArray
+            .filter(fav => fav && typeof fav === 'object' && fav.deal)
+            .map((fav: { deal: any }) => fav.deal);
           
-          const now = new Date();
-          const endDate = new Date(deal.endDate);
-          const diffMs = endDate.getTime() - now.getTime();
-          const diffHrs = diffMs / (1000 * 60 * 60);
+          // Use our own implementation of expiring soon to avoid type issues
+          const isExpiringSoon = (deal: { endDate?: string | Date }) => {
+            if (!deal || !deal.endDate) return false;
+            
+            const now = new Date();
+            const endDate = new Date(deal.endDate);
+            const diffMs = endDate.getTime() - now.getTime();
+            const diffHrs = diffMs / (1000 * 60 * 60);
+            
+            // Consider a deal as expiring soon if it expires within 48 hours (from constants)
+            return diffHrs > 0 && diffHrs <= 48;
+          };
           
-          // Consider a deal as expiring soon if it expires within 48 hours (from constants)
-          return diffHrs > 0 && diffHrs <= 48;
-        };
-        
-        // Get deals that are expiring soon
-        const expiringSoon = deals.filter((deal: { endDate?: string | Date }) => isExpiringSoon(deal));
-        setExpiringDeals(expiringSoon);
-        
-        // Request notification permission if there are expiring deals
-        if (expiringSoon.length > 0) {
-          requestNotificationPermission().then(permission => {
-            if (permission === 'granted') {
-              // Check and send notifications for expiring deals
-              checkAndNotifyExpiringSoonDeals(expiringSoon, true);
-            }
-          });
+          // Get deals that are expiring soon
+          const expiringSoon = deals.filter((deal: { endDate?: string | Date }) => isExpiringSoon(deal));
+          setExpiringDeals(expiringSoon);
+          
+          // Request notification permission if there are expiring deals
+          if (expiringSoon.length > 0) {
+            requestNotificationPermission().then(permission => {
+              if (permission === 'granted') {
+                // Check and send notifications for expiring deals
+                checkAndNotifyExpiringSoonDeals(expiringSoon, true);
+              }
+            });
+          }
         }
       } catch (error) {
         console.error('Error checking for expiring deals:', error);
@@ -150,7 +172,7 @@ export default function FavoritesPage() {
             </Card>
           ))}
         </div>
-      ) : favorites?.length === 0 ? (
+      ) : !favorites || favorites.length === 0 ? (
         <div className="text-center py-12">
           <h3 className="text-xl font-medium mb-2">No saved deals yet</h3>
           <p className="text-muted-foreground">
@@ -159,32 +181,34 @@ export default function FavoritesPage() {
         </div>
       ) : (
         <DealGrid
-          deals={(favorites?.map((fav: { deal: any }) => fav.deal) || []).filter((deal: { endDate?: string | Date, id?: number }) => {
-            // Skip invalid deals
-            if (!deal || typeof deal !== 'object') return false;
-            
-            // Check if deal is expired with inline function to avoid type issues
-            const isDealExpired = () => {
-              if (!deal.endDate) return false;
-              const now = new Date();
-              const endDate = new Date(deal.endDate);
-              return endDate < now;
-            };
-            
-            const dealExpired = isDealExpired();
-            
-            // For individual users, filter out expired deals
-            if (user?.userType === 'individual' && dealExpired) {
-              return false;
-            }
-            
-            // For business and admin users, show expired deals based on toggle
-            if ((user?.userType === 'business' || user?.userType === 'admin') && dealExpired) {
-              return showExpired;
-            }
-            
-            return true;
-          })}
+          deals={(Array.isArray(favorites) ? favorites.filter(fav => fav && fav.deal)
+              .map((fav: { deal: any }) => fav.deal) : [])
+            .filter((deal: { endDate?: string | Date, id?: number }) => {
+              // Skip invalid deals
+              if (!deal || typeof deal !== 'object') return false;
+              
+              // Check if deal is expired with inline function to avoid type issues
+              const isDealExpired = () => {
+                if (!deal.endDate) return false;
+                const now = new Date();
+                const endDate = new Date(deal.endDate);
+                return endDate < now;
+              };
+              
+              const dealExpired = isDealExpired();
+              
+              // For individual users, filter out expired deals
+              if (user?.userType === 'individual' && dealExpired) {
+                return false;
+              }
+              
+              // For business and admin users, show expired deals based on toggle
+              if ((user?.userType === 'business' || user?.userType === 'admin') && dealExpired) {
+                return showExpired;
+              }
+              
+              return true;
+            })}
           isLoading={isLoading}
           onSelect={handleSelectDeal}
         />
