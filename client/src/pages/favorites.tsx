@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { DealGrid } from '@/components/dashboard';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -16,9 +16,30 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import ExpiringDealsNotification from '@/components/deals/ExpiringDealsNotification';
 
+// Helper function to safely convert any favoriteS data format to an array
+const normalizeFavoritesData = (data: any): any[] => {
+  // Return empty array for null/undefined
+  if (!data) return [];
+  
+  // If already an array, filter out any null/undefined items
+  if (Array.isArray(data)) {
+    return data.filter(item => item != null);
+  }
+  
+  // If an object with properties, convert to array
+  if (typeof data === 'object') {
+    const values = Object.values(data);
+    return values.filter(item => item != null);
+  }
+  
+  // Default to empty array for any other data type
+  return [];
+};
+
 export default function FavoritesPage() {
   // Get the authenticated user from the auth context
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   
   // State for notification banner and toggles
   const [showExpiringNotification, setShowExpiringNotification] = useState(true);
@@ -26,7 +47,7 @@ export default function FavoritesPage() {
   const [expiringDeals, setExpiringDeals] = useState<DealLike[]>([]);
   
   // Fetch user favorites
-  const { data: favorites, isLoading } = useQuery({
+  const { data: favoritesRaw, isLoading } = useQuery({
     queryKey: ['/api/v1/user', user?.id, 'favorites'],
     queryFn: async () => {
       try {
@@ -37,24 +58,7 @@ export default function FavoritesPage() {
         }
         
         const response = await apiRequest(`/api/v1/user/${user.id}/favorites`);
-        
-        // Ensure we always return an array, even if the API returns an object
-        if (response) {
-          // If it's already an array, return it
-          if (Array.isArray(response)) {
-            return response;
-          }
-          
-          // If it's an object (not null) with numeric keys, convert to array
-          if (typeof response === 'object') {
-            console.log('Converting favorites object to array format');
-            return Object.values(response);
-          }
-        }
-        
-        // Default fallback - return empty array
-        console.log('No valid favorites data, returning empty array');
-        return [];
+        return response; // Return raw response to process with normalizeFavoritesData
       } catch (error) {
         console.error('Error fetching favorites:', error);
         return [];
@@ -63,6 +67,11 @@ export default function FavoritesPage() {
     // Only run query when we have a user ID
     enabled: !!user?.id
   });
+  
+  // Create a memoized, normalized version of the favorites data
+  const favorites = useMemo(() => {
+    return normalizeFavoritesData(favoritesRaw);
+  }, [favoritesRaw]);
 
   // Check for expiring deals when favorites are loaded
   useEffect(() => {
@@ -181,8 +190,9 @@ export default function FavoritesPage() {
         </div>
       ) : (
         <DealGrid
-          deals={(Array.isArray(favorites) ? favorites.filter(fav => fav && fav.deal)
-              .map((fav: { deal: any }) => fav.deal) : [])
+          deals={favorites
+            .filter(fav => fav && typeof fav === 'object' && fav.deal && typeof fav.deal === 'object') 
+            .map((fav: { deal: any }) => fav.deal)
             .filter((deal: { endDate?: string | Date, id?: number }) => {
               // Skip invalid deals
               if (!deal || typeof deal !== 'object') return false;

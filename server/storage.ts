@@ -2269,7 +2269,7 @@ export class DatabaseStorage implements IStorage {
   async incrementDealSaves(dealId: number): Promise<Deal> {
     const [updatedDeal] = await db.update(deals)
       .set({
-        savedCount: sql`${deals.savedCount} + 1`
+        saveCount: sql`${deals.saveCount} + 1`
       })
       .where(eq(deals.id, dealId))
       .returning();
