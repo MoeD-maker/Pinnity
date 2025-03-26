@@ -517,8 +517,10 @@ export class MemStorage implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
+    // Make email lookup case-insensitive to avoid login issues with different case
+    const normalizedEmail = email.toLowerCase();
     return Array.from(this.users.values()).find(
-      (user) => user.email === email,
+      (user) => user.email.toLowerCase() === normalizedEmail,
     );
   }
 
@@ -607,15 +609,27 @@ export class MemStorage implements IStorage {
   }
 
   async verifyLogin(email: string, password: string): Promise<User | null> {
-    const user = await this.getUserByEmail(email);
-    if (!user) return null;
+    // Enhanced login verification with better error logging
+    console.log(`Login attempt for email: ${email}`);
     
-    // Use bcrypt to compare passwords instead of hash comparison
-    if (bcrypt.compareSync(password, user.password)) {
-      return user;
+    // Get user with case-insensitive email lookup
+    const user = await this.getUserByEmail(email);
+    
+    if (!user) {
+      console.log(`Login failed: No user found with email ${email}`);
+      return null;
     }
     
-    return null;
+    // Use bcrypt to safely compare passwords
+    const passwordMatch = bcrypt.compareSync(password, user.password);
+    
+    if (passwordMatch) {
+      console.log(`Login successful for user ID: ${user.id}, email: ${email}`);
+      return user;
+    } else {
+      console.log(`Login failed: Invalid password for email ${email}`);
+      return null;
+    }
   }
 
   async updateUser(userId: number, userData: Partial<Omit<InsertUser, "id" | "password">>): Promise<User> {
