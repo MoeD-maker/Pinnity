@@ -24,7 +24,7 @@ import {
   listenForConnectionRestoration,
   CacheStatus
 } from '@/utils/dealsCacheManager';
-import { isExpired } from '@/utils/dealReminders';
+//import { isExpired } from '@/utils/dealReminders';
 
 // Import our new components
 import {
@@ -68,6 +68,9 @@ export default function EnhancedExplorePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  
+  // Get user info from auth context
+  const { user } = useAuth();
   
   // New state for enhanced features
   const [sortOption, setSortOption] = useState<SortOption>('trending');
@@ -246,20 +249,17 @@ export default function EnhancedExplorePage() {
       if (!deal || typeof deal !== 'object') return false;
       
       // Check if deal is expired
-      const isExpired = () => {
+      const isDealExpired = () => {
         if (!deal.endDate) return false;
         const now = new Date();
         const endDate = new Date(deal.endDate);
         return endDate < now;
       };
       
-      // For regular users, hide expired deals
-      // Import user context to check user type
-      const userType = localStorage.getItem('user_type') || 'individual';
-      
-      // Hide expired deals for individual users
-      if (userType === 'individual' && isExpired()) {
-        return false;
+      // For individual users, hide expired deals
+      // For business and admin users, show expired deals
+      if (user?.userType === 'individual' && isDealExpired()) {
+        return false; // Hide expired deals for regular users
       }
       
       // Map API category to our category system
@@ -300,7 +300,7 @@ export default function EnhancedExplorePage() {
       
       return matchesSearch && matchesCategory && matchesMood;
     });
-  }, [processedDeals, searchQuery, selectedCategories, selectedMoods]);
+  }, [processedDeals, searchQuery, selectedCategories, selectedMoods, user?.userType]);
   
   // Handle category selection
   const handleCategoryChange = (category: string) => {

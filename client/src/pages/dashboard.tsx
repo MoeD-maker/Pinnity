@@ -233,7 +233,14 @@ export default function Dashboard() {
         
         // For individual users, filter out expired deals
         // For business and admin users, show expired deals based on toggle
-        const dealExpired = isExpired(deal);
+        const isDealExpired = () => {
+          if (!deal.endDate) return false;
+          const now = new Date();
+          const endDate = new Date(deal.endDate);
+          return endDate < now;
+        };
+        
+        const dealExpired = isDealExpired();
         
         // For individual users (non-business, non-admin)
         if (user?.userType === 'individual' && dealExpired) {
