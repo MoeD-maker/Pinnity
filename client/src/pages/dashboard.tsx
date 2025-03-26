@@ -93,6 +93,7 @@ export default function Dashboard() {
     queryKey: ['/api/v1/deals'],
     queryFn: async () => {
       try {
+        console.log('Fetching all deals for dashboard...');
         const response = await fetch('/api/v1/deals');
         
         // Use centralized cache utility to check cache status
@@ -101,7 +102,17 @@ export default function Dashboard() {
         // Update cache status
         setDealsCacheStatus(cacheStatus);
         
-        return await response.json();
+        const data = await response.json();
+        console.log('Received deals data:', data);
+        
+        // Check if data is an object with numeric keys instead of an array
+        if (data && typeof data === 'object' && !Array.isArray(data)) {
+          console.log('Converting object to array format for dashboard');
+          // Convert object to array
+          return Object.values(data);
+        }
+        
+        return data;
       } catch (error) {
         console.error('Error fetching deals:', error);
         throw error;
