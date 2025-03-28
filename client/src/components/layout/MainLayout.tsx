@@ -77,6 +77,11 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const navigationItems = getNavigationItems();
 
   const isActive = (path: string) => {
+    // Special case for deal details pages - don't highlight any nav item
+    if (location.startsWith('/deals/')) {
+      return false;
+    }
+    
     // Exact match for root path
     if (path === '/' && location === '/') return true;
     
@@ -372,26 +377,28 @@ export default function MainLayout({ children }: MainLayoutProps) {
         </main>
       </div>
       
-      {/* Mobile bottom navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-50 safe-area-fixed-bottom">
-        <div className="flex justify-around">
-          {navigationItems.map((item) => (
-            <button
-              key={item.path}
-              aria-current={isActive(item.path) ? "page" : undefined}
-              className={`flex flex-col items-center py-2 px-3 ${
-                isActive(item.path) 
-                  ? 'text-primary' 
-                  : 'text-muted-foreground'
-              }`}
-              onClick={() => navigate(item.path)}
-            >
-              {item.icon}
-              <span className="text-xs mt-1">{item.label}</span>
-            </button>
-          ))}
-        </div>
-      </nav>
+      {/* Mobile bottom navigation - hidden on deal detail pages */}
+      {!location.startsWith('/deals/') && (
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-50 safe-area-fixed-bottom">
+          <div className="flex justify-around">
+            {navigationItems.map((item) => (
+              <button
+                key={item.path}
+                aria-current={isActive(item.path) ? "page" : undefined}
+                className={`flex flex-col items-center py-2 px-3 ${
+                  isActive(item.path) 
+                    ? 'text-primary' 
+                    : 'text-muted-foreground'
+                }`}
+                onClick={() => navigate(item.path)}
+              >
+                {item.icon}
+                <span className="text-xs mt-1">{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </nav>
+      )}
     </div>
   );
 }
