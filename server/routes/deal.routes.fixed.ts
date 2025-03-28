@@ -333,6 +333,149 @@ export function dealRoutes(app: Express): void {
     }
   );
 
-  // Implement more routes following the same pattern...
-  // These routes will add versioning support to deal redemptions, approvals, etc.
+    // Verify redemption code
+  const [vVerifyCodePath, lVerifyCodePath] = createVersionedRoutes('/deals/:dealId/verify-code');
+  
+  // Versioned route (primary)
+  app.post(
+    vVerifyCodePath,
+    versionHeadersMiddleware(),
+    authenticate,
+    async (req: Request, res: Response) => {
+      try {
+        const dealId = parseInt(req.params.dealId);
+        if (isNaN(dealId)) {
+          return res.status(400).json({ message: "Invalid deal ID" });
+        }
+        
+        const { code } = req.body;
+        if (!code) {
+          return res.status(400).json({ message: "Redemption code is required" });
+        }
+        
+        // Check permissions
+        if (req.user?.userType !== 'individual') {
+          return res.status(403).json({ message: "Only individual users can verify redemption codes" });
+        }
+        
+        // Verify the code
+        const isValid = await storage.verifyRedemptionCode(dealId, code);
+        
+        if (!isValid) {
+          return res.status(200).json({ valid: false, message: "Invalid redemption code" });
+        }
+        
+        // Create a redemption record
+        const redemption = await storage.createRedemption(req.user.userId, dealId);
+        
+        // Increment deal redemptions count
+        await storage.incrementDealRedemptions(dealId);
+        
+        return res.status(200).json({ 
+          valid: true,
+          message: "Redemption code verified successfully",
+          redemption 
+        });
+      } catch (error) {
+        console.error("Verify redemption code error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+  
+  // Legacy route (for backward compatibility)
+  app.post(
+    lVerifyCodePath,
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate,
+    async (req: Request, res: Response) => {
+      try {
+        const dealId = parseInt(req.params.dealId);
+        if (isNaN(dealId)) {
+          return res.status(400).json({ message: "Invalid deal ID" });
+        }
+        
+        const { code } = req.body;
+        if (!code) {
+          return res.status(400).json({ message: "Redemption code is required" });
+        }
+        
+        // Check permissions
+        if (req.user?.userType !== 'individual') {
+          return res.status(403).json({ message: "Only individual users can verify redemption codes" });
+        }
+        
+        // Verify the code
+        const isValid = await storage.verifyRedemptionCode(dealId, code);
+        
+        if (!isValid) {
+          return res.status(200).json({ valid: false, message: "Invalid redemption code" });
+        }
+        
+        // Create a redemption record
+        const redemption = await storage.createRedemption(req.user.userId, dealId);
+        
+        // Increment deal redemptions count
+        await storage.incrementDealRedemptions(dealId);
+        
+        return res.status(200).json({ 
+          valid: true,
+          message: "Redemption code verified successfully (legacy route)",
+          redemption 
+        });
+      } catch (error) {
+        console.error("Verify redemption code error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+  
+  // Get deal redemptions
+  const [vDealRedemptionsPath, lDealRedemptionsPath] = createVersionedRoutes('/deals/:dealId/redemptions');
+  
+  // Versioned route (primary)
+  app.get(
+    vDealRedemptionsPath,
+    versionHeadersMiddleware(),
+    authenticate,
+    authorize(['admin', 'business']),
+    async (req: Request, res: Response) => {
+      try {
+        const dealId = parseInt(req.params.dealId);
+        if (isNaN(dealId)) {
+          return res.status(400).json({ message: "Invalid deal ID" });
+        }
+        
+        const redemptions = await storage.getDealRedemptions(dealId);
+        
+        return res.status(200).json(redemptions);
+      } catch (error) {
+        console.error("Get deal redemptions error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+  
+  // Legacy route (for backward compatibility)
+  app.get(
+    lDealRedemptionsPath,
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate,
+    authorize(['admin', 'business']),
+    async (req: Request, res: Response) => {
+      try {
+        const dealId = parseInt(req.params.dealId);
+        if (isNaN(dealId)) {
+          return res.status(400).json({ message: "Invalid deal ID" });
+        }
+        
+        const redemptions = await storage.getDealRedemptions(dealId);
+        
+        return res.status(200).json(redemptions);
+      } catch (error) {
+        console.error("Get deal redemptions error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
 }
