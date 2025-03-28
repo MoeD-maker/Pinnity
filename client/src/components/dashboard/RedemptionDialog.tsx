@@ -48,7 +48,7 @@ export default function RedemptionDialog({
     setErrorMessage('');
 
     try {
-      const response = await apiRequest(`/api/v1/deals/${dealId}/verify-code`, {
+      const response = await apiRequest(`/api/deals/${dealId}/verify-code`, {
         method: 'POST',
         data: { code: redemptionCode.trim() }
       });
@@ -61,7 +61,7 @@ export default function RedemptionDialog({
         const userId = user?.id || user?.userId;
         
         if (userId) {
-          await apiRequest(`/api/v1/user/${userId}/redemptions`, {
+          await apiRequest(`/api/user/${userId}/redemptions`, {
             method: 'POST',
             data: { dealId }
           });
