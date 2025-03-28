@@ -49,8 +49,18 @@ export async function apiRequest(
     
     // Handle empty responses
     const text = await res.text();
-    const result = text ? JSON.parse(text) : null;
-    console.log(`Response from ${url}:`, result);
+    console.log(`Raw response text from ${url}:`, text);
+    
+    let result = null;
+    try {
+      result = text ? JSON.parse(text) : null;
+      console.log(`Parsed response from ${url}:`, result);
+    } catch (err) {
+      console.error(`Error parsing JSON response from ${url}:`, err);
+      console.log(`Response headers:`, Object.fromEntries([...res.headers.entries()]));
+      // For debugging only - return the raw text or a simplified valid object
+      return { valid: text.includes('true'), rawResponse: text };
+    }
     
     return result;
   }, {

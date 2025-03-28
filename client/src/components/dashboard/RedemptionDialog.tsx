@@ -48,23 +48,30 @@ export default function RedemptionDialog({
     setErrorMessage('');
 
     try {
-      const response = await apiRequest(`/api/v1/deals/${dealId}/verify-code`, {
+      console.log(`Verifying deal code for dealId ${dealId}:`, redemptionCode.trim());
+      
+      const response = await apiRequest(`/api/deals/${dealId}/verify-code`, {
         method: 'POST',
         data: { code: redemptionCode.trim() }
       });
 
+      console.log('Verification response:', response);
+
       if (response && response.valid) {
         setVerificationResult('success');
         
-        // After successful verification, create the redemption
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        const userId = user?.id || user?.userId;
-        
-        if (userId) {
-          await apiRequest(`/api/v1/user/${userId}/redemptions`, {
-            method: 'POST',
-            data: { dealId }
-          });
+        // If verify-code endpoint already created the redemption, we don't need to create another one
+        if (!response.redemption) {
+          // After successful verification, create the redemption manually
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          const userId = user?.id || user?.userId;
+          
+          if (userId) {
+            await apiRequest(`/api/user/${userId}/redemptions`, {
+              method: 'POST',
+              data: { dealId }
+            });
+          }
         }
         
         setTimeout(() => {

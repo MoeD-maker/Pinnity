@@ -386,7 +386,7 @@ export function dealRoutes(app: Express): void {
       const isValid = await storage.verifyRedemptionCode(dealId, code);
       
       if (!isValid) {
-        return res.status(400).json({ message: "Invalid redemption code" });
+        return res.status(200).json({ valid: false, message: "Invalid redemption code" });
       }
       
       // Create a redemption record
@@ -396,6 +396,7 @@ export function dealRoutes(app: Express): void {
       await storage.incrementDealRedemptions(dealId);
       
       return res.status(200).json({ 
+        valid: true,
         message: "Redemption code verified successfully",
         redemption 
       });

@@ -1066,7 +1066,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const isValid = await storage.verifyRedemptionCode(dealId, code);
       
-      return res.status(200).json({ valid: isValid });
+      if (!isValid) {
+        return res.status(200).json({ valid: false, message: "Invalid redemption code" });
+      }
+      
+      // If user is authenticated and is an individual, create a redemption record
+      if (req.user && req.user.userType === 'individual') {
+        // Create a redemption record
+        const redemption = await storage.createRedemption(req.user.userId, dealId);
+        
+        // Increment deal redemptions count
+        await storage.incrementDealRedemptions(dealId);
+        
+        return res.status(200).json({ 
+          valid: true,
+          message: "Redemption code verified successfully",
+          redemption 
+        });
+      }
+      
+      return res.status(200).json({ valid: true });
     } catch (error) {
       console.error("Verify redemption code error:", error);
       if (error instanceof Error) {
