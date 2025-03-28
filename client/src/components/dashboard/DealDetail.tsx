@@ -321,10 +321,10 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                     )}
                     
                     {/* Display total redemptions counter if available */}
-                    {deal.redemptionCount !== undefined && deal.maxRedemptions !== undefined && deal.maxRedemptions > 0 && (
+                    {deal.redemptionCount !== undefined && deal.totalRedemptionsLimit !== undefined && deal.totalRedemptionsLimit > 0 && (
                       <div className="mt-2 text-xs text-muted-foreground">
-                        <p>Total redemptions: {deal.redemptionCount || 0} of {deal.maxRedemptions}</p>
-                        {deal.redemptionCount >= deal.maxRedemptions && (
+                        <p>Total redemptions: {deal.redemptionCount || 0} of {deal.totalRedemptionsLimit}</p>
+                        {deal.redemptionCount >= deal.totalRedemptionsLimit && (
                           <p className="text-amber-600 mt-1">This deal has reached its maximum redemption limit.</p>
                         )}
                       </div>
@@ -359,8 +359,8 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                     >
                       Already Redeemed
                     </Button>
-                  ) : (deal.redemptionCount !== undefined && deal.maxRedemptions !== undefined && 
-                      deal.maxRedemptions > 0 && deal.redemptionCount >= deal.maxRedemptions) ? (
+                  ) : (deal.redemptionCount !== undefined && deal.totalRedemptionsLimit !== undefined && 
+                      deal.totalRedemptionsLimit > 0 && deal.redemptionCount >= deal.totalRedemptionsLimit) ? (
                     <Button 
                       className="w-full max-w-xs"
                       variant="outline"
@@ -451,8 +451,8 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                       >
                         Already Redeemed
                       </Button>
-                    ) : (deal.redemptionCount !== undefined && deal.maxRedemptions !== undefined && 
-                        deal.maxRedemptions > 0 && deal.redemptionCount >= deal.maxRedemptions) ? (
+                    ) : (deal.redemptionCount !== undefined && deal.totalRedemptionsLimit !== undefined && 
+                        deal.totalRedemptionsLimit > 0 && deal.redemptionCount >= deal.totalRedemptionsLimit) ? (
                       <Button 
                         className="w-full max-w-xs"
                         variant="outline"
