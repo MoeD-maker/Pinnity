@@ -59,10 +59,10 @@ export default function DealDetailPage() {
   
   // Fetch the deal details
   const { data: deal, isLoading, error } = useQuery({
-    queryKey: ['/api/deals', dealId],
+    queryKey: ['/api/v1/deals', dealId],
     queryFn: async () => {
       try {
-        return await apiRequest(`/api/deals/${dealId}`);
+        return await apiRequest(`/api/v1/deals/${dealId}`);
       } catch (error) {
         console.error('Error fetching deal details:', error);
         throw error;
@@ -77,7 +77,7 @@ export default function DealDetailPage() {
       const userId = user?.userId;
       if (!userId) throw new Error('User not authenticated');
       
-      return apiRequest(`/api/user/${userId}/favorites`, {
+      return apiRequest(`/api/v1/user/${userId}/favorites`, {
         method: 'POST',
         data: { dealId }
       });
@@ -89,7 +89,7 @@ export default function DealDetailPage() {
       });
       
       // Invalidate favorites query
-      queryClient.invalidateQueries({ queryKey: ['/api/user', user?.userId, 'favorites'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/v1/user', user?.userId, 'favorites'] });
     },
     onError: (error) => {
       toast({
@@ -106,7 +106,7 @@ export default function DealDetailPage() {
       const userId = user?.userId;
       if (!userId) throw new Error('User not authenticated');
       
-      return apiRequest(`/api/user/${userId}/favorites/${dealId}`, {
+      return apiRequest(`/api/v1/user/${userId}/favorites/${dealId}`, {
         method: 'DELETE'
       });
     },
@@ -117,7 +117,7 @@ export default function DealDetailPage() {
       });
       
       // Invalidate favorites query
-      queryClient.invalidateQueries({ queryKey: ['/api/user', user?.userId, 'favorites'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/v1/user', user?.userId, 'favorites'] });
     },
     onError: (error) => {
       toast({
@@ -130,10 +130,10 @@ export default function DealDetailPage() {
 
   // Fetch user's favorites to check if this deal is favorited
   const { data: favorites } = useQuery({
-    queryKey: ['/api/user', user?.userId, 'favorites'],
+    queryKey: ['/api/v1/user', user?.userId, 'favorites'],
     queryFn: async () => {
       if (!user?.userId) return [];
-      return apiRequest(`/api/user/${user.userId}/favorites`);
+      return apiRequest(`/api/v1/user/${user.userId}/favorites`);
     },
     enabled: !!user?.userId
   });
@@ -177,10 +177,11 @@ export default function DealDetailPage() {
 
   // Go back to previous page
   const handleGoBack = () => {
-    // Check if we can go back in history, otherwise go to explore
+    // Try to use browser's history to go back
     if (window.history.length > 2) {
-      setLocation('/');
+      window.history.back();
     } else {
+      // Fallback to explore page if no history is available
       setLocation('/explore');
     }
   };

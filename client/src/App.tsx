@@ -453,15 +453,7 @@ function Router() {
       <Route path="/deals/:id">
         {(params) => (
           <Suspense fallback={<LoadingFallback />}>
-            {/* Use a direct component without MainLayout wrapper */}
-            {(location) => {
-              if (!params) return null;
-              return (
-                <div className="min-h-screen flex flex-col bg-background text-foreground">
-                  <DealDetails />
-                </div>
-              );
-            }}
+            <DealDetails />
           </Suspense>
         )}
       </Route>
