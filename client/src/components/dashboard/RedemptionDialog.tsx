@@ -57,7 +57,9 @@ export default function RedemptionDialog({
         setVerificationResult('success');
         
         // After successful verification, create the redemption
-        const userId = JSON.parse(localStorage.getItem('user') || '{}')?.id;
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const userId = user?.id || user?.userId;
+        
         if (userId) {
           await apiRequest(`/api/v1/user/${userId}/redemptions`, {
             method: 'POST',

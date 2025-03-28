@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMutation } from '@tanstack/react-query';
+import RedemptionDialog from '@/components/dashboard/RedemptionDialog';
 
 // UI components
 import {
@@ -399,43 +400,18 @@ export default function DealDetailPage() {
         </CardFooter>
       </Card>
 
-      {/* Redemption dialog */}
-      <Dialog open={showRedemptionDialog} onOpenChange={setShowRedemptionDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogTitle>Redeem This Deal</DialogTitle>
-          <DialogDescription>
-            Show this screen to the business to redeem your deal.
-          </DialogDescription>
-          
-          <div className="flex flex-col items-center space-y-4 py-4">
-            {deal.redemptionCode ? (
-              <>
-                <div className="text-center p-6 border-2 border-dashed rounded-md mb-4">
-                  <p className="text-2xl font-mono font-bold tracking-widest">{deal.redemptionCode}</p>
-                </div>
-                <p className="text-sm text-center text-muted-foreground">
-                  Present this code to the merchant
-                </p>
-              </>
-            ) : (
-              <div className="text-center">
-                <QrCode className="h-32 w-32 mx-auto mb-4 text-primary" />
-                <p className="text-sm text-center text-muted-foreground">
-                  Show this screen to the merchant to redeem the deal
-                </p>
-              </div>
-            )}
-          </div>
-          
-          <DialogFooter className="sm:justify-center">
-            <DialogClose asChild>
-              <Button type="button" variant="secondary">
-                Close
-              </Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Redemption dialog using the consistent component */}
+      <RedemptionDialog
+        isOpen={showRedemptionDialog}
+        onClose={() => setShowRedemptionDialog(false)}
+        dealId={dealId}
+        dealTitle={deal.title}
+        businessName={deal.business?.businessName || ""}
+        onRedeemSuccess={() => {
+          // Refresh deal data after successful redemption
+          queryClient.invalidateQueries({ queryKey: ['/api/v1/deals', dealId] });
+        }}
+      />
     </div>
   );
 }
