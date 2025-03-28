@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { MapPin, Calendar, Phone, Globe, Clock, Share2, Heart, Award, AlertCircle, CheckCircle, Sparkles } from 'lucide-react';
+import { MapPin, Calendar, Phone, Globe, Clock, Share2, Heart, Award, AlertCircle, CheckCircle, Sparkles, Info } from 'lucide-react';
 import { 
   Dialog, 
   DialogContent, 
@@ -20,6 +20,7 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { queryClient } from '@/lib/queryClient';
 import { isExpired, isExpiringSoon, getExpirationText } from '@/utils/dateUtils';
 import { apiRequest } from '@/lib/queryClient';
+import { checkDealRedemptionStatus } from '@/lib/dealUtils';
 import RedemptionDialog from './RedemptionDialog';
 
 interface DealDetailProps {
@@ -30,6 +31,20 @@ interface DealDetailProps {
 export default function DealDetail({ dealId, onClose }: DealDetailProps) {
   const [step, setStep] = useState<'details' | 'redeem'>('details');
   const [showRedemptionDialog, setShowRedemptionDialog] = useState(false);
+  const [redemptionStatus, setRedemptionStatus] = useState<{
+    hasRedeemed: boolean;
+    redemptionCount: number;
+    maxRedemptionsPerUser: number | null;
+    canRedeem: boolean;
+    success: boolean;
+    error?: any;
+  }>({
+    hasRedeemed: false,
+    redemptionCount: 0,
+    maxRedemptionsPerUser: null,
+    canRedeem: true,
+    success: false
+  });
   const { toast } = useToast();
   
   // Fetch the deal details
@@ -39,6 +54,23 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
       return apiRequest(`/api/v1/deals/${dealId}`);
     }
   });
+  
+  // Check redemption status
+  useEffect(() => {
+    async function checkRedemption() {
+      if (!deal) return;
+      
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const userId = user?.id;
+      
+      if (!userId) return;
+      
+      const status = await checkDealRedemptionStatus(userId, dealId);
+      setRedemptionStatus(status);
+    }
+    
+    checkRedemption();
+  }, [dealId, deal]);
 
   // Add to favorites mutation
   const addToFavorites = useMutation({
@@ -250,6 +282,44 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                     </div>
                   </div>
                 </div>
+                
+                {/* Redemption status section */}
+                <div className="bg-card rounded-lg p-4 sm:p-5 border shadow-sm">
+                  <h3 className="font-medium mb-3 text-sm sm:text-base">Redemption Status</h3>
+                  <div className="space-y-2">
+                    {redemptionStatus.hasRedeemed ? (
+                      <div className="flex items-center gap-2 text-green-600">
+                        <CheckCircle className="h-4 w-4" />
+                        <span className="text-xs sm:text-sm font-medium">You have already redeemed this deal</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Info className="h-4 w-4 text-primary" />
+                        <span className="text-xs sm:text-sm">You haven't redeemed this deal yet</span>
+                      </div>
+                    )}
+                    
+                    {/* Display redemption limits if available */}
+                    {redemptionStatus.maxRedemptionsPerUser !== null && (
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        <p>Your redemptions: {redemptionStatus.redemptionCount || 0} of {redemptionStatus.maxRedemptionsPerUser}</p>
+                        {redemptionStatus.maxRedemptionsPerUser > 0 && redemptionStatus.redemptionCount >= redemptionStatus.maxRedemptionsPerUser && (
+                          <p className="text-amber-600 mt-1">You've reached the maximum number of redemptions for this deal.</p>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Display total redemptions counter if available */}
+                    {deal.redemptionCount !== undefined && deal.maxRedemptions !== undefined && deal.maxRedemptions > 0 && (
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        <p>Total redemptions: {deal.redemptionCount || 0} of {deal.maxRedemptions}</p>
+                        {deal.redemptionCount >= deal.maxRedemptions && (
+                          <p className="text-amber-600 mt-1">This deal has reached its maximum redemption limit.</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
 
                 {deal.terms && (
                   <div className="bg-card rounded-lg p-4 sm:p-5 border shadow-sm">
@@ -262,12 +332,39 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                 
                 {/* Add Redeem Now button to details tab */}
                 <div className="mt-6 flex flex-col items-center">
-                  <Button 
-                    className="bg-[#00796B] hover:bg-[#00695C] w-full max-w-xs"
-                    onClick={() => setShowRedemptionDialog(true)}
-                  >
-                    Redeem Now
-                  </Button>
+                  {isExpired(deal) ? (
+                    <Button 
+                      className="w-full max-w-xs"
+                      variant="outline"
+                      disabled
+                    >
+                      Deal Expired
+                    </Button>
+                  ) : redemptionStatus.hasRedeemed && redemptionStatus.redemptionCount >= (redemptionStatus.maxRedemptionsPerUser || 1) ? (
+                    <Button 
+                      className="w-full max-w-xs"
+                      variant="outline"
+                      disabled
+                    >
+                      Already Redeemed
+                    </Button>
+                  ) : (deal.redemptionCount !== undefined && deal.maxRedemptions !== undefined && 
+                      deal.maxRedemptions > 0 && deal.redemptionCount >= deal.maxRedemptions) ? (
+                    <Button 
+                      className="w-full max-w-xs"
+                      variant="outline"
+                      disabled
+                    >
+                      No More Redemptions Available
+                    </Button>
+                  ) : (
+                    <Button 
+                      className="bg-[#00796B] hover:bg-[#00695C] w-full max-w-xs"
+                      onClick={() => setShowRedemptionDialog(true)}
+                    >
+                      Redeem Now
+                    </Button>
+                  )}
                   
                   <div className="mt-4 text-xs sm:text-sm text-muted-foreground">
                     <h4 className="font-medium mb-1">Additional instructions:</h4>
@@ -327,17 +424,52 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                   </div>
 
                   <div className="mt-6 flex flex-col items-center">
-                    <Button 
-                      className="bg-[#00796B] hover:bg-[#00695C] w-full max-w-xs"
-                      onClick={() => setShowRedemptionDialog(true)}
-                    >
-                      Redeem Now
-                    </Button>
+                    {isExpired(deal) ? (
+                      <Button 
+                        className="w-full max-w-xs"
+                        variant="outline"
+                        disabled
+                      >
+                        Deal Expired
+                      </Button>
+                    ) : redemptionStatus.hasRedeemed && redemptionStatus.redemptionCount >= (redemptionStatus.maxRedemptionsPerUser || 1) ? (
+                      <Button 
+                        className="w-full max-w-xs"
+                        variant="outline"
+                        disabled
+                      >
+                        Already Redeemed
+                      </Button>
+                    ) : (deal.redemptionCount !== undefined && deal.maxRedemptions !== undefined && 
+                        deal.maxRedemptions > 0 && deal.redemptionCount >= deal.maxRedemptions) ? (
+                      <Button 
+                        className="w-full max-w-xs"
+                        variant="outline"
+                        disabled
+                      >
+                        No More Redemptions Available
+                      </Button>
+                    ) : (
+                      <Button 
+                        className="bg-[#00796B] hover:bg-[#00695C] w-full max-w-xs"
+                        onClick={() => setShowRedemptionDialog(true)}
+                      >
+                        Redeem Now
+                      </Button>
+                    )}
                     
                     <div className="mt-4 text-xs sm:text-sm text-muted-foreground">
                       <h4 className="font-medium mb-1">Additional instructions:</h4>
                       <p>Please inform the vendor you have a Pinnity coupon before asking for the bill</p>
                     </div>
+                    
+                    {/* Display redemption status information in the redeem tab too */}
+                    {redemptionStatus.hasRedeemed && (
+                      <div className="mt-4 flex items-center gap-2 text-green-600 text-sm">
+                        <CheckCircle className="h-4 w-4" />
+                        <span className="font-medium">You have already redeemed this deal</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </TabsContent>

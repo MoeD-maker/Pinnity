@@ -171,6 +171,42 @@ export function userRoutes(app: Express): void {
     }
   );
   
+  // Check if a user has redeemed a specific deal
+  app.get(
+    "/api/user/:userId/redemptions/check/:dealId", 
+    authenticate, 
+    checkOwnership('userId'),
+    async (req: Request, res: Response) => {
+      try {
+        const userId = parseInt(req.params.userId);
+        const dealId = parseInt(req.params.dealId);
+        
+        if (isNaN(userId) || isNaN(dealId)) {
+          return res.status(400).json({ message: "Invalid user ID or deal ID" });
+        }
+        
+        // Get the deal to check redemption limits
+        const deal = await storage.getDeal(dealId);
+        if (!deal) {
+          return res.status(404).json({ message: "Deal not found" });
+        }
+        
+        const hasRedeemed = await storage.hasUserRedeemedDeal(userId, dealId);
+        const redemptionCount = await storage.getUserRedemptionCountForDeal(userId, dealId);
+        
+        return res.status(200).json({ 
+          hasRedeemed,
+          redemptionCount,
+          maxRedemptionsPerUser: deal.maxRedemptionsPerUser || null,
+          canRedeem: !deal.maxRedemptionsPerUser || redemptionCount < deal.maxRedemptionsPerUser
+        });
+      } catch (error) {
+        console.error("Check user redemption error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+  
   app.post(
     "/api/user/:userId/redemptions", 
     authenticate, 

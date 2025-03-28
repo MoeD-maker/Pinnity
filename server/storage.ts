@@ -2358,6 +2358,28 @@ export class DatabaseStorage implements IStorage {
       .from(dealRedemptions)
       .where(eq(dealRedemptions.dealId, dealId));
   }
+  
+  async hasUserRedeemedDeal(userId: number, dealId: number): Promise<boolean> {
+    const redemptions = await db.select()
+      .from(dealRedemptions)
+      .where(and(
+        eq(dealRedemptions.userId, userId),
+        eq(dealRedemptions.dealId, dealId)
+      ));
+      
+    return redemptions.length > 0;
+  }
+  
+  async getUserRedemptionCountForDeal(userId: number, dealId: number): Promise<number> {
+    const result = await db.select({ count: sql`count(*)` })
+      .from(dealRedemptions)
+      .where(and(
+        eq(dealRedemptions.userId, userId),
+        eq(dealRedemptions.dealId, dealId)
+      ));
+      
+    return Number(result[0]?.count || 0);
+  }
 
   async verifyRedemptionCode(dealId: number, code: string): Promise<boolean> {
     const deal = await this.getDeal(dealId);
@@ -2448,6 +2470,46 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createRedemption(userId: number, dealId: number): Promise<DealRedemption> {
+    // Check if the deal exists
+    const deal = await this.getDeal(dealId);
+    if (!deal) {
+      throw new Error("Deal not found");
+    }
+    
+    // Check if the deal has a per-user redemption limit
+    if (deal.maxRedemptionsPerUser) {
+      // Count how many times this user has already redeemed this deal
+      const userRedemptions = await db.select({ count: sql`count(*)` })
+        .from(dealRedemptions)
+        .where(and(
+          eq(dealRedemptions.userId, userId),
+          eq(dealRedemptions.dealId, dealId)
+        ));
+      
+      const redemptionCount = Number(userRedemptions[0]?.count || 0);
+      
+      // If user has reached the limit, throw an error
+      if (redemptionCount >= deal.maxRedemptionsPerUser) {
+        throw new Error(`You have reached the maximum redemption limit (${deal.maxRedemptionsPerUser}) for this deal`);
+      }
+    }
+    
+    // Check if the deal has a total redemptions limit
+    if (deal.totalRedemptionsLimit) {
+      // Count total redemptions for this deal
+      const totalRedemptions = await db.select({ count: sql`count(*)` })
+        .from(dealRedemptions)
+        .where(eq(dealRedemptions.dealId, dealId));
+      
+      const totalCount = Number(totalRedemptions[0]?.count || 0);
+      
+      // If the total limit has been reached, throw an error
+      if (totalCount >= deal.totalRedemptionsLimit) {
+        throw new Error("This deal has reached its maximum total redemptions limit");
+      }
+    }
+    
+    // All checks passed, create the redemption
     const [addedRedemption] = await db.insert(dealRedemptions)
       .values({
         userId,
