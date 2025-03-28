@@ -365,17 +365,28 @@ export function dealRoutes(app: Express): void {
           return res.status(200).json({ valid: false, message: "Invalid redemption code" });
         }
         
-        // Create a redemption record
-        const redemption = await storage.createRedemption(req.user.userId, dealId);
-        
-        // Increment deal redemptions count
-        await storage.incrementDealRedemptions(dealId);
-        
-        return res.status(200).json({ 
-          valid: true,
-          message: "Redemption code verified successfully",
-          redemption 
-        });
+        try {
+          // Create a redemption record
+          const redemption = await storage.createRedemption(req.user.userId, dealId);
+          
+          // Increment deal redemptions count
+          await storage.incrementDealRedemptions(dealId);
+          
+          return res.status(200).json({ 
+            valid: true,
+            message: "Redemption code verified successfully",
+            redemption 
+          });
+        } catch (error) {
+          console.error("Redemption error:", error);
+          
+          // Return a 400 Bad Request with the specific error message
+          const redemptionError = error as Error;
+          return res.status(400).json({ 
+            valid: false, 
+            message: redemptionError.message || "Failed to redeem. You may have already redeemed this deal or reached the maximum limit." 
+          });
+        }
       } catch (error) {
         console.error("Verify redemption code error:", error);
         return res.status(500).json({ message: "Internal server error" });
@@ -412,17 +423,28 @@ export function dealRoutes(app: Express): void {
           return res.status(200).json({ valid: false, message: "Invalid redemption code" });
         }
         
-        // Create a redemption record
-        const redemption = await storage.createRedemption(req.user.userId, dealId);
-        
-        // Increment deal redemptions count
-        await storage.incrementDealRedemptions(dealId);
-        
-        return res.status(200).json({ 
-          valid: true,
-          message: "Redemption code verified successfully (legacy route)",
-          redemption 
-        });
+        try {
+          // Create a redemption record
+          const redemption = await storage.createRedemption(req.user.userId, dealId);
+          
+          // Increment deal redemptions count
+          await storage.incrementDealRedemptions(dealId);
+          
+          return res.status(200).json({ 
+            valid: true,
+            message: "Redemption code verified successfully (legacy route)",
+            redemption 
+          });
+        } catch (error) {
+          console.error("Redemption error (legacy):", error);
+          
+          // Return a 400 Bad Request with the specific error message
+          const redemptionError = error as Error;
+          return res.status(400).json({ 
+            valid: false, 
+            message: redemptionError.message || "Failed to redeem. You may have already redeemed this deal or reached the maximum limit." 
+          });
+        }
       } catch (error) {
         console.error("Verify redemption code error (legacy):", error);
         return res.status(500).json({ message: "Internal server error" });

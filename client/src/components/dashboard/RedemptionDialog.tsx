@@ -87,12 +87,36 @@ export default function RedemptionDialog({
         }, 1500);
       } else {
         setVerificationResult('error');
-        setErrorMessage('Invalid redemption code. Please check and try again.');
+        // Use the server-provided error message if available
+        setErrorMessage(response?.message || 'Invalid redemption code. Please check and try again.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error verifying redemption code:', error);
       setVerificationResult('error');
-      setErrorMessage('Failed to verify the redemption code. Please try again.');
+      
+      // Try to extract more specific error messages
+      let errorMsg = 'Failed to verify the redemption code. Please try again.';
+      
+      if (error.response) {
+        try {
+          // If we have a response object, try to get the error message from it
+          const errorData = await error.response.json();
+          errorMsg = errorData.message || errorMsg;
+        } catch (jsonError) {
+          console.error('Failed to parse error response:', jsonError);
+        }
+      } else if (error.message) {
+        errorMsg = error.message;
+      }
+      
+      // Handle specific error types with better user messaging
+      if (errorMsg.includes('maximum redemption limit')) {
+        errorMsg = 'You have reached the maximum redemption limit for this deal.';
+      } else if (errorMsg.includes('already redeemed')) {
+        errorMsg = 'You have already redeemed this deal.';
+      }
+      
+      setErrorMessage(errorMsg);
     } finally {
       setIsVerifying(false);
     }
