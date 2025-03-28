@@ -580,6 +580,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Deal redemption routes
+  // Check if user has redeemed a specific deal
+  app.get("/api/user/:userId/redemptions/:dealId", authenticate, checkOwnership('userId'), async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const dealId = parseInt(req.params.dealId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      if (isNaN(dealId)) {
+        return res.status(400).json({ message: "Invalid deal ID" });
+      }
+      
+      const redemptions = await storage.getUserRedemptions(userId);
+      const hasRedeemed = redemptions.some(r => r.dealId === dealId);
+      
+      return res.status(200).json({ 
+        hasRedeemed, 
+        remainingRedemptions: null, // We'll calculate this in a future update
+        totalRedemptions: redemptions.filter(r => r.dealId === dealId).length
+      });
+    } catch (error) {
+      console.error("Check user redemption error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.get("/api/user/:userId/redemptions", authenticate, checkOwnership('userId'), async (req: Request, res: Response) => {
     try {
       const userId = parseInt(req.params.userId);

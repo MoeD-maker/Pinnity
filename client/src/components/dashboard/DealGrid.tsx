@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Heart, MapPin, Calendar, Clock, Database } from 'lucide-react';
+import { Heart, MapPin, Calendar, Clock, Database, CheckCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { isExpiringSoon, getExpirationText, isExpired } from '@/utils/dealReminders';
 import ExpiringSoonBadge from '@/components/deals/ExpiringSoonBadge';
@@ -13,6 +13,7 @@ import ExpiredBadge from '@/components/deals/ExpiredBadge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { checkDealRedemptionStatus } from '@/lib/dealUtils';
 import CachedDataAlert from '@/components/ui/CachedDataAlert';
 
 // Use a looser type for the API response since it may not match the database schema exactly
@@ -107,6 +108,11 @@ function DealCard({ deal, onSelect, isCached = false }: DealCardProps) {
     triggerOnce: true,
     threshold: 0.1,
   });
+  const { user } = useAuth();
+  const [redemptionStatus, setRedemptionStatus] = useState({
+    hasRedeemed: false,
+    isLoading: false
+  });
 
   // Apply defensive programming by providing defaults for missing values
   const safeTitle = deal?.title || 'Untitled Deal';
@@ -124,6 +130,28 @@ function DealCard({ deal, onSelect, isCached = false }: DealCardProps) {
   
   // Calculate discount percentage or value
   const discount = deal?.discount || '';
+
+  // Check if the user has already redeemed this deal
+  useQuery({
+    queryKey: ['redemptionStatus', user?.id, safeId],
+    queryFn: async () => {
+      if (!user || !safeId) return null;
+      setRedemptionStatus(prev => ({ ...prev, isLoading: true }));
+      try {
+        const status = await checkDealRedemptionStatus(user.id, safeId);
+        setRedemptionStatus({
+          hasRedeemed: status.hasRedeemed,
+          isLoading: false
+        });
+        return status;
+      } catch (error) {
+        console.error('Error checking redemption status:', error);
+        setRedemptionStatus({ hasRedeemed: false, isLoading: false });
+        return null;
+      }
+    },
+    enabled: !!user && !!safeId,
+  });
 
   return (
     <Card 
@@ -144,6 +172,16 @@ function DealCard({ deal, onSelect, isCached = false }: DealCardProps) {
             </Badge>
           </div>
           <FavoriteButton dealId={safeId} />
+          
+          {/* Redeemed badge */}
+          {redemptionStatus.hasRedeemed && (
+            <div className="absolute bottom-2 left-2">
+              <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200 text-xs flex gap-1 items-center px-2 py-0.5">
+                <CheckCircle className="h-3 w-3" />
+                <span>Redeemed</span>
+              </Badge>
+            </div>
+          )}
           
           {/* Cache indicator for individual deal cards */}
           {isCached && (
@@ -170,6 +208,11 @@ function DealCard({ deal, onSelect, isCached = false }: DealCardProps) {
                 <ExpiredBadge deal={deal} />
               ) : deal && isExpiringSoon(deal) && (
                 <ExpiringSoonBadge deal={deal} />
+              )}
+              {redemptionStatus.hasRedeemed && (
+                <Badge className="bg-green-100 text-green-800 border-green-200">
+                  Redeemed
+                </Badge>
               )}
             </div>
             <h3 className="font-semibold text-base sm:text-lg line-clamp-1">{safeTitle}</h3>

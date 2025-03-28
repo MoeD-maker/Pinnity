@@ -5,35 +5,53 @@ import { apiRequest } from './api';
  */
 export async function checkDealRedemptionStatus(userId: number, dealId: number) {
   try {
-    const response = await apiRequest(`/api/v1/user/${userId}/redemptions/check/${dealId}`, {
+    // Use our new endpoint to check redemption status
+    const response = await apiRequest(`/api/v1/user/${userId}/redemptions/${dealId}`, {
       method: 'GET'
     });
     
     // Define the expected response type
     interface RedemptionStatusResponse {
       hasRedeemed: boolean;
-      redemptionCount: number;
-      maxRedemptionsPerUser: number | null;
-      canRedeem: boolean;
+      remainingRedemptions: number | null;
+      totalRedemptions: number;
     }
     
     // Type assertion to prevent unknown type errors
     const typedResponse = response as RedemptionStatusResponse;
     
+    // Determine if user can redeem based on the max redemptions per user (if any)
+    const deal = await apiRequest(`/api/v1/deals/${dealId}`, {
+      method: 'GET'
+    });
+    
+    const maxRedemptionsPerUser = deal?.maxRedemptionsPerUser || null;
+    const totalRedemptionsLimit = deal?.totalRedemptionsLimit || null;
+    const redemptionCount = deal?.redemptionCount || 0;
+    
+    const canRedeem = !typedResponse.hasRedeemed || 
+      (maxRedemptionsPerUser !== null && 
+       typedResponse.totalRedemptions < maxRedemptionsPerUser);
+    
+    const totalLimitReached = totalRedemptionsLimit !== null && 
+      redemptionCount >= totalRedemptionsLimit;
+    
     return {
       hasRedeemed: typedResponse.hasRedeemed,
-      redemptionCount: typedResponse.redemptionCount,
-      maxRedemptionsPerUser: typedResponse.maxRedemptionsPerUser,
-      canRedeem: typedResponse.canRedeem,
+      totalRedemptions: typedResponse.totalRedemptions,
+      maxRedemptionsPerUser,
+      canRedeem: canRedeem && !totalLimitReached && !isExpired(deal),
+      totalLimitReached,
       success: true
     };
   } catch (error) {
     console.error('Error checking redemption status:', error);
     return {
       hasRedeemed: false,
-      redemptionCount: 0,
+      totalRedemptions: 0,
       maxRedemptionsPerUser: null,
       canRedeem: true,
+      totalLimitReached: false,
       success: false,
       error
     };
