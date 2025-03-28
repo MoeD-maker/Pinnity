@@ -232,23 +232,6 @@ export default function DealDetailPage() {
 
   return (
     <div className="container max-w-4xl mx-auto p-4 pb-24">
-      {/* Breadcrumb navigation */}
-      <Breadcrumb className="mb-4">
-        <BreadcrumbItem>
-          <BreadcrumbLink href="/">Home</BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbSeparator />
-        <BreadcrumbItem>
-          <BreadcrumbLink href="/explore">Explore</BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbSeparator />
-        <BreadcrumbItem>
-          <span className="truncate max-w-[200px] inline-block align-bottom">
-            {deal.title}
-          </span>
-        </BreadcrumbItem>
-      </Breadcrumb>
-
       {/* Back button (mobile-friendly) */}
       <Button 
         variant="ghost" 
