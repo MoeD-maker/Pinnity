@@ -194,7 +194,13 @@ function DealCard({ deal, onSelect, isCached = false }: DealCardProps) {
       </CardContent>
       
       <CardFooter className="p-3 sm:p-4 pt-0">
-        <Button onClick={onSelect} className="w-full text-sm h-9">
+        <Button 
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent double triggering with card click
+            onSelect();
+          }} 
+          className="w-full text-sm h-9"
+        >
           View Deal
         </Button>
       </CardFooter>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 import { DealGrid } from '@/components/dashboard';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -124,11 +125,14 @@ export default function FavoritesPage() {
     }
   }, [favorites]);
 
+  // Use wouter for navigation
+  const [_, setLocation] = useLocation();
+  
   // Handler for selecting a deal
   const handleSelectDeal = (dealId: number) => {
-    console.log('Selected deal', dealId);
-    // In a real app, navigate to the deal details page
-    // navigate(`/deals/${dealId}`);
+    console.log('Navigating to deal', dealId);
+    // Navigate to the deal details page
+    setLocation(`/deals/${dealId}`);
   };
 
   return (

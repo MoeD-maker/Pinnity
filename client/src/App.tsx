@@ -34,6 +34,7 @@ const Profile = lazy(() => import("@/pages/profile"));
 const Settings = lazy(() => import("@/pages/settings"));
 const Explore = lazy(() => import("@/pages/enhanced-explore"));
 const Map = lazy(() => import("@/pages/map"));
+const DealDetails = lazy(() => import("@/pages/deals/[id]"));
 const FormValidationDemo = lazy(() => import("@/pages/FormValidationDemo"));
 
 // Admin pages
@@ -449,7 +450,13 @@ function Router() {
         )}
       </Route>
       
-
+      <Route path="/deals/:id">
+        {(params) => (
+          <Suspense fallback={<LoadingFallback />}>
+            <AuthenticatedRoute component={DealDetails} params={params} />
+          </Suspense>
+        )}
+      </Route>
       
       <Route path="/map">
         {(params) => (
