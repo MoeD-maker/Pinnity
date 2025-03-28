@@ -103,12 +103,23 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
   });
 
   // Handle redemption success
-  const handleRedemptionSuccess = () => {
+  const handleRedemptionSuccess = async () => {
     // Refetch the deal to update redemption count
-    refetch();
+    await refetch();
     
     // Update any other data that might be affected
     queryClient.invalidateQueries({ queryKey: ['/api/v1/user/redemptions'] });
+    
+    // Update redemption status immediately
+    if (deal) {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const userId = user?.id;
+      
+      if (userId) {
+        const status = await checkDealRedemptionStatus(userId, dealId);
+        setRedemptionStatus(status);
+      }
+    }
     
     // Show a success toast
     toast({

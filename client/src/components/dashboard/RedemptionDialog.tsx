@@ -73,9 +73,12 @@ export default function RedemptionDialog({
             });
           }
         }
+
+        // Trigger success callback immediately to update UI state
+        onRedeemSuccess();
         
+        // Show toast and close dialog after a brief delay
         setTimeout(() => {
-          onRedeemSuccess();
           toast({
             title: "Deal Redeemed!",
             description: "You have successfully redeemed this deal.",

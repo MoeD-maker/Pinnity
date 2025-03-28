@@ -5,10 +5,14 @@ import { apiRequest } from './api';
  */
 export async function checkDealRedemptionStatus(userId: number, dealId: number) {
   try {
+    console.log(`Checking redemption status for user ${userId} and deal ${dealId}`);
+    
     // Use our new endpoint to check redemption status
     const response = await apiRequest(`/api/v1/user/${userId}/redemptions/${dealId}`, {
       method: 'GET'
     });
+    
+    console.log('Redemption status response:', response);
     
     // Define the expected response type
     interface RedemptionStatusResponse {
@@ -25,6 +29,8 @@ export async function checkDealRedemptionStatus(userId: number, dealId: number) 
       method: 'GET'
     });
     
+    console.log('Deal details for redemption check:', deal);
+    
     const maxRedemptionsPerUser = deal?.maxRedemptionsPerUser || null;
     const totalRedemptionsLimit = deal?.totalRedemptionsLimit || null;
     const redemptionCount = deal?.redemptionCount || 0;
@@ -36,19 +42,23 @@ export async function checkDealRedemptionStatus(userId: number, dealId: number) 
     const totalLimitReached = totalRedemptionsLimit !== null && 
       redemptionCount >= totalRedemptionsLimit;
     
-    return {
+    // Force refresh the hasRedeemed status to ensure UI updates properly
+    const updatedStatus = {
       hasRedeemed: typedResponse.hasRedeemed,
-      totalRedemptions: typedResponse.totalRedemptions,
+      redemptionCount: typedResponse.totalRedemptions || 0,
       maxRedemptionsPerUser,
       canRedeem: canRedeem && !totalLimitReached && !isExpired(deal),
       totalLimitReached,
       success: true
     };
+    
+    console.log('Returning updated redemption status:', updatedStatus);
+    return updatedStatus;
   } catch (error) {
     console.error('Error checking redemption status:', error);
     return {
       hasRedeemed: false,
-      totalRedemptions: 0,
+      redemptionCount: 0,
       maxRedemptionsPerUser: null,
       canRedeem: true,
       totalLimitReached: false,
