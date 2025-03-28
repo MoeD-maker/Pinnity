@@ -45,9 +45,13 @@ export async function checkDealRedemptionStatus(userId: number, dealId: number) 
     const totalRedemptionsLimit = deal?.totalRedemptionsLimit || null;
     const redemptionCount = deal?.redemptionCount || 0;
     
-    const canRedeem = !typedResponse.hasRedeemed || 
-      (maxRedemptionsPerUser !== null && 
-       typedResponse.totalRedemptions < maxRedemptionsPerUser);
+    // CRITICAL: A user can redeem again if they haven't reached their personal limit
+    // If hasRedeemed is true but they still have redemptions remaining, they CAN redeem again
+    const hasRemainingRedemptions = typedResponse.remainingRedemptions !== null && 
+      typedResponse.remainingRedemptions > 0;
+    
+    // Update canRedeem logic to use remainingRedemptions directly, more reliable
+    const canRedeem = hasRemainingRedemptions && !isExpired(deal);
     
     const totalLimitReached = totalRedemptionsLimit !== null && 
       redemptionCount >= totalRedemptionsLimit;
@@ -57,8 +61,9 @@ export async function checkDealRedemptionStatus(userId: number, dealId: number) 
       hasRedeemed: typedResponse.hasRedeemed,
       redemptionCount: typedResponse.totalRedemptions || 0,
       maxRedemptionsPerUser,
-      canRedeem: canRedeem && !totalLimitReached && !isExpired(deal),
+      canRedeem: canRedeem && !totalLimitReached,
       totalLimitReached,
+      remainingRedemptions: typedResponse.remainingRedemptions,
       success: true
     };
     

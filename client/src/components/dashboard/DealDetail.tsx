@@ -35,6 +35,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
     hasRedeemed: boolean;
     redemptionCount: number;
     maxRedemptionsPerUser: number | null;
+    remainingRedemptions?: number | null;
     canRedeem: boolean;
     success: boolean;
     error?: any;
@@ -42,6 +43,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
     hasRedeemed: false,
     redemptionCount: 0,
     maxRedemptionsPerUser: null,
+    remainingRedemptions: null,
     canRedeem: true,
     success: false
   });
@@ -299,25 +301,52 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                 <div className="bg-card rounded-lg p-4 sm:p-5 border shadow-sm">
                   <h3 className="font-medium mb-3 text-sm sm:text-base">Redemption Status</h3>
                   <div className="space-y-2">
+                    {/* IMPORTANT: We completely rewrote this section based on API response values */}
                     {redemptionStatus.hasRedeemed ? (
                       <>
                         <div className="flex items-center gap-2 text-green-600">
                           <CheckCircle className="h-4 w-4" />
-                          <span className="text-xs sm:text-sm font-medium">You have already redeemed this deal</span>
+                          <span className="text-xs sm:text-sm font-medium">
+                            You have redeemed this deal {redemptionStatus.redemptionCount > 1 ? `${redemptionStatus.redemptionCount} times` : ''}
+                          </span>
                         </div>
                         
-                        {/* When the user has redeemed the deal at least once */}
-                        {redemptionStatus.maxRedemptionsPerUser !== null && (
+                        {/* Use remainingRedemptions from the API directly if available */}
+                        {redemptionStatus.remainingRedemptions !== null && redemptionStatus.remainingRedemptions !== undefined ? (
                           <div className="mt-1 text-xs text-muted-foreground">
-                            {redemptionStatus.maxRedemptionsPerUser > 0 && redemptionStatus.redemptionCount >= redemptionStatus.maxRedemptionsPerUser ? (
-                              <p className="text-amber-600">You've reached the maximum number of redemptions on this deal.</p>
+                            {redemptionStatus.remainingRedemptions > 0 ? (
+                              <p className="font-medium text-primary">
+                                You can redeem this deal {redemptionStatus.remainingRedemptions} more {redemptionStatus.remainingRedemptions === 1 ? 'time' : 'times'}
+                              </p>
                             ) : (
-                              <>
-                                <p>You can redeem this deal {redemptionStatus.maxRedemptionsPerUser - redemptionStatus.redemptionCount} more {(redemptionStatus.maxRedemptionsPerUser - redemptionStatus.redemptionCount) === 1 ? 'time' : 'times'}</p>
-                                <p className="mt-1">({redemptionStatus.redemptionCount} of {redemptionStatus.maxRedemptionsPerUser} redemptions used)</p>
-                              </>
+                              <p className="text-amber-600">You've reached the maximum number of redemptions for this deal.</p>
+                            )}
+                            
+                            {redemptionStatus.maxRedemptionsPerUser && (
+                              <p className="mt-1">
+                                ({redemptionStatus.redemptionCount} of {redemptionStatus.maxRedemptionsPerUser} redemptions used)
+                              </p>
                             )}
                           </div>
+                        ) : (
+                          /* Fallback calculation if remainingRedemptions is not available */
+                          redemptionStatus.maxRedemptionsPerUser !== null && (
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              {redemptionStatus.redemptionCount >= redemptionStatus.maxRedemptionsPerUser ? (
+                                <p className="text-amber-600">You've reached the maximum number of redemptions on this deal.</p>
+                              ) : (
+                                <>
+                                  <p className="font-medium text-primary">
+                                    You can redeem this deal {redemptionStatus.maxRedemptionsPerUser - redemptionStatus.redemptionCount} more 
+                                    {(redemptionStatus.maxRedemptionsPerUser - redemptionStatus.redemptionCount) === 1 ? ' time' : ' times'}
+                                  </p>
+                                  <p className="mt-1">
+                                    ({redemptionStatus.redemptionCount} of {redemptionStatus.maxRedemptionsPerUser} redemptions used)
+                                  </p>
+                                </>
+                              )}
+                            </div>
+                          )
                         )}
                       </>
                     ) : (
@@ -330,7 +359,9 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                         {/* When the user hasn't redeemed the deal yet */}
                         {redemptionStatus.maxRedemptionsPerUser !== null && (
                           <div className="mt-1 text-xs text-muted-foreground">
-                            <p className="font-medium text-primary">You can redeem this deal {redemptionStatus.maxRedemptionsPerUser} {redemptionStatus.maxRedemptionsPerUser === 1 ? 'time' : 'times'}</p>
+                            <p className="font-medium text-primary">
+                              You can redeem this deal {redemptionStatus.maxRedemptionsPerUser} {redemptionStatus.maxRedemptionsPerUser === 1 ? 'time' : 'times'}
+                            </p>
                           </div>
                         )}
                       </>
@@ -365,7 +396,8 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                     >
                       Deal Expired
                     </Button>
-                  ) : redemptionStatus.hasRedeemed && redemptionStatus.redemptionCount >= (redemptionStatus.maxRedemptionsPerUser || 1) ? (
+                  ) : !redemptionStatus.canRedeem || 
+                     (typeof redemptionStatus.remainingRedemptions === 'number' && redemptionStatus.remainingRedemptions <= 0) ? (
                     <Button 
                       className="w-full max-w-xs"
                       variant="outline"
@@ -457,7 +489,8 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                       >
                         Deal Expired
                       </Button>
-                    ) : redemptionStatus.hasRedeemed && redemptionStatus.redemptionCount >= (redemptionStatus.maxRedemptionsPerUser || 1) ? (
+                    ) : !redemptionStatus.canRedeem || 
+                       (typeof redemptionStatus.remainingRedemptions === 'number' && redemptionStatus.remainingRedemptions <= 0) ? (
                       <Button 
                         className="w-full max-w-xs"
                         variant="outline"
