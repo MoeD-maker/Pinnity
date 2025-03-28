@@ -344,10 +344,26 @@ export function userRoutes(app: Express): void {
         const redemptions = await storage.getUserRedemptions(userId);
         const hasRedeemed = redemptions.some(r => r.dealId === dealId);
         
+        // Get the deal details to check max redemptions per user
+        const deal = await storage.getDeal(dealId);
+        
+        if (!deal) {
+          return res.status(404).json({ message: "Deal not found" });
+        }
+        
+        const maxRedemptionsPerUser = deal.maxRedemptionsPerUser || null;
+        const totalRedemptions = redemptions.filter(r => r.dealId === dealId).length;
+        
+        // Calculate remaining redemptions if there's a limit per user
+        const remainingRedemptions = maxRedemptionsPerUser !== null 
+          ? Math.max(0, maxRedemptionsPerUser - totalRedemptions) 
+          : null;
+          
         return res.status(200).json({ 
           hasRedeemed, 
-          remainingRedemptions: null, // We'll calculate this in a future update
-          totalRedemptions: redemptions.filter(r => r.dealId === dealId).length
+          remainingRedemptions,
+          totalRedemptions,
+          maxRedemptionsPerUser  // Add this field to the response
         });
       } catch (error) {
         console.error("Check user redemption error:", error);
@@ -376,10 +392,26 @@ export function userRoutes(app: Express): void {
         const redemptions = await storage.getUserRedemptions(userId);
         const hasRedeemed = redemptions.some(r => r.dealId === dealId);
         
+        // Get the deal details to check max redemptions per user
+        const deal = await storage.getDeal(dealId);
+        
+        if (!deal) {
+          return res.status(404).json({ message: "Deal not found" });
+        }
+        
+        const maxRedemptionsPerUser = deal.maxRedemptionsPerUser || null;
+        const totalRedemptions = redemptions.filter(r => r.dealId === dealId).length;
+        
+        // Calculate remaining redemptions if there's a limit per user
+        const remainingRedemptions = maxRedemptionsPerUser !== null 
+          ? Math.max(0, maxRedemptionsPerUser - totalRedemptions) 
+          : null;
+          
         return res.status(200).json({ 
           hasRedeemed, 
-          remainingRedemptions: null, // We'll calculate this in a future update
-          totalRedemptions: redemptions.filter(r => r.dealId === dealId).length
+          remainingRedemptions,
+          totalRedemptions,
+          maxRedemptionsPerUser  // Add this field to the response
         });
       } catch (error) {
         console.error("Check user redemption error (legacy):", error);
@@ -487,11 +519,7 @@ export function userRoutes(app: Express): void {
       try {
         const userId = parseInt(req.params.userId);
         
-        const preferences = await storage.getUserNotificationPreferences(userId);
-        if (!preferences) {
-          return res.status(404).json({ message: "Notification preferences not found" });
-        }
-        
+        const preferences = await storage.getNotificationPreferences(userId);
         return res.status(200).json(preferences);
       } catch (error) {
         console.error("Get notification preferences error:", error);
@@ -510,11 +538,7 @@ export function userRoutes(app: Express): void {
       try {
         const userId = parseInt(req.params.userId);
         
-        const preferences = await storage.getUserNotificationPreferences(userId);
-        if (!preferences) {
-          return res.status(404).json({ message: "Notification preferences not found" });
-        }
-        
+        const preferences = await storage.getNotificationPreferences(userId);
         return res.status(200).json(preferences);
       } catch (error) {
         console.error("Get notification preferences error (legacy):", error);
@@ -534,8 +558,7 @@ export function userRoutes(app: Express): void {
         const userId = parseInt(req.params.userId);
         const preferencesData = req.body;
         
-        const preferences = await storage.updateUserNotificationPreferences(userId, preferencesData);
-        
+        const preferences = await storage.updateNotificationPreferences(userId, preferencesData);
         return res.status(200).json(preferences);
       } catch (error) {
         console.error("Update notification preferences error:", error);
@@ -555,8 +578,7 @@ export function userRoutes(app: Express): void {
         const userId = parseInt(req.params.userId);
         const preferencesData = req.body;
         
-        const preferences = await storage.updateUserNotificationPreferences(userId, preferencesData);
-        
+        const preferences = await storage.updateNotificationPreferences(userId, preferencesData);
         return res.status(200).json(preferences);
       } catch (error) {
         console.error("Update notification preferences error (legacy):", error);
@@ -564,16 +586,17 @@ export function userRoutes(app: Express): void {
       }
     }
   );
-
+  
   // User ratings routes
+  // Get all ratings posted by a user
   const [vUserRatingsPath, lUserRatingsPath] = createVersionedRoutes('/user/:userId/ratings');
   
   app.get(
-    vUserRatingsPath, 
+    vUserRatingsPath,
     versionHeadersMiddleware(),
-    authenticate, 
+    authenticate,
     checkOwnership('userId'),
-    validate(ratingSchemas.getUserRatings),
+    validate(userSchemas.getUserRatings),
     async (req: Request, res: Response) => {
       try {
         const userId = parseInt(req.params.userId);
@@ -588,11 +611,11 @@ export function userRoutes(app: Express): void {
   );
   
   app.get(
-    lUserRatingsPath, 
+    lUserRatingsPath,
     [versionHeadersMiddleware(), deprecationMiddleware],
-    authenticate, 
+    authenticate,
     checkOwnership('userId'),
-    validate(ratingSchemas.getUserRatings),
+    validate(userSchemas.getUserRatings),
     async (req: Request, res: Response) => {
       try {
         const userId = parseInt(req.params.userId);
@@ -601,117 +624,6 @@ export function userRoutes(app: Express): void {
         return res.status(200).json(ratings);
       } catch (error) {
         console.error("Get user ratings error (legacy):", error);
-        return res.status(500).json({ message: "Internal server error" });
-      }
-    }
-  );
-  
-  // Rating for a redemption
-  const [vRedemptionRatingsPath, lRedemptionRatingsPath] = createVersionedRoutes('/redemptions/:redemptionId/ratings');
-  
-  app.post(
-    vRedemptionRatingsPath, 
-    versionHeadersMiddleware(),
-    authenticate,
-    validate(ratingSchemas.createRating),
-    async (req: Request, res: Response) => {
-      try {
-        const redemptionId = parseInt(req.params.redemptionId);
-        
-        // Verify the redemption exists
-        const redemptions = await storage.getDealRedemptions(0); // We'll filter it below
-        const redemption = redemptions.find(r => r.id === redemptionId);
-        
-        if (!redemption) {
-          return res.status(404).json({ message: "Redemption not found" });
-        }
-        
-        // Verify the authenticated user is the one who made the redemption
-        if (redemption.userId !== req.user?.userId) {
-          return res.status(403).json({ message: "You can only rate your own redemptions" });
-        }
-        
-        // Verify the rating doesn't already exist
-        const existingRating = await storage.getRedemptionRating(redemptionId);
-        if (existingRating) {
-          return res.status(400).json({ message: "Redemption already rated" });
-        }
-        
-        // Rating data is already validated by Zod schema
-        const { rating, comment, anonymous = false } = req.body;
-        
-        // Create the rating
-        const ratingData = { 
-          rating, 
-          comment: comment || null,
-          anonymous
-        };
-        
-        const createdRating = await storage.createRedemptionRating(
-          redemptionId,
-          redemption.userId,
-          redemption.dealId,
-          req.body.businessId, // This should come from the request or be looked up
-          ratingData
-        );
-        
-        return res.status(201).json(createdRating);
-      } catch (error) {
-        console.error("Create rating error:", error);
-        return res.status(500).json({ message: "Internal server error" });
-      }
-    }
-  );
-  
-  app.post(
-    lRedemptionRatingsPath, 
-    [versionHeadersMiddleware(), deprecationMiddleware],
-    authenticate,
-    validate(ratingSchemas.createRating),
-    async (req: Request, res: Response) => {
-      try {
-        const redemptionId = parseInt(req.params.redemptionId);
-        
-        // Verify the redemption exists
-        const redemptions = await storage.getDealRedemptions(0); // We'll filter it below
-        const redemption = redemptions.find(r => r.id === redemptionId);
-        
-        if (!redemption) {
-          return res.status(404).json({ message: "Redemption not found" });
-        }
-        
-        // Verify the authenticated user is the one who made the redemption
-        if (redemption.userId !== req.user?.userId) {
-          return res.status(403).json({ message: "You can only rate your own redemptions" });
-        }
-        
-        // Verify the rating doesn't already exist
-        const existingRating = await storage.getRedemptionRating(redemptionId);
-        if (existingRating) {
-          return res.status(400).json({ message: "Redemption already rated" });
-        }
-        
-        // Rating data is already validated by Zod schema
-        const { rating, comment, anonymous = false } = req.body;
-        
-        // Create the rating
-        const ratingData = { 
-          rating, 
-          comment: comment || null,
-          anonymous
-        };
-        
-        const createdRating = await storage.createRedemptionRating(
-          redemptionId,
-          redemption.userId,
-          redemption.dealId,
-          req.body.businessId, // This should come from the request or be looked up
-          ratingData
-        );
-        
-        return res.status(201).json(createdRating);
-      } catch (error) {
-        console.error("Create rating error (legacy):", error);
         return res.status(500).json({ message: "Internal server error" });
       }
     }

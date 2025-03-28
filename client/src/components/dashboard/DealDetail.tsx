@@ -66,6 +66,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
       if (!userId) return;
       
       const status = await checkDealRedemptionStatus(userId, dealId);
+      console.log('Redemption status check result:', status);
       setRedemptionStatus(status);
     }
     
@@ -329,7 +330,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                         {/* When the user hasn't redeemed the deal yet */}
                         {redemptionStatus.maxRedemptionsPerUser !== null && (
                           <div className="mt-1 text-xs text-muted-foreground">
-                            <p>You can redeem this deal {redemptionStatus.maxRedemptionsPerUser} {redemptionStatus.maxRedemptionsPerUser === 1 ? 'time' : 'times'}</p>
+                            <p className="font-medium text-primary">You can redeem this deal {redemptionStatus.maxRedemptionsPerUser} {redemptionStatus.maxRedemptionsPerUser === 1 ? 'time' : 'times'}</p>
                           </div>
                         )}
                       </>

@@ -19,16 +19,29 @@ declare global {
  */
 export function authenticate(req: Request, res: Response, next: NextFunction) {
   try {
+    console.log(`AUTH: Processing request ${req.method} ${req.path}`);
+    
     // First try to get token from cookies (preferred, more secure method)
     let token = extractTokenFromCookies(req.cookies, req.signedCookies);
+    
+    if (token) {
+      console.log(`AUTH: Valid token found in cookies for user ${token.userId}`);
+    } else {
+      console.log(`AUTH: No valid token in cookies`);
+    }
     
     // Fall back to Authorization header for backward compatibility
     if (!token && req.headers.authorization) {
       console.warn('Using deprecated Authorization header for authentication');
       token = extractTokenFromHeader(req.headers.authorization);
+      
+      if (token) {
+        console.log(`AUTH: Valid token found in Authorization header for user ${token.userId}`);
+      }
     }
     
     if (!token) {
+      console.log(`AUTH: No valid token found for ${req.method} ${req.path}`);
       // Track failed auth attempts for security monitoring
       return securityRateLimiter(req, res, () => {
         return res.status(401).json({ 
@@ -42,6 +55,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
     if (token.exp) {
       const currentTime = Math.floor(Date.now() / 1000);
       if (token.exp < currentTime) {
+        console.log(`AUTH: Token expired at ${new Date(token.exp * 1000).toISOString()}`);
         return res.status(401).json({ 
           error: 'Token expired', 
           code: 'token_expired',
@@ -51,6 +65,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
     }
     
     // Attach user info to request
+    console.log(`AUTH: Successfully authenticated user ${token.userId} (${token.userType}) for ${req.method} ${req.path}`);
     req.user = token;
     next();
   } catch (error) {

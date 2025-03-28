@@ -19,6 +19,7 @@ export async function checkDealRedemptionStatus(userId: number, dealId: number) 
       hasRedeemed: boolean;
       remainingRedemptions: number | null;
       totalRedemptions: number;
+      maxRedemptionsPerUser: number | null;
     }
     
     // Type assertion to prevent unknown type errors
@@ -27,11 +28,20 @@ export async function checkDealRedemptionStatus(userId: number, dealId: number) 
     // Determine if user can redeem based on the max redemptions per user (if any)
     const deal = await apiRequest(`/api/v1/deals/${dealId}`, {
       method: 'GET'
-    });
+    }) as {
+      maxRedemptionsPerUser?: number | null;
+      totalRedemptionsLimit?: number | null;
+      redemptionCount?: number;
+      endDate: string; // needed for isExpired check
+    };
     
     console.log('Deal details for redemption check:', deal);
     
-    const maxRedemptionsPerUser = deal?.maxRedemptionsPerUser || null;
+    // Use the maxRedemptionsPerUser from the response if available, otherwise fallback to the deal object
+    const maxRedemptionsPerUser = typedResponse.maxRedemptionsPerUser !== undefined ? 
+      typedResponse.maxRedemptionsPerUser : 
+      (deal?.maxRedemptionsPerUser || null);
+      
     const totalRedemptionsLimit = deal?.totalRedemptionsLimit || null;
     const redemptionCount = deal?.redemptionCount || 0;
     
@@ -51,6 +61,17 @@ export async function checkDealRedemptionStatus(userId: number, dealId: number) 
       totalLimitReached,
       success: true
     };
+    
+    // Log detailed redemption information for debugging
+    console.log(`Redemption Status for Deal ${dealId}:`, {
+      hasRedeemed: typedResponse.hasRedeemed,
+      totalRedemptions: typedResponse.totalRedemptions,
+      maxRedemptionsPerUser,
+      remainingRedemptions: typedResponse.remainingRedemptions,
+      canRedeem,
+      totalLimitReached,
+      isExpired: isExpired(deal)
+    });
     
     console.log('Returning updated redemption status:', updatedStatus);
     return updatedStatus;
