@@ -71,7 +71,21 @@ export default function FavoritesPage() {
   
   // Create a memoized, normalized version of the favorites data
   const favorites = useMemo(() => {
-    return normalizeFavoritesData(favoritesRaw);
+    console.log('Raw favorites data:', favoritesRaw);
+    const normalized = normalizeFavoritesData(favoritesRaw);
+    console.log('Normalized favorites data:', normalized);
+    
+    // Check for duplicate deal IDs
+    const dealIds = normalized
+      .filter(fav => fav && typeof fav === 'object' && fav.deal && typeof fav.deal === 'object')
+      .map((fav: { deal: any }) => fav.deal.id);
+    
+    const duplicateIds = dealIds.filter((id, index) => dealIds.indexOf(id) !== index);
+    if (duplicateIds.length > 0) {
+      console.warn('Duplicate deal IDs found in favorites:', duplicateIds);
+    }
+    
+    return normalized;
   }, [favoritesRaw]);
 
   // Check for expiring deals when favorites are loaded
