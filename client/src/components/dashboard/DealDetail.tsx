@@ -62,8 +62,12 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
     async function checkRedemption() {
       if (!deal) return;
 
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const userId = user?.id;
+      // More robust approach to retrieve user ID from multiple sources
+      const storedUserId = localStorage.getItem('pinnity_user_id');
+      const legacyUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const userId = storedUserId || legacyUser?.id;
+
+      console.log('Checking redemption with user ID:', userId);
 
       if (!userId) return;
 
@@ -79,10 +83,10 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
         canRedeem: status.canRedeem
       });
       
-      // Always ensure hasRedeemed is true if redemptionCount > 0
-      if (status.redemptionCount > 0) {
+      // Force hasRedeemed to be true if redemptionCount > 0, regardless of API response
+      if (status.redemptionCount > 0 && !status.hasRedeemed) {
+        console.log('Fixing inconsistent redemption status: redemptionCount > 0 but hasRedeemed is false');
         status.hasRedeemed = true;
-        console.log('Setting hasRedeemed to true since redemptionCount > 0');
       }
 
       // TypeScript guard to ensure remainingRedemptions is accessible
@@ -103,7 +107,8 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
         console.log('Disabling redeem button due to expiration');
       }
       
-      console.log('Final status being set:', status);
+      // Log the final status before updating state
+      console.log('Final redemption status to be displayed:', status);
       setRedemptionStatus(status);
     }
 
@@ -148,13 +153,30 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
     // Update any other data that might be affected
     queryClient.invalidateQueries({ queryKey: ['/api/v1/user/redemptions'] });
 
-    // Update redemption status immediately
+    // Force the UI to update immediately (don't wait for API)
+    setRedemptionStatus(prev => ({
+      ...prev,
+      hasRedeemed: true,
+      redemptionCount: prev.redemptionCount + 1,
+      remainingRedemptions: prev.remainingRedemptions !== null ? 
+        prev.remainingRedemptions - 1 : null
+    }));
+
+    // Update redemption status with API data
     if (deal) {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const userId = user?.id;
+      // Get user ID using the more robust approach
+      const storedUserId = localStorage.getItem('pinnity_user_id');
+      const legacyUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const userId = storedUserId || legacyUser?.id;
 
       if (userId) {
         const status = await checkDealRedemptionStatus(userId, dealId);
+        
+        // Force hasRedeemed to be true if redemptionCount > 0
+        if (status.redemptionCount > 0 && !status.hasRedeemed) {
+          status.hasRedeemed = true;
+        }
+        
         setRedemptionStatus(status);
       }
     }

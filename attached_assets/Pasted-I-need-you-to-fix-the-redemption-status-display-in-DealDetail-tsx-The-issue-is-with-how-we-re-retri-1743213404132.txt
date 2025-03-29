@@ -1,0 +1,61 @@
+I need you to fix the redemption status display in DealDetail.tsx. The issue is with how we're retrieving user data and processing the redemption status.
+
+Make these specific changes:
+
+1. Update the user data retrieval in the useEffect to properly get the authenticated user ID:
+
+```javascript
+// Replace this code:
+const user = JSON.parse(localStorage.getItem('user') || '{}');
+const userId = user?.id;
+
+// With this more robust approach:
+const storedUserId = localStorage.getItem('pinnity_user_id');
+const legacyUser = JSON.parse(localStorage.getItem('user') || '{}');
+const userId = storedUserId || legacyUser?.id;
+
+console.log('Checking redemption with user ID:', userId);
+
+Modify the redemption status state initialization to include better defaults:
+
+javascriptCopyconst [redemptionStatus, setRedemptionStatus] = useState<{
+  hasRedeemed: boolean;
+  redemptionCount: number;
+  maxRedemptionsPerUser: number | null;
+  remainingRedemptions?: number | null;
+  canRedeem: boolean;
+  success: boolean;
+  error?: any;
+}>({
+  hasRedeemed: false,
+  redemptionCount: 0,
+  maxRedemptionsPerUser: null,
+  remainingRedemptions: null,
+  canRedeem: true,
+  success: false
+});
+
+Add a fallback in the useEffect to ensure hasRedeemed is set correctly based on redemptionCount:
+
+javascriptCopy// Add after receiving status from checkDealRedemptionStatus:
+// Force hasRedeemed to be true if redemptionCount > 0, regardless of API response
+if (status.redemptionCount > 0 && !status.hasRedeemed) {
+  console.log('Fixing inconsistent redemption status: redemptionCount > 0 but hasRedeemed is false');
+  status.hasRedeemed = true;
+}
+
+// Log the final status before updating state
+console.log('Final redemption status to be displayed:', status);
+
+Add the same fallback logic when refetching after a successful redemption:
+
+javascriptCopy// In handleRedemptionSuccess, add:
+// Force the UI to update immediately (don't wait for API)
+setRedemptionStatus(prev => ({
+  ...prev,
+  hasRedeemed: true,
+  redemptionCount: prev.redemptionCount + 1,
+  remainingRedemptions: prev.remainingRedemptions !== null ? 
+    prev.remainingRedemptions - 1 : null
+}));
+These changes will ensure that the UI correctly shows "You have redeemed this deal" whenever redemptionCount > 0, even if there's an issue with the API response.
