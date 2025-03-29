@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { apiRequest } from '@/lib/queryClient';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { getCurrentUserId } from '@/utils/userUtils';
 
 interface RedemptionDialogProps {
   isOpen: boolean;
@@ -38,6 +39,14 @@ export default function RedemptionDialog({
   const { toast } = useToast();
 
   const handleVerifyCode = async () => {
+    // Check if user is authenticated before proceeding
+    const userId = getCurrentUserId();
+    if (!userId) {
+      setErrorMessage('Authentication required. Please log in to redeem deals.');
+      setVerificationResult('error');
+      return;
+    }
+
     if (!redemptionCode.trim()) {
       setErrorMessage('Please enter a redemption code');
       return;
@@ -62,15 +71,22 @@ export default function RedemptionDialog({
         
         // If verify-code endpoint already created the redemption, we don't need to create another one
         if (!response.redemption) {
-          // After successful verification, create the redemption manually
-          const user = JSON.parse(localStorage.getItem('user') || '{}');
-          const userId = user?.id || user?.userId;
+          // Get user ID using our centralized utility function
+          const userId = getCurrentUserId();
           
           if (userId) {
-            await apiRequest(`/api/v1/user/${userId}/redemptions`, {
-              method: 'POST',
-              data: { dealId }
-            });
+            console.log('Creating redemption for user:', userId);
+            try {
+              await apiRequest(`/api/v1/user/${userId}/redemptions`, {
+                method: 'POST',
+                data: { dealId }
+              });
+            } catch (error) {
+              console.error('Error creating redemption:', error);
+              // We still continue with success flow since verification was successful
+            }
+          } else {
+            console.warn('User ID not found while attempting to create redemption');
           }
         }
 
