@@ -69,6 +69,18 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
       
       const status = await checkDealRedemptionStatus(userId, dealId);
       console.log('Redemption status check result:', status);
+      
+      // TypeScript guard to ensure remainingRedemptions is accessible
+      if ('remainingRedemptions' in status) {
+        // Make sure to force consistent state for remainingRedemptions
+        if ((typeof status.remainingRedemptions === 'number' && status.remainingRedemptions === 0) || 
+            (status.hasRedeemed && status.maxRedemptionsPerUser !== null && 
+             status.redemptionCount >= status.maxRedemptionsPerUser)) {
+          // Explicitly enforce the button state for max redemptions reached
+          status.canRedeem = false;
+        }
+      }
+      
       setRedemptionStatus(status);
     }
     
@@ -396,14 +408,13 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                     >
                       Deal Expired
                     </Button>
-                  ) : !redemptionStatus.canRedeem || 
-                     (typeof redemptionStatus.remainingRedemptions === 'number' && redemptionStatus.remainingRedemptions <= 0) ? (
+                  ) : !redemptionStatus.canRedeem ? (
                     <Button 
                       className="w-full max-w-xs"
                       variant="outline"
                       disabled
                     >
-                      Redeemed
+                      {redemptionStatus.hasRedeemed ? "Redemption Limit Reached" : "Cannot Redeem"}
                     </Button>
                   ) : (deal.redemptionCount !== undefined && deal.totalRedemptionsLimit !== undefined && 
                       deal.totalRedemptionsLimit > 0 && deal.redemptionCount >= deal.totalRedemptionsLimit) ? (
@@ -489,14 +500,13 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                       >
                         Deal Expired
                       </Button>
-                    ) : !redemptionStatus.canRedeem || 
-                       (typeof redemptionStatus.remainingRedemptions === 'number' && redemptionStatus.remainingRedemptions <= 0) ? (
+                    ) : !redemptionStatus.canRedeem ? (
                       <Button 
                         className="w-full max-w-xs"
                         variant="outline"
                         disabled
                       >
-                        Redeemed
+                        {redemptionStatus.hasRedeemed ? "Redemption Limit Reached" : "Cannot Redeem"}
                       </Button>
                     ) : (deal.redemptionCount !== undefined && deal.totalRedemptionsLimit !== undefined && 
                         deal.totalRedemptionsLimit > 0 && deal.redemptionCount >= deal.totalRedemptionsLimit) ? (

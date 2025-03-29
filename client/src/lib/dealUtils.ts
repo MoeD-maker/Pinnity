@@ -63,7 +63,7 @@ export async function checkDealRedemptionStatus(userId: number, dealId: number) 
       maxRedemptionsPerUser,
       canRedeem: canRedeem && !totalLimitReached,
       totalLimitReached,
-      remainingRedemptions: typedResponse.remainingRedemptions,
+      remainingRedemptions: typedResponse.remainingRedemptions || null,
       success: true
     };
     
@@ -88,6 +88,7 @@ export async function checkDealRedemptionStatus(userId: number, dealId: number) 
       maxRedemptionsPerUser: null,
       canRedeem: true,
       totalLimitReached: false,
+      remainingRedemptions: null,
       success: false,
       error
     };
