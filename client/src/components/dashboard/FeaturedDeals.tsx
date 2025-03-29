@@ -185,12 +185,14 @@ export default function FeaturedDeals({
 }: FeaturedDealsProps) {
   const { toast } = useToast();
   
-  // Get featured deals from API endpoint
+  // Get featured deals from API endpoint with proper limit parameter
   const { data: allDeals, isLoading, error, refetch } = useQuery({
-    queryKey: ['/api/v1/deals/featured'],
+    queryKey: ['/api/v1/deals/featured', { limit }],
     queryFn: async () => {
       try {
-        const response = await apiRequest('/api/v1/deals/featured');
+        // Pass the limit parameter to the API
+        const url = `/api/v1/deals/featured?limit=${limit}`;
+        const response = await apiRequest(url);
         
         if (response && typeof response === 'object') {
           // Handle both array and object responses

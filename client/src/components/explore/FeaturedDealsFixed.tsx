@@ -90,13 +90,15 @@ export default function FeaturedDeals({
   const [isCached, setIsCached] = useState(false);
   const [cacheDate, setCacheDate] = useState<Date | undefined>(undefined);
   
-  // Get featured deals directly from the dedicated featured endpoint
+  // Get featured deals directly from the dedicated featured endpoint with proper limit parameter
   const { data: allDeals, isLoading, error, refetch } = useQuery({
-    queryKey: ['/api/v1/deals/featured'],
+    queryKey: ['/api/v1/deals/featured', { limit }],
     queryFn: async () => {
       try {
         // Use the raw fetch instead of apiRequest to access headers
-        const response = await fetch('/api/v1/deals/featured');
+        // Pass the limit parameter to the API
+        const url = `/api/v1/deals/featured?limit=${limit}`;
+        const response = await fetch(url);
         
         // Check cache status from response headers
         const cacheControl = response.headers.get('Cache-Control');

@@ -1,0 +1,41 @@
+Based on my findings, here are answers to your questions:
+
+1) Current User ID Retrieval Method in DealDetail.tsx
+DealDetail.tsx now uses the centralized getCurrentUserId() function from the userUtils.ts module:
+
+// Import statement
+import { getCurrentUserId, getCurrentUser } from '@/utils/userUtils';
+// Inside the component 
+const userId = getCurrentUserId();
+This function is used in three main places in DealDetail.tsx:
+
+Line 92: In the checkRedemption function to get the user ID for checking redemption status
+Line 155: In the addToFavorites mutation to get the user ID for saving deals to favorites
+Line 231: In the handleRedemptionSuccess function to get the user ID for re-checking redemption status
+2) RedemptionDialog.tsx Implementation
+RedemptionDialog.tsx also properly uses the centralized getCurrentUserId() function:
+
+// Import statement (line 16)
+import { getCurrentUserId } from '@/utils/userUtils';
+// In the handleVerifyCode function (line 43)
+const userId = getCurrentUserId();
+It uses this function twice:
+
+Line 43: To check if a user is authenticated before proceeding with verification
+Line 75: To get the user ID for creating a redemption record if one wasn't already created
+3) Benefits of Centralized User Data Access
+The implemented centralized user data access method offers significant benefits to the codebase:
+
+Consistent Retrieval Logic: The same user ID retrieval logic is applied across components, eliminating inconsistencies.
+
+Backward Compatibility: The centralized utility handles multiple storage formats (new format with pinnity_user_id, legacy format with userId, and older format with a full user object), ensuring that user IDs can be retrieved regardless of which authentication method was used.
+
+Error Handling: The utility includes proper error handling and logging, making debugging much easier when user ID issues occur.
+
+Maintenance: With user ID retrieval logic in one place, future changes to authentication can be made in a single location.
+
+Type Safety: The utility returns a properly typed user ID (either a number or null), improving TypeScript type checking.
+
+Enhanced Debugging: The centralized function includes helpful console logs that identify when legacy formats are being used, facilitating future migrations.
+
+The system is now well-structured and has addressed the systematic inconsistency in user authentication data retrieval that was causing redemption issues. The code is more reliable and maintainable with this centralized approach.
