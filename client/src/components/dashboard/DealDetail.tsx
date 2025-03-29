@@ -69,6 +69,21 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
 
       const status = await checkDealRedemptionStatus(userId, dealId);
       console.log('Redemption status check result:', status);
+      
+      // Enhanced debugging for status values
+      console.log('Detailed redemption values:', {
+        hasRedeemed: status.hasRedeemed,
+        redemptionCount: status.redemptionCount,
+        maxRedemptionsPerUser: status.maxRedemptionsPerUser,
+        remainingRedemptions: status.remainingRedemptions,
+        canRedeem: status.canRedeem
+      });
+      
+      // Always ensure hasRedeemed is true if redemptionCount > 0
+      if (status.redemptionCount > 0) {
+        status.hasRedeemed = true;
+        console.log('Setting hasRedeemed to true since redemptionCount > 0');
+      }
 
       // TypeScript guard to ensure remainingRedemptions is accessible
       if ('remainingRedemptions' in status) {
@@ -78,9 +93,17 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
              status.redemptionCount >= status.maxRedemptionsPerUser)) {
           // Explicitly enforce the button state for max redemptions reached
           status.canRedeem = false;
+          console.log('Disabling redeem button due to reached limits');
         }
       }
-
+      
+      // Double-check isExpired state
+      if (isExpired(deal)) {
+        status.canRedeem = false;
+        console.log('Disabling redeem button due to expiration');
+      }
+      
+      console.log('Final status being set:', status);
       setRedemptionStatus(status);
     }
 
@@ -313,8 +336,8 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                 <div className="bg-card rounded-lg p-4 sm:p-5 border shadow-sm">
                   <h3 className="font-medium mb-3 text-sm sm:text-base">Redemption Status</h3>
                   <div className="space-y-2">
-                    {/* IMPORTANT: We completely rewrote this section based on API response values */}
-                    {redemptionStatus.hasRedeemed ? (
+                    {/* Using redemptionCount as the primary indicator, not hasRedeemed */}
+                    {redemptionStatus.redemptionCount > 0 ? (
                       <>
                         <div className="flex items-center gap-2 text-green-600">
                           <CheckCircle className="h-4 w-4" />
@@ -414,7 +437,10 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                       variant="outline"
                       disabled
                     >
-                      {redemptionStatus.hasRedeemed ? "Redemption Limit Reached" : "Cannot Redeem"}
+                      {redemptionStatus.redemptionCount > 0 && redemptionStatus.maxRedemptionsPerUser !== null && 
+                       redemptionStatus.redemptionCount >= redemptionStatus.maxRedemptionsPerUser 
+                         ? "Redemption Limit Reached" 
+                         : "Cannot Redeem"}
                     </Button>
                   ) : (deal.redemptionCount !== undefined && deal.totalRedemptionsLimit !== undefined && 
                       deal.totalRedemptionsLimit > 0 && deal.redemptionCount >= deal.totalRedemptionsLimit) ? (
@@ -506,7 +532,10 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                         variant="outline"
                         disabled
                       >
-                        {redemptionStatus.hasRedeemed ? "Redemption Limit Reached" : "Cannot Redeem"}
+                        {redemptionStatus.redemptionCount > 0 && redemptionStatus.maxRedemptionsPerUser !== null && 
+                         redemptionStatus.redemptionCount >= redemptionStatus.maxRedemptionsPerUser 
+                           ? "Redemption Limit Reached" 
+                           : "Cannot Redeem"}
                       </Button>
                     ) : (deal.redemptionCount !== undefined && deal.totalRedemptionsLimit !== undefined && 
                         deal.totalRedemptionsLimit > 0 && deal.redemptionCount >= deal.totalRedemptionsLimit) ? (
@@ -532,7 +561,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                     </div>
 
                     {/* Display redemption status information in the redeem tab too */}
-                    {redemptionStatus.hasRedeemed && (
+                    {redemptionStatus.redemptionCount > 0 && (
                       <div className="mt-4 flex flex-col items-center">
                         <div className="flex items-center gap-2 text-green-600 text-sm">
                           <CheckCircle className="h-4 w-4" />

@@ -50,6 +50,15 @@ export async function checkDealRedemptionStatus(userId: number, dealId: number) 
     const hasRemainingRedemptions = typedResponse.remainingRedemptions !== null && 
       typedResponse.remainingRedemptions > 0;
     
+    // More verbose logging for better debugging
+    console.log('Redemption details:', {
+      hasRedeemed: typedResponse.hasRedeemed,
+      remainingRedemptions: typedResponse.remainingRedemptions,
+      maxRedemptionsPerUser: typedResponse.maxRedemptionsPerUser,
+      totalRedemptions: typedResponse.totalRedemptions,
+      hasRemainingRedemptions
+    });
+    
     // Update canRedeem logic to use remainingRedemptions directly, more reliable
     const canRedeem = hasRemainingRedemptions && !isExpired(deal);
     
