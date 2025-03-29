@@ -48,7 +48,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
     success: false
   });
   const { toast } = useToast();
-  
+
   // Fetch the deal details
   const { data: deal, isLoading, refetch } = useQuery({
     queryKey: ['/api/v1/deals', dealId],
@@ -56,20 +56,20 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
       return apiRequest(`/api/v1/deals/${dealId}`);
     }
   });
-  
+
   // Check redemption status
   useEffect(() => {
     async function checkRedemption() {
       if (!deal) return;
-      
+
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       const userId = user?.id;
-      
+
       if (!userId) return;
-      
+
       const status = await checkDealRedemptionStatus(userId, dealId);
       console.log('Redemption status check result:', status);
-      
+
       // TypeScript guard to ensure remainingRedemptions is accessible
       if ('remainingRedemptions' in status) {
         // Make sure to force consistent state for remainingRedemptions
@@ -80,10 +80,10 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
           status.canRedeem = false;
         }
       }
-      
+
       setRedemptionStatus(status);
     }
-    
+
     checkRedemption();
   }, [dealId, deal]);
 
@@ -93,7 +93,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
       // Get userId from local storage
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       const userId = user?.id || 1;
-      
+
       return apiRequest(`/api/v1/user/${userId}/favorites`, {
         method: 'POST',
         data: { dealId }
@@ -104,7 +104,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
         title: 'Deal saved',
         description: 'This deal has been added to your favorites',
       });
-      
+
       // Invalidate favorites query
       queryClient.invalidateQueries({ queryKey: ['/api/v1/user/favorites'] });
     },
@@ -121,21 +121,21 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
   const handleRedemptionSuccess = async () => {
     // Refetch the deal to update redemption count
     await refetch();
-    
+
     // Update any other data that might be affected
     queryClient.invalidateQueries({ queryKey: ['/api/v1/user/redemptions'] });
-    
+
     // Update redemption status immediately
     if (deal) {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       const userId = user?.id;
-      
+
       if (userId) {
         const status = await checkDealRedemptionStatus(userId, dealId);
         setRedemptionStatus(status);
       }
     }
-    
+
     // Show a success toast
     toast({
       title: "Deal Redeemed Successfully!",
@@ -178,7 +178,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
           <>
             {/* Close button in top right corner */}
             <DialogClose className="absolute top-5 right-5 rounded-full h-7 w-7 opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground" />
-            
+
             {/* Heart & Share buttons in top left corner */}
             <div className="absolute top-5 left-5 flex items-center space-x-2">
               <Button 
@@ -198,7 +198,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                 <Share2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </Button>
             </div>
-            
+
             {/* Modified header with more spacing and mobile-friendly design */}            
             <DialogHeader className="pb-2 pt-4 sm:pt-3 mt-6">
               <div className="flex justify-between items-center mb-3">
@@ -235,7 +235,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                   How to Redeem
                 </TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="details" className="space-y-4 mt-4">
                 {/* Show image only in details tab with proper spacing */}
                 <div className={`aspect-video rounded-lg overflow-hidden mb-6 relative ${deal.featured ? 'border-2 border-primary/30' : ''}`}>
@@ -253,7 +253,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                     </div>
                   )}
                 </div>
-                
+
                 <div className="bg-card rounded-lg p-4 sm:p-5 border shadow-sm">
                   <h3 className="font-medium mb-3 text-sm sm:text-base">About This Deal</h3>
                   <p className="text-xs sm:text-sm text-muted-foreground">{deal.description}</p>
@@ -308,7 +308,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Redemption status section */}
                 <div className="bg-card rounded-lg p-4 sm:p-5 border shadow-sm">
                   <h3 className="font-medium mb-3 text-sm sm:text-base">Redemption Status</h3>
@@ -322,7 +322,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                             You have redeemed this deal {redemptionStatus.redemptionCount > 1 ? `${redemptionStatus.redemptionCount} times` : ''}
                           </span>
                         </div>
-                        
+
                         {/* Use remainingRedemptions from the API directly if available */}
                         {redemptionStatus.remainingRedemptions !== null && redemptionStatus.remainingRedemptions !== undefined ? (
                           <div className="mt-1 text-xs text-muted-foreground">
@@ -333,7 +333,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                             ) : (
                               <p className="text-amber-600">You've reached the maximum number of redemptions for this deal.</p>
                             )}
-                            
+
                             {redemptionStatus.maxRedemptionsPerUser && (
                               <p className="mt-1">
                                 ({redemptionStatus.redemptionCount} of {redemptionStatus.maxRedemptionsPerUser} redemptions used)
@@ -367,18 +367,18 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                           <Info className="h-4 w-4 text-primary" />
                           <span className="text-xs sm:text-sm">You haven't redeemed this deal yet</span>
                         </div>
-                        
+
                         {/* When the user hasn't redeemed the deal yet */}
                         {redemptionStatus.maxRedemptionsPerUser !== null && (
                           <div className="mt-1 text-xs text-muted-foreground">
                             <p className="font-medium text-primary">
-                              You can redeem this deal {redemptionStatus.maxRedemptionsPerUser} {redemptionStatus.maxRedemptionsPerUser === 1 ? 'time' : 'times'}
+                              This deal can be redeemed {redemptionStatus.maxRedemptionsPerUser} {redemptionStatus.maxRedemptionsPerUser === 1 ? 'time' : 'times'} per customer
                             </p>
                           </div>
                         )}
                       </>
                     )}
-                    
+
                     {/* If the deal has reached total limit, show this warning regardless of personal redemptions */}
                     {deal.redemptionCount !== undefined && deal.totalRedemptionsLimit !== undefined && 
                      deal.totalRedemptionsLimit > 0 && deal.redemptionCount >= deal.totalRedemptionsLimit && (
@@ -397,7 +397,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                     </p>
                   </div>
                 )}
-                
+
                 {/* Add Redeem Now button to details tab */}
                 <div className="mt-6 flex flex-col items-center">
                   {isExpired(deal) ? (
@@ -433,14 +433,14 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                       Redeem Now
                     </Button>
                   )}
-                  
+
                   <div className="mt-4 text-xs sm:text-sm text-muted-foreground">
                     <h4 className="font-medium mb-1">Additional instructions:</h4>
                     <p>Please inform the vendor you have a Pinnity coupon before asking for the bill</p>
                   </div>
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="redeem" className="mt-6 pb-4">
                 <div className="bg-card rounded-lg p-4 sm:p-6 border shadow-sm">
                   <div className="text-center mb-5 sm:mb-6">
@@ -465,7 +465,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                         </p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-start gap-3 sm:gap-4">
                       <div className="bg-primary text-primary-foreground w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                         2
@@ -477,7 +477,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                         </p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-start gap-3 sm:gap-4">
                       <div className="bg-primary text-primary-foreground w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                         3
@@ -525,12 +525,12 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                         Redeem Now
                       </Button>
                     )}
-                    
+
                     <div className="mt-4 text-xs sm:text-sm text-muted-foreground">
                       <h4 className="font-medium mb-1">Additional instructions:</h4>
                       <p>Please inform the vendor you have a Pinnity coupon before asking for the bill</p>
                     </div>
-                    
+
                     {/* Display redemption status information in the redeem tab too */}
                     {redemptionStatus.hasRedeemed && (
                       <div className="mt-4 flex flex-col items-center">
@@ -538,7 +538,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                           <CheckCircle className="h-4 w-4" />
                           <span className="font-medium">You have already redeemed this deal</span>
                         </div>
-                        
+
                         {/* Show remaining redemptions if applicable */}
                         {redemptionStatus.maxRedemptionsPerUser !== null && 
                          redemptionStatus.maxRedemptionsPerUser > 1 && 
@@ -547,7 +547,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                             <p>You can redeem this deal {redemptionStatus.maxRedemptionsPerUser - redemptionStatus.redemptionCount} more {(redemptionStatus.maxRedemptionsPerUser - redemptionStatus.redemptionCount) === 1 ? 'time' : 'times'}</p>
                           </div>
                         )}
-                        
+
                         {/* Show max redemptions reached message */}
                         {redemptionStatus.maxRedemptionsPerUser !== null && 
                          redemptionStatus.redemptionCount >= redemptionStatus.maxRedemptionsPerUser && (
@@ -595,16 +595,16 @@ function DealDetailSkeleton() {
       <div className="h-4 w-16 bg-muted rounded"></div>
       <div className="h-8 w-3/4 bg-muted rounded"></div>
       <div className="h-4 w-1/2 bg-muted rounded"></div>
-      
+
       <div className="h-10 bg-muted rounded"></div>
-      
+
       <div className="aspect-video bg-muted rounded"></div>
-      
+
       <div className="space-y-2">
         <div className="h-5 w-32 bg-muted rounded"></div>
         <div className="h-20 bg-muted rounded"></div>
       </div>
-      
+
       <div className="space-y-2">
         <div className="h-5 w-40 bg-muted rounded"></div>
         <div className="h-4 w-full bg-muted rounded"></div>
