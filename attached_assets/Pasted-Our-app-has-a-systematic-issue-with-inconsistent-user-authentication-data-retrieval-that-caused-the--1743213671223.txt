@@ -1,0 +1,94 @@
+Our app has a systematic issue with inconsistent user authentication data retrieval that caused the redemption status bug and likely affects other features. Please implement the following fixes:
+
+## 1. Standardize User Data Retrieval
+
+Create a central utility function for retrieving user data:
+
+```javascript
+// Add this to a new file: utils/userUtils.ts
+export function getCurrentUserId(): number | null {
+  // Try the current standard format
+  const standardUserId = localStorage.getItem('pinnity_user_id');
+  if (standardUserId) return parseInt(standardUserId, 10);
+  
+  // Try legacy JSON object format
+  try {
+    const legacyUser = JSON.parse(localStorage.getItem('user') || '{}');
+    if (legacyUser?.id) return legacyUser.id;
+  } catch (e) {
+    console.error('Error parsing legacy user data', e);
+  }
+  
+  // Try older ID-only format
+  const oldUserId = localStorage.getItem('userId');
+  if (oldUserId) return parseInt(oldUserId, 10);
+  
+  // No user ID found
+  return null;
+}
+
+export function getCurrentUser(): any | null {
+  // Try to get the full user object from AuthContext if needed
+  // Add more robust user data retrieval here
+  
+  const userId = getCurrentUserId();
+  if (!userId) return null;
+  
+  // Try to get user type
+  const userType = localStorage.getItem('pinnity_user_type') || 
+                   localStorage.getItem('userType') || 'individual';
+  
+  // Return basic user object with available data
+  return {
+    id: userId,
+    userType
+  };
+}
+2. Update All Components That Use User Data
+Replace all direct localStorage access with the utility functions:
+
+Search for these patterns in all files:
+
+JSON.parse(localStorage.getItem('user')
+localStorage.getItem('userId')
+localStorage.getItem('pinnity_user_id')
+
+
+Replace with:
+
+getCurrentUserId() or getCurrentUser()
+
+
+Specifically check and update these components:
+
+FavoriteButton.tsx
+Profile pages
+Any components with user-specific actions
+Any redemption-related components
+
+
+
+3. Fix AuthContext to Be More Robust
+Update AuthContext.tsx to handle all legacy formats and ensure data is always stored consistently:
+javascriptCopy// In AuthProvider's login function, after successful login:
+// Store in all formats for backward compatibility
+saveUserData(response.userId.toString(), response.userType);
+
+// Also store the legacy format until all components are updated
+localStorage.setItem('userId', response.userId.toString());
+localStorage.setItem('userType', response.userType);
+
+// For full user object storage
+localStorage.setItem('user', JSON.stringify({
+  id: response.userId,
+  userType: response.userType,
+  ...userData // Include other user data if available
+}));
+4. Add Consistent Error Handling
+For any component that needs user data, add graceful handling when the user ID is missing:
+javascriptCopyconst userId = getCurrentUserId();
+if (!userId) {
+  // Show appropriate UI for unauthenticated state
+  console.warn('User ID not found, showing unauthenticated state');
+  return <UnauthenticatedView />;
+}

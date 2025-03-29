@@ -18,10 +18,36 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow, format } from 'date-fns';
 import { queryClient } from '@/lib/queryClient';
+import { getCurrentUserId, getCurrentUser } from '@/utils/userUtils';
 import { isExpired, isExpiringSoon, getExpirationText } from '@/utils/dateUtils';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest } from '@/lib/api';
 import { checkDealRedemptionStatus } from '@/lib/dealUtils';
 import RedemptionDialog from './RedemptionDialog';
+
+interface Business {
+  id: number;
+  businessName: string;
+  address?: string;
+  phone?: string;
+  website?: string;
+  logoUrl?: string;
+}
+
+interface Deal {
+  id: number;
+  title: string;
+  description: string;
+  imageUrl?: string;
+  startDate: string;
+  endDate: string;
+  category: string;
+  featured: boolean;
+  terms?: string;
+  maxRedemptionsPerUser?: number | null;
+  totalRedemptionsLimit?: number | null;
+  redemptionCount?: number;
+  business: Business;
+}
 
 interface DealDetailProps {
   dealId: number;
@@ -50,10 +76,10 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
   const { toast } = useToast();
 
   // Fetch the deal details
-  const { data: deal, isLoading, refetch } = useQuery({
+  const { data: deal, isLoading, refetch } = useQuery<Deal>({
     queryKey: ['/api/v1/deals', dealId],
     queryFn: async () => {
-      return apiRequest(`/api/v1/deals/${dealId}`);
+      return apiRequest(`/api/v1/deals/${dealId}`) as Promise<Deal>;
     }
   });
 
@@ -62,11 +88,9 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
     async function checkRedemption() {
       if (!deal) return;
 
-      // More robust approach to retrieve user ID from multiple sources
-      const storedUserId = localStorage.getItem('pinnity_user_id');
-      const legacyUser = JSON.parse(localStorage.getItem('user') || '{}');
-      const userId = storedUserId || legacyUser?.id;
-
+      // Get user ID from utility function
+      const userId = getCurrentUserId();
+      
       console.log('Checking redemption with user ID:', userId);
 
       if (!userId) return;
@@ -83,7 +107,8 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
         canRedeem: status.canRedeem
       });
       
-      // Force hasRedeemed to be true if redemptionCount > 0, regardless of API response
+      // CRITICAL FIX: Force hasRedeemed to be true if redemptionCount > 0, regardless of API response
+      // This ensures consistent UI state for users who have redeemed but for some reason hasRedeemed flag is false
       if (status.redemptionCount > 0 && !status.hasRedeemed) {
         console.log('Fixing inconsistent redemption status: redemptionCount > 0 but hasRedeemed is false');
         status.hasRedeemed = true;
@@ -92,13 +117,21 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
       // TypeScript guard to ensure remainingRedemptions is accessible
       if ('remainingRedemptions' in status) {
         // Make sure to force consistent state for remainingRedemptions
-        if ((typeof status.remainingRedemptions === 'number' && status.remainingRedemptions === 0) || 
-            (status.hasRedeemed && status.maxRedemptionsPerUser !== null && 
+        if ((typeof status.remainingRedemptions === 'number' && status.remainingRedemptions <= 0) || 
+            (status.maxRedemptionsPerUser !== null && 
              status.redemptionCount >= status.maxRedemptionsPerUser)) {
           // Explicitly enforce the button state for max redemptions reached
           status.canRedeem = false;
           console.log('Disabling redeem button due to reached limits');
         }
+      }
+      
+      // Double-check deal-level constraints
+      if (deal.totalRedemptionsLimit !== undefined && deal.totalRedemptionsLimit !== null &&
+          deal.redemptionCount !== undefined && 
+          deal.redemptionCount >= deal.totalRedemptionsLimit) {
+        status.canRedeem = false;
+        console.log('Disabling redeem button due to total redemption limit reached');
       }
       
       // Double-check isExpired state
@@ -118,9 +151,11 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
   // Add to favorites mutation
   const addToFavorites = useMutation({
     mutationFn: async () => {
-      // Get userId from local storage
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const userId = user?.id || 1;
+      // Get userId from utility function
+      const userId = getCurrentUserId();
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
 
       return apiRequest(`/api/v1/user/${userId}/favorites`, {
         method: 'POST',
@@ -147,37 +182,72 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
 
   // Handle redemption success
   const handleRedemptionSuccess = async () => {
-    // Refetch the deal to update redemption count
-    await refetch();
-
-    // Update any other data that might be affected
+    console.log('Redemption success, updating UI and refetching data');
+    
+    // Invalidate queries to fetch updated data
+    queryClient.invalidateQueries({ queryKey: ['/api/v1/deals', dealId] });
     queryClient.invalidateQueries({ queryKey: ['/api/v1/user/redemptions'] });
-
+    
     // Force the UI to update immediately (don't wait for API)
-    setRedemptionStatus(prev => ({
-      ...prev,
-      hasRedeemed: true,
-      redemptionCount: prev.redemptionCount + 1,
-      remainingRedemptions: prev.remainingRedemptions !== null ? 
-        prev.remainingRedemptions - 1 : null
-    }));
+    setRedemptionStatus(prev => {
+      // Calculate new remaining redemptions safely
+      let newRemainingRedemptions: number | null = null;
+      if (prev.remainingRedemptions !== undefined && prev.remainingRedemptions !== null) {
+        newRemainingRedemptions = Math.max(0, prev.remainingRedemptions - 1);
+      } else if (prev.maxRedemptionsPerUser !== null) {
+        // If no explicit remainingRedemptions but we have maxRedemptionsPerUser, calculate it
+        const newCount = prev.redemptionCount + 1;
+        newRemainingRedemptions = Math.max(0, prev.maxRedemptionsPerUser - newCount);
+      }
+      
+      const newRedemptionCount = prev.redemptionCount + 1;
+      const canStillRedeem = 
+        (newRemainingRedemptions === null || newRemainingRedemptions > 0) && 
+        (prev.maxRedemptionsPerUser === null || newRedemptionCount < prev.maxRedemptionsPerUser);
+      
+      console.log('Immediate UI update with calculated values:', {
+        hasRedeemed: true,
+        redemptionCount: newRedemptionCount,
+        remainingRedemptions: newRemainingRedemptions,
+        canRedeem: canStillRedeem
+      });
+      
+      return {
+        ...prev,
+        hasRedeemed: true,
+        redemptionCount: newRedemptionCount,
+        remainingRedemptions: newRemainingRedemptions,
+        canRedeem: canStillRedeem
+      };
+    });
 
-    // Update redemption status with API data
+    // Refetch the deal to update redemption count
+    const updatedDeal = await refetch();
+    console.log('Deal refetched after redemption:', updatedDeal.data);
+
+    // Update redemption status with API data for consistency
     if (deal) {
-      // Get user ID using the more robust approach
-      const storedUserId = localStorage.getItem('pinnity_user_id');
-      const legacyUser = JSON.parse(localStorage.getItem('user') || '{}');
-      const userId = storedUserId || legacyUser?.id;
+      // Get user ID using the utility function
+      const userId = getCurrentUserId();
 
       if (userId) {
-        const status = await checkDealRedemptionStatus(userId, dealId);
-        
-        // Force hasRedeemed to be true if redemptionCount > 0
-        if (status.redemptionCount > 0 && !status.hasRedeemed) {
-          status.hasRedeemed = true;
+        try {
+          // Get latest redemption status from API
+          const status = await checkDealRedemptionStatus(userId, dealId);
+          console.log('Updated redemption status from API:', status);
+          
+          // Force hasRedeemed to be true if redemptionCount > 0
+          if (status.redemptionCount > 0 && !status.hasRedeemed) {
+            console.log('Fixing inconsistent redemption status after redemption');
+            status.hasRedeemed = true;
+          }
+          
+          // Update the UI with the latest data from API
+          setRedemptionStatus(status);
+        } catch (error) {
+          console.error('Error checking redemption status after success:', error);
+          // We already updated the UI optimistically, so don't revert on error
         }
-        
-        setRedemptionStatus(status);
       }
     }
 
@@ -358,7 +428,7 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                 <div className="bg-card rounded-lg p-4 sm:p-5 border shadow-sm">
                   <h3 className="font-medium mb-3 text-sm sm:text-base">Redemption Status</h3>
                   <div className="space-y-2">
-                    {/* Using redemptionCount as the primary indicator, not hasRedeemed */}
+                    {/* ALWAYS use redemptionCount as the primary indicator, not hasRedeemed flag */}
                     {redemptionStatus.redemptionCount > 0 ? (
                       <>
                         <div className="flex items-center gap-2 text-green-600">
@@ -426,7 +496,8 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
 
                     {/* If the deal has reached total limit, show this warning regardless of personal redemptions */}
                     {deal.redemptionCount !== undefined && deal.totalRedemptionsLimit !== undefined && 
-                     deal.totalRedemptionsLimit > 0 && deal.redemptionCount >= deal.totalRedemptionsLimit && (
+                     deal.totalRedemptionsLimit !== null && deal.totalRedemptionsLimit > 0 && 
+                     deal.redemptionCount >= deal.totalRedemptionsLimit && (
                       <div className="mt-2 text-xs text-amber-600">
                         <p>This deal has reached its maximum redemption limit.</p>
                       </div>
@@ -465,7 +536,8 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                          : "Cannot Redeem"}
                     </Button>
                   ) : (deal.redemptionCount !== undefined && deal.totalRedemptionsLimit !== undefined && 
-                      deal.totalRedemptionsLimit > 0 && deal.redemptionCount >= deal.totalRedemptionsLimit) ? (
+                      deal.totalRedemptionsLimit !== null && deal.totalRedemptionsLimit > 0 && 
+                      deal.redemptionCount >= deal.totalRedemptionsLimit) ? (
                     <Button 
                       className="w-full max-w-xs"
                       variant="outline"
@@ -560,7 +632,8 @@ export default function DealDetail({ dealId, onClose }: DealDetailProps) {
                            : "Cannot Redeem"}
                       </Button>
                     ) : (deal.redemptionCount !== undefined && deal.totalRedemptionsLimit !== undefined && 
-                        deal.totalRedemptionsLimit > 0 && deal.redemptionCount >= deal.totalRedemptionsLimit) ? (
+                        deal.totalRedemptionsLimit !== null && deal.totalRedemptionsLimit > 0 && 
+                        deal.redemptionCount >= deal.totalRedemptionsLimit) ? (
                       <Button 
                         className="w-full max-w-xs"
                         variant="outline"

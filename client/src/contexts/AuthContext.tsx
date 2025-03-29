@@ -3,31 +3,18 @@ import { useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
 import { apiPost, resetCSRFToken, fetchWithCSRF } from '@/lib/api';
 import { handleError, ErrorCategory } from '@/lib/errorHandling';
+import { getCurrentUserId, saveUserData, clearUserData } from '@/utils/userUtils';
 
 // Cookie-based authentication
 // Since we're using secure HTTP-only cookies, we only need to keep track of auth status client-side
 // Without storing the actual token in localStorage
-const USER_ID_KEY = 'pinnity_user_id';
-const USER_TYPE_KEY = 'pinnity_user_type';
 const AUTH_STATUS_KEY = 'pinnity_auth_status';
+const USER_TYPE_KEY = 'pinnity_user_type';
 
-// Function to get user ID from storage
+// Function to get user ID from storage - now from centralized utility
 const getUserId = (): string | null => {
-  return localStorage.getItem(USER_ID_KEY);
-};
-
-// Function to save user data to storage
-const saveUserData = (userId: string, userType: string): void => {
-  localStorage.setItem(USER_ID_KEY, userId);
-  localStorage.setItem(USER_TYPE_KEY, userType);
-  localStorage.setItem(AUTH_STATUS_KEY, 'authenticated');
-};
-
-// Function to remove user data from storage
-const removeUserData = (): void => {
-  localStorage.removeItem(USER_ID_KEY);
-  localStorage.removeItem(USER_TYPE_KEY);
-  localStorage.removeItem(AUTH_STATUS_KEY);
+  const userId = getCurrentUserId();
+  return userId ? userId.toString() : null;
 };
 
 // Define the User type based on your schema
@@ -38,6 +25,9 @@ interface User {
   email: string;
   userType: 'individual' | 'business' | 'admin';
   username: string;
+  phone?: string;
+  address?: string;
+  created_at?: string;
   // Add other user properties as needed
 }
 
@@ -236,7 +226,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // Clear user data on authentication error
         setUser(null);
-        removeUserData();
+        clearUserData();
         resetCSRFToken();
         
         // Redirect to login page
@@ -425,7 +415,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             
             console.error(`[${timestamp}] Error fetching user data:`, err);
             // If this fails, user is not authenticated
-            removeUserData();
+            clearUserData();
             setAuthState('unauthenticated');
           }
         } else {
@@ -645,7 +635,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       
       // Remove client-side storage
-      removeUserData();
+      clearUserData();
       
       // Also remove legacy storage items (for backward compatibility)
       localStorage.removeItem('userId');
