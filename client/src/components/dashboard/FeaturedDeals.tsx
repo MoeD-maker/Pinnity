@@ -228,9 +228,7 @@ export default function FeaturedDeals({
           <div className="flex items-center">
             <Sparkles className="h-5 w-5 text-emerald-500 mr-2" />
             <h2 className="text-xl font-semibold text-emerald-700">{title}</h2>
-            <Badge variant="secondary" className="ml-3 bg-emerald-100 text-emerald-700 border-emerald-200">
-              Handpicked for you
-            </Badge>
+
           </div>
           
           <Button 
@@ -271,9 +269,7 @@ export default function FeaturedDeals({
         <div className="flex items-center">
           <Sparkles className="h-5 w-5 text-emerald-500 mr-2" />
           <h2 className="text-xl font-semibold text-emerald-700">{title}</h2>
-          <Badge variant="secondary" className="ml-3 bg-emerald-100 text-emerald-700 border-emerald-200">
-            Handpicked for you
-          </Badge>
+
         </div>
         
         <Button 
@@ -302,11 +298,6 @@ export default function FeaturedDeals({
                 alt={deal.title}
                 className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500"
               />
-              
-              {/* Premium ribbon */}
-              <div className="absolute -right-12 top-5 rotate-45 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold px-10 py-1 shadow-md">
-                Premium
-              </div>
               
               <div className="absolute top-2 left-2">
                 <FeaturedDealFavoriteButton dealId={deal.id} />
