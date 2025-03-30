@@ -1,0 +1,56 @@
+Please implement improvements to help users understand how featured deals relate to filters and regular deals. Add these features:
+
+Add an explanatory message when filters are applied:
+
+Show a small info banner explaining that featured deals are always shown
+Position it between the featured deals section and filtered regular deals
+
+
+Add a clear visual divider between featured and regular deals:
+
+Create a section divider with "Regular Deals" text
+Make this especially visible when filters are active
+
+
+Consider adding a toggle in the filters to include/exclude featured deals (optional)
+
+Here's code to guide your implementation:
+jsxCopy{/* After the featured deals section, before regular deals */}
+{(showFilters || selectedCategories.length > 0 || searchQuery) && (
+  <div className="bg-blue-50 p-3 rounded-lg mb-4 text-sm flex items-center">
+    <Info className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0" />
+    <p>
+      Featured deals are always shown regardless of filters. 
+      {filteredDeals.length > 0 ? 
+        " Regular deals below match your selected filters." :
+        " No regular deals match your current filters."}
+    </p>
+  </div>
+)}
+
+{/* Section divider */}
+<div className="relative my-8">
+  <div className="absolute inset-0 flex items-center">
+    <div className="w-full border-t border-gray-200"></div>
+  </div>
+  <div className="relative flex justify-center">
+    <span className="bg-white px-4 text-sm text-gray-500">
+      {filteredDeals.length > 0 ? 
+        `${filteredDeals.length} Regular Deals` : 
+        "No Matching Regular Deals"}
+    </span>
+  </div>
+</div>
+
+{/* Optional filter toggle */}
+<div className="space-y-2">
+  <div className="flex items-center justify-between">
+    <Label className="text-sm font-medium">Include Featured Deals</Label>
+    <Switch
+      checked={includeFeatured}
+      onCheckedChange={setIncludeFeatured}
+      aria-label="Include featured deals in results"
+    />
+  </div>
+</div>
+These changes will help users understand the relationship between featured deals, filters, and regular deals, creating a better user experience.

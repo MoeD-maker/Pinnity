@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import useWindowSize from '@/hooks/use-window-size';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
@@ -77,6 +79,7 @@ export default function EnhancedExplorePage() {
   const [selectedMoods, setSelectedMoods] = useState<MoodFilter[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'large' | 'swipeable'>('grid');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [includeFeatured, setIncludeFeatured] = useState(true);
   
   // State for tracking cached data status
   const [dealsCacheStatus, setDealsCacheStatus] = useState<CacheStatus>({
@@ -86,6 +89,7 @@ export default function EnhancedExplorePage() {
   
   // Load saved filters on initial render
   useEffect(() => {
+    // Load saved categories
     const savedCategories = localStorage.getItem('pinnity-category-filters');
     if (savedCategories) {
       try {
@@ -95,6 +99,16 @@ export default function EnhancedExplorePage() {
         }
       } catch (e) {
         console.error('Error parsing saved categories:', e);
+      }
+    }
+    
+    // Load featured deals preference
+    const savedFeaturedPref = localStorage.getItem('pinnity-include-featured');
+    if (savedFeaturedPref !== null) {
+      try {
+        setIncludeFeatured(JSON.parse(savedFeaturedPref));
+      } catch (e) {
+        console.error('Error parsing featured deals preference:', e);
       }
     }
   }, []);
@@ -343,7 +357,9 @@ export default function EnhancedExplorePage() {
     setSelectedCategories([]);
     setSelectedMoods([]);
     setSearchQuery('');
+    setIncludeFeatured(true); // Reset featured deals toggle to default (included)
     localStorage.removeItem('pinnity-category-filters');
+    localStorage.removeItem('pinnity-include-featured'); // Clear featured deals preference
   };
   
   // Handle random deal selection
@@ -452,6 +468,25 @@ export default function EnhancedExplorePage() {
               dealCounts={categoryCounter}
             />
             
+            <Separator className="my-1" />
+            
+            {/* Featured Deals Toggle */}
+            <div className="flex items-center justify-between py-2">
+              <div className="space-y-0.5">
+                <Label htmlFor="featured-deals" className="font-medium">Featured Deals</Label>
+                <p className="text-xs text-muted-foreground">Include promoted deals in results</p>
+              </div>
+              <Switch
+                id="featured-deals"
+                checked={includeFeatured}
+                onCheckedChange={(value) => {
+                  setIncludeFeatured(value);
+                  // Save preference to localStorage
+                  localStorage.setItem('pinnity-include-featured', JSON.stringify(value));
+                }}
+              />
+            </div>
+            
             <div className="pt-2">
               <Button 
                 onClick={() => setShowFilters(false)} 
@@ -526,13 +561,57 @@ export default function EnhancedExplorePage() {
         </div>
       ) : (
         <>
-          {/* Featured Deals section (if not in swipeable mode) */}
-          {viewMode !== 'swipeable' && (
+          {/* Featured Deals section (if not in swipeable mode and includeFeatured is true) */}
+          {viewMode !== 'swipeable' && includeFeatured && (
             <FeaturedDeals
               onSelect={(dealId: number) => setSelectedDealId(dealId)}
               title="Featured Deals"
               limit={3}
             />
+          )}
+          
+          {/* Explanatory message for featured deals when filters are active - show different message based on includeFeatured state */}
+          {viewMode !== 'swipeable' && (showFilters || selectedCategories.length > 0 || searchQuery || selectedMoods.length > 0) && (
+            <div className={`${includeFeatured ? 'bg-blue-50' : 'bg-gray-50'} p-3 rounded-lg mb-6 text-sm flex items-center`}>
+              <div className={`h-4 w-4 ${includeFeatured ? 'text-blue-500' : 'text-gray-500'} mr-2 flex-shrink-0`}>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </div>
+              {includeFeatured ? (
+                <p>
+                  Featured deals are always shown regardless of filters. 
+                  {filteredDeals.length > 0 ? 
+                    " Regular deals below match your selected filters." :
+                    " No regular deals match your current filters."}
+                </p>
+              ) : (
+                <p>
+                  Featured deals are hidden. 
+                  {filteredDeals.length > 0 ? 
+                    " Only regular deals matching your selected filters are shown." : 
+                    " No regular deals match your current filters."}
+                </p>
+              )}
+            </div>
+          )}
+          
+          {/* Section divider between featured and regular deals - only shown when featured deals are included */}
+          {viewMode !== 'swipeable' && includeFeatured && filteredDeals.length > 0 && (
+            <div className="relative my-8">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center">
+                <span className="bg-white px-4 text-sm text-gray-500">
+                  {filteredDeals.length > 0 ? 
+                    `${filteredDeals.length} Regular Deals` : 
+                    "No Matching Regular Deals"}
+                </span>
+              </div>
+            </div>
           )}
           
           {/* Enhanced deal grid with our sorting and view modes */}
