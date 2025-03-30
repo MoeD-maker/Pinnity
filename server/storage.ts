@@ -107,6 +107,7 @@ export interface IStorage {
   
   // Notification preferences methods
   getUserNotificationPreferences(userId: number): Promise<UserNotificationPreferences | undefined>;
+  getNotificationPreferences(userId: number): Promise<UserNotificationPreferences | undefined>; // Alias for getUserNotificationPreferences
   updateUserNotificationPreferences(userId: number, preferences: Partial<Omit<InsertUserNotificationPreferences, "id" | "userId">>): Promise<UserNotificationPreferences>;
   
   // Redemption rating methods
@@ -1560,6 +1561,11 @@ export class MemStorage implements IStorage {
     return Array.from(this.userNotificationPreferences.values())
       .find(pref => pref.userId === userId);
   }
+  
+  async getNotificationPreferences(userId: number): Promise<UserNotificationPreferences | undefined> {
+    // This is an alias for getUserNotificationPreferences
+    return this.getUserNotificationPreferences(userId);
+  }
 
   async createUserNotificationPreferences(preferencesData: InsertUserNotificationPreferences): Promise<UserNotificationPreferences> {
     const id = this.currentUserNotificationPreferencesId++;
@@ -2545,6 +2551,11 @@ export class DatabaseStorage implements IStorage {
       .where(eq(userNotificationPreferences.userId, userId));
     
     return preferences || undefined;
+  }
+  
+  async getNotificationPreferences(userId: number): Promise<UserNotificationPreferences | undefined> {
+    // This is an alias for getUserNotificationPreferences
+    return this.getUserNotificationPreferences(userId);
   }
 
   async updateUserNotificationPreferences(userId: number, preferencesData: Partial<Omit<InsertUserNotificationPreferences, "id" | "userId">>): Promise<UserNotificationPreferences> {
