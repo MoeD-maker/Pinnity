@@ -10,7 +10,17 @@ export const businessProfileSchema = z.object({
   description: z.string().max(1000, "Description cannot exceed 1000 characters").optional(),
   phone: z.string().max(20, "Phone number cannot exceed 20 characters").nullable().optional(),
   address: z.string().max(200, "Address cannot exceed 200 characters").nullable().optional(),
-  website: z.string().url("Invalid website URL").max(200, "Website URL cannot exceed 200 characters").nullable().optional(),
+  website: z.preprocess(
+    (val) => {
+      if (!val) return val;
+      // If string doesn't have protocol, add https://
+      if (typeof val === 'string' && !val.match(/^https?:\/\//)) {
+        return `https://${val}`;
+      }
+      return val;
+    },
+    z.string().url("Invalid website URL").max(200, "Website URL cannot exceed 200 characters").nullable().optional()
+  ),
   imageUrl: z.any().nullable().optional(),
   latitude: z.number().min(-90, "Latitude must be between -90 and 90").max(90, "Latitude must be between -90 and 90").nullable().optional(),
   longitude: z.number().min(-180, "Longitude must be between -180 and 180").max(180, "Longitude must be between -180 and 180").nullable().optional(),
