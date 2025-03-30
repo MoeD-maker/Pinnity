@@ -584,21 +584,21 @@ export default function EnhancedExplorePage() {
                 <p>
                   Featured deals are always shown regardless of filters. 
                   {filteredDeals.length > 0 ? 
-                    " Regular deals below match your selected filters." :
-                    " No regular deals match your current filters."}
+                    " All deals below match your selected filters." :
+                    " No deals match your current filters."}
                 </p>
               ) : (
                 <p>
                   Featured deals are hidden. 
                   {filteredDeals.length > 0 ? 
-                    " Only regular deals matching your selected filters are shown." : 
-                    " No regular deals match your current filters."}
+                    " Only deals matching your selected filters are shown." : 
+                    " No deals match your current filters."}
                 </p>
               )}
             </div>
           )}
           
-          {/* Section divider between featured and regular deals - only shown when featured deals are included */}
+          {/* Section divider between featured and all deals - only shown when featured deals are included */}
           {viewMode !== 'swipeable' && includeFeatured && filteredDeals.length > 0 && (
             <div className="relative my-8">
               <div className="absolute inset-0 flex items-center">
@@ -607,8 +607,8 @@ export default function EnhancedExplorePage() {
               <div className="relative flex justify-center">
                 <span className="bg-white px-4 text-sm text-gray-500">
                   {filteredDeals.length > 0 ? 
-                    `${filteredDeals.length} Regular Deals` : 
-                    "No Matching Regular Deals"}
+                    `${filteredDeals.length} All Deals` : 
+                    "No Matching Deals"}
                 </span>
               </div>
             </div>
