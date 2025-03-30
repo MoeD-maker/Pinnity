@@ -158,7 +158,7 @@ export default function VendorProfile() {
     
     setSaving(true);
     try {
-      // Prepare update data
+      // First, prepare the business update data
       const updateData = {
         businessName: data.businessName,
         businessCategory: data.businessCategory,
@@ -170,36 +170,60 @@ export default function VendorProfile() {
           instagram: data.instagramUrl,
           facebook: data.facebookUrl,
           twitter: data.twitterUrl
-        }
+        },
+        // Preserve the existing image URL if we're not uploading a new one
+        imageUrl: business.imageUrl || null
       };
+      
+      let imageUrl = business.imageUrl;
       
       // Handle image upload if there's a new file selected
       if (selectedFile) {
-        // In a real implementation, you would upload the image to a storage service
-        // and then store the URL in the database. For now, we'll just log it.
-        console.log('Image selected for upload:', selectedFile.name);
-        
-        // For this demo, we'll just use a FormData approach to simulate what would happen
-        const formData = new FormData();
-        formData.append('logo', selectedFile);
-        
-        // For now, just pretend we uploaded the image and got a URL back
-        // In a real implementation, this would be handled properly
-        // updateData.imageUrl = 'https://example.com/uploaded-image.jpg';
-        
-        // Just to simulate the image being uploaded successfully, we'll keep
-        // the existing imageUrl if there is one
-        if (business.imageUrl) {
-          updateData.imageUrl = business.imageUrl;
+        try {
+          console.log('Uploading image:', selectedFile.name);
+          
+          // Create FormData for the image upload
+          const formData = new FormData();
+          formData.append('logo', selectedFile);
+          
+          // Simulate uploading the image - this would normally go to a dedicated upload endpoint
+          // For testing, we'll use a base64 encoded string to simulate an uploaded image
+          const reader = new FileReader();
+          
+          // Use a promise to handle the async FileReader
+          const imageBase64 = await new Promise<string>((resolve, reject) => {
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(selectedFile);
+          });
+          
+          // For now, we can include the base64 image directly in our update data
+          // This is not ideal for production as it can make the request large,
+          // but for demo purposes it's a way to make the image upload work
+          updateData.imageUrl = imageBase64;
+          
+          // In a proper implementation, we would first upload the image to a server/storage
+          // and then get back the URL to include in our update data
+        } catch (uploadError) {
+          console.error('Error uploading image:', uploadError);
+          toast({
+            title: 'Image Upload Failed',
+            description: 'Could not upload your image. Please try again.',
+            variant: 'destructive'
+          });
+          // Continue with the update without the image
         }
       }
       
-      console.log('Updating business with data:', updateData);
+      console.log('Updating business with data:', {
+        ...updateData,
+        imageUrl: updateData.imageUrl ? 'base64 image data (truncated)' : 'No image update'
+      });
       
       // Update business profile
       await apiRequest(`/api/business/${business.id}`, {
         method: 'PUT',
-        data: updateData // Using data instead of body for consistency with react-query
+        data: updateData
       });
       
       toast({
@@ -211,6 +235,14 @@ export default function VendorProfile() {
       // Refresh business data
       const updatedBusiness = await apiRequest(`/api/business/user/${user?.id}`);
       setBusiness(updatedBusiness);
+      
+      // Clear selected file after successful update
+      setSelectedFile(null);
+      
+      // Update preview URL with new image URL if it was updated
+      if (updatedBusiness.imageUrl) {
+        setPreviewUrl(updatedBusiness.imageUrl);
+      }
       
     } catch (error) {
       console.error('Error updating business profile:', error);
