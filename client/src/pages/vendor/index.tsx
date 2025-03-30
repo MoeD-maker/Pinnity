@@ -687,7 +687,11 @@ export default function VendorDashboard() {
           <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 sm:mb-6">
               <h2 className="text-xl font-semibold truncate max-w-full sm:max-w-[230px]">Business Profile</h2>
-              <Button variant="outline" className="w-full sm:w-auto mt-1 sm:mt-0">
+              <Button 
+                variant="outline" 
+                className="w-full sm:w-auto mt-1 sm:mt-0"
+                onClick={() => setLocation('/vendor/profile')}
+              >
                 <FileText className="h-4 w-4 mr-2" /> Edit Profile
               </Button>
             </div>
