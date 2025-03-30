@@ -109,6 +109,7 @@ export interface IStorage {
   getUserNotificationPreferences(userId: number): Promise<UserNotificationPreferences | undefined>;
   getNotificationPreferences(userId: number): Promise<UserNotificationPreferences | undefined>; // Alias for getUserNotificationPreferences
   updateUserNotificationPreferences(userId: number, preferences: Partial<Omit<InsertUserNotificationPreferences, "id" | "userId">>): Promise<UserNotificationPreferences>;
+  updateNotificationPreferences(userId: number, preferences: Partial<Omit<InsertUserNotificationPreferences, "id" | "userId">>): Promise<UserNotificationPreferences>; // Alias for updateUserNotificationPreferences
   
   // Redemption rating methods
   createRedemptionRating(redemptionId: number, userId: number, dealId: number, businessId: number, ratingData: RatingData): Promise<RedemptionRating>;
@@ -1604,6 +1605,11 @@ export class MemStorage implements IStorage {
     this.userNotificationPreferences.set(preferences.id, updatedPreferences);
     return updatedPreferences;
   }
+  
+  async updateNotificationPreferences(userId: number, preferencesData: Partial<Omit<InsertUserNotificationPreferences, "id" | "userId">>): Promise<UserNotificationPreferences> {
+    // This is an alias for updateUserNotificationPreferences
+    return this.updateUserNotificationPreferences(userId, preferencesData);
+  }
 
   // Redemption rating methods
   async createRedemptionRating(redemptionId: number, userId: number, dealId: number, businessId: number, ratingData: RatingData): Promise<RedemptionRating> {
@@ -2585,6 +2591,11 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return updatedPreferences;
+  }
+  
+  async updateNotificationPreferences(userId: number, preferencesData: Partial<Omit<InsertUserNotificationPreferences, "id" | "userId">>): Promise<UserNotificationPreferences> {
+    // This is an alias for updateUserNotificationPreferences
+    return this.updateUserNotificationPreferences(userId, preferencesData);
   }
 
   async createRedemptionRating(redemptionId: number, userId: number, dealId: number, businessId: number, ratingData: RatingData): Promise<RedemptionRating> {
