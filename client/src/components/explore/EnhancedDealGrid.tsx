@@ -517,13 +517,14 @@ function SwipeableDealCards({ deals, onSelect }: { deals: DealWithBusiness[], on
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState<'left' | 'right' | null>(null);
   const [startX, setStartX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
   const currentDeal = deals[currentIndex];
   
-  // Handle swipe gesture
+  // Handle swipe gesture for touch events
   const handleTouchStart = (e: React.TouchEvent) => {
     setStartX(e.touches[0].clientX);
   };
@@ -541,7 +542,39 @@ function SwipeableDealCards({ deals, onSelect }: { deals: DealWithBusiness[], on
     }
   };
   
+  // Handle swipe gesture for mouse events
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setStartX(e.clientX);
+    setIsDragging(true);
+  };
+  
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !startX) return;
+    
+    const currentX = e.clientX;
+    const diff = currentX - startX;
+    
+    if (Math.abs(diff) > 30) {
+      setDirection(diff > 0 ? 'right' : 'left');
+    } else {
+      setDirection(null);
+    }
+  };
+  
+  const handleMouseUp = () => {
+    if (isDragging) {
+      processSwipeAction();
+      setIsDragging(false);
+    }
+  };
+  
+  // Handle the end of touch events
   const handleTouchEnd = () => {
+    processSwipeAction();
+  };
+  
+  // Process the swipe action (shared between mouse and touch)
+  const processSwipeAction = () => {
     if (direction === 'left') {
       // Skip this deal
       if (currentIndex < deals.length - 1) {
@@ -555,10 +588,12 @@ function SwipeableDealCards({ deals, onSelect }: { deals: DealWithBusiness[], on
     } else if (direction === 'right') {
       // Save deal to favorites
       if (user) {
+        console.log('Saving deal to favorites:', currentDeal.id);
         apiRequest(`/api/v1/user/${user.id}/favorites`, {
           method: 'POST',
           data: { dealId: currentDeal.id }
-        }).then(() => {
+        }).then((response) => {
+          console.log('Deal successfully saved to favorites:', response);
           toast({
             title: 'Deal saved!',
             description: 'Added to your favorites',
@@ -631,7 +666,12 @@ function SwipeableDealCards({ deals, onSelect }: { deals: DealWithBusiness[], on
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          className="touch-manipulation"
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          className="touch-manipulation cursor-grab"
+          style={{ userSelect: 'none' }}
         >
           <Card className="overflow-hidden shadow-lg w-full">
             <div className={`aspect-square relative overflow-hidden ${currentDeal.featured ? 'border-2 border-primary/20' : ''}`}>
@@ -728,8 +768,35 @@ function SwipeableDealCards({ deals, onSelect }: { deals: DealWithBusiness[], on
           onClick={() => {
             setDirection('right');
             setTimeout(() => {
+              // Save deal to favorites
+              if (user) {
+                console.log('Saving deal to favorites from button:', currentDeal.id);
+                apiRequest(`/api/v1/user/${user.id}/favorites`, {
+                  method: 'POST',
+                  data: { dealId: currentDeal.id }
+                }).then((response) => {
+                  console.log('Deal successfully saved to favorites from button:', response);
+                  toast({
+                    title: 'Deal saved!',
+                    description: 'Added to your favorites',
+                  });
+                  queryClient.invalidateQueries({ queryKey: ['/api/v1/user', user.id, 'favorites'] });
+                }).catch(err => {
+                  console.error('Error saving deal:', err);
+                  toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description: 'Could not save the deal',
+                  });
+                });
+              } else {
+                toast({
+                  title: 'Sign in required',
+                  description: 'Please sign in to save deals',
+                });
+              }
+              
               setDirection(null);
-              // Save logic here
               if (currentIndex < deals.length - 1) {
                 setCurrentIndex(prev => prev + 1);
               }
