@@ -4,7 +4,7 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Database, Sparkles } from 'lucide-react';
+import { Heart, Database, Sparkles, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
@@ -223,17 +223,29 @@ export default function FeaturedDeals({
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            {title}
-          </h2>
+      <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-6 mb-8 border border-emerald-100 shadow-sm">
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center">
+            <Sparkles className="h-5 w-5 text-emerald-500 mr-2" />
+            <h2 className="text-xl font-semibold text-emerald-700">{title}</h2>
+            <Badge variant="secondary" className="ml-3 bg-emerald-100 text-emerald-700 border-emerald-200">
+              Handpicked for you
+            </Badge>
+          </div>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="text-emerald-600 border-emerald-200"
+            disabled
+          >
+            <RefreshCw className="h-4 w-4 mr-1 animate-spin" /> Loading...
+          </Button>
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {Array.from({ length: limit }).map((_, i) => (
-            <Card key={i} className="overflow-hidden">
+            <Card key={i} className="overflow-hidden border border-emerald-100">
               <div className="aspect-video">
                 <Skeleton className="h-full w-full" />
               </div>
@@ -254,15 +266,23 @@ export default function FeaturedDeals({
   }
   
   return (
-    <div className="space-y-4 mb-8">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
-          {title}
-        </h2>
+    <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-6 mb-8 border border-emerald-100 shadow-sm">
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center">
+          <Sparkles className="h-5 w-5 text-emerald-500 mr-2" />
+          <h2 className="text-xl font-semibold text-emerald-700">{title}</h2>
+          <Badge variant="secondary" className="ml-3 bg-emerald-100 text-emerald-700 border-emerald-200">
+            Handpicked for you
+          </Badge>
+        </div>
         
-        <Button variant="outline" size="sm" onClick={() => refetch()}>
-          Refresh
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => refetch()} 
+          className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+        >
+          <RefreshCw className="h-4 w-4 mr-1" /> Refresh
         </Button>
       </div>
       
@@ -270,22 +290,27 @@ export default function FeaturedDeals({
         {featuredDeals.map((deal: DealWithBusiness) => (
           <Card 
             key={deal.id} 
-            className="overflow-hidden transition-all hover:shadow-md cursor-pointer border-2 border-primary/20 relative"
+            className="overflow-hidden transition-all hover:shadow-lg cursor-pointer border border-emerald-200 relative group bg-white"
             onClick={() => onSelect(deal.id)}
           >
             <div className="aspect-video relative overflow-hidden">
               <img 
                 src={deal.imageUrl || 'https://images.unsplash.com/photo-1556742111-a301076d9d18?ixlib=rb-4.0.3'} 
                 alt={deal.title}
-                className="w-full h-full object-cover transition-transform hover:scale-105"
+                className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500"
               />
+              {/* Premium ribbon */}
+              <div className="absolute -right-12 top-5 rotate-45 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold px-10 py-1 shadow-md">
+                Premium
+              </div>
+              
               <div className="absolute top-2 left-2">
                 <FeaturedDealFavoriteButton dealId={deal.id} />
               </div>
               
-              {/* Featured badge in top right corner */}
-              <div className="absolute top-2 right-2">
-                <Badge className="bg-primary text-white flex items-center gap-1">
+              {/* Featured badge in top left corner below heart */}
+              <div className="absolute top-10 left-2">
+                <Badge className="bg-emerald-500 text-white flex items-center gap-1 transition-transform group-hover:scale-105">
                   <Sparkles className="h-3 w-3" />
                   Featured
                 </Badge>
@@ -294,7 +319,7 @@ export default function FeaturedDeals({
               {/* Deal discount badge */}
               <div className="absolute bottom-2 left-2 flex flex-wrap gap-2">
                 {deal.discount && (
-                  <Badge className="bg-primary text-white">
+                  <Badge className="bg-emerald-500 text-white font-semibold">
                     {deal.discount}
                   </Badge>
                 )}
@@ -315,15 +340,19 @@ export default function FeaturedDeals({
                 )}
               </div>
             </div>
-            <CardContent className="p-3">
-              <h3 className="font-semibold text-base line-clamp-1">{deal.title}</h3>
-              <p className="text-xs text-muted-foreground mb-2">{deal.business?.businessName || 'Unknown Business'}</p>
-              <p className="text-sm line-clamp-2">{deal.description}</p>
+            <CardContent className="p-4">
+              <h3 className="font-semibold text-lg text-emerald-700 line-clamp-1 group-hover:text-emerald-600 transition-colors">
+                {deal.title}
+              </h3>
+              <p className="text-xs text-muted-foreground mb-2 flex items-center">
+                <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1"></span>
+                {deal.business?.businessName || 'Unknown Business'}
+              </p>
+              <p className="text-sm line-clamp-2 text-gray-600">{deal.description}</p>
             </CardContent>
-            <CardFooter className="p-3 pt-0">
+            <CardFooter className="p-4 pt-0">
               <Button 
-                variant="secondary" 
-                className="w-full" 
+                className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600 shadow-sm transition-all group-hover:shadow-md" 
                 onClick={(e) => {
                   e.stopPropagation();
                   onSelect(deal.id);
