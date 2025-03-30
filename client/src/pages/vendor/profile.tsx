@@ -31,6 +31,7 @@ import {
   Clock
 } from 'lucide-react';
 import PasswordChangeForm from '@/components/profile/PasswordChangeForm';
+import ImageUploadWithCropper from '@/components/shared/ImageUploadWithCropper';
 
 // Form schema for business profile
 const businessProfileSchema = z.object({
@@ -137,18 +138,30 @@ export default function VendorProfile() {
     fetchBusinessData();
   }, [user, form, toast]);
   
-  // Handle file selection for logo/image upload
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setSelectedFile(file);
+  // Handle processed image after cropping
+  const handleProcessedImage = (croppedImageData: string | null) => {
+    if (croppedImageData) {
+      setPreviewUrl(croppedImageData);
       
-      // Create preview URL
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      // Convert base64 to File object for later upload
+      fetch(croppedImageData)
+        .then(res => res.blob())
+        .then(blob => {
+          const file = new File([blob], "logo.jpg", { type: "image/jpeg" });
+          setSelectedFile(file);
+        })
+        .catch(err => {
+          console.error("Error converting cropped image to file:", err);
+          toast({
+            title: 'Error',
+            description: 'Failed to process the image',
+            variant: 'destructive'
+          });
+        });
+    } else {
+      // User removed the image
+      setPreviewUrl(null);
+      setSelectedFile(null);
     }
   };
   
@@ -366,39 +379,30 @@ export default function VendorProfile() {
                 <div className="space-y-4">
                   <Label>Business Logo/Image</Label>
                   
-                  <div className="flex items-center space-x-4">
-                    <div className="w-24 h-24 rounded-lg overflow-hidden border flex items-center justify-center bg-gray-50">
-                      {previewUrl ? (
-                        <img 
-                          src={previewUrl} 
-                          alt="Business logo preview" 
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <Building2 className="h-10 w-10 text-gray-300" />
-                      )}
-                    </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <ImageUploadWithCropper
+                      onImageChange={handleProcessedImage}
+                      currentImage={previewUrl}
+                      aspectRatio={1}
+                      buttonText="Upload Business Logo"
+                      className="w-full"
+                      imageClassName="w-full h-40 object-cover rounded-md"
+                      maxSizeKB={5000}
+                    />
                     
-                    <div className="flex-1">
-                      <div className="relative">
-                        <Input
-                          id="logo-upload"
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handleFileChange}
-                        />
-                        <Label 
-                          htmlFor="logo-upload" 
-                          className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
-                        >
-                          <Upload className="w-4 h-4 mr-2" />
-                          Upload Logo/Image
-                        </Label>
-                        <p className="mt-1 text-xs text-gray-500">
-                          PNG, JPG or GIF up to 5MB
-                        </p>
-                      </div>
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-medium">Logo Guidelines</h3>
+                      <ul className="text-xs text-gray-500 space-y-1 list-disc pl-4">
+                        <li>Upload a clear, high-quality image of your business logo</li>
+                        <li>Square format works best (1:1 aspect ratio)</li>
+                        <li>Minimum recommended size: 500×500 pixels</li>
+                        <li>Maximum file size: 5MB</li>
+                        <li>Supported formats: JPG, PNG, GIF</li>
+                      </ul>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Your logo will be displayed in various sizes throughout the app,
+                        so make sure it looks good when scaled down.
+                      </p>
                     </div>
                   </div>
                 </div>
