@@ -290,15 +290,19 @@ export default function FeaturedDeals({
         {featuredDeals.map((deal: DealWithBusiness) => (
           <Card 
             key={deal.id} 
-            className="overflow-hidden transition-all hover:shadow-lg cursor-pointer border border-emerald-200 relative group bg-white"
+            className="overflow-hidden transition-all hover:shadow-lg cursor-pointer border-2 border-emerald-200 relative group bg-white"
             onClick={() => onSelect(deal.id)}
           >
             <div className="aspect-video relative overflow-hidden">
+              {/* Gradient overlay on image */}
+              <div className="absolute inset-0 bg-gradient-to-t from-emerald-500/10 to-transparent z-10"></div>
+              
               <img 
                 src={deal.imageUrl || 'https://images.unsplash.com/photo-1556742111-a301076d9d18?ixlib=rb-4.0.3'} 
                 alt={deal.title}
                 className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500"
               />
+              
               {/* Premium ribbon */}
               <div className="absolute -right-12 top-5 rotate-45 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold px-10 py-1 shadow-md">
                 Premium
@@ -308,12 +312,12 @@ export default function FeaturedDeals({
                 <FeaturedDealFavoriteButton dealId={deal.id} />
               </div>
               
-              {/* Featured badge in top left corner below heart */}
-              <div className="absolute top-10 left-2">
-                <Badge className="bg-emerald-500 text-white flex items-center gap-1 transition-transform group-hover:scale-105">
+              {/* Featured badge in top right corner */}
+              <div className="absolute top-0 right-0 z-20">
+                <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-3 py-1 flex items-center gap-1 rounded-bl-lg shadow-md">
                   <Sparkles className="h-3 w-3" />
                   Featured
-                </Badge>
+                </div>
               </div>
               
               {/* Deal discount badge */}
@@ -341,7 +345,7 @@ export default function FeaturedDeals({
               </div>
             </div>
             <CardContent className="p-4">
-              <h3 className="font-semibold text-lg text-emerald-700 line-clamp-1 group-hover:text-emerald-600 transition-colors">
+              <h3 className="font-bold text-lg md:text-xl text-emerald-700 line-clamp-1 group-hover:text-emerald-600 transition-colors">
                 {deal.title}
               </h3>
               <p className="text-xs text-muted-foreground mb-2 flex items-center">
