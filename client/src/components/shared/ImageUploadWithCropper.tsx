@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import ImageCropper from './ImageCropper';
-import { X, Upload, Edit2, AlertCircle, Info } from 'lucide-react';
+import { X, Upload, Edit2, AlertCircle, Info, FileType } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 
 interface ImageUploadWithCropperProps {
   onImageChange: (image: string | null) => void;
@@ -42,65 +43,195 @@ export default function ImageUploadWithCropper({
   const [error, setError] = useState('');
   const [warning, setWarning] = useState('');
   const [imageDimensions, setImageDimensions] = useState<{width: number, height: number} | null>(null);
+  const [compressing, setCompressing] = useState(false);
+  const [compressionProgress, setCompressionProgress] = useState(0);
+  const [originalSize, setOriginalSize] = useState<number>(0);
+  const [compressedSize, setCompressedSize] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+  // Helper function to compress an image with progress updates
+  const compressImage = async (imageDataUrl: string, quality = 0.8, format = 'image/jpeg'): Promise<string> => {
+    setCompressing(true);
+    setCompressionProgress(0);
+    
+    // Calculate original size
+    const originalSizeInKB = Math.round(imageDataUrl.length / 1.37 / 1024); // Approximate Base64 to file size conversion
+    setOriginalSize(originalSizeInKB);
+    
+    return new Promise<string>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        // Create canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        
+        // Draw image to canvas
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          setCompressing(false);
+          reject(new Error('Could not get canvas context'));
+          return;
+        }
+        
+        // Draw white background (to convert transparent to white)
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Update progress
+        setCompressionProgress(30);
+        
+        // Draw image
+        ctx.drawImage(img, 0, 0);
+        
+        // Update progress
+        setCompressionProgress(60);
+        
+        // Convert to the desired format with compression
+        try {
+          const compressedDataUrl = canvas.toDataURL(format, quality);
+          
+          // Calculate compressed size
+          const compressedSizeInKB = Math.round(compressedDataUrl.length / 1.37 / 1024);
+          setCompressedSize(compressedSizeInKB);
+          
+          // Update progress
+          setCompressionProgress(100);
+          
+          // Slight delay to show 100% completion
+          setTimeout(() => {
+            setCompressing(false);
+            resolve(compressedDataUrl);
+          }, 300);
+        } catch (error) {
+          setCompressing(false);
+          reject(error);
+        }
+      };
+      
+      img.onerror = (error) => {
+        setCompressing(false);
+        reject(error);
+      };
+      
+      img.src = imageDataUrl;
+    });
+  };
+  
+  // Helper function to check if an image needs conversion
+  const needsConversion = (fileType: string): boolean => {
+    // Convert non-web-friendly formats or large files
+    const formatsNeedingConversion = ['image/bmp', 'image/tiff', 'image/x-icon'];
+    return formatsNeedingConversion.includes(fileType);
+  };
+
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     setError('');
     setWarning('');
     setImageDimensions(null);
+    setCompressing(false);
+    setCompressionProgress(0);
     
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       
-      // File size validation
+      // Store original file size for comparison
+      const originalFileSizeKB = Math.round(file.size / 1024);
+      setOriginalSize(originalFileSizeKB);
+      
+      // File size initial check - for extremely large files, show warning but continue
       if (file.size > maxSizeKB * 1024) {
-        setError(`Image size exceeds the limit of ${maxSizeKB / 1000}MB`);
-        e.target.value = '';
-        return;
+        setWarning(`Image size (${originalFileSizeKB}KB) exceeds the limit of ${maxSizeKB}KB. We'll try to compress it automatically.`);
       }
       
-      // File type validation
+      // File type validation with conversion support
       const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-      if (!validImageTypes.includes(file.type)) {
-        setError('Please upload a valid image file (JPEG, PNG, GIF, or WEBP)');
-        e.target.value = '';
+      const convertibleTypes = ['image/bmp', 'image/tiff', 'image/x-icon'];
+      const needsFormatConversion = !validImageTypes.includes(file.type);
+      
+      if (needsFormatConversion && !convertibleTypes.includes(file.type)) {
+        setError('Unsupported file format. Please upload a JPEG, PNG, GIF, WEBP, BMP, TIFF, or ICO file.');
+        if (fileInputRef.current) fileInputRef.current.value = '';
         return;
       }
       
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        const result = reader.result as string;
+      try {
+        // Read file as data URL
+        const reader = new FileReader();
         
-        // Check image dimensions
+        // Create a promise to handle the FileReader
+        const fileData = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error('Failed to read file'));
+          reader.readAsDataURL(file);
+        });
+        
+        // Get image dimensions and check if compression or conversion is needed
         const img = new Image();
-        img.onload = () => {
-          const width = img.width;
-          const height = img.height;
-          setImageDimensions({ width, height });
-          
-          // Check minimum dimensions
-          if (width < minWidth || height < minHeight) {
-            setError(`Image is too small. Minimum dimensions: ${minWidth}×${minHeight}px`);
-            return;
-          }
-          
-          // Display warning if below recommended size
-          if (width < recommendedWidth || height < recommendedHeight) {
-            setWarning(`For best quality, use an image of at least ${recommendedWidth}×${recommendedHeight}px`);
-          }
-          
-          // All checks passed, open cropper
-          setOriginalImage(result);
-          setDialogOpen(true);
-        };
         
-        img.onerror = () => {
-          setError('Failed to load image. Please try another file.');
-        };
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => {
+            const width = img.width;
+            const height = img.height;
+            setImageDimensions({ width, height });
+            resolve();
+          };
+          img.onerror = () => {
+            reject(new Error('Failed to load image'));
+          };
+          img.src = fileData;
+        });
         
-        img.src = result;
-      };
+        const { width, height } = img;
+        
+        // Check minimum dimensions - show warning but don't reject
+        // The auto-fix button in the cropper can handle this later
+        if (width < minWidth || height < minHeight) {
+          setWarning(`Image is smaller than the minimum ${minWidth}×${minHeight}px. You can resize it in the editor.`);
+        }
+        
+        // Determine if we need to compress or convert the image
+        const needsCompression = file.size > 2 * 1024 * 1024; // Compress if over 2MB
+        const qualityToUse = needsCompression ? 0.8 : 0.92;
+        
+        let processedImage = fileData;
+        
+        // Apply compression and/or format conversion if needed
+        if (needsCompression || needsFormatConversion) {
+          setCompressing(true);
+          
+          try {
+            // Compress and potentially convert the image format
+            processedImage = await compressImage(fileData, qualityToUse, 'image/jpeg');
+            
+            // Show compression result
+            const newSize = Math.round(processedImage.length / 1.37 / 1024); // Approximate Base64 to KB
+            const percentReduction = Math.round((1 - (newSize / originalFileSizeKB)) * 100);
+            
+            if (percentReduction > 0) {
+              setWarning(`Image automatically compressed by ${percentReduction}% (${originalFileSizeKB}KB → ${newSize}KB)`);
+            }
+            
+            // If format was converted, show a notice
+            if (needsFormatConversion) {
+              setWarning(prev => prev + ` Image format converted to JPEG.`);
+            }
+          } catch (compressionError) {
+            console.error('Image compression failed:', compressionError);
+            // Continue with the original image if compression fails
+            setWarning('Automatic compression failed. The original image will be used.');
+          } finally {
+            setCompressing(false);
+          }
+        }
+        
+        // Open the image cropper with the possibly compressed/converted image
+        setOriginalImage(processedImage);
+        setDialogOpen(true);
+      } catch (error) {
+        console.error('Error processing image:', error);
+        setError('Failed to process the image. Please try another file.');
+      }
     }
     
     // Reset file input
@@ -183,6 +314,22 @@ export default function ImageUploadWithCropper({
           <Info className="h-4 w-4 mr-2 text-amber-600" />
           <AlertDescription className="text-sm text-amber-700">{warning}</AlertDescription>
         </Alert>
+      )}
+      
+      {compressing && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span>Optimizing image...</span>
+            <span>{compressionProgress}%</span>
+          </div>
+          <Progress value={compressionProgress} className="h-2" />
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>Original: {originalSize}KB</span>
+            {compressedSize > 0 && (
+              <span>Compressed: {compressedSize}KB ({Math.round((1 - compressedSize/originalSize) * 100)}% smaller)</span>
+            )}
+          </div>
+        </div>
       )}
       
       {image ? (
@@ -289,6 +436,17 @@ export default function ImageUploadWithCropper({
               {imageType === 'general' && 
                 `For best quality across all devices, use images that are at least ${recommendedWidth}×${recommendedHeight} pixels.`
               }
+              
+              <div className="mt-2 pt-2 border-t border-blue-200">
+                <p className="font-medium mb-1">Automatic image enhancements:</p>
+                <ul className="list-disc pl-4 space-y-0.5">
+                  <li>Images are automatically compressed if larger than 2MB</li>
+                  <li>Non-web formats (BMP, TIFF) will be converted to JPEG</li>
+                  <li>The Auto-Fix button can resize smaller images to meet requirements</li>
+                  <li>Image adjustments like brightness and contrast are available</li>
+                  <li>Preview shows how your image will look in different contexts</li>
+                </ul>
+              </div>
             </AlertDescription>
           </Alert>
         </div>

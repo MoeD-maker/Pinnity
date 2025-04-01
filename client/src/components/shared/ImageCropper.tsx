@@ -12,8 +12,11 @@ import { Slider } from '@/components/ui/slider';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, AlertTriangle, Info, Lock } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Info, Lock, Wand2, Filter, Grid, Maximize2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ImageCropperProps {
   image: string;
@@ -48,6 +51,25 @@ export default function ImageCropper({
   const [dimensionsOK, setDimensionsOK] = useState(false);
   const [isRecommendedSize, setIsRecommendedSize] = useState(false);
   const [originalImageDimensions, setOriginalImageDimensions] = useState<{width: number, height: number} | null>(null);
+  const [activeTab, setActiveTab] = useState("crop");
+  const [brightness, setBrightness] = useState(100);
+  const [contrast, setContrast] = useState(100);
+  const [enableAutoFix, setEnableAutoFix] = useState(false);
+  const [autoFixApplied, setAutoFixApplied] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [currentView, setCurrentView] = useState<'deal-card' | 'profile' | 'full'>('full');
+  const [compressionMessage, setCompressionMessage] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Set the reference to our setCompressionMessage function
+  useEffect(() => {
+    setCompressionMessageRef = setCompressionMessage;
+    
+    // Cleanup when component unmounts
+    return () => {
+      setCompressionMessageRef = null;
+    };
+  }, []);
   
   // Get original image dimensions
   useEffect(() => {
@@ -230,9 +252,11 @@ export default function ImageCropper({
         </DialogDescription>
       </DialogHeader>
       
-      <Tabs value="crop" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="w-full">
           <TabsTrigger value="crop" className="w-full">Crop & Rotate</TabsTrigger>
+          <TabsTrigger value="enhance" className="w-full">Enhance</TabsTrigger>
+          <TabsTrigger value="preview" className="w-full">Preview</TabsTrigger>
         </TabsList>
         
         <TabsContent value="crop" className="space-y-4">
@@ -398,20 +422,345 @@ export default function ImageCropper({
             </Alert>
           )}
         </TabsContent>
+        
+        {/* Enhance Tab */}
+        <TabsContent value="enhance" className="space-y-4">
+          <div className="flex flex-col space-y-4">
+            <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
+              <div className="flex items-center mb-2">
+                <Wand2 className="h-5 w-5 text-blue-500 mr-2" />
+                <h3 className="text-blue-700 font-medium">Auto-Fix Image</h3>
+              </div>
+              <p className="text-sm text-blue-700 mb-3">
+                Let us automatically adjust your image for optimal quality and dimensions.
+              </p>
+              
+              <div className="flex flex-col space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="auto-resize" 
+                    checked={enableAutoFix} 
+                    onCheckedChange={(checked) => setEnableAutoFix(checked as boolean)}
+                  />
+                  <Label htmlFor="auto-resize" className="text-sm font-medium">
+                    Enable automatic image corrections
+                  </Label>
+                </div>
+                
+                <Button 
+                  type="button" 
+                  className="mt-2 w-full"
+                  variant="outline"
+                  onClick={async () => {
+                    if (!croppedAreaPixels) return;
+                    
+                    try {
+                      // Create a temporary cropped image first
+                      let tempImageData = await getCroppedImg(image, croppedAreaPixels, rotation);
+                      
+                      // Create a new image element to get the current dimensions
+                      const tempImg = new Image();
+                      await new Promise<void>((resolve) => {
+                        tempImg.onload = () => {
+                          // Check if resize is needed
+                          if (tempImg.width < minWidth || tempImg.height < minHeight) {
+                            // Calculate scaling factor to meet minimum requirements
+                            const scaleX = minWidth / tempImg.width;
+                            const scaleY = minHeight / tempImg.height;
+                            const scale = Math.max(scaleX, scaleY);
+                            
+                            // Create a new canvas with the required dimensions
+                            const canvas = document.createElement('canvas');
+                            canvas.width = Math.round(tempImg.width * scale);
+                            canvas.height = Math.round(tempImg.height * scale);
+                            
+                            // Draw the image at the new scale
+                            const ctx = canvas.getContext('2d');
+                            if (ctx) {
+                              ctx.drawImage(tempImg, 0, 0, canvas.width, canvas.height);
+                              tempImageData = canvas.toDataURL('image/jpeg', 0.9);
+                            }
+                          }
+                          
+                          // Update state to show the auto-fixed image
+                          setAutoFixApplied(true);
+                          setPreviewUrl(tempImageData);
+                          // Move to the preview tab
+                          setActiveTab("preview");
+                          resolve();
+                        };
+                        tempImg.src = tempImageData;
+                      });
+                    } catch (error) {
+                      console.error('Error during auto-fix:', error);
+                      alert("Failed to process the image. Please try a different adjustment.");
+                    }
+                  }}
+                  disabled={!croppedAreaPixels}
+                >
+                  <Wand2 className="h-4 w-4 mr-2" />
+                  Auto-Fix Image
+                </Button>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium">Manual Adjustments</h3>
+              
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Brightness</span>
+                  <span className="text-xs text-muted-foreground">{brightness}%</span>
+                </div>
+                <Slider
+                  value={[brightness]}
+                  min={50}
+                  max={150}
+                  step={1}
+                  onValueChange={(value) => setBrightness(value[0])}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Contrast</span>
+                  <span className="text-xs text-muted-foreground">{contrast}%</span>
+                </div>
+                <Slider
+                  value={[contrast]}
+                  min={50}
+                  max={150}
+                  step={1}
+                  onValueChange={(value) => setContrast(value[0])}
+                />
+              </div>
+              
+              <Button 
+                type="button" 
+                variant="secondary" 
+                size="sm" 
+                className="w-full mt-2"
+                onClick={async () => {
+                  if (!croppedAreaPixels) return;
+                  
+                  try {
+                    // Create a temporary cropped image first
+                    const tempImageData = await getCroppedImg(image, croppedAreaPixels, rotation);
+                    
+                    // Apply adjustments
+                    const tempImg = new Image();
+                    await new Promise<void>((resolve) => {
+                      tempImg.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = tempImg.width;
+                        canvas.height = tempImg.height;
+                        
+                        const ctx = canvas.getContext('2d');
+                        if (ctx) {
+                          // Draw the image
+                          ctx.drawImage(tempImg, 0, 0);
+                          
+                          // Apply brightness and contrast adjustments
+                          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                          const data = imageData.data;
+                          
+                          const brightnessValue = (brightness - 100) / 100;
+                          const contrastValue = (contrast - 100) / 100;
+                          
+                          for (let i = 0; i < data.length; i += 4) {
+                            // Brightness
+                            if (brightnessValue !== 0) {
+                              data[i] += brightnessValue * 255;     // R
+                              data[i + 1] += brightnessValue * 255; // G
+                              data[i + 2] += brightnessValue * 255; // B
+                            }
+                            
+                            // Contrast
+                            if (contrastValue !== 0) {
+                              data[i] = ((data[i] - 128) * (1 + contrastValue)) + 128;     // R
+                              data[i + 1] = ((data[i + 1] - 128) * (1 + contrastValue)) + 128; // G
+                              data[i + 2] = ((data[i + 2] - 128) * (1 + contrastValue)) + 128; // B
+                            }
+                          }
+                          
+                          ctx.putImageData(imageData, 0, 0);
+                          setPreviewUrl(canvas.toDataURL('image/jpeg', 0.9));
+                          setActiveTab("preview");
+                        }
+                        resolve();
+                      };
+                      tempImg.src = tempImageData;
+                    });
+                  } catch (error) {
+                    console.error('Error applying adjustments:', error);
+                    alert("Failed to apply adjustments. Please try different settings.");
+                  }
+                }}
+                disabled={!croppedAreaPixels}
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Apply Adjustments
+              </Button>
+            </div>
+          </div>
+          
+          {!dimensionsOK && (
+            <Alert className="bg-amber-50 border-amber-200 p-3">
+              <Info className="h-4 w-4 mr-2 text-amber-600" />
+              <AlertDescription className="text-sm text-amber-700">
+                Your image is smaller than the minimum required. Use Auto-Fix to automatically resize it to meet the requirements.
+              </AlertDescription>
+            </Alert>
+          )}
+        </TabsContent>
+        
+        {/* Preview Tab */}
+        <TabsContent value="preview" className="space-y-4">
+          <div className="bg-muted rounded-md p-2">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium">Preview Your Image</h3>
+              <div className="flex gap-2">
+                {imageType === 'logo' && (
+                  <>
+                    <Button
+                      size="sm"
+                      variant={currentView === 'profile' ? 'default' : 'outline'}
+                      onClick={() => setCurrentView('profile')}
+                      className="text-xs py-1 h-7"
+                    >
+                      Profile
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={currentView === 'deal-card' ? 'default' : 'outline'}
+                      onClick={() => setCurrentView('deal-card')}
+                      className="text-xs py-1 h-7"
+                    >
+                      Deal Card
+                    </Button>
+                  </>
+                )}
+                <Button
+                  size="sm"
+                  variant={currentView === 'full' ? 'default' : 'outline'}
+                  onClick={() => setCurrentView('full')}
+                  className="text-xs py-1 h-7"
+                >
+                  Full Size
+                </Button>
+              </div>
+            </div>
+            
+            <div className="flex flex-col items-center justify-center bg-gray-800 rounded-md overflow-hidden">
+              {previewUrl ? (
+                currentView === 'profile' ? (
+                  <div className="py-6 w-full flex flex-col items-center">
+                    <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white mb-2">
+                      <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                    </div>
+                    <span className="text-white text-xs mt-2">160×160px (Profile)</span>
+                  </div>
+                ) : currentView === 'deal-card' ? (
+                  <div className="p-3 bg-white rounded-md m-3 shadow-md max-w-xs">
+                    <div className="flex items-center mb-2">
+                      <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 mr-2">
+                        <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                      </div>
+                      <div className="text-sm font-medium">Business Name</div>
+                    </div>
+                    <span className="text-xs text-gray-500 mt-2">40×40px (Deal Card)</span>
+                  </div>
+                ) : (
+                  <div className="p-4 w-full flex flex-col items-center">
+                    <img 
+                      src={previewUrl} 
+                      alt="Preview" 
+                      className="max-w-full max-h-64 object-contain"
+                    />
+                    {currentDimensions && (
+                      <span className="text-white text-xs mt-2">
+                        {currentDimensions.width}×{currentDimensions.height}px (Full Size)
+                      </span>
+                    )}
+                  </div>
+                )
+              ) : (
+                <div className="py-10 text-white text-sm italic">
+                  Process your image to see a preview
+                </div>
+              )}
+            </div>
+            
+            {previewUrl && (
+              <div className="mt-3 flex justify-end">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    if (previewUrl) {
+                      onCropComplete(previewUrl);
+                    }
+                  }}
+                >
+                  Use This Image
+                </Button>
+              </div>
+            )}
+            
+            <div className="mt-4 text-xs text-muted-foreground">
+              <p className="font-medium">How your image will be used:</p>
+              {imageType === 'logo' && (
+                <ul className="list-disc pl-4 mt-1 space-y-1">
+                  <li>Profile page (160×160px)</li>
+                  <li>Deal cards (40×40px)</li>
+                  <li>Navigation bar (32×32px)</li>
+                </ul>
+              )}
+              {imageType === 'deal' && (
+                <ul className="list-disc pl-4 mt-1 space-y-1">
+                  <li>Featured carousel (800×600px)</li>
+                  <li>Deal cards (400×300px)</li>
+                  <li>Deal detail view (800×600px)</li>
+                </ul>
+              )}
+            </div>
+          </div>
+        </TabsContent>
       </Tabs>
+      
+      {/* Show compression message when relevant */}
+      {compressionMessage && (
+        <Alert className="bg-blue-50 border-blue-200 p-3 my-3">
+          <Info className="h-4 w-4 mr-2 text-blue-500" />
+          <AlertDescription className="text-xs text-blue-700">
+            {compressionMessage}
+          </AlertDescription>
+        </Alert>
+      )}
       
       <DialogFooter className="sm:justify-between">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button 
-          type="button" 
-          onClick={createCroppedImage}
-          disabled={!dimensionsOK}
-          className={!dimensionsOK ? "opacity-50 cursor-not-allowed" : ""}
-        >
-          Apply Changes
-        </Button>
+        
+        <div className="flex flex-col items-end gap-2">
+          {isSaving && (
+            <span className="text-xs text-muted-foreground animate-pulse">
+              Processing image...
+            </span>
+          )}
+          <Button 
+            type="button" 
+            onClick={async () => {
+              setIsSaving(true);
+              await createCroppedImage();
+              setIsSaving(false);
+            }}
+            disabled={!dimensionsOK || isSaving}
+            className={!dimensionsOK || isSaving ? "opacity-50 cursor-not-allowed" : ""}
+          >
+            {isSaving ? "Processing..." : "Apply Changes"}
+          </Button>
+        </div>
       </DialogFooter>
     </DialogContent>
   );
@@ -427,6 +776,9 @@ const createImage = (url: string): Promise<HTMLImageElement> =>
     image.crossOrigin = 'anonymous';
     image.src = url;
   });
+
+// Global reference to setCompressionMessage function to update UI
+let setCompressionMessageRef: ((message: string) => void) | null = null;
 
 function getRadianAngle(degreeValue: number) {
   return (degreeValue * Math.PI) / 180;
@@ -479,7 +831,52 @@ async function getCroppedImg(
   );
 
   // Return as data URL (base64 string)
-  return canvas.toDataURL('image/jpeg');
+  // Check the size of the image and compress if needed
+  let quality = 0.95; // Start with high quality
+  let result = canvas.toDataURL('image/jpeg', quality);
+  
+  // Try to estimate final file size and compress if needed
+  const estimatedSize = Math.round((result.length * 3) / 4) / 1024; // Size in KB
+  
+  if (estimatedSize > 2048) { // More than 2MB
+    console.log(`Large image detected: ~${Math.round(estimatedSize)}KB, applying compression`);
+    
+    // Update UI with compression message
+    if (setCompressionMessageRef) {
+      setCompressionMessageRef(`Optimizing image (${Math.round(estimatedSize)}KB → compressing...)`);
+    }
+    
+    // Apply progressive compression until file size is acceptable
+    let currentQuality = 0.8;
+    let attempts = 0;
+    const maxAttempts = 5;
+    
+    while (currentQuality >= 0.5 && attempts < maxAttempts) {
+      result = canvas.toDataURL('image/jpeg', currentQuality);
+      const newSize = Math.round((result.length * 3) / 4) / 1024;
+      
+      // Update UI with progress
+      if (setCompressionMessageRef) {
+        setCompressionMessageRef(`Optimizing image (${Math.round(estimatedSize)}KB → ${Math.round(newSize)}KB)`);
+      }
+      
+      if (newSize <= 2048) {
+        console.log(`Compressed image from ~${Math.round(estimatedSize)}KB to ~${Math.round(newSize)}KB with quality ${currentQuality.toFixed(2)}`);
+        
+        // Final UI update with percentage reduction
+        if (setCompressionMessageRef) {
+          setCompressionMessageRef(`Image optimized: ${Math.round(estimatedSize)}KB → ${Math.round(newSize)}KB (${Math.round((1 - newSize/estimatedSize) * 100)}% smaller)`);
+        }
+        break;
+      }
+      
+      // Reduce quality for next iteration
+      currentQuality -= 0.1;
+      attempts++;
+    }
+  }
+  
+  return result;
 }
 
 // Fallback method that uses a different approach to crop the image
@@ -539,8 +936,52 @@ async function getFallbackCroppedImg(
       ctx.restore();
     }
     
-    // Return the cropped image as data URL
-    return canvas.toDataURL('image/jpeg', 0.92);
+    // Return the cropped image as data URL with compression if needed
+    let quality = 0.92;
+    let result = canvas.toDataURL('image/jpeg', quality);
+    
+    // Try to estimate final file size and compress if needed
+    const estimatedSize = Math.round((result.length * 3) / 4) / 1024; // Size in KB
+    
+    if (estimatedSize > 2048) { // More than 2MB
+      console.log(`Large image detected in fallback method: ~${Math.round(estimatedSize)}KB, applying compression`);
+      
+      // Update UI with compression message
+      if (setCompressionMessageRef) {
+        setCompressionMessageRef(`Optimizing image (fallback method) (${Math.round(estimatedSize)}KB → compressing...)`);
+      }
+      
+      // Apply progressive compression until file size is acceptable
+      let currentQuality = 0.8;
+      let attempts = 0;
+      const maxAttempts = 5;
+      
+      while (currentQuality >= 0.5 && attempts < maxAttempts) {
+        result = canvas.toDataURL('image/jpeg', currentQuality);
+        const newSize = Math.round((result.length * 3) / 4) / 1024;
+        
+        // Update UI with progress
+        if (setCompressionMessageRef) {
+          setCompressionMessageRef(`Optimizing image (fallback) (${Math.round(estimatedSize)}KB → ${Math.round(newSize)}KB)`);
+        }
+        
+        if (newSize <= 2048) {
+          console.log(`Compressed image from ~${Math.round(estimatedSize)}KB to ~${Math.round(newSize)}KB with quality ${currentQuality.toFixed(2)}`);
+          
+          // Final UI update with percentage reduction
+          if (setCompressionMessageRef) {
+            setCompressionMessageRef(`Image optimized (fallback): ${Math.round(estimatedSize)}KB → ${Math.round(newSize)}KB (${Math.round((1 - newSize/estimatedSize) * 100)}% smaller)`);
+          }
+          break;
+        }
+        
+        // Reduce quality for next iteration
+        currentQuality -= 0.1;
+        attempts++;
+      }
+    }
+    
+    return result;
   } catch (err) {
     console.error('Error in fallback crop method:', err);
     throw err;

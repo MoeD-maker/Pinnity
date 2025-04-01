@@ -29,13 +29,25 @@ const FILE_CONFIGS: { [key: string]: FileConfig } = {
   'jpg': {
     extensions: ['jpg', 'jpeg'],
     mimeTypes: ['image/jpeg'],
-    maxSize: 3 * 1024 * 1024, // 3MB for JPEGs
+    maxSize: 5 * 1024 * 1024, // 5MB for JPEGs
     category: 'image'
   },
   'png': {
     extensions: ['png'],
     mimeTypes: ['image/png'],
-    maxSize: 3 * 1024 * 1024, // 3MB for PNGs
+    maxSize: 5 * 1024 * 1024, // 5MB for PNGs
+    category: 'image'
+  },
+  'webp': {
+    extensions: ['webp'],
+    mimeTypes: ['image/webp'],
+    maxSize: 5 * 1024 * 1024, // 5MB for WebP
+    category: 'image'
+  },
+  'gif': {
+    extensions: ['gif'],
+    mimeTypes: ['image/gif'],
+    maxSize: 5 * 1024 * 1024, // 5MB for GIFs
     category: 'image'
   },
   'pdf': {
