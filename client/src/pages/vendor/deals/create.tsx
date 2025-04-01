@@ -923,7 +923,7 @@ export default function CreateDealPage() {
                           const compressAndSetImage = async (imageData: string) => {
                             try {
                               // Create a new image element to draw from
-                              const img = new Image();
+                              const img = new Image() as HTMLImageElement;
                               img.onload = () => {
                                 // Get dimensions for our UI
                                 setImageDimensions({ 

@@ -34,7 +34,7 @@ export interface ValidationOptions {
 const defaultOptions: ValidationOptions = {
   trimStrings: true,
   sanitizeInputs: true,
-  maxInputSize: 10000,
+  maxInputSize: 5000000, // Increased to 5MB to accommodate base64 encoded images
   logErrors: true
 };
 

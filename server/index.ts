@@ -46,14 +46,14 @@ app.set('trust proxy', 1);
 
 // Secure parsing of JSON payloads with size limits
 app.use(express.json({ 
-  limit: '1mb',  // Prevent large payload attacks
+  limit: '5mb',  // Increased to handle image uploads (still limited by client validation)
   strict: true   // Reject payloads that are not valid JSON
 }));
 
 // Process form data with appropriate limits
 app.use(express.urlencoded({ 
   extended: false,
-  limit: '1mb'   // Prevent large payload attacks
+  limit: '5mb'   // Increased to handle image uploads (still limited by client validation)
 }));
 
 // Get cookie secret from environment with validation
