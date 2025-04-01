@@ -214,22 +214,40 @@ export default function ImageUploadWithCropper({
           </div>
           
           {imageDimensions && (
-            <div className="flex items-center text-xs text-muted-foreground">
-              <span className="inline-flex items-center border px-2 py-1 rounded bg-muted/30">
+            <div className="flex items-center text-xs text-muted-foreground mt-2">
+              <span className={`inline-flex items-center px-2 py-1 rounded ${
+                imageDimensions.width >= recommendedWidth && imageDimensions.height >= recommendedHeight 
+                  ? "bg-green-50 text-green-700 border border-green-200" 
+                  : imageDimensions.width >= minWidth && imageDimensions.height >= minHeight
+                    ? "bg-amber-50 text-amber-700 border border-amber-200"
+                    : "bg-red-50 text-red-700 border border-red-200"
+              }`}>
                 {imageDimensions.width} × {imageDimensions.height}px
               </span>
-              {imageType === 'logo' && (
-                <span className="ml-2">
-                  Logo will display at various sizes across the app
-                </span>
-              )}
-              {imageType === 'deal' && (
-                <span className="ml-2">
-                  Deal images are displayed in feature carousels and listing cards
-                </span>
-              )}
+              <span className="ml-2">
+                {imageType === 'logo' && "Logo will display at various sizes across the app"}
+                {imageType === 'deal' && "Deal images are displayed in feature carousels and listing cards"}
+                {imageType === 'general' && "Image will be displayed as shown"}
+              </span>
             </div>
           )}
+          
+          <div className="text-xs text-muted-foreground mt-1">
+            <div className="flex items-center gap-1">
+              <div className={`w-2 h-2 rounded-full ${
+                imageDimensions && imageDimensions.width >= minWidth && imageDimensions.height >= minHeight 
+                  ? "bg-green-600" : "bg-gray-300"
+              }`}></div>
+              <span>Minimum size: {minWidth}×{minHeight}px</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className={`w-2 h-2 rounded-full ${
+                imageDimensions && imageDimensions.width >= recommendedWidth && imageDimensions.height >= recommendedHeight 
+                  ? "bg-green-600" : "bg-gray-300"
+              }`}></div>
+              <span>Recommended size: {recommendedWidth}×{recommendedHeight}px</span>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="space-y-4">
