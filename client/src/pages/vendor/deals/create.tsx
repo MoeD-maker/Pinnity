@@ -917,17 +917,52 @@ export default function CreateDealPage() {
                       onImageChange={(image) => {
                         if (image) {
                           setPreviewUrl(image);
-                          form.setValue("imageUrl", image);
                           
-                          // Create an image to get dimensions
-                          const img = new Image();
-                          img.onload = () => {
-                            setImageDimensions({ 
-                              width: img.width, 
-                              height: img.height 
-                            });
+                          // Compress the image before sending it to the API
+                          // This helps prevent "Payload too large" errors
+                          const compressAndSetImage = async (imageData: string) => {
+                            try {
+                              // Create a new image element to draw from
+                              const img = new Image();
+                              img.onload = () => {
+                                // Get dimensions for our UI
+                                setImageDimensions({ 
+                                  width: img.width, 
+                                  height: img.height 
+                                });
+                                
+                                // Create a canvas to compress the image
+                                const canvas = document.createElement('canvas');
+                                const ctx = canvas.getContext('2d');
+                                
+                                // Set canvas size to the image dimensions
+                                canvas.width = img.width;
+                                canvas.height = img.height;
+                                
+                                // Draw the image on the canvas
+                                if (ctx) {
+                                  ctx.drawImage(img, 0, 0, img.width, img.height);
+                                  
+                                  // Convert to compressed JPEG at reduced quality
+                                  const compressedImage = canvas.toDataURL('image/jpeg', 0.6);
+                                  
+                                  // The image should now be much smaller in size
+                                  console.log('Image compressed for API submission');
+                                  
+                                  // Store the compressed version for API submission
+                                  form.setValue("imageUrl", compressedImage);
+                                }
+                              };
+                              img.src = imageData;
+                            } catch (error) {
+                              console.error("Failed to compress image:", error);
+                              // Fall back to original image if compression fails
+                              form.setValue("imageUrl", image);
+                            }
                           };
-                          img.src = image;
+                          
+                          // Compress the image
+                          compressAndSetImage(image);
                         } else {
                           setPreviewUrl('');
                           form.setValue("imageUrl", '');

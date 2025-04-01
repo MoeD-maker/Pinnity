@@ -138,7 +138,7 @@ export default function VendorProfile() {
     fetchBusinessData();
   }, [user, form, toast]);
   
-  // Handle processed image after cropping with enhanced error handling
+  // Handle processed image after cropping with enhanced error handling and compression
   const handleProcessedImage = (croppedImageData: string | null) => {
     if (croppedImageData) {
       try {
@@ -150,24 +150,76 @@ export default function VendorProfile() {
         // Set the preview immediately for better UX
         setPreviewUrl(croppedImageData);
         
-        // Use a more reliable method to convert base64 to a File object
-        const base64Response = croppedImageData.split(',')[1];
-        if (!base64Response) {
-          throw new Error('Invalid base64 data');
-        }
+        // Compress the image to solve "payload too large" issues
+        const compressImage = async (imageData: string) => {
+          try {
+            // Create a new image for compression
+            const img = new Image();
+            img.onload = () => {
+              // Create a canvas to draw and compress the image
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              
+              // Set canvas size to the image dimensions
+              canvas.width = img.width;
+              canvas.height = img.height;
+              
+              if (ctx) {
+                // Draw the image onto the canvas
+                ctx.drawImage(img, 0, 0, img.width, img.height);
+                
+                // Compress the image to JPEG with moderate quality
+                const compressedImage = canvas.toDataURL('image/jpeg', 0.7);
+                
+                // Convert compressed base64 to a File object
+                const base64Response = compressedImage.split(',')[1];
+                if (!base64Response) {
+                  throw new Error('Invalid compressed base64 data');
+                }
+                
+                const binaryString = window.atob(base64Response);
+                const bytes = new Uint8Array(binaryString.length);
+                
+                for (let i = 0; i < binaryString.length; i++) {
+                  bytes[i] = binaryString.charCodeAt(i);
+                }
+                
+                const blob = new Blob([bytes], { type: 'image/jpeg' });
+                const file = new File([blob], "logo.jpg", { type: "image/jpeg" });
+                setSelectedFile(file);
+                
+                console.log("Successfully processed and compressed image, size:", file.size, "bytes");
+              }
+            };
+            img.src = imageData;
+          } catch (err) {
+            console.error("Error compressing image:", err);
+            // Fall back to the original method if compression fails
+            fallbackProcessing(imageData);
+          }
+        };
         
-        const binaryString = window.atob(base64Response);
-        const bytes = new Uint8Array(binaryString.length);
+        // Fallback method if compression fails
+        const fallbackProcessing = (imageData: string) => {
+          const base64Response = imageData.split(',')[1];
+          if (!base64Response) {
+            throw new Error('Invalid base64 data');
+          }
+          
+          const binaryString = window.atob(base64Response);
+          const bytes = new Uint8Array(binaryString.length);
+          
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          
+          const blob = new Blob([bytes], { type: 'image/jpeg' });
+          const file = new File([blob], "logo.jpg", { type: "image/jpeg" });
+          setSelectedFile(file);
+        };
         
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        
-        const blob = new Blob([bytes], { type: 'image/jpeg' });
-        const file = new File([blob], "logo.jpg", { type: "image/jpeg" });
-        setSelectedFile(file);
-        
-        console.log("Successfully processed image, size:", file.size, "bytes");
+        // Start the compression process
+        compressImage(croppedImageData);
       } catch (err) {
         console.error("Error processing cropped image:", err);
         toast({
