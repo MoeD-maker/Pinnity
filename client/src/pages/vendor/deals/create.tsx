@@ -40,6 +40,7 @@ import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import ImageUploadWithCropper from '@/components/shared/ImageUploadWithCropper';
 
 // Define deal categories that match those in consumer side
 const CATEGORIES = [
@@ -910,134 +911,134 @@ export default function CreateDealPage() {
                 <h3 className="font-medium">Deal Image</h3>
                 
                 <div className="border rounded-lg p-4">
-                  <div 
-                    className={cn(
-                      "relative w-full aspect-[4/3] rounded-md overflow-hidden border-2 border-dashed",
-                      previewUrl ? "border-transparent" : "border-gray-300"
-                    )}
-                    onMouseEnter={() => setShowImageHover(true)}
-                    onMouseLeave={() => setShowImageHover(false)}
-                  >
-                    {previewUrl ? (
-                      <>
-                        <img 
-                          src={previewUrl} 
-                          alt="Deal preview" 
-                          className="w-full h-full object-cover" 
-                        />
-                        
-                        {/* Image dimensions indicator */}
-                        {imageDimensions && (
-                          <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                            {imageDimensions.width} × {imageDimensions.height}px
-                          </div>
-                        )}
-                        
-                        {/* Overlay on hover */}
-                        {showImageHover && (
-                          <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2">
-                            <Button onClick={triggerFileInput} size="sm" variant="secondary">
-                              <ImageIcon className="h-4 w-4 mr-2" /> Change Image
-                            </Button>
-                          </div>
-                        )}
-                        
-                        {/* Business logo if enabled */}
-                        {useLogo && (
-                          <div className={cn(
-                            "absolute w-16 h-16 bg-white/90 rounded-md flex items-center justify-center p-2",
-                            logoPosition === 'top-left' && "top-2 left-2",
-                            logoPosition === 'top-right' && "top-2 right-2",
-                            logoPosition === 'bottom-left' && "bottom-2 left-2",
-                            logoPosition === 'bottom-right' && "bottom-2 right-2",
-                          )}>
-                            <img 
-                              src="https://images.unsplash.com/photo-1556740738-b6a63e27c4df?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80" 
-                              alt="Business logo" 
-                              className="max-w-full max-h-full object-contain" 
-                            />
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
-                        <ImageIcon className="h-10 w-10 mb-2" />
-                        <p className="text-sm font-medium">Upload Deal Image</p>
-                        <p className="text-xs text-center mt-1">Recommended size: 800 × 600 pixels (4:3)</p>
-                        <p className="text-xs text-center">Minimum width: 600px</p>
-                        <Button onClick={triggerFileInput} size="sm" variant="secondary" className="mt-4">
-                          Select Image
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Hidden file input */}
-                  <input 
-                    type="file" 
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                  />
-                  
-                  {/* Dimension warning */}
-                  {dimensionsWarning && (
-                    <Alert className="mt-2 bg-amber-50 border-amber-200">
-                      <AlertTriangle className="h-4 w-4 text-amber-500" />
-                      <AlertDescription className="text-amber-700 text-xs">
-                        {dimensionsWarning}
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                  
-                  {/* Logo toggle */}
-                  <div className="mt-4 flex flex-col space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="use-logo"
-                        checked={useLogo}
-                        onCheckedChange={toggleUseLogo}
-                      />
-                      <Label htmlFor="use-logo" className="text-sm">Add business logo to image</Label>
-                    </div>
+                  {/* Enhanced image upload with cropper */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <ImageUploadWithCropper
+                      onImageChange={(image) => {
+                        if (image) {
+                          setPreviewUrl(image);
+                          form.setValue("imageUrl", image);
+                          
+                          // Create an image to get dimensions
+                          const img = new Image();
+                          img.onload = () => {
+                            setImageDimensions({ 
+                              width: img.width, 
+                              height: img.height 
+                            });
+                          };
+                          img.src = image;
+                        } else {
+                          setPreviewUrl('');
+                          form.setValue("imageUrl", '');
+                          setImageDimensions(null);
+                        }
+                      }}
+                      currentImage={previewUrl}
+                      aspectRatio={4/3}
+                      buttonText="Upload Deal Image"
+                      className="w-full"
+                      imageClassName="w-full aspect-[4/3] object-cover rounded-md"
+                      maxSizeKB={5000}
+                      minWidth={600}
+                      minHeight={450}
+                      recommendedWidth={800}
+                      recommendedHeight={600}
+                      imageType="deal"
+                      cropShape="rect"
+                    />
                     
-                    {useLogo && (
-                      <div className="flex flex-wrap gap-2 ml-6 mt-1">
-                        <Button 
-                          size="sm" 
-                          variant={logoPosition === 'top-left' ? 'default' : 'outline'} 
-                          className="h-8 text-xs"
-                          onClick={() => handleLogoPositionChange('top-left')}
-                        >
-                          Top Left
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant={logoPosition === 'top-right' ? 'default' : 'outline'} 
-                          className="h-8 text-xs"
-                          onClick={() => handleLogoPositionChange('top-right')}
-                        >
-                          Top Right
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant={logoPosition === 'bottom-left' ? 'default' : 'outline'} 
-                          className="h-8 text-xs"
-                          onClick={() => handleLogoPositionChange('bottom-left')}
-                        >
-                          Bottom Left
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant={logoPosition === 'bottom-right' ? 'default' : 'outline'} 
-                          className="h-8 text-xs"
-                          onClick={() => handleLogoPositionChange('bottom-right')}
-                        >
-                          Bottom Right
-                        </Button>
-                      </div>
-                    )}
+                    <div className="space-y-4">
+                      {/* Logo overlay options */}
+                      {previewUrl && (
+                        <div className="border rounded-md p-4">
+                          <h4 className="font-medium text-sm mb-3">Business Logo Options</h4>
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center space-x-2">
+                              <Switch id="use-logo" checked={useLogo} onCheckedChange={toggleUseLogo} />
+                              <Label htmlFor="use-logo" className="text-sm">Add business logo to image</Label>
+                            </div>
+                          </div>
+                          
+                          {useLogo && (
+                            <div className="space-y-3">
+                              <p className="text-sm">Logo Position:</p>
+                              <div className="grid grid-cols-2 gap-2">
+                                <Button
+                                  size="sm"
+                                  variant={logoPosition === 'top-left' ? 'default' : 'outline'}
+                                  className="h-10 w-full"
+                                  onClick={() => handleLogoPositionChange('top-left')}
+                                >
+                                  Top Left ↖
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant={logoPosition === 'top-right' ? 'default' : 'outline'}
+                                  className="h-10 w-full"
+                                  onClick={() => handleLogoPositionChange('top-right')}
+                                >
+                                  Top Right ↗
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant={logoPosition === 'bottom-left' ? 'default' : 'outline'}
+                                  className="h-10 w-full"
+                                  onClick={() => handleLogoPositionChange('bottom-left')}
+                                >
+                                  Bottom Left ↙
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant={logoPosition === 'bottom-right' ? 'default' : 'outline'}
+                                  className="h-10 w-full"
+                                  onClick={() => handleLogoPositionChange('bottom-right')}
+                                >
+                                  Bottom Right ↘
+                                </Button>
+                              </div>
+                              
+                              {/* Preview with logo overlay */}
+                              {previewUrl && useLogo && business?.logoUrl && (
+                                <div className="relative mt-3 border rounded-md overflow-hidden aspect-[4/3]">
+                                  <img 
+                                    src={previewUrl} 
+                                    alt="Deal preview with logo" 
+                                    className="w-full h-full object-cover"
+                                  />
+                                  <div className={cn(
+                                    "absolute w-16 h-16 bg-white/90 rounded-md flex items-center justify-center p-2",
+                                    logoPosition === 'top-left' && "top-2 left-2",
+                                    logoPosition === 'top-right' && "top-2 right-2",
+                                    logoPosition === 'bottom-left' && "bottom-2 left-2",
+                                    logoPosition === 'bottom-right' && "bottom-2 right-2"
+                                  )}>
+                                    <img 
+                                      src={business.logoUrl} 
+                                      alt={business.name} 
+                                      className="w-full h-full object-contain"
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      <Alert className="bg-blue-50 border-blue-200">
+                        <Info className="h-4 w-4 mr-2 text-blue-500" />
+                        <AlertDescription className="text-xs text-blue-700">
+                          <strong>Image Tips:</strong>
+                          <ul className="list-disc pl-4 mt-1 space-y-1">
+                            <li>Use high-quality, eye-catching images that showcase your deal</li>
+                            <li>Landscape format (4:3 ratio) works best for featured promotions</li>
+                            <li>Avoid excessive text in the image</li>
+                            <li>Maintain clear branding that aligns with your business</li>
+                          </ul>
+                        </AlertDescription>
+                      </Alert>
+                    </div>
                   </div>
                 </div>
               </div>

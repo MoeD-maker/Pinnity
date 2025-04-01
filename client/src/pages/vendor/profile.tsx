@@ -388,6 +388,12 @@ export default function VendorProfile() {
                       className="w-full"
                       imageClassName="w-full h-40 object-cover rounded-md"
                       maxSizeKB={5000}
+                      minWidth={300}
+                      minHeight={300}
+                      recommendedWidth={500}
+                      recommendedHeight={500}
+                      imageType="logo"
+                      cropShape="rect"
                     />
                     
                     <div className="space-y-2">

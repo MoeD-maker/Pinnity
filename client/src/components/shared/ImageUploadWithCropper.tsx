@@ -1,8 +1,9 @@
 import React, { useState, useRef, ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import ImageCropper from './ImageCropper';
-import { X, Upload, Edit2 } from 'lucide-react';
+import { X, Upload, Edit2, AlertCircle, Info } from 'lucide-react';
 
 interface ImageUploadWithCropperProps {
   onImageChange: (image: string | null) => void;
@@ -13,6 +14,11 @@ interface ImageUploadWithCropperProps {
   className?: string;
   imageClassName?: string;
   maxSizeKB?: number;
+  minWidth?: number;
+  minHeight?: number;
+  recommendedWidth?: number;
+  recommendedHeight?: number;
+  imageType?: 'logo' | 'deal' | 'general';
 }
 
 export default function ImageUploadWithCropper({
@@ -23,16 +29,25 @@ export default function ImageUploadWithCropper({
   cropShape = 'rect',
   className = '',
   imageClassName = 'w-40 h-40 object-cover',
-  maxSizeKB = 5000 // 5MB default
+  maxSizeKB = 5000, // 5MB default
+  minWidth = 300,
+  minHeight = 300,
+  recommendedWidth = 500,
+  recommendedHeight = 500,
+  imageType = 'general'
 }: ImageUploadWithCropperProps) {
   const [image, setImage] = useState<string | null>(currentImage);
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [error, setError] = useState('');
+  const [warning, setWarning] = useState('');
+  const [imageDimensions, setImageDimensions] = useState<{width: number, height: number} | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     setError('');
+    setWarning('');
+    setImageDimensions(null);
     
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
@@ -56,8 +71,35 @@ export default function ImageUploadWithCropper({
       reader.readAsDataURL(file);
       reader.onload = () => {
         const result = reader.result as string;
-        setOriginalImage(result);
-        setDialogOpen(true);
+        
+        // Check image dimensions
+        const img = new Image();
+        img.onload = () => {
+          const width = img.width;
+          const height = img.height;
+          setImageDimensions({ width, height });
+          
+          // Check minimum dimensions
+          if (width < minWidth || height < minHeight) {
+            setError(`Image is too small. Minimum dimensions: ${minWidth}×${minHeight}px`);
+            return;
+          }
+          
+          // Display warning if below recommended size
+          if (width < recommendedWidth || height < recommendedHeight) {
+            setWarning(`For best quality, use an image of at least ${recommendedWidth}×${recommendedHeight}px`);
+          }
+          
+          // All checks passed, open cropper
+          setOriginalImage(result);
+          setDialogOpen(true);
+        };
+        
+        img.onerror = () => {
+          setError('Failed to load image. Please try another file.');
+        };
+        
+        img.src = result;
       };
     }
     
@@ -107,47 +149,99 @@ export default function ImageUploadWithCropper({
       />
       
       {error && (
-        <div className="text-sm text-red-500 font-medium">{error}</div>
+        <Alert variant="destructive" className="p-3">
+          <AlertCircle className="h-4 w-4 mr-2" />
+          <AlertDescription className="text-sm">{error}</AlertDescription>
+        </Alert>
+      )}
+      
+      {warning && (
+        <Alert className="bg-amber-50 border-amber-200 p-3">
+          <Info className="h-4 w-4 mr-2 text-amber-600" />
+          <AlertDescription className="text-sm text-amber-700">{warning}</AlertDescription>
+        </Alert>
       )}
       
       {image ? (
-        <div className="relative group">
-          <img 
-            src={image} 
-            alt="Uploaded" 
-            className={`${imageClassName} rounded-md`} 
-          />
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
-            <Button 
-              size="icon" 
-              variant="secondary"
-              onClick={editExistingImage}
-              className="h-8 w-8"
-            >
-              <Edit2 className="h-4 w-4" />
-            </Button>
-            <Button 
-              size="icon" 
-              variant="destructive"
-              onClick={removeImage}
-              className="h-8 w-8"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+        <div className="space-y-2">
+          <div className="relative group">
+            <img 
+              src={image} 
+              alt="Uploaded" 
+              className={`${imageClassName} rounded-md`} 
+            />
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+              <Button 
+                size="icon" 
+                variant="secondary"
+                onClick={editExistingImage}
+                className="h-8 w-8"
+              >
+                <Edit2 className="h-4 w-4" />
+              </Button>
+              <Button 
+                size="icon" 
+                variant="destructive"
+                onClick={removeImage}
+                className="h-8 w-8"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
+          
+          {imageDimensions && (
+            <div className="flex items-center text-xs text-muted-foreground">
+              <span className="inline-flex items-center border px-2 py-1 rounded bg-muted/30">
+                {imageDimensions.width} × {imageDimensions.height}px
+              </span>
+              {imageType === 'logo' && (
+                <span className="ml-2">
+                  Logo will display at various sizes across the app
+                </span>
+              )}
+              {imageType === 'deal' && (
+                <span className="ml-2">
+                  Deal images are displayed in feature carousels and listing cards
+                </span>
+              )}
+            </div>
+          )}
         </div>
       ) : (
-        <Button 
-          onClick={triggerFileInput} 
-          className="w-full h-40 border-dashed border-2 flex flex-col items-center justify-center bg-muted/30 hover:bg-muted/50"
-          variant="outline"
-        >
-          <Upload className="h-8 w-8 mb-2 text-muted-foreground" />
-          <span className="text-sm font-medium">{buttonText}</span>
-          <span className="text-xs text-muted-foreground mt-1">
-            JPEG, PNG, GIF or WEBP (max. {maxSizeKB / 1000}MB)
-          </span>
-        </Button>
+        <div className="space-y-4">
+          <Button 
+            onClick={triggerFileInput} 
+            className="w-full h-40 border-dashed border-2 flex flex-col items-center justify-center bg-muted/30 hover:bg-muted/50"
+            variant="outline"
+          >
+            <Upload className="h-8 w-8 mb-2 text-muted-foreground" />
+            <span className="text-sm font-medium">{buttonText}</span>
+            <span className="text-xs text-muted-foreground mt-1">
+              JPEG, PNG, GIF or WEBP (max. {maxSizeKB / 1000}MB)
+            </span>
+            <span className="text-xs text-muted-foreground mt-1">
+              {imageType === 'logo' ? 'Square format recommended (1:1 ratio)' : 
+               imageType === 'deal' ? 'Landscape format recommended (16:9 or 4:3 ratio)' : 
+               `Recommended size: ${recommendedWidth}×${recommendedHeight}px`}
+            </span>
+          </Button>
+          
+          <Alert className="bg-blue-50 border-blue-200 p-3">
+            <Info className="h-4 w-4 mr-2 text-blue-500" />
+            <AlertDescription className="text-xs text-blue-700">
+              {imageType === 'logo' && 
+                'Your business logo will be displayed across the app in different sizes. For best results, upload a square logo (1:1 aspect ratio) with a recommended size of 500×500 pixels or larger.'
+              }
+              {imageType === 'deal' && 
+                'Deal images should be clear and attention-grabbing. Landscape format (16:9 or 4:3) works best for featured promotions.'
+              }
+              {imageType === 'general' && 
+                `For best quality across all devices, use images that are at least ${recommendedWidth}×${recommendedHeight} pixels.`
+              }
+            </AlertDescription>
+          </Alert>
+        </div>
       )}
       
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
