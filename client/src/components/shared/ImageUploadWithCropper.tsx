@@ -110,9 +110,32 @@ export default function ImageUploadWithCropper({
   };
 
   const handleCropComplete = (croppedImage: string) => {
+    // When crop is complete, set the new image
     setImage(croppedImage);
     setDialogOpen(false);
-    onImageChange(croppedImage);
+    
+    // Create an image to get the final dimensions after cropping
+    const img = new Image();
+    img.onload = () => {
+      setImageDimensions({ width: img.width, height: img.height });
+      
+      // Verify that the cropped image meets minimum dimensions
+      if (img.width < minWidth || img.height < minHeight) {
+        setError(`Cropped image is too small (${img.width}×${img.height}px). Minimum dimensions: ${minWidth}×${minHeight}px`);
+        return;
+      }
+      
+      // Check if below recommended size
+      if (img.width < recommendedWidth || img.height < recommendedHeight) {
+        setWarning(`Image size (${img.width}×${img.height}px) is smaller than recommended (${recommendedWidth}×${recommendedHeight}px)`);
+      } else {
+        setWarning('');
+      }
+      
+      // Pass the image to the parent component
+      onImageChange(croppedImage);
+    };
+    img.src = croppedImage;
   };
 
   const handleCropCancel = () => {
@@ -221,9 +244,18 @@ export default function ImageUploadWithCropper({
               JPEG, PNG, GIF or WEBP (max. {maxSizeKB / 1000}MB)
             </span>
             <span className="text-xs text-muted-foreground mt-1">
-              {imageType === 'logo' ? 'Square format recommended (1:1 ratio)' : 
-               imageType === 'deal' ? 'Landscape format recommended (16:9 or 4:3 ratio)' : 
-               `Recommended size: ${recommendedWidth}×${recommendedHeight}px`}
+              {imageType === 'logo' 
+                ? `Square format (1:1) - ${recommendedWidth}×${recommendedHeight}px recommended` 
+                : imageType === 'deal' 
+                ? `Landscape format (4:3) - ${recommendedWidth}×${recommendedHeight}px recommended` 
+                : `Recommended size: ${recommendedWidth}×${recommendedHeight}px`}
+            </span>
+            <span className="text-xs font-medium text-amber-600 mt-1">
+              {imageType === 'logo' 
+                ? `Minimum size: ${minWidth}×${minHeight}px` 
+                : imageType === 'deal' 
+                ? `Minimum size: ${minWidth}×${minHeight}px` 
+                : `Minimum size: ${minWidth}×${minHeight}px`}
             </span>
           </Button>
           
@@ -231,10 +263,10 @@ export default function ImageUploadWithCropper({
             <Info className="h-4 w-4 mr-2 text-blue-500" />
             <AlertDescription className="text-xs text-blue-700">
               {imageType === 'logo' && 
-                'Your business logo will be displayed across the app in different sizes. For best results, upload a square logo (1:1 aspect ratio) with a recommended size of 500×500 pixels or larger.'
+                `Your business logo must be square (1:1 ratio) and at least ${minWidth}×${minHeight}px. For best quality across all app locations, we recommend ${recommendedWidth}×${recommendedHeight}px or larger. The logo will appear in profile pages, deal cards, and navigation bars.`
               }
               {imageType === 'deal' && 
-                'Deal images should be clear and attention-grabbing. Landscape format (16:9 or 4:3) works best for featured promotions.'
+                `Deal images must be in landscape format (4:3 ratio) and at least ${minWidth}×${minHeight}px. For best quality in featured promotions and deal detail pages, we recommend ${recommendedWidth}×${recommendedHeight}px or larger.`
               }
               {imageType === 'general' && 
                 `For best quality across all devices, use images that are at least ${recommendedWidth}×${recommendedHeight} pixels.`
@@ -252,6 +284,11 @@ export default function ImageUploadWithCropper({
             onCropComplete={handleCropComplete}
             onCancel={handleCropCancel}
             cropShape={cropShape}
+            minWidth={minWidth}
+            minHeight={minHeight}
+            recommendedWidth={recommendedWidth}
+            recommendedHeight={recommendedHeight}
+            imageType={imageType}
           />
         )}
       </Dialog>

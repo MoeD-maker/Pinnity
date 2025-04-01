@@ -1,0 +1,41 @@
+I need you to fix the image upload and cropping functionality for vendor profile and deal images. The current implementation in ImageUploadWithCropper.tsx and ImageCropper.tsx has several issues that need addressing:
+
+## Key Issues:
+
+1. **Aspect Ratio Not Enforced**: The current implementation allows vendors to select different aspect ratios in the cropper, but we need to strictly enforce:
+   - 1:1 square format for business logos
+   - 4:3 landscape format for deal images
+
+2. **Final Dimensions Not Validated**: While there's initial validation on upload, the cropped output isn't validated to ensure it meets minimum pixel dimensions.
+
+3. **Unclear Visual Guidance**: Vendors need clearer visual guides to understand the exact dimensions required.
+
+## Required Changes:
+
+1. **ImageCropper.tsx**: 
+   - Remove the "Aspect Ratio" tab completely OR make it read-only to show the required ratio
+   - Lock the aspect ratio based on the `cropShape` and `aspectRatio` props passed in
+   - Add pixel dimension indicators showing the cropped image's current pixel size
+   - Add prominent warnings if the cropped area will be below minimum requirements
+
+2. **ImageUploadWithCropper.tsx**:
+   - Validate the final cropped image dimensions before accepting
+   - For business logos: Enforce MINIMUM 300×300px, recommend 500×500px
+   - For deal images: Enforce MINIMUM 600×450px, recommend 800×600px
+   - Add clear visual indicators showing the pixel dimensions of the current crop
+   - Prevent form submission if images don't meet the requirements
+
+3. **Visual Enhancements**:
+   - Add a dimension readout showing "Current: 450×337px" during cropping
+   - Use color coding (red/green) to indicate when dimensions meet requirements
+   - Add example thumbnails showing how images will appear in different app locations
+
+## Implementation Guidelines:
+
+1. For business logos, disable all aspect ratio options except 1:1
+2. For deal images, disable all aspect ratio options except 4:3
+3. Calculate and display the actual pixel dimensions of the cropped area in real-time
+4. Add a clear indicator in the cropper UI showing "MINIMUM SIZE" vs "RECOMMENDED SIZE"
+5. Block the "Apply Changes" button if the cropped area is below the minimum pixel dimensions
+
+The final solution should ensure that all uploaded images strictly adhere to our size and aspect ratio requirements without exception.

@@ -1,10 +1,18 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import Cropper from 'react-easy-crop';
-import { Area } from 'react-easy-crop/types';
+// Define the Area type locally to avoid import issues
+interface Area {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { CheckCircle2, AlertTriangle, Info, Lock } from 'lucide-react';
 
 interface ImageCropperProps {
   image: string;
@@ -12,6 +20,11 @@ interface ImageCropperProps {
   onCropComplete: (croppedImageUrl: string) => void;
   onCancel: () => void;
   cropShape?: 'rect' | 'round';
+  minWidth?: number;
+  minHeight?: number;
+  recommendedWidth?: number;
+  recommendedHeight?: number;
+  imageType?: 'logo' | 'deal' | 'general';
 }
 
 export default function ImageCropper({ 
@@ -19,25 +32,52 @@ export default function ImageCropper({
   aspectRatio = 1, 
   onCropComplete, 
   onCancel,
-  cropShape = 'rect'
+  cropShape = 'rect',
+  minWidth = 300,
+  minHeight = 300,
+  recommendedWidth = 500,
+  recommendedHeight = 500,
+  imageType = 'general'
 }: ImageCropperProps) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('crop');
+  const [currentDimensions, setCurrentDimensions] = useState<{width: number, height: number} | null>(null);
+  const [dimensionsOK, setDimensionsOK] = useState(false);
+  const [isRecommendedSize, setIsRecommendedSize] = useState(false);
+  const [originalImageDimensions, setOriginalImageDimensions] = useState<{width: number, height: number} | null>(null);
   
-  // Predefined aspect ratios for common use cases
-  const aspectRatios = {
-    '1:1': 1,
-    '4:3': 4/3,
-    '16:9': 16/9,
-    '3:2': 3/2,
-    '3:4': 3/4,
-    '2:3': 2/3,
+  // Get original image dimensions
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => {
+      setOriginalImageDimensions({
+        width: img.width,
+        height: img.height
+      });
+    };
+    img.src = image;
+  }, [image]);
+  
+  // Get aspect ratio label
+  const getAspectRatioLabel = () => {
+    if (aspectRatio === 1) return "1:1 (Square)";
+    if (aspectRatio === 4/3) return "4:3 (Landscape)";
+    if (aspectRatio === 16/9) return "16:9 (Widescreen)";
+    return `${aspectRatio}:1`;
   };
   
-  const [selectedAspectRatio, setSelectedAspectRatio] = useState<number>(aspectRatio);
+  // Determine the requirement text based on image type
+  const getRequirementsText = () => {
+    if (imageType === 'logo') {
+      return `Logo must be square (1:1 ratio) and at least ${minWidth}×${minHeight}px.`;
+    } else if (imageType === 'deal') {
+      return `Deal image must be landscape (4:3 ratio) and at least ${minWidth}×${minHeight}px.`;
+    } else {
+      return `Image must be at least ${minWidth}×${minHeight}px.`;
+    }
+  };
 
   const onCropChange = useCallback((location: { x: number; y: number }) => {
     setCrop(location);
@@ -53,10 +93,35 @@ export default function ImageCropper({
 
   const onCropAreaChange = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
     setCroppedAreaPixels(croppedAreaPixels);
-  }, []);
+    
+    // Calculate actual pixel dimensions after cropping
+    if (originalImageDimensions) {
+      // Factor in the original image dimensions to get actual pixel values
+      const widthRatio = originalImageDimensions.width / 100;
+      const heightRatio = originalImageDimensions.height / 100;
+      
+      const actualWidth = Math.round(croppedAreaPixels.width * widthRatio);
+      const actualHeight = Math.round(croppedAreaPixels.height * heightRatio);
+      
+      setCurrentDimensions({ width: actualWidth, height: actualHeight });
+      
+      // Check if dimensions meet minimum requirements
+      const meetsMinimum = actualWidth >= minWidth && actualHeight >= minHeight;
+      setDimensionsOK(meetsMinimum);
+      
+      // Check if dimensions meet recommended requirements
+      const meetsRecommended = actualWidth >= recommendedWidth && actualHeight >= recommendedHeight;
+      setIsRecommendedSize(meetsRecommended);
+    }
+  }, [originalImageDimensions, minWidth, minHeight, recommendedWidth, recommendedHeight]);
 
   const createCroppedImage = useCallback(async () => {
     if (!croppedAreaPixels) return;
+    
+    // Verify dimensions before allowing crop
+    if (!dimensionsOK) {
+      return; // Button should be disabled anyway, but extra safety
+    }
 
     try {
       const croppedImage = await getCroppedImg(
@@ -68,43 +133,78 @@ export default function ImageCropper({
     } catch (e) {
       console.error('Error creating cropped image:', e);
     }
-  }, [croppedAreaPixels, rotation, image, onCropComplete]);
-
-  const handleAspectRatioChange = (ratio: number) => {
-    setSelectedAspectRatio(ratio);
-  };
+  }, [croppedAreaPixels, rotation, image, onCropComplete, dimensionsOK]);
 
   return (
     <DialogContent className="sm:max-w-md lg:max-w-lg xl:max-w-xl">
       <DialogHeader>
         <DialogTitle>Edit Image</DialogTitle>
         <DialogDescription>
-          Adjust your image to fit perfectly.
+          {getRequirementsText()}
         </DialogDescription>
       </DialogHeader>
       
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="crop">Crop & Rotate</TabsTrigger>
-          <TabsTrigger value="ratios">Aspect Ratio</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="crop" className="space-y-4">
-          <div className="relative w-full h-64 sm:h-80">
-            <Cropper
-              image={image}
-              crop={crop}
-              zoom={zoom}
-              rotation={rotation}
-              aspect={selectedAspectRatio}
-              cropShape={cropShape}
-              onCropChange={onCropChange}
-              onCropComplete={onCropAreaChange}
-              onZoomChange={onZoomChange}
-              onRotationChange={onRotationChange}
-            />
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+              <Lock className="h-3 w-3 mr-1" /> 
+              {getAspectRatioLabel()}
+            </Badge>
+            
+            {currentDimensions && (
+              <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
+                {currentDimensions.width} × {currentDimensions.height}px
+              </Badge>
+            )}
           </div>
           
+          {currentDimensions && (
+            <div>
+              {!dimensionsOK && (
+                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                  <AlertTriangle className="h-3 w-3 mr-1" /> Too small
+                </Badge>
+              )}
+              
+              {dimensionsOK && !isRecommendedSize && (
+                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                  <Info className="h-3 w-3 mr-1" /> OK
+                </Badge>
+              )}
+              
+              {isRecommendedSize && (
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                  <CheckCircle2 className="h-3 w-3 mr-1" /> Perfect
+                </Badge>
+              )}
+            </div>
+          )}
+        </div>
+        
+        <div className="relative w-full h-64 sm:h-80">
+          <Cropper
+            image={image}
+            crop={crop}
+            zoom={zoom}
+            rotation={rotation}
+            aspect={aspectRatio}
+            cropShape={cropShape}
+            onCropChange={onCropChange}
+            onCropComplete={onCropAreaChange}
+            onZoomChange={onZoomChange}
+            onRotationChange={onRotationChange}
+            showGrid={true}
+          />
+          
+          {currentDimensions && (
+            <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+              {currentDimensions.width} × {currentDimensions.height}px
+            </div>
+          )}
+        </div>
+        
+        <div className="space-y-4">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Zoom</span>
@@ -134,43 +234,67 @@ export default function ImageCropper({
               className="py-2"
             />
           </div>
-        </TabsContent>
+        </div>
         
-        <TabsContent value="ratios" className="space-y-4">
-          <div className="grid grid-cols-3 gap-2">
-            {Object.entries(aspectRatios).map(([name, ratio]) => (
-              <Button
-                key={name}
-                variant={selectedAspectRatio === ratio ? "default" : "outline"}
-                onClick={() => handleAspectRatioChange(ratio)}
-                className="w-full"
-              >
-                {name}
-              </Button>
-            ))}
-          </div>
-          <div className="relative w-full h-64 sm:h-80">
-            <Cropper
-              image={image}
-              crop={crop}
-              zoom={zoom}
-              rotation={rotation}
-              aspect={selectedAspectRatio}
-              cropShape={cropShape}
-              onCropChange={onCropChange}
-              onCropComplete={onCropAreaChange}
-              onZoomChange={onZoomChange}
-              onRotationChange={onRotationChange}
-            />
-          </div>
-        </TabsContent>
-      </Tabs>
+        {currentDimensions && !dimensionsOK && (
+          <Alert variant="destructive" className="p-3">
+            <AlertTriangle className="h-4 w-4 mr-2" />
+            <AlertDescription className="text-sm">
+              Current selection is too small ({currentDimensions.width}×{currentDimensions.height}px). 
+              Minimum required is {minWidth}×{minHeight}px.
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {currentDimensions && dimensionsOK && !isRecommendedSize && (
+          <Alert className="p-3 bg-amber-50 border-amber-200">
+            <Info className="h-4 w-4 mr-2 text-amber-600" />
+            <AlertDescription className="text-sm text-amber-700">
+              Current size is acceptable but smaller than recommended.
+              For best quality, use at least {recommendedWidth}×{recommendedHeight}px.
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {imageType === 'logo' && (
+          <Alert className="p-3 bg-blue-50 border-blue-200">
+            <Info className="h-4 w-4 mr-2 text-blue-500" />
+            <AlertDescription className="text-xs text-blue-700">
+              Your logo will appear in multiple places across the app in different sizes:
+              <ul className="list-disc pl-4 mt-1 space-y-1">
+                <li>Profile page (160×160px)</li>
+                <li>Deal cards (40×40px)</li>
+                <li>Navigation bar (32×32px)</li>
+              </ul>
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {imageType === 'deal' && (
+          <Alert className="p-3 bg-blue-50 border-blue-200">
+            <Info className="h-4 w-4 mr-2 text-blue-500" />
+            <AlertDescription className="text-xs text-blue-700">
+              Deal images appear in various sizes across the app:
+              <ul className="list-disc pl-4 mt-1 space-y-1">
+                <li>Featured carousel (800×600px)</li>
+                <li>Deal cards (400×300px)</li>
+                <li>Deal detail view (800×600px)</li>
+              </ul>
+            </AlertDescription>
+          </Alert>
+        )}
+      </div>
       
       <DialogFooter className="sm:justify-between">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="button" onClick={createCroppedImage}>
+        <Button 
+          type="button" 
+          onClick={createCroppedImage}
+          disabled={!dimensionsOK}
+          className={!dimensionsOK ? "opacity-50 cursor-not-allowed" : ""}
+        >
           Apply Changes
         </Button>
       </DialogFooter>
