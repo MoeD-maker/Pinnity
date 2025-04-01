@@ -138,26 +138,48 @@ export default function VendorProfile() {
     fetchBusinessData();
   }, [user, form, toast]);
   
-  // Handle processed image after cropping
+  // Handle processed image after cropping with enhanced error handling
   const handleProcessedImage = (croppedImageData: string | null) => {
     if (croppedImageData) {
-      setPreviewUrl(croppedImageData);
-      
-      // Convert base64 to File object for later upload
-      fetch(croppedImageData)
-        .then(res => res.blob())
-        .then(blob => {
-          const file = new File([blob], "logo.jpg", { type: "image/jpeg" });
-          setSelectedFile(file);
-        })
-        .catch(err => {
-          console.error("Error converting cropped image to file:", err);
-          toast({
-            title: 'Error',
-            description: 'Failed to process the image',
-            variant: 'destructive'
-          });
+      try {
+        // Validate the image data format
+        if (!croppedImageData.startsWith('data:image/')) {
+          throw new Error('Invalid image data format');
+        }
+        
+        // Set the preview immediately for better UX
+        setPreviewUrl(croppedImageData);
+        
+        // Use a more reliable method to convert base64 to a File object
+        const base64Response = croppedImageData.split(',')[1];
+        if (!base64Response) {
+          throw new Error('Invalid base64 data');
+        }
+        
+        const binaryString = window.atob(base64Response);
+        const bytes = new Uint8Array(binaryString.length);
+        
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        const blob = new Blob([bytes], { type: 'image/jpeg' });
+        const file = new File([blob], "logo.jpg", { type: "image/jpeg" });
+        setSelectedFile(file);
+        
+        console.log("Successfully processed image, size:", file.size, "bytes");
+      } catch (err) {
+        console.error("Error processing cropped image:", err);
+        toast({
+          title: 'Image Processing Error',
+          description: 'Failed to process the image. Please try again with a different image.',
+          variant: 'destructive'
         });
+        
+        // Clear the preview if processing failed
+        setPreviewUrl(null);
+        setSelectedFile(null);
+      }
     } else {
       // User removed the image
       setPreviewUrl(null);

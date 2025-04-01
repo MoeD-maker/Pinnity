@@ -40,7 +40,7 @@ export default function ImageCropper({
   imageType = 'general'
 }: ImageCropperProps) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(0.8); // Start slightly zoomed out for better overview
   const [rotation, setRotation] = useState(0);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [currentDimensions, setCurrentDimensions] = useState<{width: number, height: number} | null>(null);
@@ -129,9 +129,30 @@ export default function ImageCropper({
         croppedAreaPixels,
         rotation
       );
+      
+      // Validate the result before returning
+      if (!croppedImage || croppedImage.length < 100) {
+        throw new Error("Invalid cropped image data");
+      }
+      
       onCropComplete(croppedImage);
     } catch (e) {
       console.error('Error creating cropped image:', e);
+      
+      // Create a fallback cropped image using a different method
+      try {
+        console.log("Attempting fallback cropping method...");
+        const fallbackCroppedImage = await getFallbackCroppedImg(
+          image,
+          croppedAreaPixels,
+          rotation
+        );
+        onCropComplete(fallbackCroppedImage);
+      } catch (fallbackError) {
+        console.error('Fallback crop method failed:', fallbackError);
+        // At this point, we need to inform the user about the error
+        alert("Failed to process the image. Please try uploading a different image.");
+      }
     }
   }, [croppedAreaPixels, rotation, image, onCropComplete, dimensionsOK]);
 
@@ -212,8 +233,8 @@ export default function ImageCropper({
             </div>
             <Slider
               value={[zoom]}
-              min={1}
-              max={3}
+              min={0.1}
+              max={5}
               step={0.01}
               onValueChange={(value) => setZoom(value[0])}
               className="py-2"
@@ -365,4 +386,69 @@ async function getCroppedImg(
 
   // Return as data URL (base64 string)
   return canvas.toDataURL('image/jpeg');
+}
+
+// Fallback method that uses a different approach to crop the image
+// This is used when the primary method fails
+async function getFallbackCroppedImg(
+  imageSrc: string,
+  pixelCrop: Area,
+  rotation = 0
+): Promise<string> {
+  try {
+    // Create a new image element
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    
+    // Wait for the image to load
+    await new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = reject;
+      image.src = imageSrc;
+    });
+    
+    // Create a canvas to draw the cropped image
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    if (!ctx) {
+      throw new Error('Could not get canvas context');
+    }
+    
+    // Set the canvas size to the crop area
+    canvas.width = pixelCrop.width;
+    canvas.height = pixelCrop.height;
+    
+    // Apply rotation if needed
+    if (rotation !== 0) {
+      ctx.save();
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(getRadianAngle(rotation));
+      ctx.translate(-canvas.width / 2, -canvas.height / 2);
+    }
+    
+    // Draw the cropped portion
+    ctx.drawImage(
+      image,
+      pixelCrop.x,
+      pixelCrop.y,
+      pixelCrop.width,
+      pixelCrop.height,
+      0,
+      0,
+      pixelCrop.width,
+      pixelCrop.height
+    );
+    
+    // Restore context if rotated
+    if (rotation !== 0) {
+      ctx.restore();
+    }
+    
+    // Return the cropped image as data URL
+    return canvas.toDataURL('image/jpeg', 0.92);
+  } catch (err) {
+    console.error('Error in fallback crop method:', err);
+    throw err;
+  }
 }
