@@ -557,8 +557,8 @@ export default function VendorDashboard() {
                           <div className="font-medium">{deal.title}</div>
                         </td>
                         <td className="px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm">{deal.dealType?.replace('_', ' ') || '-'}</td>
-                        <td className="px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm">
-                          {format(new Date(deal.startDate), 'MM/dd/yyyy')} - {format(new Date(deal.endDate), 'MM/dd/yyyy')}
+                        <td className="px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm whitespace-nowrap">
+                          {format(new Date(deal.startDate), 'MM/dd/yy')} - {format(new Date(deal.endDate), 'MM/dd/yy')}
                         </td>
                         <td className="px-3 sm:px-4 py-3 sm:py-4">
                           <div className="flex items-center space-x-2">
