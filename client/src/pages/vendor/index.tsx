@@ -547,7 +547,7 @@ export default function VendorDashboard() {
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="h-6 w-6 p-0" 
+                          className="h-8 w-8 p-0 sm:h-6 sm:w-6" // Larger on mobile, smaller on desktop
                           onClick={() => {
                             navigator.clipboard.writeText(deal.redemptionCode);
                             toast({
@@ -556,7 +556,7 @@ export default function VendorDashboard() {
                             });
                           }}
                         >
-                          <Copy className="h-3.5 w-3.5" />
+                          <Copy className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                         </Button>
                       </div>
                       
@@ -640,7 +640,7 @@ export default function VendorDashboard() {
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="h-6 w-6 p-0" 
+                              className="h-8 w-8 p-0 sm:h-6 sm:w-6" // Larger on mobile, smaller on desktop
                               onClick={() => {
                                 navigator.clipboard.writeText(deal.redemptionCode);
                                 toast({
@@ -649,7 +649,7 @@ export default function VendorDashboard() {
                                 });
                               }}
                             >
-                              <Copy className="h-3 sm:h-3.5 w-3 sm:w-3.5" />
+                              <Copy className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                             </Button>
                           </div>
                         </td>
