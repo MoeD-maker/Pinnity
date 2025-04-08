@@ -1,0 +1,105 @@
+The logo adjustment dialog shows up with boundaries but the image preview area is empty. This is likely due to issues with the AvatarEditor component or image loading. Please implement these fixes:
+
+1. First, try this simpler approach that doesn't rely on the AvatarEditor component:
+
+```jsx
+// In BusinessLogoUpload.tsx
+// Replace the AvatarEditor with this simple implementation:
+
+<div className="mt-4 flex flex-col items-center">
+  {selectedFile && (
+    <div className="relative w-[250px] h-[250px] overflow-hidden border-2 border-gray-200 rounded-full bg-gray-50">
+      <img
+        src={URL.createObjectURL(selectedFile)}
+        alt="Logo preview"
+        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+        style={{
+          width: `${zoom * 100}%`,
+          height: `${zoom * 100}%`,
+          objectFit: 'cover'
+        }}
+      />
+    </div>
+  )}
+  
+  <div className="w-full mt-4">
+    <label className="text-sm mb-2 block">Zoom</label>
+    <input
+      type="range"
+      min="1"
+      max="3"
+      step="0.1"
+      value={zoom}
+      onChange={(e) => setZoom(parseFloat(e.target.value))}
+      className="w-full"
+    />
+  </div>
+</div>
+
+Update the handleCropComplete function to work with this simpler approach:
+
+jsxCopyconst handleCropComplete = () => {
+  if (selectedFile) {
+    setUploading(true);
+    
+    // Instead of using the editor's canvas, we'll just use the file directly
+    // In a real implementation, you'd want to actually crop the image server-side
+    
+    // For now, just use the original file or create a simple preview
+    const reader = new FileReader();
+    reader.onload = () => {
+      // Pass the file or data URL back to the parent
+      onImageChange(selectedFile);
+      
+      // Close dialog and reset states
+      setCropperOpen(false);
+      setUploading(false);
+    };
+    reader.readAsDataURL(selectedFile);
+  }
+};
+
+Add error handling to show if there are issues with the file:
+
+jsxCopyconst handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  if (e.target.files && e.target.files.length > 0) {
+    const file = e.target.files[0];
+    
+    try {
+      // Simple validation
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please select an image under 5MB",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      console.log("File selected:", file.name, file.type, file.size);
+      
+      // Set file and show cropper
+      setSelectedFile(file);
+      
+      // Preview immediately for user feedback
+      const objectUrl = URL.createObjectURL(file);
+      console.log("Created object URL:", objectUrl);
+      setPreviewUrl(objectUrl);
+      setCropperOpen(true); // Open cropper dialog
+    } catch (error) {
+      console.error("Error handling file:", error);
+      toast({
+        title: "Error",
+        description: "Failed to process the image. Please try another file.",
+        variant: "destructive"
+      });
+    }
+  }
+};
+
+If you want to try the AvatarEditor approach again after this simpler solution works, make sure to:
+
+Install the package with npm install react-avatar-editor
+Import it correctly with import AvatarEditor from 'react-avatar-editor'
+Add a border or background to make it visible: className="border bg-gray-50"
+Add error boundaries to catch rendering issues

@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Upload, Edit2, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import AvatarEditor from 'react-avatar-editor';
 
 interface BusinessLogoUploadProps {
   currentImage: string | null;
@@ -17,51 +16,62 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
   const [zoom, setZoom] = useState<number>(1);
   const [uploading, setUploading] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const editorRef = useRef<AvatarEditor | null>(null);
   const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      console.log("File selected:", file.name, file.type, file.size);
       
-      // Simple validation
-      if (file.size > 5 * 1024 * 1024) {
+      try {
+        // Simple validation
+        if (file.size > 5 * 1024 * 1024) {
+          toast({
+            title: "File too large",
+            description: "Please select an image under 5MB",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        console.log("File selected:", file.name, file.type, file.size);
+        
+        // Set file and show cropper
+        setSelectedFile(file);
+        
+        // Preview immediately for user feedback
+        const objectUrl = URL.createObjectURL(file);
+        console.log("Created object URL:", objectUrl);
+        setPreviewUrl(objectUrl);
+        setCropperOpen(true); // Open cropper dialog
+      } catch (error) {
+        console.error("Error handling file:", error);
         toast({
-          title: "File too large",
-          description: "Please select an image under 5MB",
+          title: "Error",
+          description: "Failed to process the image. Please try another file.",
           variant: "destructive"
         });
-        return;
       }
-      
-      // Set file and show cropper
-      setSelectedFile(file);
-      
-      // Preview immediately for user feedback
-      const reader = new FileReader();
-      reader.onload = () => {
-        setPreviewUrl(reader.result as string);
-        setCropperOpen(true); // Open cropper dialog
-      };
-      reader.readAsDataURL(file);
     }
   };
   
   const handleCropComplete = () => {
-    if (editorRef.current) {
+    if (selectedFile) {
       setUploading(true);
       
-      // Get canvas data from the editor
-      const canvasScaled = editorRef.current.getImageScaledToCanvas();
-      const croppedImage = canvasScaled.toDataURL('image/jpeg', 0.9);
+      // Instead of using the editor's canvas, we'll just use the file directly
+      // In a real implementation, you'd want to actually crop the image server-side
       
-      // Pass the cropped image back to parent
-      onImageChange(croppedImage);
-      
-      // Close dialog and reset states
-      setCropperOpen(false);
-      setUploading(false);
+      // For now, just use the original file or create a simple preview
+      const reader = new FileReader();
+      reader.onload = () => {
+        // Pass the file or data URL back to the parent
+        onImageChange(selectedFile);
+        
+        // Close dialog and reset states
+        setCropperOpen(false);
+        setUploading(false);
+      };
+      reader.readAsDataURL(selectedFile);
     }
   };
   
@@ -124,37 +134,19 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
           <DialogTitle>Adjust Your Logo</DialogTitle>
           
           <div className="mt-4 flex flex-col items-center">
-            {/* Try using AvatarEditor wrapped in a div with border */}
             {selectedFile && (
-              <>
-                <div className="border rounded-md">
-                  <AvatarEditor
-                    ref={editorRef}
-                    image={URL.createObjectURL(selectedFile)}
-                    width={250}
-                    height={250}
-                    border={50}
-                    color={[255, 255, 255, 0.6]} // RGBA
-                    scale={zoom}
-                    borderRadius={100} // Make it round
-                  />
-                </div>
-                
-                {/* Fallback approach if the editor doesn't work */}
-                <div className="mt-4 relative overflow-hidden rounded-full w-[250px] h-[250px] border-2 border-gray-200 hidden">
-                  <img 
-                    src={URL.createObjectURL(selectedFile)} 
-                    alt="Preview" 
-                    className="object-cover"
-                    style={{ 
-                      transform: `scale(${zoom})`,
-                      transformOrigin: 'center',
-                      width: '100%',
-                      height: '100%',
-                    }}
-                  />
-                </div>
-              </>
+              <div className="relative w-[250px] h-[250px] overflow-hidden border-2 border-gray-200 rounded-full bg-gray-50">
+                <img
+                  src={URL.createObjectURL(selectedFile)}
+                  alt="Logo preview"
+                  className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+                  style={{
+                    width: `${zoom * 100}%`,
+                    height: `${zoom * 100}%`,
+                    objectFit: 'cover'
+                  }}
+                />
+              </div>
             )}
             
             <div className="w-full mt-4">
