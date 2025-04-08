@@ -504,8 +504,82 @@ export default function VendorDashboard() {
               </div>
             </div>
             
-            <div className="overflow-x-auto border rounded-md scrollbar-hide table-responsive py-1">
-              <div className="min-w-[700px] w-full">
+            {/* Mobile card view - only visible on small screens */}
+            <div className="block md:hidden space-y-3 mb-4">
+              {deals.length > 0 ? deals.map((deal: any) => {
+                // Get status display logic from existing code
+                let statusClass, statusText;
+                
+                // Same status determination code as in your table rows
+                if (deal.status === 'pending') {
+                  statusClass = 'bg-yellow-100 text-yellow-800';
+                  statusText = 'Pending Approval';
+                } else if (deal.status === 'approved' && new Date(deal.endDate) >= new Date() && new Date(deal.startDate) <= new Date()) {
+                  statusClass = 'bg-green-100 text-green-800';
+                  statusText = 'Active';
+                } else if (deal.status === 'approved' && new Date(deal.startDate) > new Date()) {
+                  statusClass = 'bg-blue-100 text-blue-800';
+                  statusText = 'Upcoming';
+                } else if (new Date(deal.endDate) < new Date() || deal.status === 'expired') {
+                  statusClass = 'bg-gray-100 text-gray-800';
+                  statusText = 'Expired';
+                } else if (deal.status === 'rejected') {
+                  statusClass = 'bg-red-100 text-red-800';
+                  statusText = 'Rejected';
+                } else {
+                  statusClass = 'bg-gray-100 text-gray-800';
+                  statusText = 'Unknown';
+                }
+                
+                return (
+                  <div key={deal.id} className="border rounded-md p-3 bg-white">
+                    <div className="font-medium mb-2">{deal.title}</div>
+                    <div className="grid grid-cols-2 gap-y-2 text-xs">
+                      <div className="font-medium text-gray-500">Type:</div>
+                      <div>{deal.dealType?.replace('_', ' ') || '-'}</div>
+                      
+                      <div className="font-medium text-gray-500">Dates:</div>
+                      <div>{format(new Date(deal.startDate), 'MM/dd/yy')} - {format(new Date(deal.endDate), 'MM/dd/yy')}</div>
+                      
+                      <div className="font-medium text-gray-500">PIN:</div>
+                      <div className="flex items-center">
+                        <span className="font-mono font-bold mr-2">{deal.redemptionCode}</span>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 w-6 p-0" 
+                          onClick={() => {
+                            navigator.clipboard.writeText(deal.redemptionCode);
+                            toast({
+                              title: "PIN Copied",
+                              description: "Redemption PIN copied to clipboard"
+                            });
+                          }}
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      
+                      <div className="font-medium text-gray-500">Used:</div>
+                      <div>{deal.redemptionCount || 0}/{deal.totalRedemptions || '∞'}</div>
+                    </div>
+                    <div className="mt-3 flex justify-end">
+                      <Badge className={`${statusClass} text-xs`}>
+                        {statusText}
+                      </Badge>
+                    </div>
+                  </div>
+                );
+              }) : (
+                <p className="text-sm text-gray-500 text-center py-4">
+                  No deals found. <Button variant="link" onClick={handleCreateDeal} className="p-0 h-auto text-primary">Create your first deal</Button>
+                </p>
+              )}
+            </div>
+              
+            {/* Desktop table view - hidden on mobile */}
+            <div className="hidden md:block overflow-x-auto border rounded-md scrollbar-hide table-responsive py-1">
+              <div className="w-full">
                 <table className="w-full border-collapse mb-0 table-fixed-mobile">
                   <thead>
                     <tr className="border-b border-gray-200">
