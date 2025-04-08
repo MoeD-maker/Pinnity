@@ -16,6 +16,8 @@ declare module 'react-avatar-editor' {
     onLoadFailure?: () => void;
     onLoadSuccess?: () => void;
     disableHiDPIScaling?: boolean;
+    className?: string; // Add className support
+    style?: React.CSSProperties; // Add style support
   }
 
   export default class AvatarEditor extends React.Component<AvatarEditorProps> {

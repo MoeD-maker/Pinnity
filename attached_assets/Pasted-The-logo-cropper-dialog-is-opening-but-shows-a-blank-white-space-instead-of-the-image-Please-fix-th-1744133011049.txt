@@ -1,0 +1,62 @@
+The logo cropper dialog is opening but shows a blank white space instead of the image. Please fix the BusinessLogoUpload component with these changes:
+
+1. First, check if react-avatar-editor was properly installed:
+npm install react-avatar-editor
+Copy
+2. Fix the import statement in BusinessLogoUpload.tsx:
+```jsx
+import AvatarEditor from 'react-avatar-editor'; // Change from "import Avatar"
+
+Update the avatar component in the dialog content:
+jsxCopy<div className="mt-4 flex flex-col items-center">
+  {selectedFile && (
+    <AvatarEditor
+      ref={editorRef}
+      image={URL.createObjectURL(selectedFile)}
+      width={250}
+      height={250}
+      border={50}
+      color={[255, 255, 255, 0.6]}
+      scale={zoom}
+      borderRadius={100}
+      className="border rounded-md" // Add this to make sure it's visible
+    />
+  )}
+</div>
+
+Add debugging to verify the image is being passed correctly:
+jsxCopyconst handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  if (e.target.files && e.target.files.length > 0) {
+    const file = e.target.files[0];
+    console.log("File selected:", file.name, file.type, file.size);
+    
+    // Rest of the function...
+  }
+};
+
+Check the browser console for any errors related to the editor.
+If it still doesn't work, let's try an alternative approach by directly using the raw image instead of a component:
+jsxCopy<div className="mt-4 flex flex-col items-center relative overflow-hidden rounded-full w-[250px] h-[250px] border-2 border-gray-200">
+  {selectedFile && (
+    <img 
+      src={URL.createObjectURL(selectedFile)} 
+      alt="Preview" 
+      className="object-cover"
+      style={{ 
+        transform: `scale(${zoom})`,
+        transformOrigin: 'center',
+        width: '100%',
+        height: '100%',
+      }}
+    />
+  )}
+</div>
+
+Make sure the editorRef is correctly being used:
+jsxCopy// Change this in the component declaration
+const editorRef = useRef<AvatarEditor>(null);
+
+
+Please apply these changes and let me know if the image preview starts working.
+Copy
+This looks like a component rendering issue or a React reference issue. The dialog structure is work

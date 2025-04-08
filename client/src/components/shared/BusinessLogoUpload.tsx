@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Upload, Edit2, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import AvatarEditor from 'react-avatar-editor'; // Import the avatar editor
+import AvatarEditor from 'react-avatar-editor';
 
 interface BusinessLogoUploadProps {
   currentImage: string | null;
@@ -23,6 +23,7 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
+      console.log("File selected:", file.name, file.type, file.size);
       
       // Simple validation
       if (file.size > 5 * 1024 * 1024) {
@@ -123,17 +124,37 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
           <DialogTitle>Adjust Your Logo</DialogTitle>
           
           <div className="mt-4 flex flex-col items-center">
+            {/* Try using AvatarEditor wrapped in a div with border */}
             {selectedFile && (
-              <AvatarEditor
-                ref={editorRef}
-                image={URL.createObjectURL(selectedFile)}
-                width={250}
-                height={250}
-                border={50}
-                color={[255, 255, 255, 0.6]} // RGBA
-                scale={zoom}
-                borderRadius={100} // Make it round
-              />
+              <>
+                <div className="border rounded-md">
+                  <AvatarEditor
+                    ref={editorRef}
+                    image={URL.createObjectURL(selectedFile)}
+                    width={250}
+                    height={250}
+                    border={50}
+                    color={[255, 255, 255, 0.6]} // RGBA
+                    scale={zoom}
+                    borderRadius={100} // Make it round
+                  />
+                </div>
+                
+                {/* Fallback approach if the editor doesn't work */}
+                <div className="mt-4 relative overflow-hidden rounded-full w-[250px] h-[250px] border-2 border-gray-200 hidden">
+                  <img 
+                    src={URL.createObjectURL(selectedFile)} 
+                    alt="Preview" 
+                    className="object-cover"
+                    style={{ 
+                      transform: `scale(${zoom})`,
+                      transformOrigin: 'center',
+                      width: '100%',
+                      height: '100%',
+                    }}
+                  />
+                </div>
+              </>
             )}
             
             <div className="w-full mt-4">

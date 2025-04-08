@@ -154,7 +154,7 @@ export default function VendorProfile() {
         const compressImage = async (imageData: string) => {
           try {
             // Create a new image for compression
-            const img = new Image(0, 0) as HTMLImageElement;
+            const img = new Image() as HTMLImageElement;
             img.onload = () => {
               // Create a canvas to draw and compress the image
               const canvas = document.createElement('canvas');
