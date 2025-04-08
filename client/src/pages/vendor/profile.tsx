@@ -31,7 +31,7 @@ import {
   Clock
 } from 'lucide-react';
 import PasswordChangeForm from '@/components/profile/PasswordChangeForm';
-import ImageUploadWithCropper from '@/components/shared/ImageUploadWithCropper';
+import BusinessLogoUpload from '@/components/shared/BusinessLogoUpload';
 
 // Form schema for business profile
 const businessProfileSchema = z.object({
@@ -154,7 +154,7 @@ export default function VendorProfile() {
         const compressImage = async (imageData: string) => {
           try {
             // Create a new image for compression
-            const img = new Image() as HTMLImageElement;
+            const img = new Image(0, 0) as HTMLImageElement;
             img.onload = () => {
               // Create a canvas to draw and compress the image
               const canvas = document.createElement('canvas');
@@ -454,20 +454,28 @@ export default function VendorProfile() {
                   <Label>Business Logo/Image</Label>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <ImageUploadWithCropper
-                      onImageChange={handleProcessedImage}
+                    <BusinessLogoUpload
                       currentImage={previewUrl}
-                      aspectRatio={1}
-                      buttonText="Upload Business Logo"
-                      className="w-full"
-                      imageClassName="w-full h-40 object-cover rounded-md"
-                      maxSizeKB={5000}
-                      minWidth={300}
-                      minHeight={300}
-                      recommendedWidth={500}
-                      recommendedHeight={500}
-                      imageType="logo"
-                      cropShape="rect"
+                      onImageChange={(fileOrBase64) => {
+                        if (fileOrBase64) {
+                          // If it's a File object
+                          if (fileOrBase64 instanceof File) {
+                            setSelectedFile(fileOrBase64);
+                            // Create preview URL
+                            const reader = new FileReader();
+                            reader.onload = () => setPreviewUrl(reader.result as string);
+                            reader.readAsDataURL(fileOrBase64);
+                          } else {
+                            // It's already a base64 string
+                            setPreviewUrl(fileOrBase64);
+                            // Process the base64 string to create a File object if needed
+                            handleProcessedImage(fileOrBase64);
+                          }
+                        } else {
+                          setSelectedFile(null);
+                          setPreviewUrl(null);
+                        }
+                      }}
                     />
                     
                     <div className="space-y-2">
