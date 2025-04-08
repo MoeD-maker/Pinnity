@@ -229,7 +229,7 @@ export default function PrivacyPolicyPage() {
             If you have any questions, concerns, or requests regarding this Privacy Policy or our privacy practices, please contact us at:
           </p>
           <p>
-            <a href="mailto:privacy@pinnity.com">privacy@pinnity.com</a>
+            <a href="mailto:hello@pinnity.ca">hello@pinnity.ca</a>
           </p>
         </section>
 

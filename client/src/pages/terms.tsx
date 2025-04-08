@@ -187,7 +187,7 @@ export default function TermsOfServicePage() {
         <p>
           If you have any questions about these Terms, please contact us at:
           <br />
-          <a href="mailto:legal@pinnity.com" className="text-[#00796B] hover:underline">legal@pinnity.com</a>
+          <a href="mailto:hello@pinnity.ca" className="text-[#00796B] hover:underline">hello@pinnity.ca</a>
         </p>
       </div>
     </div>
