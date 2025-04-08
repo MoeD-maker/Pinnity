@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { 
   PlusCircle, BarChart3, Calendar, Tag, Settings, FileText, Store, 
   PackageOpen, Bell, CheckCircle, AlertCircle, Clock, HelpCircle, Star,
-  Search, Copy, Filter as FilterIcon, X, MapPin, Share2
+  Search, Copy, Filter as FilterIcon, X, MapPin, Share2, User, Calendar as CalendarIcon
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -19,6 +19,15 @@ import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import BusinessRatingSummary from '@/components/ratings/BusinessRatingSummary';
 import DealFilterDialog, { FilterOptions } from '@/components/vendor/DealFilterDialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 // Define status colors for consistent use across components
 const statusColors: Record<string, string> = {
@@ -42,6 +51,8 @@ export default function VendorDashboard() {
   const [activeFilters, setActiveFilters] = useState<any>({}); // Store applied filters
   const [allDeals, setAllDeals] = useState<any[]>([]); // Store all deals for filtering
   const [filteredDeals, setFilteredDeals] = useState<any[]>([]); // Store filtered deals
+  const [selectedDeal, setSelectedDeal] = useState<any>(null); // Selected deal for details
+  const [redemptionDialogOpen, setRedemptionDialogOpen] = useState<boolean>(false); // Control redemption details dialog
   const [stats, setStats] = useState({
     activeDeals: 0,
     viewCount: 0,
@@ -128,6 +139,12 @@ export default function VendorDashboard() {
 
   const handleCreateDeal = () => {
     setLocation('/vendor/deals/create');
+  };
+  
+  // Handle opening the redemption details dialog
+  const handleViewRedemptionDetails = (deal: any) => {
+    setSelectedDeal(deal);
+    setRedemptionDialogOpen(true);
   };
 
   if (loading) {
@@ -322,6 +339,13 @@ export default function VendorDashboard() {
         onOpenChange={setFilterOpen}
         onApplyFilters={handleApplyFilters}
         initialFilters={activeFilters}
+      />
+      
+      {/* Redemption Details Dialog */}
+      <RedemptionDetailsDialog
+        deal={selectedDeal}
+        open={redemptionDialogOpen}
+        onOpenChange={setRedemptionDialogOpen}
       />
       
       {/* Welcome and approval status banner */}
@@ -742,7 +766,12 @@ export default function VendorDashboard() {
                               {deal.redemptionCount} redemptions
                             </p>
                           </div>
-                          <Button variant="ghost" size="sm" className="h-8 text-xs">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 text-xs"
+                            onClick={() => handleViewRedemptionDetails(deal)}
+                          >
                             View Details
                           </Button>
                         </div>
@@ -1100,5 +1129,92 @@ function VerificationRequirements({ business }: { business: any }) {
         </div>
       </CardFooter>
     </Card>
+  );
+}
+
+// Redemption Details Dialog Component
+function RedemptionDetailsDialog({ 
+  deal, 
+  open, 
+  onOpenChange 
+}: { 
+  deal: any; 
+  open: boolean; 
+  onOpenChange: (open: boolean) => void; 
+}) {
+  if (!deal) return null;
+
+  // Get redemption history data from the deal
+  // In a real implementation, we would fetch this from an API
+  const mockRedemptions = Array.from({ length: deal.redemptionCount || 3 }, (_, i) => {
+    // Create mock data for demonstration purposes only
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    
+    return {
+      id: `red-${i}-${deal.id}`,
+      dealId: deal.id,
+      userId: 1000 + i,
+      customerName: `Customer ${1000 + i}`,
+      redemptionDate: date,
+      code: deal.redemptionCode || "CODE123",
+      status: "completed"
+    };
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md md:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Redemption Details</DialogTitle>
+          <DialogDescription>
+            View details for all redemptions of "{deal.title}"
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="mt-4 max-h-[400px] overflow-y-auto space-y-3">
+          {mockRedemptions.length > 0 ? (
+            mockRedemptions.map((redemption) => (
+              <div key={redemption.id} className="border rounded-md p-3 bg-gray-50">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="font-medium text-sm flex items-center">
+                      <User className="h-3.5 w-3.5 mr-1.5 text-gray-500" />
+                      {redemption.customerName}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1 flex items-center">
+                      <CalendarIcon className="h-3 w-3 mr-1.5" />
+                      {format(new Date(redemption.redemptionDate), 'MMM d, yyyy h:mm a')}
+                    </p>
+                  </div>
+                  <Badge className="bg-green-100 text-green-800 border-green-200">
+                    {redemption.status}
+                  </Badge>
+                </div>
+                <div className="bg-white p-2 rounded border text-xs flex items-center">
+                  <code className="font-mono font-bold">{redemption.code}</code>
+                  <div className="ml-auto pl-3">
+                    <Button size="sm" variant="ghost" className="h-7 px-2">
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-center text-gray-500 text-sm py-8">No redemption details available</p>
+          )}
+        </div>
+
+        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 mt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+          <Button className="mb-2 sm:mb-0 bg-[#00796B] hover:bg-[#004D40]">
+            Export History
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
