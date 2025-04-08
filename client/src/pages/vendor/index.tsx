@@ -1206,12 +1206,9 @@ function RedemptionDetailsDialog({
           )}
         </div>
 
-        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 mt-4">
+        <DialogFooter className="flex justify-end mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Close
-          </Button>
-          <Button className="mb-2 sm:mb-0 bg-[#00796B] hover:bg-[#004D40]">
-            Export History
           </Button>
         </DialogFooter>
       </DialogContent>
