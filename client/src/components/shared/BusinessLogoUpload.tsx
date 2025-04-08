@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Upload, Edit2, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import AvatarEditor from 'react-avatar-editor';
 
 interface BusinessLogoUploadProps {
   currentImage: string | null;
@@ -17,7 +16,6 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
   const [zoom, setZoom] = useState<number>(1);
   const [uploading, setUploading] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const editorRef = useRef<AvatarEditor | null>(null);
   const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,19 +47,55 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
   };
   
   const handleCropComplete = () => {
-    if (editorRef.current) {
+    if (selectedFile) {
       setUploading(true);
       
-      // Get canvas data from the editor
-      const canvasScaled = editorRef.current.getImageScaledToCanvas();
-      const croppedImage = canvasScaled.toDataURL('image/jpeg', 0.9);
+      // Since we're not using the editor, just create a canvas to scale the image
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
       
-      // Pass the cropped image back to parent
-      onImageChange(croppedImage);
+      // Create a temp image to get dimensions
+      const img = new Image();
+      img.onload = () => {
+        // Set dimensions
+        canvas.width = 500;  // Standard output size
+        canvas.height = 500;
+        
+        if (ctx) {
+          // Draw the image with scaling applied
+          ctx.drawImage(
+            img, 
+            0, 0, img.width, img.height,  // Source
+            0, 0, canvas.width, canvas.height  // Destination
+          );
+          
+          // Get data URL
+          const croppedImage = canvas.toDataURL('image/jpeg', 0.9);
+          
+          // Pass the cropped image back to parent
+          onImageChange(croppedImage);
+          
+          console.log('Image processed successfully');
+        }
+        
+        // Close dialog and reset states
+        setCropperOpen(false);
+        setUploading(false);
+      };
       
-      // Close dialog and reset states
-      setCropperOpen(false);
-      setUploading(false);
+      // Handle errors
+      img.onerror = () => {
+        console.error('Error loading image for processing');
+        toast({
+          title: "Image Processing Error",
+          description: "Could not process the image. Please try a different one.",
+          variant: "destructive"
+        });
+        setUploading(false);
+      };
+      
+      // Set image source - this triggers the load
+      img.src = URL.createObjectURL(selectedFile);
     }
   };
   
@@ -124,24 +158,10 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
           <DialogTitle>Adjust Your Logo</DialogTitle>
           
           <div className="mt-4 flex flex-col items-center">
-            {/* Try using AvatarEditor wrapped in a div with border */}
+            {/* Simple image preview with zoom control */}
             {selectedFile && (
               <>
-                <div className="border rounded-md">
-                  <AvatarEditor
-                    ref={editorRef}
-                    image={URL.createObjectURL(selectedFile)}
-                    width={250}
-                    height={250}
-                    border={50}
-                    color={[255, 255, 255, 0.6]} // RGBA
-                    scale={zoom}
-                    borderRadius={100} // Make it round
-                  />
-                </div>
-                
-                {/* Fallback approach if the editor doesn't work */}
-                <div className="mt-4 relative overflow-hidden rounded-full w-[250px] h-[250px] border-2 border-gray-200 hidden">
+                <div className="relative overflow-hidden rounded-full w-[250px] h-[250px] border-2 border-gray-200">
                   <img 
                     src={URL.createObjectURL(selectedFile)} 
                     alt="Preview" 
