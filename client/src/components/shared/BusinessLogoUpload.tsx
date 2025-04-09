@@ -1,12 +1,18 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, Edit2, X } from 'lucide-react';
+import { Upload, Edit2, X, Move } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 
 interface BusinessLogoUploadProps {
   currentImage: string | null;
   onImageChange: (fileOrBase64: File | string | null) => void;
+}
+
+interface Position {
+  x: number;
+  y: number;
 }
 
 export default function BusinessLogoUpload({ currentImage, onImageChange }: BusinessLogoUploadProps) {
@@ -14,57 +20,109 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [cropperOpen, setCropperOpen] = useState<boolean>(false);
   const [zoom, setZoom] = useState<number>(1);
+  const [position, setPosition] = useState<Position>({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState<boolean>(false);
+  const [dragStart, setDragStart] = useState<Position>({ x: 0, y: 0 });
+  const [isDragOver, setIsDragOver] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cropContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  // Reset position when a new file is selected
+  useEffect(() => {
+    if (selectedFile) {
+      setPosition({ x: 0, y: 0 });
+      setZoom(1);
+    }
+  }, [selectedFile]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      
-      try {
-        // Simple validation
-        if (file.size > 5 * 1024 * 1024) {
-          toast({
-            title: "File too large",
-            description: "Please select an image under 5MB",
-            variant: "destructive"
-          });
-          return;
-        }
-        
-        console.log("File selected:", file.name, file.type, file.size);
-        
-        // Set file and show cropper
-        setSelectedFile(file);
-        
-        // Preview immediately for user feedback
-        const objectUrl = URL.createObjectURL(file);
-        console.log("Created object URL:", objectUrl);
-        setPreviewUrl(objectUrl);
-        setCropperOpen(true); // Open cropper dialog
-      } catch (error) {
-        console.error("Error handling file:", error);
+      processFile(e.target.files[0]);
+    }
+  };
+
+  const processFile = (file: File) => {
+    try {
+      // Validate file size
+      if (file.size > 5 * 1024 * 1024) {
         toast({
-          title: "Error",
-          description: "Failed to process the image. Please try another file.",
+          title: "File too large",
+          description: "Please select an image under 5MB",
           variant: "destructive"
         });
+        return;
       }
+
+      // Validate file type
+      if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
+        toast({
+          title: "Invalid file type",
+          description: "Please select a JPG, PNG, or GIF image",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      console.log("File selected:", file.name, file.type, file.size);
+      
+      // Set file and show cropper
+      setSelectedFile(file);
+      
+      // Preview immediately for user feedback
+      const objectUrl = URL.createObjectURL(file);
+      console.log("Created object URL:", objectUrl);
+      setPreviewUrl(objectUrl);
+      setCropperOpen(true); // Open cropper dialog
+    } catch (error) {
+      console.error("Error handling file:", error);
+      toast({
+        title: "Error",
+        description: "Failed to process the image. Please try another file.",
+        variant: "destructive"
+      });
     }
   };
   
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setDragging(true);
+    setDragStart({
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
+    });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (dragging) {
+      const newX = e.clientX - dragStart.x;
+      const newY = e.clientY - dragStart.y;
+      
+      // Optional: Add limits to prevent dragging too far
+      // This would be based on the zoom level and container size
+      
+      setPosition({
+        x: newX,
+        y: newY
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setDragging(false);
+  };
+
   const handleCropComplete = () => {
     if (selectedFile) {
       setUploading(true);
       
-      // Instead of using the editor's canvas, we'll just use the file directly
-      // In a real implementation, you'd want to actually crop the image server-side
+      // In a real implementation, you'd want to actually crop the image based on 
+      // position and zoom, but for now, we'll just use the original file
       
-      // For now, just use the original file or create a simple preview
       const reader = new FileReader();
       reader.onload = () => {
-        // Pass the file or data URL back to the parent
+        // Pass the file back to the parent
         onImageChange(selectedFile);
         
         // Close dialog and reset states
@@ -79,6 +137,15 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
     setPreviewUrl(null);
     setSelectedFile(null);
     onImageChange(null);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFile(e.dataTransfer.files[0]);
+    }
   };
   
   return (
@@ -103,6 +170,7 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
               size="icon" 
               variant="secondary"
               onClick={() => fileInputRef.current?.click()}
+              title="Change logo"
             >
               <Edit2 className="h-4 w-4" />
             </Button>
@@ -110,23 +178,32 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
               size="icon" 
               variant="destructive"
               onClick={handleRemoveImage}
+              title="Remove logo"
             >
               <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
       ) : (
-        <Button 
-          onClick={() => fileInputRef.current?.click()} 
-          className="w-full h-40 border-dashed border-2 flex flex-col items-center justify-center bg-muted/30 hover:bg-muted/50"
-          variant="outline"
+        <div 
+          className={`border-2 ${isDragOver ? 'border-[#00796B]' : 'border-dashed border-gray-300'} 
+                    rounded-lg text-center transition-colors`}
+          onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+          onDragLeave={() => setIsDragOver(false)}
+          onDrop={handleDrop}
         >
-          <Upload className="h-8 w-8 mb-2 text-muted-foreground" />
-          <span className="text-sm font-medium">Upload Business Logo</span>
-          <span className="text-xs text-muted-foreground mt-1">
-            JPG, PNG or GIF (max. 5MB)
-          </span>
-        </Button>
+          <div 
+            className="flex flex-col items-center justify-center py-8 cursor-pointer"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload className="h-10 w-10 text-gray-400 mb-2" />
+            <h3 className="text-sm font-medium mb-1">Upload Your Business Logo</h3>
+            <p className="text-xs text-muted-foreground mb-2">Drag and drop or click to browse</p>
+            <Badge variant="secondary" className="bg-gray-100 text-gray-700 hover:bg-gray-200">
+              Square format (1:1) recommended
+            </Badge>
+          </div>
+        </div>
       )}
       
       <Dialog open={cropperOpen} onOpenChange={setCropperOpen}>
@@ -135,32 +212,107 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
           
           <div className="mt-4 flex flex-col items-center">
             {selectedFile && (
-              <div className="relative w-[250px] h-[250px] overflow-hidden border-2 border-gray-200 rounded-full bg-gray-50">
-                <img
-                  src={URL.createObjectURL(selectedFile)}
-                  alt="Logo preview"
-                  className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
-                  style={{
-                    width: `${zoom * 100}%`,
-                    height: `${zoom * 100}%`,
-                    objectFit: 'cover'
-                  }}
-                />
-              </div>
+              <>
+                <div className="relative">
+                  <div 
+                    ref={cropContainerRef}
+                    className="relative w-[250px] h-[250px] overflow-hidden border-2 border-gray-200 rounded-md bg-gray-50"
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseUp}
+                    style={{ cursor: dragging ? 'grabbing' : 'grab' }}
+                  >
+                    <img
+                      src={URL.createObjectURL(selectedFile)}
+                      alt="Logo preview"
+                      className="absolute"
+                      style={{
+                        width: `${zoom * 100}%`,
+                        height: `${zoom * 100}%`,
+                        objectFit: 'cover',
+                        top: '50%',
+                        left: '50%',
+                        transform: `translate(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px))`,
+                        userSelect: 'none'
+                      }}
+                      draggable="false"
+                    />
+                  </div>
+                  
+                  <div className="absolute -bottom-4 -right-4 bg-white rounded-full p-2 shadow-md">
+                    <Move size={18} className="text-gray-500" />
+                  </div>
+                </div>
+                
+                <div className="w-full mt-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium">Zoom</label>
+                    <span className="text-xs text-gray-500">{Math.round(zoom * 100)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1"
+                    max="3"
+                    step="0.1"
+                    value={zoom}
+                    onChange={(e) => setZoom(parseFloat(e.target.value))}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Multi-size preview */}
+                <div className="bg-gray-50 p-3 rounded-md w-full mt-6">
+                  <h4 className="text-sm font-medium mb-2">Preview at different sizes</h4>
+                  <div className="flex items-end justify-between">
+                    <div className="text-center">
+                      <div className="mx-auto w-[40px] h-[40px] border rounded overflow-hidden bg-white">
+                        <img
+                          src={URL.createObjectURL(selectedFile)}
+                          alt="Small preview"
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                          }}
+                        />
+                      </div>
+                      <span className="text-xs text-gray-500">Deal Card</span>
+                    </div>
+                    
+                    <div className="text-center">
+                      <div className="mx-auto w-[80px] h-[80px] border rounded overflow-hidden bg-white">
+                        <img
+                          src={URL.createObjectURL(selectedFile)}
+                          alt="Medium preview"
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                          }}
+                        />
+                      </div>
+                      <span className="text-xs text-gray-500">Deal Detail</span>
+                    </div>
+                    
+                    <div className="text-center">
+                      <div className="mx-auto w-[140px] h-[140px] border rounded overflow-hidden bg-white">
+                        <img
+                          src={URL.createObjectURL(selectedFile)}
+                          alt="Large preview"
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                          }}
+                        />
+                      </div>
+                      <span className="text-xs text-gray-500">Profile</span>
+                    </div>
+                  </div>
+                </div>
+              </>
             )}
-            
-            <div className="w-full mt-4">
-              <label className="text-sm mb-2 block">Zoom</label>
-              <input
-                type="range"
-                min="1"
-                max="3"
-                step="0.1"
-                value={zoom}
-                onChange={(e) => setZoom(parseFloat(e.target.value))}
-                className="w-full"
-              />
-            </div>
           </div>
           
           <DialogFooter className="mt-4">

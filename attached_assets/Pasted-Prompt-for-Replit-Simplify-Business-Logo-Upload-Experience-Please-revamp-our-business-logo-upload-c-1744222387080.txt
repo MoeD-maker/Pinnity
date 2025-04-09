@@ -1,0 +1,190 @@
+Prompt for Replit: Simplify Business Logo Upload Experience
+Please revamp our business logo upload component to create a simpler, more intuitive experience that helps vendors meet our logo requirements. The current implementation is too complex and technical.
+
+## Logo Requirements (from your specifications)
+- Square format (1:1 aspect ratio): 500×500px recommended, 300×300px minimum
+- Used throughout the app at different sizes (140px, 40-60px, 80-100px, etc.)
+- Formats: JPG, PNG, or GIF (PNG recommended for transparency)
+- Max file size: 5MB
+
+## Key Problems to Fix
+1. The current implementation is overly complex with too many technical controls
+2. The image isn't displaying in the edit dialog
+3. Vendors are confused by pixel dimensions and technical details
+4. Current UI doesn't help vendors understand how their logo will appear throughout the app
+
+## Implementation Requirements
+
+### 1. Replace the current component with a simplified version:
+
+```jsx
+// In profile.tsx, replace the ImageUploadWithCropper component with:
+<BusinessLogoUpload
+  currentImage={previewUrl}
+  onImageChange={(fileOrBase64) => {
+    if (fileOrBase64) {
+      if (fileOrBase64 instanceof File) {
+        setSelectedFile(fileOrBase64);
+        // Create preview
+        const reader = new FileReader();
+        reader.onload = () => setPreviewUrl(reader.result as string);
+        reader.readAsDataURL(fileOrBase64);
+      } else {
+        setPreviewUrl(fileOrBase64);
+      }
+    } else {
+      setSelectedFile(null);
+      setPreviewUrl(null);
+    }
+  }}
+/>
+2. Create a simplified BusinessLogoUpload component with these key features:
+
+A drag & drop area for file selection
+A simplified square crop area (not circular)
+Only essential controls: zoom and repositioning
+Preview at different sizes (small, medium, large)
+Clear logo guidelines
+File validation with user-friendly error messages
+
+3. Key code snippets to implement:
+Upload Area with Drag & Drop Support
+jsx<div 
+  className={`border-2 ${isDragOver ? 'border-primary' : 'border-dashed border-gray-300'} 
+              rounded-lg p-6 text-center transition-colors`}
+  onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+  onDragLeave={() => setIsDragOver(false)}
+  onDrop={(e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      // Validate and handle file...
+    }
+  }}
+>
+  {previewUrl ? (
+    // Show existing logo with edit options
+  ) : (
+    // Show upload prompt
+    <div className="flex flex-col items-center justify-center py-8 cursor-pointer"
+         onClick={() => fileInputRef.current?.click()}>
+      <Upload className="h-10 w-10 text-gray-400 mb-2" />
+      <h3 className="text-sm font-medium mb-1">Upload Your Business Logo</h3>
+      <p className="text-xs text-muted-foreground mb-2">Drag and drop or click to browse</p>
+      <Badge className="bg-gray-100 text-gray-700 hover:bg-gray-200">
+        Square format (1:1) recommended
+      </Badge>
+    </div>
+  )}
+</div>
+Square Crop Area with Zoom
+jsx<div 
+  ref={cropContainerRef}
+  className="relative w-[250px] h-[250px] mx-auto overflow-hidden border-2 border-gray-200 rounded-md bg-gray-50"
+  onMouseDown={() => setDragging(true)}
+  onMouseMove={(e) => {
+    if (dragging && cropContainerRef.current) {
+      // Calculate position changes based on mouse movement
+      // Update position state
+    }
+  }}
+  onMouseUp={() => setDragging(false)}
+  style={{ cursor: dragging ? 'grabbing' : 'grab' }}
+>
+  {selectedFile && (
+    <img
+      src={URL.createObjectURL(selectedFile)}
+      alt="Logo preview"
+      className="absolute"
+      style={{
+        width: `${zoom * 100}%`,
+        height: `${zoom * 100}%`,
+        objectFit: 'cover',
+        top: '50%',
+        left: '50%',
+        transform: `translate(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px))`,
+        userSelect: 'none'
+      }}
+      draggable="false"
+    />
+  )}
+</div>
+Multi-Size Preview
+jsx<div className="bg-gray-50 p-3 rounded-md">
+  <h4 className="text-sm font-medium mb-2">Preview at different sizes</h4>
+  <div className="flex items-end justify-between">
+    <div className="text-center">
+      <div className="mx-auto w-[40px] h-[40px] border rounded overflow-hidden bg-white">
+        {selectedFile && (
+          <img
+            src={URL.createObjectURL(selectedFile)}
+            alt="Small preview"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover'
+            }}
+          />
+        )}
+      </div>
+      <span className="text-xs text-gray-500">Deal Card</span>
+    </div>
+    
+    <div className="text-center">
+      <div className="mx-auto w-[80px] h-[80px] border rounded overflow-hidden bg-white">
+        {/* Medium preview image */}
+      </div>
+      <span className="text-xs text-gray-500">Deal Detail</span>
+    </div>
+    
+    <div className="text-center">
+      <div className="mx-auto w-[140px] h-[140px] border rounded overflow-hidden bg-white">
+        {/* Large preview image */}
+      </div>
+      <span className="text-xs text-gray-500">Profile</span>
+    </div>
+  </div>
+</div>
+File Validation
+jsxconst handleFileChange = (e) => {
+  if (e.target.files && e.target.files.length > 0) {
+    const file = e.target.files[0];
+    
+    // Validate file size
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please select an image under 5MB",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Validate file type
+    if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
+      toast({
+        title: "Invalid file type",
+        description: "Please select a JPG, PNG, or GIF image",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setSelectedFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+    setCropperOpen(true);
+  }
+};
+4. Key Design Principles
+
+Focus on simplicity - Limit to essential controls only (zoom, position)
+Communicate requirements clearly - Show guide text explaining the 1:1 aspect ratio and recommended size
+Show, don't tell - Include previews at different sizes instead of technical explanations
+Provide immediate feedback - Show the image as it's being adjusted
+Use direct manipulation - Allow dragging the image to position it rather than abstract controls
+Keep it square - Use a square crop area to match Pinnity's requirements
+Handle errors gracefully - Provide clear messages for file size/type issues
+
+Feel free to adjust the implementation details while maintaining these core principles. The goal is a simple, intuitive interface that helps vendors create high-quality logos without overwhelming them with technical details.
