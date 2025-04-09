@@ -25,10 +25,19 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
   const [dragStart, setDragStart] = useState<Position>({ x: 0, y: 0 });
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cropContainerRef = useRef<HTMLDivElement>(null);
+  const urlRef = useRef<string[]>([]);
   const { toast } = useToast();
+
+  // Cleanup function to revoke object URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      urlRef.current.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, []);
 
   // Reset position when a new file is selected
   useEffect(() => {
@@ -71,11 +80,23 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
       // Set file and show cropper
       setSelectedFile(file);
       
-      // Preview immediately for user feedback
-      const objectUrl = URL.createObjectURL(file);
-      console.log("Created object URL:", objectUrl);
-      setPreviewUrl(objectUrl);
-      setCropperOpen(true); // Open cropper dialog
+      // Use FileReader for maximum compatibility
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target && event.target.result) {
+          const base64Data = event.target.result as string;
+          setImageBase64(base64Data);
+          setPreviewUrl(base64Data);
+          setCropperOpen(true);
+          
+          // Additional check to verify image loads
+          const testImg = new Image();
+          testImg.onload = () => console.log("✅ Image loads successfully!");
+          testImg.onerror = (err) => console.error("❌ Image failed to load:", err);
+          testImg.src = base64Data;
+        }
+      };
+      reader.readAsDataURL(file);
     } catch (error) {
       console.error("Error handling file:", error);
       toast({
@@ -120,22 +141,18 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
       // In a real implementation, you'd want to actually crop the image based on 
       // position and zoom, but for now, we'll just use the original file
       
-      const reader = new FileReader();
-      reader.onload = () => {
-        // Pass the file back to the parent
-        onImageChange(selectedFile);
-        
-        // Close dialog and reset states
-        setCropperOpen(false);
-        setUploading(false);
-      };
-      reader.readAsDataURL(selectedFile);
+      onImageChange(selectedFile);
+      
+      // Close dialog and reset states
+      setCropperOpen(false);
+      setUploading(false);
     }
   };
   
   const handleRemoveImage = () => {
     setPreviewUrl(null);
     setSelectedFile(null);
+    setImageBase64(null);
     onImageChange(null);
   };
 
@@ -164,6 +181,7 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
             src={previewUrl} 
             alt="Business logo" 
             className="w-40 h-40 object-cover rounded-md border" 
+            onError={(e) => console.error("Error loading main preview:", e)}
           />
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
             <Button 
@@ -211,7 +229,7 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
           <DialogTitle>Adjust Your Logo</DialogTitle>
           
           <div className="mt-4 flex flex-col items-center">
-            {selectedFile && (
+            {imageBase64 && (
               <>
                 <div className="relative">
                   <div 
@@ -224,19 +242,22 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
                     style={{ cursor: dragging ? 'grabbing' : 'grab' }}
                   >
                     <img
-                      src={URL.createObjectURL(selectedFile)}
+                      src={imageBase64}
                       alt="Logo preview"
-                      className="absolute"
+                      className="absolute inset-0"
                       style={{
                         width: `${zoom * 100}%`,
                         height: `${zoom * 100}%`,
-                        objectFit: 'cover',
+                        objectFit: 'contain',
                         top: '50%',
                         left: '50%',
                         transform: `translate(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px))`,
+                        maxWidth: 'none',
+                        maxHeight: 'none',
                         userSelect: 'none'
                       }}
                       draggable="false"
+                      onError={(e) => console.error("Image failed to load in cropper:", e)}
                     />
                   </div>
                   
@@ -266,46 +287,49 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
                   <h4 className="text-sm font-medium mb-2">Preview at different sizes</h4>
                   <div className="flex items-end justify-between">
                     <div className="text-center">
-                      <div className="mx-auto w-[40px] h-[40px] border rounded overflow-hidden bg-white">
-                        <img
-                          src={URL.createObjectURL(selectedFile)}
-                          alt="Small preview"
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover'
-                          }}
-                        />
+                      <div className="mx-auto w-[40px] h-[40px] border rounded overflow-hidden bg-white flex items-center justify-center">
+                        {imageBase64 ? (
+                          <img
+                            src={imageBase64}
+                            alt="Small preview"
+                            className="w-full h-full object-cover"
+                            onError={(e) => console.error("Small preview error:", e)}
+                          />
+                        ) : (
+                          <span className="text-[8px] text-gray-400">No image</span>
+                        )}
                       </div>
                       <span className="text-xs text-gray-500">Deal Card</span>
                     </div>
                     
                     <div className="text-center">
-                      <div className="mx-auto w-[80px] h-[80px] border rounded overflow-hidden bg-white">
-                        <img
-                          src={URL.createObjectURL(selectedFile)}
-                          alt="Medium preview"
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover'
-                          }}
-                        />
+                      <div className="mx-auto w-[80px] h-[80px] border rounded overflow-hidden bg-white flex items-center justify-center">
+                        {imageBase64 ? (
+                          <img
+                            src={imageBase64}
+                            alt="Medium preview"
+                            className="w-full h-full object-cover"
+                            onError={(e) => console.error("Medium preview error:", e)}
+                          />
+                        ) : (
+                          <span className="text-xs text-gray-400">No image</span>
+                        )}
                       </div>
                       <span className="text-xs text-gray-500">Deal Detail</span>
                     </div>
                     
                     <div className="text-center">
-                      <div className="mx-auto w-[140px] h-[140px] border rounded overflow-hidden bg-white">
-                        <img
-                          src={URL.createObjectURL(selectedFile)}
-                          alt="Large preview"
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover'
-                          }}
-                        />
+                      <div className="mx-auto w-[140px] h-[140px] border rounded overflow-hidden bg-white flex items-center justify-center">
+                        {imageBase64 ? (
+                          <img
+                            src={imageBase64}
+                            alt="Large preview"
+                            className="w-full h-full object-cover"
+                            onError={(e) => console.error("Large preview error:", e)}
+                          />
+                        ) : (
+                          <span className="text-sm text-gray-400">No image</span>
+                        )}
                       </div>
                       <span className="text-xs text-gray-500">Profile</span>
                     </div>

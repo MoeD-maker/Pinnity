@@ -1,0 +1,158 @@
+The new logo upload component structure is great, but there's an issue with the image display. As shown in the screenshot, the text placeholders for the images are visible, but the actual images aren't displaying.
+
+## Fix Image Display Issues
+
+The problem appears to be with how we're generating or using the image URLs for the selected file. Please make these specific changes:
+
+1. First, ensure proper debugging to identify the issue:
+
+```jsx
+// Add this logging to check if the file and URL are being created properly
+const handleFileChange = (e) => {
+  if (e.target.files && e.target.files.length > 0) {
+    const file = e.target.files[0];
+    console.log("File selected:", file.name, file.type, file.size);
+    
+    const objectUrl = URL.createObjectURL(file);
+    console.log("Image URL created:", objectUrl);
+    
+    // Additional check to verify URL is valid
+    const testImg = new Image();
+    testImg.onload = () => console.log("✅ Image loads successfully!");
+    testImg.onerror = (err) => console.error("❌ Image failed to load:", err);
+    testImg.src = objectUrl;
+    
+    setSelectedFile(file);
+    setPreviewUrl(objectUrl);
+    setCropperOpen(true);
+  }
+};
+
+Fix the main cropper image display:
+
+jsx{selectedFile && (
+  <img
+    src={URL.createObjectURL(selectedFile)}
+    alt="Logo preview"
+    className="absolute inset-0 w-full h-full object-contain"
+    style={{
+      transform: `scale(${zoom}) translate(${position.x}px, ${position.y}px)`,
+      transformOrigin: 'center',
+      maxWidth: 'none',
+      maxHeight: 'none'
+    }}
+    onError={(e) => console.error("Image failed to load in cropper:", e)}
+  />
+)}
+
+For the preview sizes, try a simpler approach that ensures the same image is used consistently:
+
+jsx// Define imageUrl once to ensure consistency
+const imageUrl = selectedFile ? URL.createObjectURL(selectedFile) : null;
+
+// Then in the preview section
+<div className="bg-gray-50 p-3 rounded-md">
+  <h4 className="text-sm font-medium mb-2">Preview at different sizes</h4>
+  <div className="flex items-end justify-between">
+    {/* Small preview */}
+    <div className="text-center">
+      <div className="mx-auto w-[40px] h-[40px] border rounded overflow-hidden bg-white flex items-center justify-center">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt="Small preview"
+            className="w-full h-full object-cover"
+            onError={(e) => console.error("Small preview error:", e)}
+          />
+        ) : (
+          <span className="text-[8px] text-gray-400">No image</span>
+        )}
+      </div>
+      <span className="text-xs text-gray-500">Deal Card</span>
+    </div>
+    
+    {/* Medium preview */}
+    <div className="text-center">
+      <div className="mx-auto w-[80px] h-[80px] border rounded overflow-hidden bg-white flex items-center justify-center">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt="Medium preview"
+            className="w-full h-full object-cover"
+            onError={(e) => console.error("Medium preview error:", e)}
+          />
+        ) : (
+          <span className="text-xs text-gray-400">No image</span>
+        )}
+      </div>
+      <span className="text-xs text-gray-500">Deal Detail</span>
+    </div>
+    
+    {/* Large preview */}
+    <div className="text-center">
+      <div className="mx-auto w-[140px] h-[140px] border rounded overflow-hidden bg-white flex items-center justify-center">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt="Large preview"
+            className="w-full h-full object-cover"
+            onError={(e) => console.error("Large preview error:", e)}
+          />
+        ) : (
+          <span className="text-sm text-gray-400">No image</span>
+        )}
+      </div>
+      <span className="text-xs text-gray-500">Profile</span>
+    </div>
+  </div>
+</div>
+
+Make sure URL objects are properly managed to prevent memory leaks:
+
+jsx// Add cleanup for the generated URLs
+useEffect(() => {
+  // Cleanup function to revoke object URLs when component unmounts
+  return () => {
+    if (previewUrl && previewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrl);
+    }
+  };
+}, [previewUrl]);
+
+// When creating multiple URLs in the render, use a ref to track them
+const urlRef = useRef<string[]>([]);
+
+// In your render function before returning JSX
+if (selectedFile) {
+  // Clean up previous URLs
+  urlRef.current.forEach(url => URL.revokeObjectURL(url));
+  urlRef.current = [];
+  
+  // Create new URL
+  const newUrl = URL.createObjectURL(selectedFile);
+  urlRef.current.push(newUrl);
+  
+  // Use this newUrl for all your img elements
+}
+
+For maximum compatibility, try direct base64 encoding as an alternative to blob URLs:
+
+jsxconst handleFileChange = (e) => {
+  if (e.target.files && e.target.files.length > 0) {
+    const file = e.target.files[0];
+    
+    // File validation code...
+    
+    setSelectedFile(file);
+    
+    // Use a FileReader for maximum compatibility
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target && event.target.result) {
+        setPreviewUrl(event.target.result as string);
+        setCropperOpen(true);
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+};
