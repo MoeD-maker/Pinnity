@@ -71,6 +71,15 @@ export default function ImageCropper({
     };
   }, []);
   
+  // Reset zoom, rotation, and crop position whenever the image changes
+  useEffect(() => {
+    // Set default values when image changes to prevent persistence between editing sessions
+    setCrop({ x: 0, y: 0 });
+    setZoom(0.8); // Start with a consistent default zoom
+    setRotation(0);
+    console.log("Image changed, resetting crop settings to defaults");
+  }, [image]);
+  
   // Get original image dimensions
   useEffect(() => {
     const img = new Image();
@@ -222,6 +231,13 @@ export default function ImageCropper({
         throw new Error("Invalid cropped image data");
       }
       
+      // Reset crop settings to default values before completing
+      // This ensures a fresh state next time the editor is opened
+      setCrop({ x: 0, y: 0 });
+      setZoom(0.8);
+      setRotation(0);
+      
+      // Pass the cropped image to the parent component
       onCropComplete(croppedImage);
     } catch (e) {
       console.error('Error creating cropped image:', e);
@@ -234,6 +250,12 @@ export default function ImageCropper({
           croppedAreaPixels,
           rotation
         );
+        
+        // Reset crop settings to default values before completing
+        setCrop({ x: 0, y: 0 });
+        setZoom(0.8);
+        setRotation(0);
+        
         onCropComplete(fallbackCroppedImage);
       } catch (fallbackError) {
         console.error('Fallback crop method failed:', fallbackError);

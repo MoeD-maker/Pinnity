@@ -3,8 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import ImageCropper from './ImageCropper';
-import { X, Upload, Edit2, AlertCircle, Info, FileType } from 'lucide-react';
+import { X, Upload, Edit2, AlertCircle, Info, FileType, Wand2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ImageUploadWithCropperProps {
   onImageChange: (image: string | null) => void;
@@ -123,6 +124,114 @@ export default function ImageUploadWithCropper({
     // Convert non-web-friendly formats or large files
     const formatsNeedingConversion = ['image/bmp', 'image/tiff', 'image/x-icon'];
     return formatsNeedingConversion.includes(fileType);
+  };
+  
+  // Helper function to automatically fix images that don't meet requirements
+  const autoFixImage = async (imageData: string): Promise<string> => {
+    setCompressing(true);
+    setCompressionProgress(10);
+    
+    try {
+      // Load the image to get dimensions
+      const img = new Image();
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('Failed to load image for auto-fix'));
+        img.src = imageData;
+      });
+      
+      const { width, height } = img;
+      setCompressionProgress(30);
+      
+      // Check if resize is needed
+      const needsResize = width < minWidth || height < minHeight;
+      
+      // If no resize needed and format is already JPEG, just return the original
+      if (!needsResize && imageData.startsWith('data:image/jpeg')) {
+        setCompressionProgress(100);
+        setCompressing(false);
+        return imageData;
+      }
+      
+      // Create canvas for processing
+      const canvas = document.createElement('canvas');
+      
+      // Determine new dimensions that meet minimum requirements while maintaining aspect ratio
+      let newWidth = width;
+      let newHeight = height;
+      
+      if (needsResize) {
+        // Calculate scaling factor
+        const scaleX = minWidth / width;
+        const scaleY = minHeight / height;
+        const scale = Math.max(scaleX, scaleY) * 1.05; // Add 5% to ensure we meet requirements
+        
+        newWidth = Math.round(width * scale);
+        newHeight = Math.round(height * scale);
+        
+        // For recommended size - scale up to match if the image is too small
+        if (recommendedWidth > 0 && recommendedHeight > 0) {
+          const recScaleX = recommendedWidth / width;
+          const recScaleY = recommendedHeight / height;
+          const recScale = Math.max(recScaleX, recScaleY);
+          
+          // If the recommended scale is significantly larger, use it instead
+          if (recScale > scale * 1.5) {
+            newWidth = Math.round(width * recScale);
+            newHeight = Math.round(height * recScale);
+          }
+        }
+      }
+      
+      // Set canvas dimensions
+      canvas.width = newWidth;
+      canvas.height = newHeight;
+      
+      // Get context and draw image
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        throw new Error('Could not get canvas context');
+      }
+      
+      // Draw white background to eliminate transparency
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      setCompressionProgress(60);
+      
+      // Draw image at new size
+      ctx.drawImage(img, 0, 0, newWidth, newHeight);
+      
+      setCompressionProgress(80);
+      
+      // Convert to JPEG with good quality
+      const newImageData = canvas.toDataURL('image/jpeg', 0.92);
+      
+      setCompressionProgress(100);
+      
+      // Get optimized image size
+      const finalSize = Math.round(newImageData.length / 1.37 / 1024);
+      setCompressedSize(finalSize);
+      
+      // Show message about what was done
+      let message = '';
+      if (needsResize) {
+        message += `Image automatically resized from ${width}×${height}px to ${newWidth}×${newHeight}px. `;
+      }
+      if (!imageData.startsWith('data:image/jpeg')) {
+        message += 'Image converted to JPEG format for better compatibility. ';
+      }
+      setWarning(message.trim());
+      
+      setCompressing(false);
+      return newImageData;
+      
+    } catch (error) {
+      console.error('Error in autoFixImage:', error);
+      setCompressing(false);
+      setError('Failed to auto-fix image. Please try uploading a different file.');
+      return imageData; // Return original on error
+    }
   };
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -305,14 +414,68 @@ export default function ImageUploadWithCropper({
       {error && (
         <Alert variant="destructive" className="p-3">
           <AlertCircle className="h-4 w-4 mr-2" />
-          <AlertDescription className="text-sm">{error}</AlertDescription>
+          <AlertDescription className="text-sm flex justify-between items-center">
+            <span>{error}</span>
+            {image && imageDimensions && (imageDimensions.width < minWidth || imageDimensions.height < minHeight) && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="ml-2 bg-white border-red-300 text-red-700 hover:bg-red-50"
+                      onClick={async () => {
+                        if (image) {
+                          const fixedImage = await autoFixImage(image);
+                          setImage(fixedImage);
+                          onImageChange(fixedImage);
+                        }
+                      }}
+                    >
+                      <Wand2 className="h-3 w-3 mr-1" /> Auto-Fix
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">Resize image to meet minimum requirements</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </AlertDescription>
         </Alert>
       )}
       
       {warning && (
         <Alert className="bg-amber-50 border-amber-200 p-3">
           <Info className="h-4 w-4 mr-2 text-amber-600" />
-          <AlertDescription className="text-sm text-amber-700">{warning}</AlertDescription>
+          <AlertDescription className="text-sm text-amber-700 flex justify-between items-center">
+            <span>{warning}</span>
+            {image && imageDimensions && imageDimensions.width < recommendedWidth && imageDimensions.height < recommendedHeight && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="ml-2 bg-white border-amber-300 text-amber-700 hover:bg-amber-50"
+                      onClick={async () => {
+                        if (image) {
+                          const fixedImage = await autoFixImage(image);
+                          setImage(fixedImage);
+                          onImageChange(fixedImage);
+                        }
+                      }}
+                    >
+                      <Wand2 className="h-3 w-3 mr-1" /> Auto-Fix
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">Optimize image for better quality</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </AlertDescription>
         </Alert>
       )}
       
@@ -455,6 +618,7 @@ export default function ImageUploadWithCropper({
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         {originalImage && (
           <ImageCropper
+            key={originalImage} // Add key prop to force remount when image changes
             image={originalImage}
             aspectRatio={aspectRatio}
             onCropComplete={handleCropComplete}
