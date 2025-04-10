@@ -21,7 +21,6 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const cropContainerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
 
   // Add debug logging for image state
@@ -36,33 +35,12 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
     });
   }, [selectedFile, previewUrl]);
 
-  useEffect(() => {
-    // Create canvas when component mounts
-    if (!canvasRef.current) {
-      const canvas = document.createElement('canvas');
-      canvas.width = 500;  // High quality output
-      canvas.height = 500;
-      canvasRef.current = canvas;
-    }
-    
-    // Cleanup function
-    return () => {
-      canvasRef.current = null;
-      
-      // Clean up any object URLs
-      if (previewUrl && previewUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    };
-  }, [previewUrl]);
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       processFile(e.target.files[0]);
     }
   };
 
-  // Updated processFile function to use FileReader
   const processFile = (file: File) => {
     try {
       // Validate file size
@@ -141,22 +119,20 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
     }
   };
 
-  // Simplified cropImage function
+  // Enhanced cropImage function with proper scale application
   const cropImage = async (): Promise<string | null> => {
-    // If there's no file or we already have a data URL, just return the current preview
+    // If there's no file or preview URL, return early
     if (!selectedFile || !previewUrl) {
       return previewUrl;
     }
     
     try {
       return new Promise((resolve) => {
-        // Only proceed if we have both the file and canvas
-        if (!selectedFile || !canvasRef.current) {
-          resolve(null);
-          return;
-        }
+        // Create a new canvas each time to avoid reference issues
+        const canvas = document.createElement('canvas');
+        canvas.width = 500;  // High quality output size
+        canvas.height = 500;
         
-        const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
         
         if (!ctx) {
@@ -169,29 +145,80 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        // Create image element from the file
+        // Create image element from the preview URL
         const img = new Image();
         
         img.onload = () => {
-          // Calculate the dimensions to display the image centered with the current scale
-          const size = Math.min(img.width, img.height);
-          const sx = img.width > img.height ? (img.width - size) / 2 : 0;
-          const sy = img.height > img.width ? (img.height - size) / 2 : 0;
+          // Get original image dimensions
+          const originalWidth = img.width;
+          const originalHeight = img.height;
+          
+          // Determine the square crop size (minimum dimension)
+          const minDimension = Math.min(originalWidth, originalHeight);
+          
+          // Calculate source rectangle that needs to be captured
+          // Apply the inverse of scale - smaller scale means we capture more of the source image
+          // This matches what the user sees in the preview where smaller scale = zoomed out
+          const scaledSize = minDimension / scale; // The size of the area to capture
+          
+          // Ensure we don't try to capture beyond the image bounds
+          const safeScaledSize = Math.min(
+            scaledSize, 
+            originalWidth, 
+            originalHeight
+          );
+          
+          // Calculate center offsets
+          const centerX = originalWidth / 2;
+          const centerY = originalHeight / 2;
+          
+          // Calculate source rectangle (centered square region using scaled size)
+          const sx = centerX - (safeScaledSize / 2);
+          const sy = centerY - (safeScaledSize / 2);
+          
+          // Log the calculations for debugging
+          console.log('Crop calculations:', {
+            originalWidth,
+            originalHeight,
+            minDimension,
+            scale,
+            scaledSize,
+            safeScaledSize,
+            sx, sy,
+            destWidth: canvas.width,
+            destHeight: canvas.height
+          });
           
           // Draw the image to fill the canvas, applying scale
           ctx.drawImage(
             img,
-            sx, sy, size, size,  // Source rectangle
+            sx, sy, safeScaledSize, safeScaledSize,  // Source rectangle - scaled based on zoom
             0, 0, canvas.width, canvas.height  // Destination rectangle
           );
           
           // Convert to data URL and resolve
           const dataUrl = canvas.toDataURL('image/png', 1.0);
+          
+          // Verify the output image dimensions
+          const outputImg = new Image();
+          outputImg.onload = () => {
+            console.log('Output image dimensions:', {
+              width: outputImg.width,
+              height: outputImg.height
+            });
+          };
+          outputImg.src = dataUrl;
+          
           resolve(dataUrl);
         };
         
-        img.onerror = () => {
-          console.error("Error loading image for cropping");
+        img.onerror = (err) => {
+          console.error("Error loading image for cropping:", err);
+          toast({
+            title: "Error",
+            description: "Failed to process the image. Please try again.",
+            variant: "destructive"
+          });
           resolve(null);
         };
         
@@ -200,8 +227,12 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
       });
     } catch (error) {
       console.error("Error in cropImage:", error);
-      // For simplicity, just return the data URL we already have
-      return previewUrl;
+      toast({
+        title: "Error",
+        description: "An error occurred while processing your image.",
+        variant: "destructive"
+      });
+      return null;
     }
   };
 
