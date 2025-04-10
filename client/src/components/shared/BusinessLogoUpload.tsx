@@ -29,6 +29,7 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cropContainerRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
   const urlRef = useRef<string[]>([]);
   const { toast } = useToast();
 
@@ -81,10 +82,10 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
       }
 
       // Validate file type
-      if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
+      if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
         toast({
           title: "Invalid file type",
-          description: "Please select a JPG, PNG, or GIF image",
+          description: "Please select a JPG, PNG, GIF, or WEBP image",
           variant: "destructive"
         });
         return;
@@ -121,6 +122,15 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
       });
     }
   };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragOver(false);
+  };
   
   const handleMouseDown = (e: React.MouseEvent) => {
     setDragging(true);
@@ -149,15 +159,103 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
     setDragging(false);
   };
 
+  // Function to crop the image based on current zoom and position
+  const cropImage = (): string | null => {
+    if (!imageBase64 || !cropContainerRef.current) {
+      console.error("Missing image data or container ref for cropping");
+      return null;
+    }
+    
+    try {
+      // Create a new canvas element
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        console.error("Could not get canvas context");
+        return null;
+      }
+      
+      // Get dimensions of the crop container
+      const containerWidth = cropContainerRef.current.clientWidth;
+      const containerHeight = cropContainerRef.current.clientHeight;
+      
+      // Set canvas size to match crop container (square)
+      canvas.width = containerWidth;
+      canvas.height = containerHeight;
+      
+      // Create an image element for the source
+      const img = new Image();
+      img.src = imageBase64;
+      
+      // We need to make this synchronous for the canvas operation
+      // This is a hack but works for base64 images that are already loaded
+      if (!img.complete) {
+        console.error("Image not fully loaded for canvas operation");
+        return null;
+      }
+      
+      // Calculate the dimensions and position based on zoom and position
+      const scaledWidth = img.width * zoom;
+      const scaledHeight = img.height * zoom;
+      
+      // Calculate position to center the image with the user's adjustments
+      const offsetX = ((containerWidth - scaledWidth) / 2) + position.x;
+      const offsetY = ((containerHeight - scaledHeight) / 2) + position.y;
+      
+      // Fill the canvas with a white background (for transparent images)
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw the image with the correct positioning and scaling
+      ctx.drawImage(
+        img,                   // source image
+        0, 0,                  // source position
+        img.width, img.height, // source dimensions
+        offsetX, offsetY,      // destination position (with adjustments)
+        scaledWidth, scaledHeight // destination dimensions (with zoom applied)
+      );
+      
+      // Convert canvas to a data URL
+      return canvas.toDataURL('image/png');
+    } catch (error) {
+      console.error("Error cropping image:", error);
+      return null;
+    }
+  };
+
   const handleCropComplete = () => {
-    if (selectedFile) {
-      setUploading(true);
+    if (!selectedFile) return;
+    
+    setUploading(true);
+    
+    try {
+      // Get the cropped image data
+      const croppedImageData = cropImage();
       
-      // In a real implementation, you'd want to actually crop the image based on 
-      // position and zoom, but for now, we'll just use the original file
-      
-      onImageChange(selectedFile);
-      
+      if (croppedImageData) {
+        // Pass the cropped image data to the parent component
+        onImageChange(croppedImageData);
+        setPreviewUrl(croppedImageData);
+        
+        toast({
+          title: "Logo updated",
+          description: "Your business logo has been updated successfully.",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to crop the image. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error in handleCropComplete:", error);
+      toast({
+        title: "Error",
+        description: "An error occurred while saving your logo.",
+        variant: "destructive"
+      });
+    } finally {
       // Close dialog and reset states
       setCropperOpen(false);
       setUploading(false);
@@ -191,16 +289,16 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
-        accept="image/jpeg,image/png,image/gif"
+        accept="image/jpeg,image/png,image/gif,image/webp"
         className="hidden"
       />
       
       {previewUrl ? (
-        <div className="relative group">
+        <div className="relative group aspect-square w-40 h-40 mx-auto">
           <img 
             src={previewUrl} 
             alt="Business logo" 
-            className="w-40 h-40 object-cover rounded-md border" 
+            className="w-full h-full object-cover rounded-md border" 
             onError={(e) => console.error("Error loading main preview:", e)}
           />
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
@@ -224,16 +322,14 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
         </div>
       ) : (
         <div 
-          className={`border-2 ${isDragOver ? 'border-[#00796B]' : 'border-dashed border-gray-300'} 
-                    rounded-lg text-center transition-colors`}
-          onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-          onDragLeave={() => setIsDragOver(false)}
+          className={`aspect-square max-w-[250px] mx-auto border-2 ${isDragOver ? 'border-[#00796B]' : 'border-dashed border-gray-300'} 
+                    rounded-lg p-6 text-center transition-colors`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
           onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
         >
-          <div 
-            className="flex flex-col items-center justify-center py-8 cursor-pointer"
-            onClick={() => fileInputRef.current?.click()}
-          >
+          <div className="flex flex-col items-center justify-center h-full">
             <Upload className="h-10 w-10 text-gray-400 mb-2" />
             <h3 className="text-sm font-medium mb-1">Upload Your Business Logo</h3>
             <p className="text-xs text-muted-foreground mb-2">Drag and drop or click to browse</p>
@@ -261,7 +357,15 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
                     onMouseLeave={handleMouseUp}
                     style={{ cursor: dragging ? 'grabbing' : 'grab' }}
                   >
+                    {/* Position helper text */}
+                    <div className="absolute top-2 left-2 right-2 text-center z-10">
+                      <span className="bg-black/50 text-white text-xs px-2 py-1 rounded">
+                        <Move className="h-3 w-3 inline mr-1" /> Drag to position
+                      </span>
+                    </div>
+
                     <img
+                      ref={imageRef}
                       src={imageBase64}
                       alt="Logo preview"
                       className="absolute inset-0"
@@ -286,10 +390,14 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
                   </div>
                 </div>
                 
-                <div className="w-full mt-6">
+                <div className="text-xs text-muted-foreground mt-2 text-center">
+                  The editor maintains a 1:1 aspect ratio (square)
+                </div>
+                
+                <div className="w-full mt-4">
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-sm font-medium">Zoom</label>
-                    <span className="text-xs text-gray-500">{Math.round(zoom * 100)}%</span>
+                    <span className="text-xs text-muted-foreground">{Math.round(zoom * 100)}%</span>
                   </div>
                   <input
                     type="range"

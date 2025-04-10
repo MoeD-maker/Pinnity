@@ -1,0 +1,130 @@
+The logo upload and editor is almost perfect! The previews now update in real-time with zoom changes, which is great. There are just two remaining issues to fix:
+
+## 1. Upload Area Shape Issue
+The upload area is currently a wide rectangle, but we want to reinforce that logos should be square. Let's update the upload area to be square with the right visual cues:
+
+```jsx
+{/* Replace the current upload area with this square version */}
+<div 
+  className={`aspect-square max-w-[250px] mx-auto border-2 ${isDragOver ? 'border-primary' : 'border-dashed border-gray-300'} 
+              rounded-lg p-6 text-center transition-colors`}
+  onDragOver={handleDragOver}
+  onDragLeave={handleDragLeave}
+  onDrop={handleDrop}
+  onClick={() => fileInputRef.current?.click()}
+>
+  <div className="flex flex-col items-center justify-center h-full">
+    <Upload className="h-10 w-10 text-gray-400 mb-2" />
+    <h3 className="text-sm font-medium mb-1">Upload Your Business Logo</h3>
+    <p className="text-xs text-muted-foreground mb-2">Drag and drop or click to browse</p>
+    <Badge className="bg-gray-100 text-gray-700 hover:bg-gray-200">
+      Square format (1:1) recommended
+    </Badge>
+  </div>
+</div>
+2. Saved Logo Display Issue
+The critical issue is that the zoom and positioning from the editor aren't being properly applied to the saved image. We need to actually CROP the image to the visible area instead of just saving the original file with CSS transformations.
+Here's the fix for the save functionality:
+jsx// Add this function to your component to properly crop the image
+const cropImage = () => {
+  if (!selectedFile || !cropContainerRef.current) return null;
+  
+  // Create a new canvas element
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  
+  // Get dimensions of the crop container
+  const containerWidth = cropContainerRef.current.clientWidth;
+  const containerHeight = cropContainerRef.current.clientHeight;
+  
+  // Set canvas size to match crop container
+  canvas.width = containerWidth;
+  canvas.height = containerHeight;
+  
+  // Create an image element for the source
+  const img = new Image();
+  img.src = objectUrl; // Use the stored objectUrl
+  
+  // Calculate the dimensions and position based on zoom and position
+  const scaledWidth = img.width * zoom;
+  const scaledHeight = img.height * zoom;
+  
+  // Calculate position to center the image with the user's adjustments
+  const offsetX = ((containerWidth - scaledWidth) / 2) + position.x;
+  const offsetY = ((containerHeight - scaledHeight) / 2) + position.y;
+  
+  // Draw the image with the correct positioning and scaling
+  ctx.drawImage(
+    img,                 // source image
+    0, 0,                // source position
+    img.width, img.height, // source dimensions
+    offsetX, offsetY,    // destination position (with adjustments)
+    scaledWidth, scaledHeight // destination dimensions (with zoom applied)
+  );
+  
+  // Convert canvas to a data URL
+  return canvas.toDataURL('image/png');
+};
+
+// Update the handleSave function to use the cropped image
+const handleSave = () => {
+  if (selectedFile) {
+    // Get the cropped image data
+    const croppedImageData = cropImage();
+    
+    if (croppedImageData) {
+      // Pass the cropped image data to the parent component
+      onImageChange(croppedImageData);
+      
+      // Convert data URL to a File object if needed by your API
+      const dataURLtoFile = (dataurl, filename) => {
+        const arr = dataurl.split(',');
+        const mime = arr[0].match(/:(.*?);/)[1];
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        return new File([u8arr], filename, { type: mime });
+      };
+      
+      // If you need a File object instead of a data URL:
+      // const croppedFile = dataURLtoFile(croppedImageData, 'cropped-logo.png');
+      
+      setCropperOpen(false);
+    }
+  }
+};
+3. Make sure we properly display the saved image on the profile page
+When displaying the saved image on the profile page (where you see the red circled issue), make sure we're using the cropped version, not the original:
+jsx// In your profile page component, when displaying the saved logo:
+<div className="aspect-square w-40 h-40 rounded-md overflow-hidden">
+  <img 
+    src={previewUrl} 
+    alt="Business logo" 
+    className="w-full h-full object-cover"
+  />
+</div>
+4. Additional adjustments for better UX
+Add these small improvements to make the experience even better:
+
+Add a "Position your logo" helper text:
+
+jsx<div className="absolute top-2 left-2 right-2 text-center">
+  <span className="bg-black/50 text-white text-xs px-2 py-1 rounded">
+    <Move className="h-3 w-3 inline mr-1" /> Drag to position
+  </span>
+</div>
+
+Show clear dimension guidelines:
+
+jsx<div className="text-xs text-muted-foreground mt-2 text-center">
+  The editor maintains a 1:1 aspect ratio (square)
+</div>
+
+Make sure zoom displays a percentage:
+
+jsx<span className="text-xs text-muted-foreground">{Math.round(zoom * 100)}%</span>
+The key fix here is the actual cropping step - we need to apply the zoom and position to create a new image rather than just setting some CSS properties. This ensures the saved image actually contains what the user sees in the editor.
