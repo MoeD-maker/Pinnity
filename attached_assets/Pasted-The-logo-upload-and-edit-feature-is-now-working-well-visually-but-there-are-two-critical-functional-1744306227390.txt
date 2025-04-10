@@ -1,0 +1,178 @@
+The logo upload and edit feature is now working well visually, but there are two critical functional issues to address:
+
+1. The zoom range is too limited - users can't zoom out enough to fit the entire logo in the frame
+2. The preview images don't update in real-time when zooming or repositioning
+
+## Fix These Specific Issues:
+
+### 1. Extend the zoom range to allow zooming out
+```jsx
+// Change the zoom range and default value
+const [zoom, setZoom] = useState(1); // Change to a lower default like 0.8
+
+// Update the zoom slider min value to allow zooming out more
+<input
+  type="range"
+  min="0.3" // Change from 1 to 0.3 to allow zooming out
+  max="3"
+  step="0.1"
+  value={zoom}
+  onChange={(e) => setZoom(parseFloat(e.target.value))}
+  className="w-full"
+/>
+2. Connect the previews to the main editor state
+The previews need to reflect the exact same transformations as the main editor. Currently they're static and don't update when you zoom in the main editor. Let's fix that:
+jsx// First, make sure the position and zoom states are used consistently
+const [zoom, setZoom] = useState(0.8);
+const [position, setPosition] = useState({ x: 0, y: 0 });
+
+// In the preview section, apply the same transforms:
+<div className="bg-gray-50 p-3 rounded-md">
+  <h4 className="text-sm font-medium mb-2">Preview at different sizes</h4>
+  <div className="flex items-end justify-between">
+    {/* Small preview */}
+    <div className="text-center">
+      <div className="mx-auto w-[40px] h-[40px] border rounded overflow-hidden bg-white relative">
+        {selectedFile && (
+          <img
+            src={URL.createObjectURL(selectedFile)}
+            alt="Small preview"
+            className="absolute"
+            style={{
+              width: `${zoom * 100}%`, 
+              height: `${zoom * 100}%`,
+              objectFit: 'cover',
+              top: '50%',
+              left: '50%',
+              transform: `translate(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px))`,
+              transformOrigin: 'center'
+            }}
+          />
+        )}
+      </div>
+      <span className="text-xs text-gray-500">Deal Card</span>
+    </div>
+    
+    {/* Medium preview - similar transformation */}
+    <div className="text-center">
+      <div className="mx-auto w-[80px] h-[80px] border rounded overflow-hidden bg-white relative">
+        {selectedFile && (
+          <img
+            src={URL.createObjectURL(selectedFile)}
+            alt="Medium preview"
+            className="absolute"
+            style={{
+              width: `${zoom * 100}%`, 
+              height: `${zoom * 100}%`,
+              objectFit: 'cover',
+              top: '50%',
+              left: '50%',
+              transform: `translate(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px))`,
+              transformOrigin: 'center'
+            }}
+          />
+        )}
+      </div>
+      <span className="text-xs text-gray-500">Deal Detail</span>
+    </div>
+    
+    {/* Large preview - similar transformation */}
+    <div className="text-center">
+      <div className="mx-auto w-[140px] h-[140px] border rounded overflow-hidden bg-white relative">
+        {selectedFile && (
+          <img
+            src={URL.createObjectURL(selectedFile)}
+            alt="Large preview"
+            className="absolute"
+            style={{
+              width: `${zoom * 100}%`, 
+              height: `${zoom * 100}%`,
+              objectFit: 'cover',
+              top: '50%',
+              left: '50%',
+              transform: `translate(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px))`,
+              transformOrigin: 'center'
+            }}
+          />
+        )}
+      </div>
+      <span className="text-xs text-gray-500">Profile</span>
+    </div>
+  </div>
+</div>
+3. Scale the position values appropriately for different preview sizes
+The issue is that the same position values are being applied to all sizes without scaling. We need to adjust the position values based on the size of the preview:
+jsx// Function to scale position values based on container size
+const scalePosition = (basePosition, baseSize, targetSize) => {
+  const scaleFactor = targetSize / baseSize;
+  return {
+    x: basePosition.x * scaleFactor,
+    y: basePosition.y * scaleFactor
+  };
+};
+
+// Then, in the preview components:
+// Use the base editor size (250px) as reference
+const baseSize = 250;
+const smallSize = 40;
+const mediumSize = 80;
+const largeSize = 140;
+
+// Small preview
+const smallScaledPosition = scalePosition(position, baseSize, smallSize);
+// In the style:
+transform: `translate(calc(-50% + ${smallScaledPosition.x}px), calc(-50% + ${smallScaledPosition.y}px))`
+
+// Medium preview
+const mediumScaledPosition = scalePosition(position, baseSize, mediumSize);
+// In the style:
+transform: `translate(calc(-50% + ${mediumScaledPosition.x}px), calc(-50% + ${mediumScaledPosition.y}px))`
+
+// Large preview
+const largeScaledPosition = scalePosition(position, baseSize, largeSize);
+// In the style:
+transform: `translate(calc(-50% + ${largeScaledPosition.x}px), calc(-50% + ${largeScaledPosition.y}px))`
+4. Fix URL memory leaks with a better approach
+Rather than creating multiple object URLs, use one consistent URL throughout:
+jsx// At the top of your component
+const [objectUrl, setObjectUrl] = useState(null);
+
+// When file is selected
+const handleFileChange = (e) => {
+  if (e.target.files && e.target.files.length > 0) {
+    const file = e.target.files[0];
+    
+    // Validate file...
+    
+    setSelectedFile(file);
+    
+    // Revoke previous URL if exists
+    if (objectUrl) {
+      URL.revokeObjectURL(objectUrl);
+    }
+    
+    // Create new URL and store it
+    const newUrl = URL.createObjectURL(file);
+    setObjectUrl(newUrl);
+    setPreviewUrl(newUrl);
+    setCropperOpen(true);
+  }
+};
+
+// Cleanup on unmount
+useEffect(() => {
+  return () => {
+    if (objectUrl) {
+      URL.revokeObjectURL(objectUrl);
+    }
+  };
+}, [objectUrl]);
+
+// Then use objectUrl in all your img elements instead of creating new URLs
+<img src={objectUrl} alt="Logo preview" ... />
+These changes should fix the issues with:
+
+Limited zoom range
+Disconnected previews that don't update with zoom/position changes
+Proper scaling of position across different preview sizes
+Memory management for object URLs

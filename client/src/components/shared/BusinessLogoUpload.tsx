@@ -19,7 +19,7 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImage);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [cropperOpen, setCropperOpen] = useState<boolean>(false);
-  const [zoom, setZoom] = useState<number>(1);
+  const [zoom, setZoom] = useState<number>(0.8); // Start with slightly zoomed out
   const [position, setPosition] = useState<Position>({ x: 0, y: 0 });
   const [dragging, setDragging] = useState<boolean>(false);
   const [dragStart, setDragStart] = useState<Position>({ x: 0, y: 0 });
@@ -32,6 +32,21 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
   const urlRef = useRef<string[]>([]);
   const { toast } = useToast();
 
+  // Base size for the editor and preview containers
+  const BASE_SIZE = 250;
+  const SMALL_SIZE = 40;
+  const MEDIUM_SIZE = 80;
+  const LARGE_SIZE = 140;
+
+  // Function to scale position values based on container size
+  const scalePosition = (basePosition: Position, baseSize: number, targetSize: number): Position => {
+    const scaleFactor = targetSize / baseSize;
+    return {
+      x: basePosition.x * scaleFactor,
+      y: basePosition.y * scaleFactor
+    };
+  };
+
   // Cleanup function to revoke object URLs when component unmounts
   useEffect(() => {
     return () => {
@@ -43,7 +58,7 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
   useEffect(() => {
     if (selectedFile) {
       setPosition({ x: 0, y: 0 });
-      setZoom(1);
+      setZoom(0.8); // Default to slightly zoomed out to fit most logos
     }
   }, [selectedFile]);
 
@@ -164,6 +179,11 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
       processFile(e.dataTransfer.files[0]);
     }
   };
+
+  // Scale positions for the different preview sizes
+  const smallScaledPosition = scalePosition(position, BASE_SIZE, SMALL_SIZE);
+  const mediumScaledPosition = scalePosition(position, BASE_SIZE, MEDIUM_SIZE);
+  const largeScaledPosition = scalePosition(position, BASE_SIZE, LARGE_SIZE);
   
   return (
     <div className="space-y-4">
@@ -273,7 +293,7 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
                   </div>
                   <input
                     type="range"
-                    min="1"
+                    min="0.3" // Allow zooming out more
                     max="3"
                     step="0.1"
                     value={zoom}
@@ -282,17 +302,27 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
                   />
                 </div>
 
-                {/* Multi-size preview */}
+                {/* Multi-size preview with real-time updates */}
                 <div className="bg-gray-50 p-3 rounded-md w-full mt-6">
                   <h4 className="text-sm font-medium mb-2">Preview at different sizes</h4>
                   <div className="flex items-end justify-between">
                     <div className="text-center">
-                      <div className="mx-auto w-[40px] h-[40px] border rounded overflow-hidden bg-white flex items-center justify-center">
+                      <div className="mx-auto w-[40px] h-[40px] border rounded overflow-hidden bg-white relative">
                         {imageBase64 ? (
                           <img
                             src={imageBase64}
                             alt="Small preview"
-                            className="w-full h-full object-cover"
+                            className="absolute"
+                            style={{
+                              width: `${zoom * 100}%`,
+                              height: `${zoom * 100}%`,
+                              objectFit: 'contain',
+                              top: '50%',
+                              left: '50%',
+                              transform: `translate(calc(-50% + ${smallScaledPosition.x}px), calc(-50% + ${smallScaledPosition.y}px))`,
+                              maxWidth: 'none',
+                              maxHeight: 'none'
+                            }}
                             onError={(e) => console.error("Small preview error:", e)}
                           />
                         ) : (
@@ -303,12 +333,22 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
                     </div>
                     
                     <div className="text-center">
-                      <div className="mx-auto w-[80px] h-[80px] border rounded overflow-hidden bg-white flex items-center justify-center">
+                      <div className="mx-auto w-[80px] h-[80px] border rounded overflow-hidden bg-white relative">
                         {imageBase64 ? (
                           <img
                             src={imageBase64}
                             alt="Medium preview"
-                            className="w-full h-full object-cover"
+                            className="absolute"
+                            style={{
+                              width: `${zoom * 100}%`,
+                              height: `${zoom * 100}%`,
+                              objectFit: 'contain',
+                              top: '50%',
+                              left: '50%',
+                              transform: `translate(calc(-50% + ${mediumScaledPosition.x}px), calc(-50% + ${mediumScaledPosition.y}px))`,
+                              maxWidth: 'none',
+                              maxHeight: 'none'
+                            }}
                             onError={(e) => console.error("Medium preview error:", e)}
                           />
                         ) : (
@@ -319,12 +359,22 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
                     </div>
                     
                     <div className="text-center">
-                      <div className="mx-auto w-[140px] h-[140px] border rounded overflow-hidden bg-white flex items-center justify-center">
+                      <div className="mx-auto w-[140px] h-[140px] border rounded overflow-hidden bg-white relative">
                         {imageBase64 ? (
                           <img
                             src={imageBase64}
                             alt="Large preview"
-                            className="w-full h-full object-cover"
+                            className="absolute"
+                            style={{
+                              width: `${zoom * 100}%`,
+                              height: `${zoom * 100}%`,
+                              objectFit: 'contain',
+                              top: '50%',
+                              left: '50%',
+                              transform: `translate(calc(-50% + ${largeScaledPosition.x}px), calc(-50% + ${largeScaledPosition.y}px))`,
+                              maxWidth: 'none',
+                              maxHeight: 'none'
+                            }}
                             onError={(e) => console.error("Large preview error:", e)}
                           />
                         ) : (
