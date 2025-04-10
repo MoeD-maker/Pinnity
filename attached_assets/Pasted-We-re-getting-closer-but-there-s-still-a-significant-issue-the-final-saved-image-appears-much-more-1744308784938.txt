@@ -1,6 +1,17 @@
+We're getting closer, but there's still a significant issue: the final saved image appears much more zoomed in than what users see in the previews. Let's solve this with a simpler, more reliable approach that guarantees consistency.
+
+## Underlying Issue
+
+The current approach tries to do too much with complicated transformations that aren't matching between the preview and final saved image. Let's implement a much simpler approach that's focused on just one thing: accurately capturing what the user sees.
+
+## Implementation Fix
+
+Replace the entire BusinessLogoUpload component with this drastically simplified version:
+
+```jsx
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, Edit2, X } from 'lucide-react';
+import { Upload, Edit2, X, Move } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -36,13 +47,8 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
     // Cleanup function
     return () => {
       canvasRef.current = null;
-      
-      // Clean up any object URLs
-      if (previewUrl && previewUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(previewUrl);
-      }
     };
-  }, [previewUrl]);
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -178,24 +184,8 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
       const croppedImageData = await cropImage();
       
       if (croppedImageData) {
-        // Add debugging to check the image dimensions
-        const debugImg = new Image();
-        debugImg.onload = () => {
-          console.log("Final cropped image dimensions:", {
-            width: debugImg.width,
-            height: debugImg.height
-          });
-        };
-        debugImg.src = croppedImageData;
-        
         // Pass the cropped image data to the parent component
         onImageChange(croppedImageData);
-        
-        // Clean up old URL if it exists
-        if (previewUrl && previewUrl.startsWith('blob:')) {
-          URL.revokeObjectURL(previewUrl);
-        }
-        
         setPreviewUrl(croppedImageData);
         
         toast({
@@ -224,11 +214,6 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
   };
   
   const handleRemoveImage = () => {
-    // Clean up URL if needed
-    if (previewUrl && previewUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(previewUrl);
-    }
-    
     setPreviewUrl(null);
     setSelectedFile(null);
     onImageChange(null);
@@ -245,7 +230,7 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
       />
       
       {previewUrl ? (
-        <div className="relative group aspect-square w-40 h-40 mx-auto">
+        <div className="relative aspect-square w-40 h-40 mx-auto">
           <img 
             src={previewUrl} 
             alt="Business logo" 
@@ -299,12 +284,8 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
               <>
                 {/* Simple preview */}
                 <div className="relative">
-                  <div 
-                    ref={cropContainerRef}
-                    className="w-[250px] h-[250px] overflow-hidden border-2 border-gray-200 rounded-md bg-gray-50 flex items-center justify-center"
-                  >
+                  <div className="w-[250px] h-[250px] overflow-hidden border-2 border-gray-200 rounded-md bg-gray-50 flex items-center justify-center">
                     <img
-                      ref={imageRef}
                       src={previewUrl}
                       alt="Logo preview"
                       style={{
@@ -407,3 +388,11 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
     </div>
   );
 }
+Key Changes in This Approach
+
+Drastically Simplified: Removed all the complex positioning, dragging and transformations
+Single Scale Parameter: Instead of complex zoom and position tracking, use a single scale parameter
+Consistent Rendering: Use the same object-fit: contain and maxWidth/maxHeight styling for all preview displays
+Simple Canvas Drawing: The canvas drawing uses basic source-to-destination mapping without complex transformations
+Reliable Preview: What you see in the preview is exactly what you get in the final saved image
+No HTML2Canvas: Removed the html2canvas dependency which was causing problems
