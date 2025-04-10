@@ -1,0 +1,224 @@
+The logo editor is now working better, but when saving the logo, it's still not displaying exactly as it appears in the preview. After reviewing the code, I've identified the issue in the html2canvas capture method.
+
+## The Problem
+
+When looking at the `BusinessLogoUpload.tsx` component:
+
+1. The html2canvas library isn't capturing the exact image view that users see in the preview
+2. The cropped image is cutting off portions of the logo that were visible in the editor
+3. The scaling seems inconsistent between the edit preview and final display
+
+## Fix Implementation
+
+Please make these specific changes to `BusinessLogoUpload.tsx`:
+
+### 1. Replace the entire cropImage function with this improved version:
+
+```jsx
+// Replace the current cropImage function with this enhanced version
+const cropImage = async (): Promise<string | null> => {
+  if (!cropContainerRef.current || !imageRef.current) {
+    console.error("Missing container ref or image ref for cropping");
+    return null;
+  }
+  
+  try {
+    // Create a new canvas element
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    if (!ctx) {
+      throw new Error('Could not get canvas context');
+    }
+    
+    // Set canvas to exact dimensions of the crop area (250x250 square)
+    canvas.width = 500; // Higher resolution for better quality
+    canvas.height = 500;
+    
+    // Fill with white background
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Calculate the exact same transform that's applied to the image in the editor
+    const img = imageRef.current;
+    const containerWidth = cropContainerRef.current.clientWidth;
+    const containerHeight = cropContainerRef.current.clientHeight;
+    
+    // Scale factor between canvas and container
+    const scaleFactor = canvas.width / containerWidth;
+    
+    // Calculate dimensions and positions just like in the editor
+    const scaledImgWidth = img.naturalWidth * zoom;
+    const scaledImgHeight = img.naturalHeight * zoom;
+    
+    // Calculate the translation
+    const translateX = position.x;
+    const translateY = position.y;
+    
+    // Debug before drawing
+    console.log('Crop params:', {
+      zoom,
+      position,
+      naturalWidth: img.naturalWidth,
+      naturalHeight: img.naturalHeight,
+      containerWidth,
+      containerHeight,
+      scaledImgWidth,
+      scaledImgHeight,
+      translateX,
+      translateY
+    });
+    
+    // Draw the image with the exact same transformations as seen in the editor
+    ctx.save();
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.translate(translateX * scaleFactor, translateY * scaleFactor);
+    ctx.drawImage(
+      img,
+      -scaledImgWidth * scaleFactor / 2,
+      -scaledImgHeight * scaleFactor / 2,
+      scaledImgWidth * scaleFactor,
+      scaledImgHeight * scaleFactor
+    );
+    ctx.restore();
+    
+    // Return the canvas as a data URL
+    const dataUrl = canvas.toDataURL('image/png', 1.0);
+    
+    // Additional validation - make sure the image was actually drawn
+    const testImg = new Image();
+    await new Promise<void>((resolve, reject) => {
+      testImg.onload = () => resolve();
+      testImg.onerror = () => reject(new Error('Generated image failed to load'));
+      testImg.src = dataUrl;
+    });
+    
+    return dataUrl;
+  } catch (error) {
+    console.error("Error in custom canvas cropping:", error);
+    
+    // Fallback to html2canvas as a backup approach
+    try {
+      const canvas = await html2canvas(cropContainerRef.current, {
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#FFFFFF',
+        scale: 2,
+        logging: true,
+        onclone: (clonedDoc) => {
+          // Find the image in the cloned document
+          const clonedContainer = clonedDoc.querySelector('[data-crop-container="true"]');
+          if (clonedContainer) {
+            // Remove helper text and crosshairs
+            const helperElements = clonedContainer.querySelectorAll('[data-helper-text="true"], [data-crosshairs="true"]');
+            helperElements.forEach(el => el.remove());
+          }
+        }
+      });
+      
+      return canvas.toDataURL('image/png');
+    } catch (fallbackError) {
+      console.error("Fallback html2canvas method also failed:", fallbackError);
+      return null;
+    }
+  }
+};
+2. Update the main image ref and how it's used:
+Make sure the image ref is properly used by updating how the main image is rendered:
+jsx{/* Make sure the image ref is properly attached */}
+<img
+  ref={imageRef}
+  src={imageBase64}
+  alt="Logo preview"
+  className="absolute inset-0"
+  crossOrigin="anonymous" // Add this for CORS handling
+  style={{
+    width: `${zoom * 100}%`,
+    height: `${zoom * 100}%`,
+    objectFit: 'contain',
+    top: '50%',
+    left: '50%',
+    transform: `translate(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px))`,
+    maxWidth: 'none',
+    maxHeight: 'none',
+    userSelect: 'none'
+  }}
+  draggable="false"
+  onLoad={() => console.log("Main editor image loaded successfully")}
+  onError={(e) => console.error("Image failed to load in cropper:", e)}
+/>
+3. Fix how the saved image is displayed on the profile page:
+jsx{/* When displaying the saved logo outside the editor */}
+{previewUrl ? (
+  <div className="relative group aspect-square w-40 h-40 mx-auto">
+    <img 
+      src={previewUrl} 
+      alt="Business logo" 
+      className="w-full h-full object-contain rounded-md border" // Changed from object-cover to object-contain
+      onError={(e) => console.error("Error loading main preview:", e)}
+    />
+    {/* Rest of the code remains the same */}
+  </div>
+) : (
+  // Upload button code...
+)}
+4. Add proper cleanup for the base64 image data
+jsx// Add this useEffect for proper cleanup
+useEffect(() => {
+  // Cleanup function to handle component unmount
+  return () => {
+    // Release any object URLs if they exist
+    if (previewUrl && previewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrl);
+    }
+  };
+}, [previewUrl]);
+5. Additional debugging code to help identify any remaining issues:
+jsx// Add this to handleCropComplete to debug the final image
+const handleCropComplete = async () => {
+  if (!selectedFile) return;
+  
+  setUploading(true);
+  
+  try {
+    // Get the cropped image data
+    const croppedImageData = await cropImage();
+    
+    if (croppedImageData) {
+      // Add debugging to check the image dimensions
+      const debugImg = new Image();
+      debugImg.onload = () => {
+        console.log("Final cropped image dimensions:", {
+          width: debugImg.width,
+          height: debugImg.height
+        });
+      };
+      debugImg.src = croppedImageData;
+      
+      // Pass the cropped image data to the parent component
+      onImageChange(croppedImageData);
+      setPreviewUrl(croppedImageData);
+      
+      toast({
+        title: "Logo updated",
+        description: "Your business logo has been updated successfully.",
+      });
+    } else {
+      // Error handling...
+    }
+  } catch (error) {
+    // Error handling...
+  } finally {
+    setCropperOpen(false);
+    setUploading(false);
+  }
+};
+These changes should fix the issue by:
+
+Using a direct canvas drawing approach instead of html2canvas
+Precisely replicating the transformations applied in the editor
+Using higher resolution (500×500) for better image quality
+Maintaining proper object-fit settings between the editor and the final display
+Adding thorough debugging to help identify any additional issues
+
+The key insight is to manually replicate the exact same transformations on a canvas instead of relying on html2canvas to capture what's on screen.

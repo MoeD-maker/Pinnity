@@ -53,8 +53,13 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
   useEffect(() => {
     return () => {
       urlRef.current.forEach(url => URL.revokeObjectURL(url));
+      
+      // Release any blob URLs in previewUrl
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
     };
-  }, []);
+  }, [previewUrl]);
 
   // Reset position when a new file is selected
   useEffect(() => {
@@ -174,45 +179,112 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
     setDragging(false);
   };
 
-  // Using html2canvas to capture exactly what the user sees
+  // Enhanced cropImage function to properly capture the exact view
   const cropImage = async (): Promise<string | null> => {
-    if (!cropContainerRef.current) {
-      console.error("Missing container ref for cropping");
+    if (!cropContainerRef.current || !imageRef.current) {
+      console.error("Missing container ref or image ref for cropping");
       return null;
     }
     
     try {
-      // Use html2canvas to capture exactly what's visible
-      const canvas = await html2canvas(cropContainerRef.current, {
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#FFFFFF',
-        scale: 2, // Higher resolution
-        logging: false,
-        onclone: (clonedDoc) => {
-          // Find the image in the cloned document
-          const clonedContainer = clonedDoc.querySelector('[data-crop-container="true"]');
-          if (clonedContainer) {
-            // Remove helper text from the cloned document
-            const helpText = clonedContainer.querySelector('[data-helper-text="true"]');
-            if (helpText) {
-              helpText.remove();
-            }
-            
-            // Remove crosshairs from the cloned document if present
-            const crosshairs = clonedContainer.querySelector('[data-crosshairs="true"]');
-            if (crosshairs) {
-              crosshairs.remove();
-            }
-          }
-        }
+      // Create a new canvas element
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        throw new Error('Could not get canvas context');
+      }
+      
+      // Set canvas to exact dimensions of the crop area (250x250 square)
+      canvas.width = 500; // Higher resolution for better quality
+      canvas.height = 500;
+      
+      // Fill with white background
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Calculate the exact same transform that's applied to the image in the editor
+      const img = imageRef.current;
+      const containerWidth = cropContainerRef.current.clientWidth;
+      const containerHeight = cropContainerRef.current.clientHeight;
+      
+      // Scale factor between canvas and container
+      const scaleFactor = canvas.width / containerWidth;
+      
+      // Calculate dimensions and positions just like in the editor
+      const scaledImgWidth = img.naturalWidth * zoom;
+      const scaledImgHeight = img.naturalHeight * zoom;
+      
+      // Calculate the translation
+      const translateX = position.x;
+      const translateY = position.y;
+      
+      // Debug before drawing
+      console.log('Crop params:', {
+        zoom,
+        position,
+        naturalWidth: img.naturalWidth,
+        naturalHeight: img.naturalHeight,
+        containerWidth,
+        containerHeight,
+        scaledImgWidth,
+        scaledImgHeight,
+        translateX,
+        translateY
       });
       
-      // Convert canvas to data URL
-      return canvas.toDataURL('image/png');
+      // Draw the image with the exact same transformations as seen in the editor
+      ctx.save();
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.translate(translateX * scaleFactor, translateY * scaleFactor);
+      ctx.drawImage(
+        img,
+        -scaledImgWidth * scaleFactor / 2,
+        -scaledImgHeight * scaleFactor / 2,
+        scaledImgWidth * scaleFactor,
+        scaledImgHeight * scaleFactor
+      );
+      ctx.restore();
+      
+      // Return the canvas as a data URL
+      const dataUrl = canvas.toDataURL('image/png', 1.0);
+      
+      // Additional validation - make sure the image was actually drawn
+      const testImg = new Image();
+      await new Promise<void>((resolve, reject) => {
+        testImg.onload = () => resolve();
+        testImg.onerror = () => reject(new Error('Generated image failed to load'));
+        testImg.src = dataUrl;
+      });
+      
+      return dataUrl;
     } catch (error) {
-      console.error("Error capturing image:", error);
-      return null;
+      console.error("Error in custom canvas cropping:", error);
+      
+      // Fallback to html2canvas as a backup approach
+      try {
+        const canvas = await html2canvas(cropContainerRef.current, {
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#FFFFFF',
+          scale: 2,
+          logging: true,
+          onclone: (clonedDoc) => {
+            // Find the image in the cloned document
+            const clonedContainer = clonedDoc.querySelector('[data-crop-container="true"]');
+            if (clonedContainer) {
+              // Remove helper text and crosshairs
+              const helperElements = clonedContainer.querySelectorAll('[data-helper-text="true"], [data-crosshairs="true"]');
+              helperElements.forEach(el => el.remove());
+            }
+          }
+        });
+        
+        return canvas.toDataURL('image/png');
+      } catch (fallbackError) {
+        console.error("Fallback html2canvas method also failed:", fallbackError);
+        return null;
+      }
     }
   };
 
@@ -226,6 +298,16 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
       const croppedImageData = await cropImage();
       
       if (croppedImageData) {
+        // Add debugging to check the image dimensions
+        const debugImg = new Image();
+        debugImg.onload = () => {
+          console.log("Final cropped image dimensions:", {
+            width: debugImg.width,
+            height: debugImg.height
+          });
+        };
+        debugImg.src = croppedImageData;
+        
         // Pass the cropped image data to the parent component
         onImageChange(croppedImageData);
         setPreviewUrl(croppedImageData);
@@ -291,7 +373,7 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
           <img 
             src={previewUrl} 
             alt="Business logo" 
-            className="w-full h-full object-cover rounded-md border" 
+            className="w-full h-full object-contain rounded-md border" 
             onError={(e) => console.error("Error loading main preview:", e)}
           />
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
@@ -369,6 +451,7 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
                       src={imageBase64}
                       alt="Logo preview"
                       className="absolute inset-0"
+                      crossOrigin="anonymous"
                       style={{
                         width: `${zoom * 100}%`,
                         height: `${zoom * 100}%`,
@@ -381,6 +464,7 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
                         userSelect: 'none'
                       }}
                       draggable="false"
+                      onLoad={() => console.log("Main editor image loaded successfully")}
                       onError={(e) => console.error("Image failed to load in cropper:", e)}
                     />
                   </div>
