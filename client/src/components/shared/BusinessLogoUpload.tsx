@@ -4,6 +4,7 @@ import { Upload, Edit2, X, Move } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import html2canvas from 'html2canvas';
 
 interface BusinessLogoUploadProps {
   currentImage: string | null;
@@ -62,6 +63,20 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
       setZoom(0.8); // Default to slightly zoomed out to fit most logos
     }
   }, [selectedFile]);
+
+  // Debug logging to help track the state
+  useEffect(() => {
+    if (selectedFile && cropContainerRef.current) {
+      console.log("Current state:", {
+        containerSize: {
+          width: cropContainerRef.current.clientWidth,
+          height: cropContainerRef.current.clientHeight
+        },
+        position,
+        zoom
+      });
+    }
+  }, [selectedFile, position, zoom]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -159,78 +174,56 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
     setDragging(false);
   };
 
-  // Function to crop the image based on current zoom and position
-  const cropImage = (): string | null => {
-    if (!imageBase64 || !cropContainerRef.current) {
-      console.error("Missing image data or container ref for cropping");
+  // Using html2canvas to capture exactly what the user sees
+  const cropImage = async (): Promise<string | null> => {
+    if (!cropContainerRef.current) {
+      console.error("Missing container ref for cropping");
       return null;
     }
     
     try {
-      // Create a new canvas element
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        console.error("Could not get canvas context");
-        return null;
-      }
+      // Use html2canvas to capture exactly what's visible
+      const canvas = await html2canvas(cropContainerRef.current, {
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#FFFFFF',
+        scale: 2, // Higher resolution
+        logging: false,
+        onclone: (clonedDoc) => {
+          // Find the image in the cloned document
+          const clonedContainer = clonedDoc.querySelector('[data-crop-container="true"]');
+          if (clonedContainer) {
+            // Remove helper text from the cloned document
+            const helpText = clonedContainer.querySelector('[data-helper-text="true"]');
+            if (helpText) {
+              helpText.remove();
+            }
+            
+            // Remove crosshairs from the cloned document if present
+            const crosshairs = clonedContainer.querySelector('[data-crosshairs="true"]');
+            if (crosshairs) {
+              crosshairs.remove();
+            }
+          }
+        }
+      });
       
-      // Get dimensions of the crop container
-      const containerWidth = cropContainerRef.current.clientWidth;
-      const containerHeight = cropContainerRef.current.clientHeight;
-      
-      // Set canvas size to match crop container (square)
-      canvas.width = containerWidth;
-      canvas.height = containerHeight;
-      
-      // Create an image element for the source
-      const img = new Image();
-      img.src = imageBase64;
-      
-      // We need to make this synchronous for the canvas operation
-      // This is a hack but works for base64 images that are already loaded
-      if (!img.complete) {
-        console.error("Image not fully loaded for canvas operation");
-        return null;
-      }
-      
-      // Calculate the dimensions and position based on zoom and position
-      const scaledWidth = img.width * zoom;
-      const scaledHeight = img.height * zoom;
-      
-      // Calculate position to center the image with the user's adjustments
-      const offsetX = ((containerWidth - scaledWidth) / 2) + position.x;
-      const offsetY = ((containerHeight - scaledHeight) / 2) + position.y;
-      
-      // Fill the canvas with a white background (for transparent images)
-      ctx.fillStyle = 'white';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Draw the image with the correct positioning and scaling
-      ctx.drawImage(
-        img,                   // source image
-        0, 0,                  // source position
-        img.width, img.height, // source dimensions
-        offsetX, offsetY,      // destination position (with adjustments)
-        scaledWidth, scaledHeight // destination dimensions (with zoom applied)
-      );
-      
-      // Convert canvas to a data URL
+      // Convert canvas to data URL
       return canvas.toDataURL('image/png');
     } catch (error) {
-      console.error("Error cropping image:", error);
+      console.error("Error capturing image:", error);
       return null;
     }
   };
 
-  const handleCropComplete = () => {
+  const handleCropComplete = async () => {
     if (!selectedFile) return;
     
     setUploading(true);
     
     try {
       // Get the cropped image data
-      const croppedImageData = cropImage();
+      const croppedImageData = await cropImage();
       
       if (croppedImageData) {
         // Pass the cropped image data to the parent component
@@ -350,6 +343,7 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
                 <div className="relative">
                   <div 
                     ref={cropContainerRef}
+                    data-crop-container="true"
                     className="relative w-[250px] h-[250px] overflow-hidden border-2 border-gray-200 rounded-md bg-gray-50"
                     onMouseDown={handleMouseDown}
                     onMouseMove={handleMouseMove}
@@ -357,8 +351,14 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
                     onMouseLeave={handleMouseUp}
                     style={{ cursor: dragging ? 'grabbing' : 'grab' }}
                   >
+                    {/* Debugging crosshairs to show center */}
+                    <div data-crosshairs="true" className="absolute inset-0 pointer-events-none">
+                      <div className="absolute left-0 right-0 top-1/2 h-px bg-red-500 opacity-30" />
+                      <div className="absolute top-0 bottom-0 left-1/2 w-px bg-red-500 opacity-30" />
+                    </div>
+                    
                     {/* Position helper text */}
-                    <div className="absolute top-2 left-2 right-2 text-center z-10">
+                    <div data-helper-text="true" className="absolute top-2 left-2 right-2 text-center z-10">
                       <span className="bg-black/50 text-white text-xs px-2 py-1 rounded">
                         <Move className="h-3 w-3 inline mr-1" /> Drag to position
                       </span>

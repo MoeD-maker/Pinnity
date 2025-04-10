@@ -1,0 +1,191 @@
+There's still an issue with the logo cropping. The preview in the editor looks correct, but when saving, the image gets incorrectly cropped - it's cutting off part of the logo. Let's fix the cropImage function with a more reliable approach:
+
+## The Critical Issue
+
+The problem is that our cropping function isn't properly capturing what the user sees in the preview. We need a better approach that will:
+
+1. Capture the EXACT view that the user sees in the editor
+2. Preserve all parts of the logo visible in the editor preview
+3. Ensure the saved image matches what they approved in the previews
+
+## Fix the Cropping Function
+
+Replace the cropImage function with this more reliable implementation:
+
+```jsx
+const cropImage = async () => {
+  return new Promise((resolve, reject) => {
+    if (!selectedFile || !cropContainerRef.current) {
+      reject("No image or container reference");
+      return;
+    }
+    
+    try {
+      // Create an image element for the source
+      const img = new Image();
+      
+      img.onload = () => {
+        // Get actual dimensions of the crop container (square)
+        const containerWidth = cropContainerRef.current.clientWidth;
+        const containerHeight = cropContainerRef.current.clientHeight;
+        
+        // Create a canvas with the same dimensions as the crop container
+        const canvas = document.createElement('canvas');
+        canvas.width = containerWidth;
+        canvas.height = containerHeight;
+        const ctx = canvas.getContext('2d');
+        
+        if (!ctx) {
+          reject("Could not get canvas context");
+          return;
+        }
+        
+        // Clear the canvas with a white background
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Calculate dimensions after zoom
+        const scaledWidth = img.width * zoom;
+        const scaledHeight = img.height * zoom;
+        
+        // Calculate center position including user's position adjustments
+        // This is the key calculation to ensure we draw exactly what is visible
+        const centerX = (containerWidth / 2) + position.x;
+        const centerY = (containerHeight / 2) + position.y;
+        
+        // Calculate the source position in the original image
+        const sourceX = (centerX - (containerWidth / 2)) / zoom;
+        const sourceY = (centerY - (containerHeight / 2)) / zoom;
+        
+        console.log('Crop calculations:', {
+          zoom,
+          position,
+          containerWidth,
+          containerHeight,
+          imgWidth: img.width,
+          imgHeight: img.height,
+          scaledWidth,
+          scaledHeight,
+          centerX,
+          centerY,
+          sourceX,
+          sourceY
+        });
+        
+        // Draw the image onto the canvas, positioned correctly
+        ctx.drawImage(
+          img,                           // source image
+          0, 0,                          // source position
+          img.width, img.height,         // source dimensions
+          (containerWidth - scaledWidth) / 2 + position.x,  // dest x position
+          (containerHeight - scaledHeight) / 2 + position.y, // dest y position
+          scaledWidth, scaledHeight      // destination dimensions with zoom
+        );
+        
+        // Convert to data URL and resolve
+        const dataUrl = canvas.toDataURL('image/png');
+        resolve(dataUrl);
+      };
+      
+      img.onerror = (err) => {
+        console.error("Image loading error:", err);
+        reject("Failed to load image for cropping");
+      };
+      
+      // Set the source last (after attaching handlers)
+      img.src = objectUrl;
+    } catch (error) {
+      console.error("Error in cropImage:", error);
+      reject(error);
+    }
+  });
+};
+Update the Save Handler
+Then update the handleSave function to use async/await with the Promise-based cropping:
+jsxconst handleSave = async () => {
+  if (selectedFile) {
+    try {
+      // Set some UI state to show loading
+      setSaving(true);
+      
+      // Get the cropped image
+      const croppedImageData = await cropImage();
+      
+      // For debugging: display in console what was cropped
+      console.log("Cropped image created successfully");
+      
+      // Send the cropped image data to the parent component
+      onImageChange(croppedImageData);
+      
+      // Close the dialog
+      setCropperOpen(false);
+    } catch (error) {
+      console.error("Error saving logo:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save logo. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+};
+Alternative Approach: HTML2Canvas
+If the above approach still has issues, we can use html2canvas to literally take a screenshot of what the user sees:
+jsx// Install the library first:
+// npm install html2canvas
+
+import html2canvas from 'html2canvas';
+
+const cropImage = async () => {
+  if (!cropContainerRef.current) return null;
+  
+  try {
+    // Use html2canvas to capture exactly what's visible
+    const canvas = await html2canvas(cropContainerRef.current, {
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#FFFFFF'
+    });
+    
+    return canvas.toDataURL('image/png');
+  } catch (error) {
+    console.error("Error capturing image:", error);
+    throw error;
+  }
+};
+Debug the Issue Directly
+Add these temporary debugging tools to see what's happening:
+jsx// Add this somewhere in your component to debug the current state
+useEffect(() => {
+  if (selectedFile && cropContainerRef.current) {
+    console.log("Current state:", {
+      containerSize: {
+        width: cropContainerRef.current.clientWidth,
+        height: cropContainerRef.current.clientHeight
+      },
+      position,
+      zoom,
+      image: {
+        src: objectUrl,
+        // Add image dimensions when loaded
+      }
+    });
+  }
+}, [selectedFile, position, zoom, objectUrl]);
+
+// Also add visible debugging indicators to see the crop area:
+<div 
+  ref={cropContainerRef}
+  className="relative w-[250px] h-[250px] mx-auto overflow-hidden border-2 border-gray-200 rounded-md bg-gray-50"
+>
+  {/* Debugging crosshairs to show center */}
+  <div className="absolute inset-0 pointer-events-none">
+    <div className="absolute left-0 right-0 top-1/2 h-px bg-red-500 opacity-30" />
+    <div className="absolute top-0 bottom-0 left-1/2 w-px bg-red-500 opacity-30" />
+  </div>
+  
+  {/* Rest of the cropper content */}
+</div>
+The key issue is ensuring the exact visible portion of the image in the crop area is captured when saving. This approach should address that by either directly mapping the transformations or by literally capturing what's visible on screen.
