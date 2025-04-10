@@ -24,6 +24,18 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
 
+  // Add debug logging for image state
+  useEffect(() => {
+    console.log("Current image state:", {
+      hasSelectedFile: !!selectedFile,
+      hasPreviewUrl: !!previewUrl,
+      previewUrlType: previewUrl ? 
+        (previewUrl.startsWith('data:') ? 'data URL' : 
+         previewUrl.startsWith('blob:') ? 'blob URL' : 'other URL') : 'none',
+      previewUrlLength: previewUrl ? previewUrl.length : 0
+    });
+  }, [selectedFile, previewUrl]);
+
   useEffect(() => {
     // Create canvas when component mounts
     if (!canvasRef.current) {
@@ -50,6 +62,7 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
     }
   };
 
+  // Updated processFile function to use FileReader
   const processFile = (file: File) => {
     try {
       // Validate file size
@@ -78,12 +91,30 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
       setSelectedFile(file);
       setScale(1);
       
-      // Create URL for preview
-      const objectUrl = URL.createObjectURL(file);
-      setPreviewUrl(objectUrl);
-      setCropperOpen(true);
+      // Create a FileReader to load the image as a data URL
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target && event.target.result) {
+          // Store as data URL rather than object URL
+          const dataUrl = event.target.result as string;
+          setPreviewUrl(dataUrl);
+          console.log("Image loaded as data URL");
+          setCropperOpen(true);
+        }
+      };
+      reader.onerror = (error) => {
+        console.error("FileReader error:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load the image. Please try another file.",
+          variant: "destructive"
+        });
+      };
+      
+      // Read as data URL instead of using URL.createObjectURL
+      reader.readAsDataURL(file);
     } catch (error) {
-      console.error("Error handling file:", error);
+      console.error("Error processing file:", error);
       toast({
         title: "Error",
         description: "Failed to process the image. Please try another file.",
@@ -110,8 +141,13 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
     }
   };
 
-  // Simple function to create a cropped image
+  // Simplified cropImage function
   const cropImage = async (): Promise<string | null> => {
+    // If there's no file or we already have a data URL, just return the current preview
+    if (!selectedFile || !previewUrl) {
+      return previewUrl;
+    }
+    
     try {
       return new Promise((resolve) => {
         // Only proceed if we have both the file and canvas
@@ -159,12 +195,13 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
           resolve(null);
         };
         
-        // Set source to file URL
-        img.src = URL.createObjectURL(selectedFile);
+        // Use the dataURL we already have
+        img.src = previewUrl;
       });
     } catch (error) {
       console.error("Error in cropImage:", error);
-      return null;
+      // For simplicity, just return the data URL we already have
+      return previewUrl;
     }
   };
 
@@ -249,7 +286,9 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
           <img 
             src={previewUrl} 
             alt="Business logo" 
-            className="w-full h-full object-contain rounded-md border" 
+            className="w-full h-full object-contain rounded-md border"
+            onLoad={() => console.log("Main profile image loaded successfully")}
+            onError={(e) => console.error("Error loading main profile preview:", e)}
           />
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
             <Button 
@@ -295,7 +334,7 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
           <DialogTitle>Adjust Your Logo</DialogTitle>
           
           <div className="mt-4 flex flex-col items-center">
-            {selectedFile && previewUrl && (
+            {selectedFile && (
               <>
                 {/* Simple preview */}
                 <div className="relative">
@@ -303,16 +342,22 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
                     ref={cropContainerRef}
                     className="w-[250px] h-[250px] overflow-hidden border-2 border-gray-200 rounded-md bg-gray-50 flex items-center justify-center"
                   >
-                    <img
-                      ref={imageRef}
-                      src={previewUrl}
-                      alt="Logo preview"
-                      style={{
-                        maxWidth: `${scale * 100}%`,
-                        maxHeight: `${scale * 100}%`,
-                        objectFit: 'contain'
-                      }}
-                    />
+                    {previewUrl ? (
+                      <img
+                        ref={imageRef}
+                        src={previewUrl}
+                        alt="Logo preview"
+                        style={{
+                          maxWidth: `${scale * 100}%`,
+                          maxHeight: `${scale * 100}%`,
+                          objectFit: 'contain'
+                        }}
+                        onLoad={() => console.log("Main preview image loaded successfully")}
+                        onError={(e) => console.error("Error loading main preview:", e)}
+                      />
+                    ) : (
+                      <div className="text-gray-400 text-sm">No image available</div>
+                    )}
                   </div>
                 </div>
                 
@@ -342,45 +387,60 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
                   <div className="flex items-end justify-between">
                     <div className="text-center">
                       <div className="mx-auto w-[40px] h-[40px] border rounded overflow-hidden bg-white flex items-center justify-center">
-                        <img
-                          src={previewUrl}
-                          alt="Small preview"
-                          style={{
-                            maxWidth: `${scale * 100}%`,
-                            maxHeight: `${scale * 100}%`,
-                            objectFit: 'contain'
-                          }}
-                        />
+                        {previewUrl ? (
+                          <img
+                            src={previewUrl}
+                            alt="Small preview"
+                            style={{
+                              maxWidth: `${scale * 100}%`,
+                              maxHeight: `${scale * 100}%`,
+                              objectFit: 'contain'
+                            }}
+                            onError={(e) => console.error("Small preview error:", e)}
+                          />
+                        ) : (
+                          <span className="text-[8px] text-gray-400">No image</span>
+                        )}
                       </div>
                       <span className="text-xs text-gray-500">Deal Card</span>
                     </div>
                     
                     <div className="text-center">
                       <div className="mx-auto w-[80px] h-[80px] border rounded overflow-hidden bg-white flex items-center justify-center">
-                        <img
-                          src={previewUrl}
-                          alt="Medium preview"
-                          style={{
-                            maxWidth: `${scale * 100}%`,
-                            maxHeight: `${scale * 100}%`,
-                            objectFit: 'contain'
-                          }}
-                        />
+                        {previewUrl ? (
+                          <img
+                            src={previewUrl}
+                            alt="Medium preview"
+                            style={{
+                              maxWidth: `${scale * 100}%`,
+                              maxHeight: `${scale * 100}%`,
+                              objectFit: 'contain'
+                            }}
+                            onError={(e) => console.error("Medium preview error:", e)}
+                          />
+                        ) : (
+                          <span className="text-xs text-gray-400">No image</span>
+                        )}
                       </div>
                       <span className="text-xs text-gray-500">Deal Detail</span>
                     </div>
                     
                     <div className="text-center">
                       <div className="mx-auto w-[140px] h-[140px] border rounded overflow-hidden bg-white flex items-center justify-center">
-                        <img
-                          src={previewUrl}
-                          alt="Large preview"
-                          style={{
-                            maxWidth: `${scale * 100}%`,
-                            maxHeight: `${scale * 100}%`,
-                            objectFit: 'contain'
-                          }}
-                        />
+                        {previewUrl ? (
+                          <img
+                            src={previewUrl}
+                            alt="Large preview"
+                            style={{
+                              maxWidth: `${scale * 100}%`,
+                              maxHeight: `${scale * 100}%`,
+                              objectFit: 'contain'
+                            }}
+                            onError={(e) => console.error("Large preview error:", e)}
+                          />
+                        ) : (
+                          <span className="text-sm text-gray-400">No image</span>
+                        )}
                       </div>
                       <span className="text-xs text-gray-500">Profile</span>
                     </div>
