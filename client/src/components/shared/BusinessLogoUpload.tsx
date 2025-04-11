@@ -119,7 +119,7 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
     }
   };
 
-  // Fixed cropImage function with proper inverse scale relationship
+  // Completely revised cropImage function with proper scaling and cropping
   const cropImage = async (): Promise<string | null> => {
     // If there's no file or preview URL, return early
     if (!selectedFile || !previewUrl) {
@@ -128,79 +128,81 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
     
     try {
       return new Promise((resolve) => {
-        // Create a new canvas each time to avoid reference issues
-        const canvas = document.createElement('canvas');
-        canvas.width = 500;  // High quality output size
-        canvas.height = 500;
-        
-        const ctx = canvas.getContext('2d');
-        
-        if (!ctx) {
-          console.error("Could not get canvas context");
-          resolve(null);
-          return;
-        }
-        
-        // Clear canvas with white background
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Create image element from the preview URL
+        // Step 1: Load the image from the preview URL
         const img = new Image();
         
         img.onload = () => {
-          // Get original image dimensions
+          // Step 2: Create a temporary canvas to perform cropping
+          const tempCanvas = document.createElement('canvas');
+          const tempCtx = tempCanvas.getContext('2d');
+          
+          if (!tempCtx) {
+            console.error("Could not get temporary canvas context");
+            resolve(null);
+            return;
+          }
+          
+          // Step 3: Set up square dimensions for consistent cropping
           const originalWidth = img.width;
           const originalHeight = img.height;
           
-          // IMPORTANT FIX: Don't use the scale for the visible area
-          // Instead, use it to determine how much of the original image to use
+          // Use the smaller dimension to create a square crop from the center
+          const minDimension = Math.min(originalWidth, originalHeight);
           
-          // Calculate the dimensions of the image to draw
-          const size = Math.min(originalWidth, originalHeight);
+          // Calculate crop dimensions based on zoom level
+          // For higher zoom (scale > 1), we want a smaller crop area (more zoomed in)
+          const cropSize = minDimension / scale;
           
-          // Calculate the center point of the original image
-          const centerX = originalWidth / 2;
-          const centerY = originalHeight / 2;
+          // Calculate the crop coordinates to center the crop
+          const cropX = (originalWidth - cropSize) / 2;
+          const cropY = (originalHeight - cropSize) / 2;
           
-          // Adjust the size based on inverse of scale (smaller area for larger zoom)
-          const scaledSize = size / scale;
-          const halfScaledSize = scaledSize / 2;
-          
-          // Calculate source coordinates to maintain center alignment
-          const sx = centerX - halfScaledSize;
-          const sy = centerY - halfScaledSize;
-          
-          // Log the calculations for debugging
-          console.log('Crop calculations:', {
+          console.log('Crop parameters:', {
             originalWidth,
             originalHeight,
+            minDimension,
             scale,
-            scaledSize,
-            sx, sy,
-            destWidth: canvas.width,
-            destHeight: canvas.height
+            cropSize,
+            cropX, 
+            cropY
           });
           
-          // Draw the image with correct scaling
-          ctx.drawImage(
+          // Step 4: Set up the final output canvas
+          const outputCanvas = document.createElement('canvas');
+          outputCanvas.width = 500;  // Final output size (high quality)
+          outputCanvas.height = 500;  // Square ratio maintained
+          const outputCtx = outputCanvas.getContext('2d');
+          
+          if (!outputCtx) {
+            console.error("Could not get output canvas context");
+            resolve(null);
+            return;
+          }
+          
+          // Step 5: Draw white background on the output canvas
+          outputCtx.fillStyle = '#FFFFFF';
+          outputCtx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
+          
+          // Step 6: Draw the cropped region directly to the output canvas
+          // This is the critical fix - we're taking a specific portion of the original image
+          outputCtx.drawImage(
             img,
-            sx, sy, scaledSize, scaledSize,  // Source rectangle - INVERSELY proportional to scale
-            0, 0, canvas.width, canvas.height  // Destination rectangle
+            cropX, cropY, cropSize, cropSize,  // Source rectangle - the cropped area
+            0, 0, outputCanvas.width, outputCanvas.height  // Destination - full canvas
           );
           
-          // Convert to data URL and resolve
-          const dataUrl = canvas.toDataURL('image/png', 1.0);
+          // Step 7: Convert to data URL
+          const dataUrl = outputCanvas.toDataURL('image/png', 1.0);
           
-          // Verify the output image dimensions
-          const outputImg = new Image();
-          outputImg.onload = () => {
-            console.log('Output image dimensions:', {
-              width: outputImg.width,
-              height: outputImg.height
+          // Test the output dimensions
+          const testImg = new Image();
+          testImg.onload = () => {
+            console.log('Final output dimensions:', {
+              width: testImg.width,
+              height: testImg.height
             });
           };
-          outputImg.src = dataUrl;
+          testImg.src = dataUrl;
           
           resolve(dataUrl);
         };
