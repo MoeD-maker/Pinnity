@@ -204,9 +204,9 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
         
         // Set image source to start processing
         img.src = previewUrl;
-        };
-        
-        img.onerror = (err) => {
+      });
+
+      img.onerror = (err) => {
           console.error("Error loading image for cropping:", err);
           toast({
             title: "Error",
