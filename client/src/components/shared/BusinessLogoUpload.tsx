@@ -119,113 +119,84 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
     }
   };
 
-  // Final version of cropImage with precise aspect ratio preservation and background removal
+  // Simple, stable implementation of cropImage
   const cropImage = async (): Promise<string | null> => {
-    // If there's no file or preview URL, return early
     if (!selectedFile || !previewUrl) {
       return previewUrl;
     }
     
     try {
-      return new Promise((resolve) => {
-        // First, create a new image to get the original dimensions
+      return new Promise<string | null>((resolve) => {
+        // Create a new image to get dimensions
         const img = new Image();
         
+        // Set up the onload handler
         img.onload = () => {
-          // Calculate dimensions based on zoom
-          const minDimension = Math.min(img.width, img.height);
-          const scaledSize = minDimension * scale;
-          
-          console.log('Crop calculation:', {
-            originalWidth: img.width,
-            originalHeight: img.height,
-            minDimension,
-            scale,
-            scaledSize
-          });
-          
-          // Create canvas sized for the final output
-          const canvas = document.createElement('canvas');
-          canvas.width = 500; // Standard output size
-          canvas.height = 500;
-          
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
-            console.error("Could not get canvas context");
-            resolve(null);
-            return;
-          }
-          
-          // Fill with white background
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          
-          // Calculate source coordinates to capture the zoomed area
-          const sourceSize = minDimension / scale;
-          const sourceX = (img.width - sourceSize) / 2;
-          const sourceY = (img.height - sourceSize) / 2;
-          
-          // Draw the image with scaling applied
-          ctx.drawImage(
-            img,
-            sourceX, sourceY, sourceSize, sourceSize, // Source rectangle
-            0, 0, canvas.width, canvas.height // Destination rectangle
-          );
-          
-          // Convert to data URL with quality control
-          let quality = 0.95;
-          let result = canvas.toDataURL('image/jpeg', quality);
-          const initialSize = Math.round((result.length * 3) / 4) / 1024;
-          
-          // Apply compression if needed
-          if (initialSize > 2048) {
-            console.log(`Large image detected (${initialSize}KB), compressing...`);
-            quality = Math.min(2048 / initialSize, 0.9);
-            result = canvas.toDataURL('image/jpeg', quality);
+          try {
+            // Create a canvas for the output
+            const canvas = document.createElement('canvas');
+            canvas.width = 500;  // Fixed output size
+            canvas.height = 500;
             
-            const finalSize = Math.round((result.length * 3) / 4) / 1024;
-            console.log(`Compressed from ${initialSize}KB to ${finalSize}KB`);
-          }
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              console.error("Could not get canvas context");
+              resolve(null);
+              return;
+            }
             
-            // Log final dimensions for verification
-          const finalImg = new Image();
-          finalImg.onload = () => {
-            console.log('Final image dimensions:', {
-              width: finalImg.width,
-              height: finalImg.height,
-              quality,
-              fileSize: Math.round((result.length * 3) / 4) / 1024 + 'KB'
+            // Fill with white background
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Calculate the cropping area based on scale
+            const minDimension = Math.min(img.width, img.height);
+            const sourceSize = minDimension / scale; // Inverse relationship with scale
+            
+            // Center the crop area
+            const sourceX = (img.width - sourceSize) / 2;
+            const sourceY = (img.height - sourceSize) / 2;
+            
+            console.log('Crop calculation:', {
+              imgWidth: img.width,
+              imgHeight: img.height,
+              minDimension,
+              scale,
+              sourceSize,
+              sourceX,
+              sourceY
             });
-          };
-          finalImg.src = result;
-          
-          resolve(result);
+            
+            // Draw the cropped portion onto the canvas
+            ctx.drawImage(
+              img,
+              sourceX, sourceY, sourceSize, sourceSize, // Source: crop from original
+              0, 0, canvas.width, canvas.height         // Destination: fill canvas
+            );
+            
+            // Create the final output as PNG
+            const result = canvas.toDataURL('image/png');
+            
+            // Log final dimensions
+            console.log('Finished processing image');
+            resolve(result);
+          } catch (err) {
+            console.error("Error in image processing:", err);
+            resolve(null);
+          }
         };
         
-        // Set image source to start processing
-        img.src = previewUrl;
-      });
-
-      img.onerror = (err) => {
-          console.error("Error loading image for cropping:", err);
-          toast({
-            title: "Error",
-            description: "Failed to process the image. Please try again.",
-            variant: "destructive"
-          });
+        // Set up error handler
+        img.onerror = () => {
+          console.error("Failed to load image");
           resolve(null);
         };
         
-        // Use the dataURL we already have
+        // Set the source to start loading
         img.src = previewUrl;
       });
     } catch (error) {
       console.error("Error in cropImage:", error);
-      toast({
-        title: "Error",
-        description: "An error occurred while processing your image.",
-        variant: "destructive"
-      });
       return null;
     }
   };
