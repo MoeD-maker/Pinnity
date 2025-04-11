@@ -273,7 +273,7 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
           <div className="mt-4 flex flex-col items-center">
             {selectedFile && previewUrl && (
               <>
-                {/* Preview */}
+                {/* Main preview */}
                 <div className="relative mb-4">
                   <div className="w-[250px] h-[250px] overflow-hidden border-2 border-gray-200 rounded-md bg-gray-50 flex items-center justify-center">
                     <img
@@ -284,9 +284,51 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
                   </div>
                 </div>
                 
+                {/* Size previews */}
+                <div className="w-full bg-gray-50 p-4 rounded-md mb-4">
+                  <h4 className="text-sm font-medium mb-3 text-center">Preview at different sizes</h4>
+                  <div className="flex items-end justify-between">
+                    {/* Small - Deal Card */}
+                    <div className="text-center">
+                      <div className="mx-auto w-[40px] h-[40px] border rounded overflow-hidden bg-white flex items-center justify-center">
+                        <img
+                          src={previewUrl}
+                          alt="Small preview"
+                          className="max-w-[80%] max-h-[80%] object-contain"
+                        />
+                      </div>
+                      <span className="text-xs text-gray-500 mt-1 block">Deal Card</span>
+                    </div>
+                    
+                    {/* Medium - Deal Detail */}
+                    <div className="text-center">
+                      <div className="mx-auto w-[80px] h-[80px] border rounded overflow-hidden bg-white flex items-center justify-center">
+                        <img
+                          src={previewUrl}
+                          alt="Medium preview"
+                          className="max-w-[80%] max-h-[80%] object-contain"
+                        />
+                      </div>
+                      <span className="text-xs text-gray-500 mt-1 block">Deal Detail</span>
+                    </div>
+                    
+                    {/* Large - Profile */}
+                    <div className="text-center">
+                      <div className="mx-auto w-[140px] h-[140px] border rounded overflow-hidden bg-white flex items-center justify-center">
+                        <img
+                          src={previewUrl}
+                          alt="Large preview"
+                          className="max-w-[80%] max-h-[80%] object-contain"
+                        />
+                      </div>
+                      <span className="text-xs text-gray-500 mt-1 block">Profile</span>
+                    </div>
+                  </div>
+                </div>
+                
                 <div className="text-sm text-center text-muted-foreground">
                   Your logo will be centered and fit within a square format.<br />
-                  This ensures optimal display across the platform.
+                  This ensures optimal display across all platform contexts.
                 </div>
               </>
             )}
