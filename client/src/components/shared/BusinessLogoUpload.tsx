@@ -1,13 +1,22 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, Edit2, X } from 'lucide-react';
+import { Upload, Edit2, X, ZoomIn, ZoomOut, MoveHorizontal, MoveVertical, RotateCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Slider } from '@/components/ui/slider';
 
 interface BusinessLogoUploadProps {
   currentImage: string | null;
   onImageChange: (fileOrBase64: File | string | null) => void;
+}
+
+// Image adjustment state interface
+interface ImageAdjustments {
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+  rotation: number;
 }
 
 export default function BusinessLogoUpload({ currentImage, onImageChange }: BusinessLogoUploadProps) {
@@ -18,9 +27,29 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
   
+  // Image adjustment states
+  const [adjustments, setAdjustments] = useState<ImageAdjustments>({
+    scale: 1.0,
+    offsetX: 0,
+    offsetY: 0,
+    rotation: 0
+  });
+  
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  
+  // Reset adjustments when a new file is selected
+  useEffect(() => {
+    if (selectedFile) {
+      setAdjustments({
+        scale: 1.0,
+        offsetX: 0,
+        offsetY: 0,
+        rotation: 0
+      });
+    }
+  }, [selectedFile]);
 
   /**
    * Handle file input change
@@ -104,6 +133,16 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
   };
 
   /**
+   * Update a specific adjustment value
+   */
+  const updateAdjustment = (type: keyof ImageAdjustments, value: number) => {
+    setAdjustments(prev => ({
+      ...prev,
+      [type]: value
+    }));
+  };
+
+  /**
    * Process and save the image
    */
   const handleSaveImage = async () => {
@@ -133,28 +172,32 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
           ctx.fillStyle = '#FFFFFF';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           
-          // Calculate how to fit the image in the canvas
-          let targetWidth, targetHeight, offsetX, offsetY;
+          // Calculate dimensions based on image size and scale
+          const scaledWidth = img.width * adjustments.scale;
+          const scaledHeight = img.height * adjustments.scale;
           
-          // Choose the smaller dimension to ensure we can fit a square
-          if (img.width <= img.height) {
-            targetWidth = Math.min(canvas.width, img.width);
-            targetHeight = (targetWidth / img.width) * img.height;
-            offsetX = (canvas.width - targetWidth) / 2;
-            offsetY = (canvas.height - targetHeight) / 2;
-          } else {
-            targetHeight = Math.min(canvas.height, img.height);
-            targetWidth = (targetHeight / img.height) * img.width;
-            offsetX = (canvas.width - targetWidth) / 2;
-            offsetY = (canvas.height - targetHeight) / 2;
-          }
+          // Calculate center position with offsets
+          const centerX = (canvas.width - scaledWidth) / 2 + adjustments.offsetX;
+          const centerY = (canvas.height - scaledHeight) / 2 + adjustments.offsetY;
           
-          // Draw the image centered on the canvas
+          // Save the canvas state
+          ctx.save();
+          
+          // Move to canvas center for rotation
+          ctx.translate(canvas.width / 2, canvas.height / 2);
+          
+          // Apply rotation (convert degrees to radians)
+          ctx.rotate(adjustments.rotation * Math.PI / 180);
+          
+          // Draw the image centered and scaled
           ctx.drawImage(
             img,
-            0, 0, img.width, img.height,
-            offsetX, offsetY, targetWidth, targetHeight
+            -scaledWidth / 2, -scaledHeight / 2, // Centered
+            scaledWidth, scaledHeight // Scaled dimensions
           );
+          
+          // Restore canvas state
+          ctx.restore();
           
           // Convert to PNG for optimal quality
           resolve(canvas.toDataURL('image/png'));
@@ -204,6 +247,15 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
     setPreviewUrl(null);
     setSelectedFile(null);
     onImageChange(null);
+  };
+
+  /**
+   * Generate a CSS transform string based on current adjustments
+   */
+  const getImageTransform = () => {
+    return `scale(${adjustments.scale}) 
+            translate(${adjustments.offsetX / adjustments.scale}px, ${adjustments.offsetY / adjustments.scale}px) 
+            rotate(${adjustments.rotation}deg)`;
   };
 
   return (
@@ -265,21 +317,99 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
         </div>
       )}
       
-      {/* Simple confirmation dialog */}
+      {/* Editor dialog with adjustment controls */}
       <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
         <DialogContent className="sm:max-w-md">
-          <DialogTitle>Confirm Your Logo</DialogTitle>
+          <DialogTitle>Adjust Your Logo</DialogTitle>
           
           <div className="mt-4 flex flex-col items-center">
             {selectedFile && previewUrl && (
               <>
-                {/* Main preview */}
+                {/* Main preview with adjusted position */}
                 <div className="relative mb-4">
                   <div className="w-[250px] h-[250px] overflow-hidden border-2 border-gray-200 rounded-md bg-gray-50 flex items-center justify-center">
-                    <img
-                      src={previewUrl}
-                      alt="Logo preview"
-                      className="max-w-full max-h-full object-contain"
+                    <div className="w-full h-full flex items-center justify-center">
+                      <img
+                        src={previewUrl}
+                        alt="Logo preview"
+                        className="max-w-[80%] max-h-[80%] object-contain origin-center transition-transform"
+                        style={{ transform: getImageTransform() }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Adjustment controls */}
+                <div className="w-full bg-gray-100 p-4 rounded-md mb-4">
+                  <h4 className="text-sm font-medium mb-3">Adjust Your Logo</h4>
+                  
+                  {/* Zoom control */}
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center">
+                        <ZoomOut className="h-4 w-4 mr-1" />
+                        <span className="text-xs">Zoom</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{Math.round(adjustments.scale * 100)}%</span>
+                    </div>
+                    <Slider 
+                      value={[adjustments.scale]} 
+                      min={0.5} 
+                      max={2} 
+                      step={0.05} 
+                      onValueChange={([value]) => updateAdjustment('scale', value)} 
+                    />
+                  </div>
+                  
+                  {/* Horizontal position */}
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center">
+                        <MoveHorizontal className="h-4 w-4 mr-1" />
+                        <span className="text-xs">Horizontal Position</span>
+                      </div>
+                    </div>
+                    <Slider 
+                      value={[adjustments.offsetX]} 
+                      min={-50} 
+                      max={50} 
+                      step={1} 
+                      onValueChange={([value]) => updateAdjustment('offsetX', value)} 
+                    />
+                  </div>
+                  
+                  {/* Vertical position */}
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center">
+                        <MoveVertical className="h-4 w-4 mr-1" />
+                        <span className="text-xs">Vertical Position</span>
+                      </div>
+                    </div>
+                    <Slider 
+                      value={[adjustments.offsetY]} 
+                      min={-50} 
+                      max={50} 
+                      step={1} 
+                      onValueChange={([value]) => updateAdjustment('offsetY', value)} 
+                    />
+                  </div>
+                  
+                  {/* Rotation control */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center">
+                        <RotateCw className="h-4 w-4 mr-1" />
+                        <span className="text-xs">Rotation</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{adjustments.rotation}°</span>
+                    </div>
+                    <Slider 
+                      value={[adjustments.rotation]} 
+                      min={-180} 
+                      max={180} 
+                      step={5} 
+                      onValueChange={([value]) => updateAdjustment('rotation', value)} 
                     />
                   </div>
                 </div>
@@ -291,11 +421,14 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
                     {/* Small - Deal Card */}
                     <div className="text-center">
                       <div className="mx-auto w-[40px] h-[40px] border rounded overflow-hidden bg-white flex items-center justify-center">
-                        <img
-                          src={previewUrl}
-                          alt="Small preview"
-                          className="max-w-[80%] max-h-[80%] object-contain"
-                        />
+                        <div className="w-full h-full flex items-center justify-center">
+                          <img
+                            src={previewUrl}
+                            alt="Small preview"
+                            className="max-w-[80%] max-h-[80%] object-contain origin-center"
+                            style={{ transform: getImageTransform() }}
+                          />
+                        </div>
                       </div>
                       <span className="text-xs text-gray-500 mt-1 block">Deal Card</span>
                     </div>
@@ -303,11 +436,14 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
                     {/* Medium - Deal Detail */}
                     <div className="text-center">
                       <div className="mx-auto w-[80px] h-[80px] border rounded overflow-hidden bg-white flex items-center justify-center">
-                        <img
-                          src={previewUrl}
-                          alt="Medium preview"
-                          className="max-w-[80%] max-h-[80%] object-contain"
-                        />
+                        <div className="w-full h-full flex items-center justify-center">
+                          <img
+                            src={previewUrl}
+                            alt="Medium preview"
+                            className="max-w-[80%] max-h-[80%] object-contain origin-center"
+                            style={{ transform: getImageTransform() }}
+                          />
+                        </div>
                       </div>
                       <span className="text-xs text-gray-500 mt-1 block">Deal Detail</span>
                     </div>
@@ -315,11 +451,14 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
                     {/* Large - Profile */}
                     <div className="text-center">
                       <div className="mx-auto w-[140px] h-[140px] border rounded overflow-hidden bg-white flex items-center justify-center">
-                        <img
-                          src={previewUrl}
-                          alt="Large preview"
-                          className="max-w-[80%] max-h-[80%] object-contain"
-                        />
+                        <div className="w-full h-full flex items-center justify-center">
+                          <img
+                            src={previewUrl}
+                            alt="Large preview"
+                            className="max-w-[80%] max-h-[80%] object-contain origin-center"
+                            style={{ transform: getImageTransform() }}
+                          />
+                        </div>
                       </div>
                       <span className="text-xs text-gray-500 mt-1 block">Profile</span>
                     </div>
@@ -327,8 +466,7 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
                 </div>
                 
                 <div className="text-sm text-center text-muted-foreground">
-                  Your logo will be centered and fit within a square format.<br />
-                  This ensures optimal display across all platform contexts.
+                  Your logo will appear exactly as shown in these previews.
                 </div>
               </>
             )}
@@ -343,7 +481,7 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
               disabled={isUploading}
               className="bg-[#00796B] hover:bg-[#004D40]"
             >
-              {isUploading ? "Saving..." : "Confirm Logo"}
+              {isUploading ? "Saving..." : "Save Logo"}
             </Button>
           </DialogFooter>
         </DialogContent>
