@@ -1,0 +1,109 @@
+Fix a critical bug in my BusinessLogoUpload.tsx component where the uploaded image appears zoomed in after saving.
+
+The issue occurs in the cropImage() function which incorrectly calculates the cropping area based on the zoom level (scale). When a user adjusts the zoom in the UI and saves, the preview looks correct, but when the dialog closes, the image on the profile page appears incorrectly zoomed in.
+
+The mathematical error is that the current code is using:
+- visibleWidth = originalWidth * scale
+- visibleHeight = originalHeight * scale
+
+This creates the opposite zoom effect from what's intended. When the user increases the zoom slider, it should capture a SMALLER portion of the original image (showing a zoomed-in portion), not larger.
+
+Please fix the cropImage() function to use an inverse relationship with the scale factor. Here's the corrected approach:
+
+1. Calculate a fixed base size from the original image
+2. DIVIDE by the scale factor instead of multiplying:
+   const scaledSize = size / scale;
+3. Use this scaledSize to determine the cropping area
+
+Here's a corrected implementation for the cropImage function:
+
+```typescript
+const cropImage = async (): Promise<string | null> => {
+  // If there's no file or preview URL, return early
+  if (!selectedFile || !previewUrl) {
+    return previewUrl;
+  }
+  
+  try {
+    return new Promise((resolve) => {
+      // Create a new canvas each time to avoid reference issues
+      const canvas = document.createElement('canvas');
+      canvas.width = 500;  // High quality output size
+      canvas.height = 500;
+      
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        console.error("Could not get canvas context");
+        resolve(null);
+        return;
+      }
+      
+      // Clear canvas with white background
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Create image element from the preview URL
+      const img = new Image();
+      
+      img.onload = () => {
+        // Get original image dimensions
+        const originalWidth = img.width;
+        const originalHeight = img.height;
+        
+        // IMPORTANT FIX: Don't use the scale for the visible area
+        // Instead, use it to determine how much of the original image to use
+        
+        // Calculate the dimensions of the image to draw
+        const size = Math.min(originalWidth, originalHeight);
+        
+        // Calculate the center point of the original image
+        const centerX = originalWidth / 2;
+        const centerY = originalHeight / 2;
+        
+        // Adjust the size based on inverse of scale (smaller area for larger zoom)
+        const scaledSize = size / scale;
+        const halfScaledSize = scaledSize / 2;
+        
+        // Calculate source coordinates to maintain center alignment
+        const sx = centerX - halfScaledSize;
+        const sy = centerY - halfScaledSize;
+        
+        // Log the calculations for debugging
+        console.log('Crop calculations:', {
+          originalWidth,
+          originalHeight,
+          scale,
+          scaledSize,
+          sx, sy,
+          destWidth: canvas.width,
+          destHeight: canvas.height
+        });
+        
+        // Draw the image with correct scaling
+        ctx.drawImage(
+          img,
+          sx, sy, scaledSize, scaledSize,  // Source rectangle - INVERSELY proportional to scale
+          0, 0, canvas.width, canvas.height  // Destination rectangle
+        );
+        
+        // Convert to data URL and resolve
+        const dataUrl = canvas.toDataURL('image/png', 1.0);
+        
+        resolve(dataUrl);
+      };
+      
+      img.onerror = (err) => {
+        console.error("Error loading image for cropping:", err);
+        resolve(null);
+      };
+      
+      // Use the dataURL we already have
+      img.src = previewUrl;
+    });
+  } catch (error) {
+    console.error("Error in cropImage:", error);
+    return null;
+  }
+};
+This fix keeps all the existing functionality while correcting the mathematical relationship between the zoom slider and the amount of the original image that gets captured. The higher the zoom value, the less of the original image will be captured (creating a zoomed-in effect).

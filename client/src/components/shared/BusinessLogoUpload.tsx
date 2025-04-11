@@ -119,7 +119,7 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
     }
   };
 
-  // Enhanced cropImage function with proper scale application
+  // Fixed cropImage function with proper inverse scale relationship
   const cropImage = async (): Promise<string | null> => {
     // If there's no file or preview URL, return early
     if (!selectedFile || !previewUrl) {
@@ -153,39 +153,39 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
           const originalWidth = img.width;
           const originalHeight = img.height;
           
-          // Use scale to determine the visible area
-          const visibleWidth = originalWidth * scale;
-          const visibleHeight = originalHeight * scale;
+          // IMPORTANT FIX: Don't use the scale for the visible area
+          // Instead, use it to determine how much of the original image to use
           
-          // Calculate the center point
+          // Calculate the dimensions of the image to draw
+          const size = Math.min(originalWidth, originalHeight);
+          
+          // Calculate the center point of the original image
           const centerX = originalWidth / 2;
           const centerY = originalHeight / 2;
           
-          // Calculate the area to capture based on scale
-          const captureSize = Math.min(visibleWidth, visibleHeight);
-          const halfCaptureSize = captureSize / 2;
+          // Adjust the size based on inverse of scale (smaller area for larger zoom)
+          const scaledSize = size / scale;
+          const halfScaledSize = scaledSize / 2;
           
           // Calculate source coordinates to maintain center alignment
-          const sx = centerX - halfCaptureSize;
-          const sy = centerY - halfCaptureSize;
+          const sx = centerX - halfScaledSize;
+          const sy = centerY - halfScaledSize;
           
           // Log the calculations for debugging
           console.log('Crop calculations:', {
             originalWidth,
             originalHeight,
             scale,
-            visibleWidth,
-            visibleHeight,
-            captureSize,
+            scaledSize,
             sx, sy,
             destWidth: canvas.width,
             destHeight: canvas.height
           });
           
-          // Draw the image maintaining the zoom level
+          // Draw the image with correct scaling
           ctx.drawImage(
             img,
-            sx, sy, captureSize, captureSize,  // Source rectangle - size based on zoom
+            sx, sy, scaledSize, scaledSize,  // Source rectangle - INVERSELY proportional to scale
             0, 0, canvas.width, canvas.height  // Destination rectangle
           );
           
