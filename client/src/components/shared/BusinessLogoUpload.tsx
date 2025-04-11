@@ -153,46 +153,39 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
           const originalWidth = img.width;
           const originalHeight = img.height;
           
-          // Determine the square crop size (minimum dimension)
-          const minDimension = Math.min(originalWidth, originalHeight);
+          // Use scale to determine the visible area
+          const visibleWidth = originalWidth * scale;
+          const visibleHeight = originalHeight * scale;
           
-          // Calculate source rectangle that needs to be captured
-          // Apply the inverse of scale - smaller scale means we capture more of the source image
-          // This matches what the user sees in the preview where smaller scale = zoomed out
-          const scaledSize = minDimension / scale; // The size of the area to capture
-          
-          // Ensure we don't try to capture beyond the image bounds
-          const safeScaledSize = Math.min(
-            scaledSize, 
-            originalWidth, 
-            originalHeight
-          );
-          
-          // Calculate center offsets
+          // Calculate the center point
           const centerX = originalWidth / 2;
           const centerY = originalHeight / 2;
           
-          // Calculate source rectangle (centered square region using scaled size)
-          const sx = centerX - (safeScaledSize / 2);
-          const sy = centerY - (safeScaledSize / 2);
+          // Calculate the area to capture based on scale
+          const captureSize = Math.min(visibleWidth, visibleHeight);
+          const halfCaptureSize = captureSize / 2;
+          
+          // Calculate source coordinates to maintain center alignment
+          const sx = centerX - halfCaptureSize;
+          const sy = centerY - halfCaptureSize;
           
           // Log the calculations for debugging
           console.log('Crop calculations:', {
             originalWidth,
             originalHeight,
-            minDimension,
             scale,
-            scaledSize,
-            safeScaledSize,
+            visibleWidth,
+            visibleHeight,
+            captureSize,
             sx, sy,
             destWidth: canvas.width,
             destHeight: canvas.height
           });
           
-          // Draw the image to fill the canvas, applying scale
+          // Draw the image maintaining the zoom level
           ctx.drawImage(
             img,
-            sx, sy, safeScaledSize, safeScaledSize,  // Source rectangle - scaled based on zoom
+            sx, sy, captureSize, captureSize,  // Source rectangle - size based on zoom
             0, 0, canvas.width, canvas.height  // Destination rectangle
           );
           
