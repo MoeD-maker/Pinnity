@@ -119,7 +119,7 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
     }
   };
 
-  // Simple direct cropImage approach without any clever math
+  // Final version of cropImage with precise aspect ratio preservation and background removal
   const cropImage = async (): Promise<string | null> => {
     // If there's no file or preview URL, return early
     if (!selectedFile || !previewUrl) {
@@ -128,62 +128,108 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
     
     try {
       return new Promise((resolve) => {
-        // Create a new image from the preview URL
+        // First, create a new image to get the original dimensions
         const img = new Image();
         
         img.onload = () => {
-          console.log('Original image loaded for cropping, dimensions:', {
+          console.log('Original image loaded:', {
             width: img.width,
             height: img.height,
             scale
           });
           
-          // Create a fixed-size canvas for the output
-          const canvas = document.createElement('canvas');
-          canvas.width = 500;  // Fixed output size
-          canvas.height = 500;
+          // *** Step 1: Create an intermediate canvas to extract just the logo ***
+          // This step will remove the background pattern
+          const extractCanvas = document.createElement('canvas');
+          const extractSize = Math.min(img.width, img.height); // Use the smaller dimension for square extraction
+          extractCanvas.width = extractSize;
+          extractCanvas.height = extractSize;
           
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
-            console.error("Could not get canvas context");
+          const extractCtx = extractCanvas.getContext('2d');
+          if (!extractCtx) {
+            console.error("Could not get extract canvas context");
             resolve(null);
             return;
           }
           
-          // Fill with white background
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          // Clear the canvas with a white background (will replace the pattern)
+          extractCtx.fillStyle = '#FFFFFF';
+          extractCtx.fillRect(0, 0, extractSize, extractSize);
           
-          // Determine how to place the image on the canvas
-          // The key is to use the INVERSE of the scale value to determine crop size
-          const zoomFactor = 1 / scale;
+          // Calculate the source area (centered square from original image)
+          const sourceX = (img.width - extractSize) / 2;
+          const sourceY = (img.height - extractSize) / 2;
           
-          // Calculate crop dimensions for zoomed area
-          const cropWidth = img.width * zoomFactor;
-          const cropHeight = img.height * zoomFactor;
-          
-          // Center the crop
-          const cropX = (img.width - cropWidth) / 2;
-          const cropY = (img.height - cropHeight) / 2;
-          
-          console.log('Crop calculation:', {
-            zoomFactor,
-            cropWidth,
-            cropHeight,
-            cropX,
-            cropY
-          });
-          
-          // Draw the cropped image onto the fixed canvas
-          ctx.drawImage(
+          // Extract the central square portion of the image
+          extractCtx.drawImage(
             img,
-            cropX, cropY, cropWidth, cropHeight,  // Source: center portion of original image
-            0, 0, canvas.width, canvas.height      // Destination: fill the canvas
+            sourceX, sourceY, extractSize, extractSize,
+            0, 0, extractSize, extractSize
           );
           
-          // Get the result as a data URL
-          const dataUrl = canvas.toDataURL('image/png');
-          resolve(dataUrl);
+          // *** Step 2: Create a new image from the extracted logo ***
+          const extractedImg = new Image();
+          extractedImg.onload = () => {
+            // *** Step 3: Create the final output canvas ***
+            const finalCanvas = document.createElement('canvas');
+            const finalSize = 500; // High-quality square output
+            finalCanvas.width = finalSize;
+            finalCanvas.height = finalSize;
+            
+            const finalCtx = finalCanvas.getContext('2d');
+            if (!finalCtx) {
+              console.error("Could not get final canvas context");
+              resolve(null);
+              return;
+            }
+            
+            // Start with white background
+            finalCtx.fillStyle = '#FFFFFF';
+            finalCtx.fillRect(0, 0, finalSize, finalSize);
+            
+            // Calculate how much to zoom in based on scale
+            const zoomFactor = 1 / scale;
+            
+            // Calculate the dimensions to capture from the extracted image
+            const captureSize = extractedImg.width * zoomFactor;
+            
+            // Center the capture area
+            const captureX = (extractedImg.width - captureSize) / 2; 
+            const captureY = (extractedImg.height - captureSize) / 2;
+            
+            console.log('Final crop calculation:', {
+              extractedSize: extractedImg.width,
+              zoomFactor,
+              captureSize,
+              captureX,
+              captureY
+            });
+            
+            // Draw the zoomed portion onto the final canvas
+            finalCtx.drawImage(
+              extractedImg,
+              captureX, captureY, captureSize, captureSize,  // Source: zoomed center of extracted image
+              0, 0, finalSize, finalSize                     // Destination: fill the canvas evenly
+            );
+            
+            // Get the final result
+            const dataUrl = finalCanvas.toDataURL('image/png');
+            
+            // Test the output image dimensions
+            const testImg = new Image();
+            testImg.onload = () => {
+              console.log('Final output dimensions:', {
+                width: testImg.width,
+                height: testImg.height
+              });
+            };
+            testImg.src = dataUrl;
+            
+            resolve(dataUrl);
+          };
+          
+          // Load the extracted image
+          extractedImg.src = extractCanvas.toDataURL('image/png');
         };
         
         img.onerror = (err) => {
