@@ -132,104 +132,78 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
         const img = new Image();
         
         img.onload = () => {
-          console.log('Original image loaded:', {
-            width: img.width,
-            height: img.height,
-            scale
+          // Calculate dimensions based on zoom
+          const minDimension = Math.min(img.width, img.height);
+          const scaledSize = minDimension * scale;
+          
+          console.log('Crop calculation:', {
+            originalWidth: img.width,
+            originalHeight: img.height,
+            minDimension,
+            scale,
+            scaledSize
           });
           
-          // *** Step 1: Create an intermediate canvas to extract just the logo ***
-          // This step will remove the background pattern
-          const extractCanvas = document.createElement('canvas');
-          const extractSize = Math.min(img.width, img.height); // Use the smaller dimension for square extraction
-          extractCanvas.width = extractSize;
-          extractCanvas.height = extractSize;
+          // Create canvas sized for the final output
+          const canvas = document.createElement('canvas');
+          canvas.width = 500; // Standard output size
+          canvas.height = 500;
           
-          const extractCtx = extractCanvas.getContext('2d');
-          if (!extractCtx) {
-            console.error("Could not get extract canvas context");
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            console.error("Could not get canvas context");
             resolve(null);
             return;
           }
           
-          // Clear the canvas with a white background (will replace the pattern)
-          extractCtx.fillStyle = '#FFFFFF';
-          extractCtx.fillRect(0, 0, extractSize, extractSize);
+          // Fill with white background
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
           
-          // Calculate the source area (centered square from original image)
-          const sourceX = (img.width - extractSize) / 2;
-          const sourceY = (img.height - extractSize) / 2;
+          // Calculate source coordinates to capture the zoomed area
+          const sourceSize = minDimension / scale;
+          const sourceX = (img.width - sourceSize) / 2;
+          const sourceY = (img.height - sourceSize) / 2;
           
-          // Extract the central square portion of the image
-          extractCtx.drawImage(
+          // Draw the image with scaling applied
+          ctx.drawImage(
             img,
-            sourceX, sourceY, extractSize, extractSize,
-            0, 0, extractSize, extractSize
+            sourceX, sourceY, sourceSize, sourceSize, // Source rectangle
+            0, 0, canvas.width, canvas.height // Destination rectangle
           );
           
-          // *** Step 2: Create a new image from the extracted logo ***
-          const extractedImg = new Image();
-          extractedImg.onload = () => {
-            // *** Step 3: Create the final output canvas ***
-            const finalCanvas = document.createElement('canvas');
-            const finalSize = 500; // High-quality square output
-            finalCanvas.width = finalSize;
-            finalCanvas.height = finalSize;
-            
-            const finalCtx = finalCanvas.getContext('2d');
-            if (!finalCtx) {
-              console.error("Could not get final canvas context");
-              resolve(null);
-              return;
-            }
-            
-            // Start with white background
-            finalCtx.fillStyle = '#FFFFFF';
-            finalCtx.fillRect(0, 0, finalSize, finalSize);
-            
-            // Calculate how much to zoom in based on scale
-            const zoomFactor = 1 / scale;
-            
-            // Calculate the dimensions to capture from the extracted image
-            const captureSize = extractedImg.width * zoomFactor;
-            
-            // Center the capture area
-            const captureX = (extractedImg.width - captureSize) / 2; 
-            const captureY = (extractedImg.height - captureSize) / 2;
-            
-            console.log('Final crop calculation:', {
-              extractedSize: extractedImg.width,
-              zoomFactor,
-              captureSize,
-              captureX,
-              captureY
-            });
-            
-            // Draw the zoomed portion onto the final canvas
-            finalCtx.drawImage(
-              extractedImg,
-              captureX, captureY, captureSize, captureSize,  // Source: zoomed center of extracted image
-              0, 0, finalSize, finalSize                     // Destination: fill the canvas evenly
-            );
-            
-            // Get the final result
-            const dataUrl = finalCanvas.toDataURL('image/png');
-            
-            // Test the output image dimensions
-            const testImg = new Image();
-            testImg.onload = () => {
-              console.log('Final output dimensions:', {
-                width: testImg.width,
-                height: testImg.height
-              });
-            };
-            testImg.src = dataUrl;
-            
-            resolve(dataUrl);
-          };
+          // Convert to data URL with quality control
+          let quality = 0.95;
+          let result = canvas.toDataURL('image/jpeg', quality);
+          const initialSize = Math.round((result.length * 3) / 4) / 1024;
           
-          // Load the extracted image
-          extractedImg.src = extractCanvas.toDataURL('image/png');
+          // Apply compression if needed
+          if (initialSize > 2048) {
+            console.log(`Large image detected (${initialSize}KB), compressing...`);
+            quality = Math.min(2048 / initialSize, 0.9);
+            result = canvas.toDataURL('image/jpeg', quality);
+            
+            const finalSize = Math.round((result.length * 3) / 4) / 1024;
+            console.log(`Compressed from ${initialSize}KB to ${finalSize}KB`);
+          }
+            
+            // Log final dimensions for verification
+          const finalImg = new Image();
+          finalImg.onload = () => {
+            console.log('Final image dimensions:', {
+              width: finalImg.width,
+              height: finalImg.height,
+              quality,
+              fileSize: Math.round((result.length * 3) / 4) / 1024 + 'KB'
+            });
+          };
+          finalImg.src = result;
+          
+          resolve(result);
+        };
+        
+        // Set image source to start processing
+        img.src = previewUrl;
         };
         
         img.onerror = (err) => {
