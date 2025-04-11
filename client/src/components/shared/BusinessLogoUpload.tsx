@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, Edit2, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -11,229 +11,171 @@ interface BusinessLogoUploadProps {
 }
 
 export default function BusinessLogoUpload({ currentImage, onImageChange }: BusinessLogoUploadProps) {
+  // Main states
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImage);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [cropperOpen, setCropperOpen] = useState<boolean>(false);
-  const [scale, setScale] = useState<number>(1);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
-  const [uploading, setUploading] = useState<boolean>(false);
   
+  // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
-  const cropContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  // Add debug logging for image state
-  useEffect(() => {
-    console.log("Current image state:", {
-      hasSelectedFile: !!selectedFile,
-      hasPreviewUrl: !!previewUrl,
-      previewUrlType: previewUrl ? 
-        (previewUrl.startsWith('data:') ? 'data URL' : 
-         previewUrl.startsWith('blob:') ? 'blob URL' : 'other URL') : 'none',
-      previewUrlLength: previewUrl ? previewUrl.length : 0
-    });
-  }, [selectedFile, previewUrl]);
-
+  /**
+   * Handle file input change
+   */
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      processFile(e.target.files[0]);
+      validateAndProcessFile(e.target.files[0]);
     }
   };
 
-  const processFile = (file: File) => {
-    try {
-      // Validate file size
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: "File too large",
-          description: "Please select an image under 5MB",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Validate file type
-      if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
-        toast({
-          title: "Invalid file type",
-          description: "Please select a JPG, PNG, GIF, or WEBP image",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      console.log("File selected:", file.name, file.type, file.size);
-      
-      // Set file and reset scale
-      setSelectedFile(file);
-      setScale(1);
-      
-      // Create a FileReader to load the image as a data URL
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target && event.target.result) {
-          // Store as data URL rather than object URL
-          const dataUrl = event.target.result as string;
-          setPreviewUrl(dataUrl);
-          console.log("Image loaded as data URL");
-          setCropperOpen(true);
-        }
-      };
-      reader.onerror = (error) => {
-        console.error("FileReader error:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load the image. Please try another file.",
-          variant: "destructive"
-        });
-      };
-      
-      // Read as data URL instead of using URL.createObjectURL
-      reader.readAsDataURL(file);
-    } catch (error) {
-      console.error("Error processing file:", error);
-      toast({
-        title: "Error",
-        description: "Failed to process the image. Please try another file.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragOver(false);
-  };
-
+  /**
+   * Handle file drop
+   */
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
     
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      processFile(e.dataTransfer.files[0]);
+      validateAndProcessFile(e.dataTransfer.files[0]);
     }
   };
 
-  // Simple, stable implementation of cropImage
-  const cropImage = async (): Promise<string | null> => {
-    if (!selectedFile || !previewUrl) {
-      return previewUrl;
+  /**
+   * Drag over handler
+   */
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  /**
+   * Drag leave handler
+   */
+  const handleDragLeave = () => {
+    setIsDragOver(false);
+  };
+
+  /**
+   * Validate and process the selected file
+   */
+  const validateAndProcessFile = (file: File) => {
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please select an image under 5MB",
+        variant: "destructive"
+      });
+      return;
     }
+
+    // Validate file type
+    if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
+      toast({
+        title: "Invalid file type",
+        description: "Please select a JPG, PNG, GIF, or WEBP image",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Store the file
+    setSelectedFile(file);
+    
+    // Read the file
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setPreviewUrl(event.target.result as string);
+        setIsEditorOpen(true);
+      }
+    };
+    reader.onerror = () => {
+      toast({
+        title: "Error",
+        description: "Failed to read the image file. Please try again.",
+        variant: "destructive"
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  /**
+   * Process and save the image
+   */
+  const handleSaveImage = async () => {
+    if (!selectedFile || !previewUrl) return;
+    
+    setIsUploading(true);
     
     try {
-      return new Promise<string | null>((resolve) => {
-        // Create a new image to get dimensions
-        const img = new Image();
-        
-        // Set up the onload handler
+      // Create a new image from the preview URL
+      const img = new Image();
+      
+      // Set up a promise to handle the image loading
+      const processedImage = await new Promise<string | null>((resolve) => {
         img.onload = () => {
-          try {
-            // Create a canvas for the output
-            const canvas = document.createElement('canvas');
-            canvas.width = 500;  // Fixed output size
-            canvas.height = 500;
-            
-            const ctx = canvas.getContext('2d');
-            if (!ctx) {
-              console.error("Could not get canvas context");
-              resolve(null);
-              return;
-            }
-            
-            // Fill with white background
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Calculate the cropping area based on scale
-            const minDimension = Math.min(img.width, img.height);
-            const sourceSize = minDimension / scale; // Inverse relationship with scale
-            
-            // Center the crop area
-            const sourceX = (img.width - sourceSize) / 2;
-            const sourceY = (img.height - sourceSize) / 2;
-            
-            console.log('Crop calculation:', {
-              imgWidth: img.width,
-              imgHeight: img.height,
-              minDimension,
-              scale,
-              sourceSize,
-              sourceX,
-              sourceY
-            });
-            
-            // Draw the cropped portion onto the canvas
-            ctx.drawImage(
-              img,
-              sourceX, sourceY, sourceSize, sourceSize, // Source: crop from original
-              0, 0, canvas.width, canvas.height         // Destination: fill canvas
-            );
-            
-            // Create the final output as PNG
-            const result = canvas.toDataURL('image/png');
-            
-            // Log final dimensions
-            console.log('Finished processing image');
-            resolve(result);
-          } catch (err) {
-            console.error("Error in image processing:", err);
+          // Create a square canvas with fixed dimensions
+          const canvas = document.createElement('canvas');
+          canvas.width = 500;  // Final output size
+          canvas.height = 500;
+          
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
             resolve(null);
+            return;
           }
+          
+          // Fill with white background
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          // Calculate how to fit the image in the canvas
+          let targetWidth, targetHeight, offsetX, offsetY;
+          
+          // Choose the smaller dimension to ensure we can fit a square
+          if (img.width <= img.height) {
+            targetWidth = Math.min(canvas.width, img.width);
+            targetHeight = (targetWidth / img.width) * img.height;
+            offsetX = (canvas.width - targetWidth) / 2;
+            offsetY = (canvas.height - targetHeight) / 2;
+          } else {
+            targetHeight = Math.min(canvas.height, img.height);
+            targetWidth = (targetHeight / img.height) * img.width;
+            offsetX = (canvas.width - targetWidth) / 2;
+            offsetY = (canvas.height - targetHeight) / 2;
+          }
+          
+          // Draw the image centered on the canvas
+          ctx.drawImage(
+            img,
+            0, 0, img.width, img.height,
+            offsetX, offsetY, targetWidth, targetHeight
+          );
+          
+          // Convert to PNG for optimal quality
+          resolve(canvas.toDataURL('image/png'));
         };
         
-        // Set up error handler
         img.onerror = () => {
-          console.error("Failed to load image");
           resolve(null);
         };
         
-        // Set the source to start loading
         img.src = previewUrl;
       });
-    } catch (error) {
-      console.error("Error in cropImage:", error);
-      return null;
-    }
-  };
-
-  const handleSave = async () => {
-    if (!selectedFile) return;
-    
-    setUploading(true);
-    
-    try {
-      // Get the cropped image data
-      const croppedImageData = await cropImage();
       
-      if (croppedImageData) {
-        // Add debugging to check the image dimensions
-        const debugImg = new Image();
-        debugImg.onload = () => {
-          console.log("Final cropped image dimensions:", {
-            width: debugImg.width,
-            height: debugImg.height
-          });
-        };
-        debugImg.src = croppedImageData;
-        
-        // Pass the cropped image data to the parent component
-        onImageChange(croppedImageData);
-        
-        // Clean up old URL if it exists
-        if (previewUrl && previewUrl.startsWith('blob:')) {
-          URL.revokeObjectURL(previewUrl);
-        }
-        
-        setPreviewUrl(croppedImageData);
+      // Handle the processed image
+      if (processedImage) {
+        // Update state and notify parent
+        setPreviewUrl(processedImage);
+        onImageChange(processedImage);
         
         toast({
-          title: "Logo updated",
-          description: "Your business logo has been updated successfully.",
+          title: "Success",
+          description: "Your business logo has been updated.",
         });
       } else {
         toast({
@@ -243,25 +185,22 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
         });
       }
     } catch (error) {
-      console.error("Error in handleSave:", error);
       toast({
         title: "Error",
-        description: "An error occurred while saving your logo.",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
+      console.error('Error processing image:', error);
     } finally {
-      // Close dialog and reset states
-      setCropperOpen(false);
-      setUploading(false);
+      setIsEditorOpen(false);
+      setIsUploading(false);
     }
   };
-  
+
+  /**
+   * Remove the current image
+   */
   const handleRemoveImage = () => {
-    // Clean up URL if needed
-    if (previewUrl && previewUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(previewUrl);
-    }
-    
     setPreviewUrl(null);
     setSelectedFile(null);
     onImageChange(null);
@@ -269,6 +208,7 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
 
   return (
     <div className="space-y-4">
+      {/* Hidden file input */}
       <input
         type="file"
         ref={fileInputRef}
@@ -277,15 +217,15 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
         className="hidden"
       />
       
+      {/* Image preview or upload area */}
       {previewUrl ? (
         <div className="relative group aspect-square w-40 h-40 mx-auto">
           <img 
             src={previewUrl} 
             alt="Business logo" 
             className="w-full h-full object-contain rounded-md border"
-            onLoad={() => console.log("Main profile image loaded successfully")}
-            onError={(e) => console.error("Error loading main profile preview:", e)}
           />
+          {/* Hover overlay with actions */}
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
             <Button 
               size="icon" 
@@ -325,137 +265,43 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
         </div>
       )}
       
-      <Dialog open={cropperOpen} onOpenChange={setCropperOpen}>
+      {/* Simple confirmation dialog */}
+      <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
         <DialogContent className="sm:max-w-md">
-          <DialogTitle>Adjust Your Logo</DialogTitle>
+          <DialogTitle>Confirm Your Logo</DialogTitle>
           
           <div className="mt-4 flex flex-col items-center">
-            {selectedFile && (
+            {selectedFile && previewUrl && (
               <>
-                {/* Simple preview */}
-                <div className="relative">
-                  <div 
-                    ref={cropContainerRef}
-                    className="w-[250px] h-[250px] overflow-hidden border-2 border-gray-200 rounded-md bg-gray-50 flex items-center justify-center"
-                  >
-                    {previewUrl ? (
-                      <img
-                        ref={imageRef}
-                        src={previewUrl}
-                        alt="Logo preview"
-                        style={{
-                          maxWidth: `${scale * 100}%`,
-                          maxHeight: `${scale * 100}%`,
-                          objectFit: 'contain'
-                        }}
-                        onLoad={() => console.log("Main preview image loaded successfully")}
-                        onError={(e) => console.error("Error loading main preview:", e)}
-                      />
-                    ) : (
-                      <div className="text-gray-400 text-sm">No image available</div>
-                    )}
+                {/* Preview */}
+                <div className="relative mb-4">
+                  <div className="w-[250px] h-[250px] overflow-hidden border-2 border-gray-200 rounded-md bg-gray-50 flex items-center justify-center">
+                    <img
+                      src={previewUrl}
+                      alt="Logo preview"
+                      className="max-w-full max-h-full object-contain"
+                    />
                   </div>
                 </div>
                 
-                <div className="text-xs text-muted-foreground mt-2 text-center">
-                  Square format logo for optimal display
-                </div>
-                
-                <div className="w-full mt-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm font-medium">Logo Size</label>
-                    <span className="text-xs text-muted-foreground">{Math.round(scale * 100)}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0.5"
-                    max="2"
-                    step="0.1"
-                    value={scale}
-                    onChange={(e) => setScale(parseFloat(e.target.value))}
-                    className="w-full"
-                  />
-                </div>
-
-                {/* Multi-size preview with real-time updates */}
-                <div className="bg-gray-50 p-3 rounded-md w-full mt-6">
-                  <h4 className="text-sm font-medium mb-2">Preview at different sizes</h4>
-                  <div className="flex items-end justify-between">
-                    <div className="text-center">
-                      <div className="mx-auto w-[40px] h-[40px] border rounded overflow-hidden bg-white flex items-center justify-center">
-                        {previewUrl ? (
-                          <img
-                            src={previewUrl}
-                            alt="Small preview"
-                            style={{
-                              maxWidth: `${scale * 100}%`,
-                              maxHeight: `${scale * 100}%`,
-                              objectFit: 'contain'
-                            }}
-                            onError={(e) => console.error("Small preview error:", e)}
-                          />
-                        ) : (
-                          <span className="text-[8px] text-gray-400">No image</span>
-                        )}
-                      </div>
-                      <span className="text-xs text-gray-500">Deal Card</span>
-                    </div>
-                    
-                    <div className="text-center">
-                      <div className="mx-auto w-[80px] h-[80px] border rounded overflow-hidden bg-white flex items-center justify-center">
-                        {previewUrl ? (
-                          <img
-                            src={previewUrl}
-                            alt="Medium preview"
-                            style={{
-                              maxWidth: `${scale * 100}%`,
-                              maxHeight: `${scale * 100}%`,
-                              objectFit: 'contain'
-                            }}
-                            onError={(e) => console.error("Medium preview error:", e)}
-                          />
-                        ) : (
-                          <span className="text-xs text-gray-400">No image</span>
-                        )}
-                      </div>
-                      <span className="text-xs text-gray-500">Deal Detail</span>
-                    </div>
-                    
-                    <div className="text-center">
-                      <div className="mx-auto w-[140px] h-[140px] border rounded overflow-hidden bg-white flex items-center justify-center">
-                        {previewUrl ? (
-                          <img
-                            src={previewUrl}
-                            alt="Large preview"
-                            style={{
-                              maxWidth: `${scale * 100}%`,
-                              maxHeight: `${scale * 100}%`,
-                              objectFit: 'contain'
-                            }}
-                            onError={(e) => console.error("Large preview error:", e)}
-                          />
-                        ) : (
-                          <span className="text-sm text-gray-400">No image</span>
-                        )}
-                      </div>
-                      <span className="text-xs text-gray-500">Profile</span>
-                    </div>
-                  </div>
+                <div className="text-sm text-center text-muted-foreground">
+                  Your logo will be centered and fit within a square format.<br />
+                  This ensures optimal display across the platform.
                 </div>
               </>
             )}
           </div>
           
           <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setCropperOpen(false)}>
+            <Button variant="outline" onClick={() => setIsEditorOpen(false)}>
               Cancel
             </Button>
             <Button 
-              onClick={handleSave}
-              disabled={uploading}
+              onClick={handleSaveImage}
+              disabled={isUploading}
               className="bg-[#00796B] hover:bg-[#004D40]"
             >
-              {uploading ? "Processing..." : "Save Logo"}
+              {isUploading ? "Saving..." : "Confirm Logo"}
             </Button>
           </DialogFooter>
         </DialogContent>
