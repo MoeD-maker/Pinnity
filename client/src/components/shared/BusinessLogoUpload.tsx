@@ -151,96 +151,115 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
     setIsUploading(true);
     
     try {
-      // Create a new image from the preview URL
-      const img = new Image();
+      // Create a new image from the original source
+      const sourceImg = new Image();
       
-      // Set up a promise to handle the image loading
+      // Set up a promise to handle the image processing
       const processedImage = await new Promise<string | null>((resolve) => {
-        img.onload = () => {
-          // Create a square canvas with fixed dimensions
-          const canvas = document.createElement('canvas');
-          canvas.width = 500;  // Final output size
-          canvas.height = 500;
-          
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
+        sourceImg.onload = async () => {
+          try {
+            // Create a square canvas with fixed dimensions for final output
+            const canvas = document.createElement('canvas');
+            const size = 500; // Final output size
+            canvas.width = size;
+            canvas.height = size;
+            
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              resolve(null);
+              return;
+            }
+            
+            // Fill with white background
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // SIMPLEST APPROACH FOR CONSISTENCY:
+            // Draw at the largest reasonable size maintaining aspect ratio
+            
+            // Calculate dimensions to maintain aspect ratio
+            let drawWidth, drawHeight;
+            if (sourceImg.width > sourceImg.height) {
+              // Landscape image
+              drawWidth = Math.min(size * 0.8, sourceImg.width); // Don't exceed 80% of canvas
+              drawHeight = (drawWidth / sourceImg.width) * sourceImg.height;
+            } else {
+              // Portrait or square image
+              drawHeight = Math.min(size * 0.8, sourceImg.height); // Don't exceed 80% of canvas
+              drawWidth = (drawHeight / sourceImg.height) * sourceImg.width;
+            }
+            
+            // Calculate center position
+            const centerX = (size - drawWidth) / 2;
+            const centerY = (size - drawHeight) / 2;
+            
+            // Create temporary canvas for transformations
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = size;
+            tempCanvas.height = size;
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            if (!tempCtx) {
+              resolve(null);
+              return;
+            }
+            
+            // Fill temp canvas with white
+            tempCtx.fillStyle = '#FFFFFF';
+            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+            
+            // Draw image centered on temp canvas
+            tempCtx.drawImage(
+              sourceImg, 
+              centerX, centerY, 
+              drawWidth, drawHeight
+            );
+            
+            // Apply transformations
+            
+            // Save original state
+            ctx.save();
+            
+            // Move to the center of the canvas for transformations
+            ctx.translate(size / 2, size / 2);
+            
+            // Apply rotation
+            ctx.rotate(adjustments.rotation * Math.PI / 180);
+            
+            // Scale if not at 100%
+            if (adjustments.scale !== 1) {
+              ctx.scale(adjustments.scale, adjustments.scale);
+            }
+            
+            // Apply position offsets
+            const offsetX = adjustments.offsetX / adjustments.scale;
+            const offsetY = adjustments.offsetY / adjustments.scale;
+            ctx.translate(offsetX, offsetY);
+            
+            // Draw the temp canvas centered
+            ctx.drawImage(
+              tempCanvas, 
+              -size / 2, -size / 2, 
+              size, size
+            );
+            
+            // Restore original state
+            ctx.restore();
+            
+            // Convert to PNG for optimal quality
+            resolve(canvas.toDataURL('image/png'));
+          } catch (err) {
+            console.error('Error in image processing:', err);
             resolve(null);
-            return;
           }
-          
-          // Fill with white background
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          
-          // We need to match the exact visual behavior of the CSS transformations
-          
-          // First determine what portion of the image is visible in our preview
-          // CSS transform origin is the center of the element by default, which
-          // corresponds to the center of our image
-          
-          // IMPORTANT: In the preview, we're using object-contain which means 
-          // the image is already scaled to fit within the container while
-          // maintaining aspect ratio. We need to account for this initial scaling.
-          
-          // CSS: scale() is applied before translate()
-          
-          // Calculate effective visible area size after CSS scale
-          // With object-contain, the initial scale is based on the larger dimension
-          const largerDimension = Math.max(img.width, img.height);
-          const initialScale = 0.8; // To account for max-width/max-height of 80% in CSS
-          
-          // For cropping and positioning, we work with the effective dimensions
-          // that represent what's visible in the preview after the combined scaling
-          const effectiveScale = initialScale / adjustments.scale;
-          const visibleWidth = img.width * effectiveScale;
-          const visibleHeight = img.height * effectiveScale;
-          
-          // Center point in the original image coordinates
-          const centerX = img.width / 2;
-          const centerY = img.height / 2;
-          
-          // Apply offsets in original image coordinates
-          // Since we're moving the image behind a fixed viewport, we negate the offsets
-          const offsetScaleFactor = 1 / adjustments.scale;
-          const adjustedCenterX = centerX - (adjustments.offsetX * offsetScaleFactor);
-          const adjustedCenterY = centerY - (adjustments.offsetY * offsetScaleFactor);
-          
-          // Calculate crop area (the portion of the image that is visible)
-          const cropWidth = visibleWidth;
-          const cropHeight = visibleHeight;
-          
-          // Get the top-left corner of the visible portion
-          const cropX = adjustedCenterX - (cropWidth / 2);
-          const cropY = adjustedCenterY - (cropHeight / 2);
-          
-          // Save canvas state
-          ctx.save();
-          
-          // Move to center for rotation
-          ctx.translate(canvas.width / 2, canvas.height / 2);
-          
-          // Apply rotation
-          ctx.rotate(adjustments.rotation * Math.PI / 180);
-          
-          // Draw the image with the same crop and scaling as in the preview
-          ctx.drawImage(
-            img,
-            cropX, cropY, cropWidth, cropHeight, // Source: exactly match the preview crop
-            -canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height // Destination: fill canvas
-          );
-          
-          // Restore canvas state
-          ctx.restore();
-          
-          // Convert to PNG for optimal quality
-          resolve(canvas.toDataURL('image/png'));
         };
         
-        img.onerror = () => {
+        sourceImg.onerror = () => {
+          console.error('Failed to load source image');
           resolve(null);
         };
         
-        img.src = previewUrl;
+        sourceImg.src = previewUrl;
       });
       
       // Handle the processed image
