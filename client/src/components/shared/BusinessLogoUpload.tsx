@@ -172,28 +172,46 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
           ctx.fillStyle = '#FFFFFF';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           
-          // Calculate dimensions based on image size and scale
-          const scaledWidth = img.width * adjustments.scale;
-          const scaledHeight = img.height * adjustments.scale;
+          // Get the smaller dimension to maintain aspect ratio
+          const minDimension = Math.min(img.width, img.height);
           
-          // Calculate center position with offsets
-          const centerX = (canvas.width - scaledWidth) / 2 + adjustments.offsetX;
-          const centerY = (canvas.height - scaledHeight) / 2 + adjustments.offsetY;
+          // Calculate dimensions for the CSS-style transformation we want to match
+          // Determine the size that will be equivalent to our preview image size
+          // when applying adjustments.scale
+          const originalScale = 1 / adjustments.scale;
+          const scaledSize = minDimension * originalScale;
           
-          // Save the canvas state
+          // Calculate crop area based on scale and offsets
+          // This mimics the CSS transform behavior
+          const cropSize = scaledSize;
+          
+          // Center point calculations
+          const centerPointX = img.width / 2;
+          const centerPointY = img.height / 2;
+          
+          // Adjust center point based on offset (converted from CSS px to image px)
+          // We invert the offset direction to match CSS transform behavior
+          const adjustedCenterX = centerPointX - (adjustments.offsetX / adjustments.scale);
+          const adjustedCenterY = centerPointY - (adjustments.offsetY / adjustments.scale);
+          
+          // Calculate top-left corner of crop area
+          const cropX = adjustedCenterX - (cropSize / 2);
+          const cropY = adjustedCenterY - (cropSize / 2);
+          
+          // Save canvas state
           ctx.save();
           
-          // Move to canvas center for rotation
+          // Move to center for rotation
           ctx.translate(canvas.width / 2, canvas.height / 2);
           
-          // Apply rotation (convert degrees to radians)
+          // Apply rotation
           ctx.rotate(adjustments.rotation * Math.PI / 180);
           
-          // Draw the image centered and scaled
+          // Draw the image with the same crop and scaling as in the preview
           ctx.drawImage(
             img,
-            -scaledWidth / 2, -scaledHeight / 2, // Centered
-            scaledWidth, scaledHeight // Scaled dimensions
+            cropX, cropY, cropSize, cropSize, // Source: exactly match the preview crop
+            -canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height // Destination: fill canvas
           );
           
           // Restore canvas state
