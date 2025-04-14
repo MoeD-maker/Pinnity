@@ -172,31 +172,46 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
           ctx.fillStyle = '#FFFFFF';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           
-          // Get the smaller dimension to maintain aspect ratio
-          const minDimension = Math.min(img.width, img.height);
+          // We need to match the exact visual behavior of the CSS transformations
           
-          // Calculate dimensions for the CSS-style transformation we want to match
-          // Determine the size that will be equivalent to our preview image size
-          // when applying adjustments.scale
-          const originalScale = 1 / adjustments.scale;
-          const scaledSize = minDimension * originalScale;
+          // First determine what portion of the image is visible in our preview
+          // CSS transform origin is the center of the element by default, which
+          // corresponds to the center of our image
           
-          // Calculate crop area based on scale and offsets
-          // This mimics the CSS transform behavior
-          const cropSize = scaledSize;
+          // IMPORTANT: In the preview, we're using object-contain which means 
+          // the image is already scaled to fit within the container while
+          // maintaining aspect ratio. We need to account for this initial scaling.
           
-          // Center point calculations
-          const centerPointX = img.width / 2;
-          const centerPointY = img.height / 2;
+          // CSS: scale() is applied before translate()
           
-          // Adjust center point based on offset (converted from CSS px to image px)
-          // We invert the offset direction to match CSS transform behavior
-          const adjustedCenterX = centerPointX - (adjustments.offsetX / adjustments.scale);
-          const adjustedCenterY = centerPointY - (adjustments.offsetY / adjustments.scale);
+          // Calculate effective visible area size after CSS scale
+          // With object-contain, the initial scale is based on the larger dimension
+          const largerDimension = Math.max(img.width, img.height);
+          const initialScale = 0.8; // To account for max-width/max-height of 80% in CSS
           
-          // Calculate top-left corner of crop area
-          const cropX = adjustedCenterX - (cropSize / 2);
-          const cropY = adjustedCenterY - (cropSize / 2);
+          // For cropping and positioning, we work with the effective dimensions
+          // that represent what's visible in the preview after the combined scaling
+          const effectiveScale = initialScale / adjustments.scale;
+          const visibleWidth = img.width * effectiveScale;
+          const visibleHeight = img.height * effectiveScale;
+          
+          // Center point in the original image coordinates
+          const centerX = img.width / 2;
+          const centerY = img.height / 2;
+          
+          // Apply offsets in original image coordinates
+          // Since we're moving the image behind a fixed viewport, we negate the offsets
+          const offsetScaleFactor = 1 / adjustments.scale;
+          const adjustedCenterX = centerX - (adjustments.offsetX * offsetScaleFactor);
+          const adjustedCenterY = centerY - (adjustments.offsetY * offsetScaleFactor);
+          
+          // Calculate crop area (the portion of the image that is visible)
+          const cropWidth = visibleWidth;
+          const cropHeight = visibleHeight;
+          
+          // Get the top-left corner of the visible portion
+          const cropX = adjustedCenterX - (cropWidth / 2);
+          const cropY = adjustedCenterY - (cropHeight / 2);
           
           // Save canvas state
           ctx.save();
@@ -210,7 +225,7 @@ export default function BusinessLogoUpload({ currentImage, onImageChange }: Busi
           // Draw the image with the same crop and scaling as in the preview
           ctx.drawImage(
             img,
-            cropX, cropY, cropSize, cropSize, // Source: exactly match the preview crop
+            cropX, cropY, cropWidth, cropHeight, // Source: exactly match the preview crop
             -canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height // Destination: fill canvas
           );
           
