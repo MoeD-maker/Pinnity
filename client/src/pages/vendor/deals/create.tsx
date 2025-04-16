@@ -69,15 +69,24 @@ const saveFormDraft = (userId: number, data: any, step: number, imageUrl?: strin
 // Load form data from localStorage
 const loadFormDraft = (userId: number) => {
   try {
+    console.log('Attempting to load draft for user ID:', userId);
     const savedData = localStorage.getItem(STORAGE_KEY);
-    if (!savedData) return null;
     
+    if (!savedData) {
+      console.log('No saved draft found in localStorage');
+      return null;
+    }
+    
+    console.log('Found saved data in localStorage:', savedData);
     const parsed = JSON.parse(savedData);
     
     // Only load draft for the current user
     if (parsed.userId !== userId) {
+      console.log('Draft user ID does not match current user:', parsed.userId, 'vs', userId);
       return null;
     }
+    
+    console.log('Found valid draft for current user');
     
     // Parse dates from ISO strings back to Date objects
     if (parsed.data.startDate) {
@@ -329,7 +338,13 @@ export default function CreateDealPage() {
   useEffect(() => {
     if (user?.id && !submitting) {
       const formData = form.getValues();
+      console.log('Auto-saving form data:', formData);
       saveFormDraft(user.id, formData, currentStep, previewUrl);
+      
+      // Set flag for having a saved draft if this is not from initial load
+      if (!hasSavedDraft) {
+        setHasSavedDraft(true);
+      }
     }
   }, [watchedValues, currentStep, previewUrl, user?.id, submitting]);
   
@@ -360,8 +375,10 @@ export default function CreateDealPage() {
   useEffect(() => {
     // Check for saved draft first so we don't overwrite loaded data
     if (user?.id) {
+      console.log('Checking for saved draft at component mount');
       const savedDraft = loadFormDraft(user.id);
       if (savedDraft) {
+        console.log('Found saved draft at component mount, showing banner');
         // We have a saved draft, set flag for showing banner
         setHasSavedDraft(true);
         setShowDraftBanner(true);
@@ -369,6 +386,9 @@ export default function CreateDealPage() {
         // Format date for display
         const formattedDate = new Date(savedDraft.lastUpdated).toLocaleString();
         setSavedDraftDate(formattedDate);
+        
+        // Allow user to decide whether to load the draft via the banner
+        // We don't automatically load the draft data here
       }
     }
     
@@ -439,38 +459,73 @@ export default function CreateDealPage() {
   
   // Load saved draft if available
   const loadSavedDraft = () => {
-    if (!user?.id) return;
-    
-    const savedDraft = loadFormDraft(user.id);
-    if (!savedDraft) return;
-    
-    // Format the date for display
-    const formattedDate = new Date(savedDraft.lastUpdated).toLocaleString();
-    setSavedDraftDate(formattedDate);
-    
-    // Set the draft data to the form
-    Object.entries(savedDraft.data).forEach(([key, value]) => {
-      // Skip undefined values
-      if (value !== undefined) {
-        form.setValue(key as any, value);
-      }
-    });
-    
-    // Set the saved step
-    setCurrentStep(savedDraft.step || 0);
-    
-    // Set image preview if available
-    if (savedDraft.imageUrl) {
-      setPreviewUrl(savedDraft.imageUrl);
+    if (!user?.id) {
+      console.error('Cannot load draft: User ID is not available');
+      return;
     }
     
-    setHasSavedDraft(true);
-    setShowDraftBanner(true);
+    console.log('Loading saved draft for user ID:', user.id);
+    const savedDraft = loadFormDraft(user.id);
     
-    toast({
-      title: "Draft restored",
-      description: `Your previous progress from ${formattedDate} has been loaded.`,
-    });
+    if (!savedDraft) {
+      console.error('No valid draft found to load');
+      toast({
+        title: "No draft found",
+        description: "We couldn't find a saved draft to restore.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      console.log('Loading draft data:', savedDraft);
+      
+      // Format the date for display
+      const formattedDate = new Date(savedDraft.lastUpdated).toLocaleString();
+      setSavedDraftDate(formattedDate);
+      
+      // Reset form first to clear any current values
+      form.reset();
+      
+      // Set the draft data to the form
+      console.log('Setting form values from draft data:', savedDraft.data);
+      Object.entries(savedDraft.data).forEach(([key, value]) => {
+        // Skip undefined values
+        if (value !== undefined) {
+          console.log(`Setting form field ${key}:`, value);
+          form.setValue(key as any, value);
+        }
+      });
+      
+      // Set the saved step
+      console.log('Setting current step to:', savedDraft.step || 0);
+      setCurrentStep(savedDraft.step || 0);
+      
+      // Set image preview if available
+      if (savedDraft.imageUrl) {
+        console.log('Setting preview URL:', savedDraft.imageUrl);
+        setPreviewUrl(savedDraft.imageUrl);
+      }
+      
+      // Update UI state
+      setHasSavedDraft(true);
+      setShowDraftBanner(false); // Hide the banner after loading
+      
+      // Show success message
+      toast({
+        title: "Draft restored",
+        description: `Your previous progress from ${formattedDate} has been loaded.`,
+      });
+      
+      console.log('Draft loaded successfully');
+    } catch (error) {
+      console.error('Error loading draft:', error);
+      toast({
+        title: "Error loading draft",
+        description: "There was a problem loading your saved progress.",
+        variant: "destructive"
+      });
+    }
   };
   
   // Discard saved draft
