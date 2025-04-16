@@ -23,12 +23,41 @@ export function dealRoutes(app: Express): void {
       const category = req.query.category as string | undefined;
       const discountType = req.query.discountType as string | undefined;
       const searchTerm = req.query.search as string | undefined;
+      const availableToday = req.query.availableToday === 'true';
+      const dayOfWeek = req.query.dayOfWeek ? parseInt(req.query.dayOfWeek as string) : undefined;
       
       // Get all deals from storage
       const deals = await storage.getDeals();
       
       // Apply filters if provided
       let filteredDeals = deals;
+      
+      // Get current day of week (0 = Sunday, 1 = Monday, etc.)
+      const currentDayOfWeek = new Date().getDay();
+      
+      // Filter by recurring day availability
+      if (availableToday) {
+        filteredDeals = filteredDeals.filter(deal => {
+          // Regular deals are always available within their date range
+          if (!deal.isRecurring) return true;
+          
+          // For recurring deals, check if today is in the recurringDays array
+          const recurringDays = Array.isArray(deal.recurringDays) ? deal.recurringDays : [];
+          return recurringDays.includes(currentDayOfWeek);
+        });
+      }
+      
+      // Filter by specific day of week if provided
+      if (dayOfWeek !== undefined) {
+        filteredDeals = filteredDeals.filter(deal => {
+          // Regular deals are available any day within their date range
+          if (!deal.isRecurring) return true;
+          
+          // For recurring deals, check if requested day is in the recurringDays array
+          const recurringDays = Array.isArray(deal.recurringDays) ? deal.recurringDays : [];
+          return recurringDays.includes(dayOfWeek);
+        });
+      }
       
       if (category) {
         filteredDeals = filteredDeals.filter(deal => 
@@ -50,7 +79,41 @@ export function dealRoutes(app: Express): void {
         );
       }
       
-      return res.status(200).json(filteredDeals);
+      // Add additional availability data to each deal for frontend
+      const dealsWithAvailability = filteredDeals.map(deal => {
+        // Skip if not a recurring deal
+        if (!deal.isRecurring) return deal;
+        
+        const recurringDays = Array.isArray(deal.recurringDays) ? deal.recurringDays : [];
+        const isAvailableToday = recurringDays.includes(currentDayOfWeek);
+        
+        // Find next available day
+        let nextAvailableDay = null;
+        if (!isAvailableToday && recurringDays.length > 0) {
+          // Sort days to find next upcoming day
+          const sortedDays = [...recurringDays].sort((a, b) => {
+            // If day is less than current day, it will be in the next week
+            // So we add 7 to it for sorting purposes
+            const adjustedA = a < currentDayOfWeek ? a + 7 : a;
+            const adjustedB = b < currentDayOfWeek ? b + 7 : b;
+            return adjustedA - adjustedB;
+          });
+          
+          // First day after adjusting is the next available
+          const nextDay = sortedDays[0];
+          nextAvailableDay = nextDay >= 7 ? nextDay - 7 : nextDay;
+        }
+        
+        return {
+          ...deal,
+          availability: {
+            isAvailableToday,
+            nextAvailableDay
+          }
+        };
+      });
+      
+      return res.status(200).json(dealsWithAvailability);
     } catch (error) {
       console.error("Get deals error:", error);
       return res.status(500).json({ message: "Internal server error" });

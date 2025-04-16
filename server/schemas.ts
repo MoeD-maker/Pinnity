@@ -272,7 +272,11 @@ export const dealSchemas = {
         message: "Limit must be a valid number"
       }).optional(),
       category: z.string().optional(),
-      search: z.string().optional()
+      search: z.string().optional(),
+      availableToday: z.enum(["true", "false"]).optional(),
+      dayOfWeek: z.string().refine(val => !isNaN(parseInt(val, 10)) && parseInt(val, 10) >= 0 && parseInt(val, 10) <= 6, {
+        message: "Day of week must be a number between 0 (Sunday) and 6 (Saturday)"
+      }).optional()
     }).optional()
   }),
 
