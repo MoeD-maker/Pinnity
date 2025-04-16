@@ -912,58 +912,24 @@ export default function CreateDealPage() {
                 <h3 className="font-medium">Deal Image</h3>
                 
                 <div className="border rounded-lg p-4">
-                  {/* Enhanced image upload with cropper */}
+                  {/* Simplified deal image uploader with intuitive controls */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <ImageUploadWithCropper
+                    <SimpleDealImageUploader
                       onImageChange={(image) => {
                         if (image) {
                           setPreviewUrl(image);
+                          // Store the image for form submission
+                          form.setValue("imageUrl", image);
                           
-                          // Compress the image before sending it to the API
-                          // This helps prevent "Payload too large" errors
-                          const compressAndSetImage = async (imageData: string) => {
-                            try {
-                              // Create a new image element to draw from
-                              const img = new Image() as HTMLImageElement;
-                              img.onload = () => {
-                                // Get dimensions for our UI
-                                setImageDimensions({ 
-                                  width: img.width, 
-                                  height: img.height 
-                                });
-                                
-                                // Create a canvas to compress the image
-                                const canvas = document.createElement('canvas');
-                                const ctx = canvas.getContext('2d');
-                                
-                                // Set canvas size to the image dimensions
-                                canvas.width = img.width;
-                                canvas.height = img.height;
-                                
-                                // Draw the image on the canvas
-                                if (ctx) {
-                                  ctx.drawImage(img, 0, 0, img.width, img.height);
-                                  
-                                  // Convert to compressed JPEG at reduced quality
-                                  const compressedImage = canvas.toDataURL('image/jpeg', 0.6);
-                                  
-                                  // The image should now be much smaller in size
-                                  console.log('Image compressed for API submission');
-                                  
-                                  // Store the compressed version for API submission
-                                  form.setValue("imageUrl", compressedImage);
-                                }
-                              };
-                              img.src = imageData;
-                            } catch (error) {
-                              console.error("Failed to compress image:", error);
-                              // Fall back to original image if compression fails
-                              form.setValue("imageUrl", image);
-                            }
+                          // Get dimensions for the UI display
+                          const img = new Image();
+                          img.onload = () => {
+                            setImageDimensions({ 
+                              width: img.width, 
+                              height: img.height 
+                            });
                           };
-                          
-                          // Compress the image
-                          compressAndSetImage(image);
+                          img.src = image;
                         } else {
                           setPreviewUrl('');
                           form.setValue("imageUrl", '');
@@ -971,17 +937,7 @@ export default function CreateDealPage() {
                         }
                       }}
                       currentImage={previewUrl}
-                      aspectRatio={4/3}
-                      buttonText="Upload Deal Image"
                       className="w-full"
-                      imageClassName="w-full aspect-[4/3] object-cover rounded-md"
-                      maxSizeKB={5000}
-                      minWidth={600}
-                      minHeight={450}
-                      recommendedWidth={800}
-                      recommendedHeight={600}
-                      imageType="deal"
-                      cropShape="rect"
                     />
                     
                     <div className="space-y-4">

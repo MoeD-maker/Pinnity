@@ -162,7 +162,7 @@ export default function VendorProfile() {
         const compressImage = async (imageData: string) => {
           try {
             // Create a new image for compression
-            const img = new Image() as HTMLImageElement;
+            const img = new Image();
             
             // Create a promise to handle the image loading
             await new Promise<void>((resolve, reject) => {
