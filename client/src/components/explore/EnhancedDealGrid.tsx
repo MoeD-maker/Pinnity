@@ -17,6 +17,7 @@ import {
   ThumbsUp,
   Sparkles
 } from 'lucide-react';
+import DealAvailabilityBadge from '@/components/shared/DealAvailabilityBadge';
 import { formatDistanceToNow } from 'date-fns';
 import { isExpiringSoon, getExpirationText, isExpired } from '@/utils/dealReminders';
 import ExpiringSoonBadge from '@/components/deals/ExpiringSoonBadge';
@@ -253,6 +254,13 @@ function DealCard({
             </Badge>
           </div>
           <FavoriteButton dealId={deal.id} />
+          
+          {/* Deal Availability Badge for recurring deals */}
+          <DealAvailabilityBadge 
+            isRecurring={deal.isRecurring} 
+            availability={deal.availability}
+            variant="card"
+          />
           
           {/* Cache indicator for individual deal cards */}
           {isCached && (

@@ -7,6 +7,7 @@ import { queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMutation } from '@tanstack/react-query';
 import RedemptionDialog from '@/components/dashboard/RedemptionDialog';
+import DealAvailabilityBadge from '@/components/shared/DealAvailabilityBadge';
 
 // UI components
 import {
@@ -293,6 +294,13 @@ export default function DealDetailPage() {
               </Badge>
             )}
           </div>
+          
+          {/* Deal Availability Badge for recurring deals */}
+          <DealAvailabilityBadge 
+            isRecurring={deal.isRecurring} 
+            availability={deal.availability}
+            variant="featured"
+          />
         </div>
 
         <CardHeader>

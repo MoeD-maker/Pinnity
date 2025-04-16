@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { checkDealRedemptionStatus } from '@/lib/dealUtils';
 import CachedDataAlert from '@/components/ui/CachedDataAlert';
+import DealAvailabilityBadge from '@/components/shared/DealAvailabilityBadge';
 
 // Use a looser type for the API response since it may not match the database schema exactly
 interface DealWithBusiness {
@@ -172,6 +173,13 @@ function DealCard({ deal, onSelect, isCached = false }: DealCardProps) {
             </Badge>
           </div>
           <FavoriteButton dealId={safeId} />
+          
+          {/* Deal Availability Badge for recurring deals */}
+          <DealAvailabilityBadge 
+            isRecurring={deal.isRecurring} 
+            availability={deal.availability}
+            variant="card"
+          />
           
           {/* Redeemed badge */}
           {redemptionStatus.hasRedeemed && (
