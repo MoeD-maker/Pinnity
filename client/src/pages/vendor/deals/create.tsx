@@ -718,33 +718,13 @@ export default function CreateDealPage() {
   
   // Generate a random redemption code
   function generateRandomCode() {
-    // Determine if we should generate a numeric PIN or alphanumeric code (50/50 chance)
-    const useAlphanumeric = Math.random() > 0.5;
+    // Generate a 5-digit numeric code
+    // Calculate min and max values for a 5-digit number
+    const min = 10000; // Minimum 5-digit number
+    const max = 99999; // Maximum 5-digit number
     
-    if (useAlphanumeric) {
-      // Generate an alphanumeric code (6-8 characters)
-      const length = Math.floor(6 + Math.random() * 3); // Random length between 6-8
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let result = '';
-      
-      // Include at least one letter for prefix (often represents the deal category)
-      const prefix = chars.substring(0, 26).charAt(Math.floor(Math.random() * 26));
-      result += prefix;
-      
-      // Fill the rest with random characters
-      for (let i = 1; i < length; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      
-      return result;
-    } else {
-      // Generate a 4-6 digit numeric PIN
-      const length = Math.floor(4 + Math.random() * 3); // Random length between 4-6
-      const min = Math.pow(10, length - 1);
-      const max = Math.pow(10, length) - 1;
-      
-      return Math.floor(min + Math.random() * (max - min + 1)).toString();
-    }
+    // Generate a random number between min and max (inclusive)
+    return Math.floor(min + Math.random() * (max - min + 1)).toString();
   }
   
   return (
@@ -1245,8 +1225,8 @@ export default function CreateDealPage() {
                   <div className="flex">
                     <Input 
                       id="redemptionCode" 
-                      placeholder="e.g. 1234 or COFFEE50" 
-                      maxLength={8}
+                      placeholder="e.g. 12345" 
+                      maxLength={5}
                       className="text-center font-mono text-lg tracking-wider"
                       {...form.register("redemptionCode")}
                     />
@@ -1263,7 +1243,7 @@ export default function CreateDealPage() {
                     <p className="text-sm text-red-500">{form.formState.errors.redemptionCode.message}</p>
                   )}
                   <p className="text-xs text-gray-500">
-                    This code (4-8 characters) will be provided to customers when they visit your business to redeem this deal
+                    This 5-digit code will be provided to customers when they visit your business to redeem this deal
                   </p>
                 </div>
                 
