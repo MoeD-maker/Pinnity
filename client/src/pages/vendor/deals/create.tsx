@@ -32,7 +32,8 @@ import {
   Image as ImageIcon,
   AlertCircle,
   CropIcon,
-  AlertTriangle
+  AlertTriangle,
+  X
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -42,6 +43,67 @@ import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import ImageUploadWithCropper from '@/components/shared/ImageUploadWithCropper';
 import SimpleDealImageUploader from '@/components/shared/SimpleDealImageUploader';
+
+// Helper functions for form state persistence
+const STORAGE_KEY = 'pinnity-deal-form-draft';
+
+// Save form data to localStorage
+const saveFormDraft = (userId: number, data: any, step: number, imageUrl?: string) => {
+  try {
+    const draft = {
+      userId,
+      data,
+      step,
+      imageUrl,
+      lastUpdated: new Date().toISOString()
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+    console.log('Form draft saved:', draft);
+    return true;
+  } catch (error) {
+    console.error('Error saving form draft:', error);
+    return false;
+  }
+};
+
+// Load form data from localStorage
+const loadFormDraft = (userId: number) => {
+  try {
+    const savedData = localStorage.getItem(STORAGE_KEY);
+    if (!savedData) return null;
+    
+    const parsed = JSON.parse(savedData);
+    
+    // Only load draft for the current user
+    if (parsed.userId !== userId) {
+      return null;
+    }
+    
+    // Parse dates from ISO strings back to Date objects
+    if (parsed.data.startDate) {
+      parsed.data.startDate = new Date(parsed.data.startDate);
+    }
+    if (parsed.data.endDate) {
+      parsed.data.endDate = new Date(parsed.data.endDate);
+    }
+    
+    return parsed;
+  } catch (error) {
+    console.error('Error loading form draft:', error);
+    return null;
+  }
+};
+
+// Clear saved form data
+const clearFormDraft = () => {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    return true;
+  } catch (error) {
+    console.error('Error clearing form draft:', error);
+    return false;
+  }
+};
 
 // Define deal categories that match those in consumer side
 const CATEGORIES = [
@@ -233,7 +295,12 @@ export default function CreateDealPage() {
     form.setValue("terms", formattedTerms);
   };
   
-  // Initialize form with default values
+  // State to track if a saved draft is available
+  const [hasSavedDraft, setHasSavedDraft] = useState(false);
+  const [savedDraftDate, setSavedDraftDate] = useState<string | null>(null);
+  const [showDraftBanner, setShowDraftBanner] = useState(false);
+  
+  // Initialize form with default values or saved draft
   const form = useForm<DealFormValues>({
     resolver: zodResolver(dealSchema),
     defaultValues: {
@@ -258,6 +325,14 @@ export default function CreateDealPage() {
   // Watch form values for UI updates
   const watchedValues = form.watch();
   
+  // Save form state when values change
+  useEffect(() => {
+    if (user?.id && !submitting) {
+      const formData = form.getValues();
+      saveFormDraft(user.id, formData, currentStep, previewUrl);
+    }
+  }, [watchedValues, currentStep, previewUrl, user?.id, submitting]);
+  
   // Fetch business data when component mounts
   useEffect(() => {
     const fetchBusinessData = async () => {
@@ -281,8 +356,22 @@ export default function CreateDealPage() {
     fetchBusinessData();
   }, [user]);
 
-  // Initialize terms when component mounts
+  // Initialize terms when component mounts and check for saved draft
   useEffect(() => {
+    // Check for saved draft first so we don't overwrite loaded data
+    if (user?.id) {
+      const savedDraft = loadFormDraft(user.id);
+      if (savedDraft) {
+        // We have a saved draft, set flag for showing banner
+        setHasSavedDraft(true);
+        setShowDraftBanner(true);
+        
+        // Format date for display
+        const formattedDate = new Date(savedDraft.lastUpdated).toLocaleString();
+        setSavedDraftDate(formattedDate);
+      }
+    }
+    
     updateCombinedTerms();
     
     // Validate start date is at least 24 hours in future
@@ -297,7 +386,7 @@ export default function CreateDealPage() {
         });
       }
     }
-  }, []);
+  }, [user?.id]);
   
   // Update deal-type specific terms when deal type changes
   useEffect(() => {
@@ -348,6 +437,63 @@ export default function CreateDealPage() {
     }
   };
   
+  // Load saved draft if available
+  const loadSavedDraft = () => {
+    if (!user?.id) return;
+    
+    const savedDraft = loadFormDraft(user.id);
+    if (!savedDraft) return;
+    
+    // Format the date for display
+    const formattedDate = new Date(savedDraft.lastUpdated).toLocaleString();
+    setSavedDraftDate(formattedDate);
+    
+    // Set the draft data to the form
+    Object.entries(savedDraft.data).forEach(([key, value]) => {
+      // Skip undefined values
+      if (value !== undefined) {
+        form.setValue(key as any, value);
+      }
+    });
+    
+    // Set the saved step
+    setCurrentStep(savedDraft.step || 0);
+    
+    // Set image preview if available
+    if (savedDraft.imageUrl) {
+      setPreviewUrl(savedDraft.imageUrl);
+    }
+    
+    setHasSavedDraft(true);
+    setShowDraftBanner(true);
+    
+    toast({
+      title: "Draft restored",
+      description: `Your previous progress from ${formattedDate} has been loaded.`,
+    });
+  };
+  
+  // Discard saved draft
+  const discardDraft = () => {
+    clearFormDraft();
+    setHasSavedDraft(false);
+    setShowDraftBanner(false);
+    
+    // Reset form to default values
+    form.reset();
+    
+    // Clear preview URL
+    setPreviewUrl('');
+    
+    // Reset step
+    setCurrentStep(0);
+    
+    toast({
+      title: "Draft discarded",
+      description: "Your saved progress has been cleared.",
+    });
+  };
+  
   // Handle form submission
   const handleSubmit = async () => {
     try {
@@ -385,6 +531,10 @@ export default function CreateDealPage() {
       });
       
       console.log('Deal created successfully:', deal);
+      
+      // Clear the saved draft after successful submission
+      clearFormDraft();
+      setHasSavedDraft(false);
       
       toast({
         title: "Deal created successfully",
@@ -462,6 +612,47 @@ export default function CreateDealPage() {
         </Button>
         <h1 className="text-2xl font-bold">Create New Deal</h1>
       </div>
+      
+      {/* Saved draft notification */}
+      {showDraftBanner && hasSavedDraft && savedDraftDate && (
+        <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6">
+          <div className="flex items-start">
+            <div className="flex-shrink-0 pt-0.5">
+              <Info className="h-5 w-5 text-blue-500" />
+            </div>
+            <div className="ml-3 flex-1 md:flex md:justify-between items-center">
+              <p className="text-sm text-blue-700">
+                We found an unfinished deal draft from {savedDraftDate}. Would you like to continue where you left off?
+              </p>
+              <div className="mt-3 md:mt-0 md:ml-6 flex space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={discardDraft}
+                  className="text-xs h-8"
+                >
+                  Discard
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={loadSavedDraft}
+                  className="bg-blue-600 hover:bg-blue-700 text-xs h-8"
+                >
+                  Load Draft
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowDraftBanner(false)}
+                  className="text-xs h-8 p-0 w-8"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Progress bar */}
       <div className="mb-8">
