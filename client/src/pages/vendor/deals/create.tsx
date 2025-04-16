@@ -41,6 +41,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import ImageUploadWithCropper from '@/components/shared/ImageUploadWithCropper';
+import SimpleDealImageUploader from '@/components/shared/SimpleDealImageUploader';
 
 // Define deal categories that match those in consumer side
 const CATEGORIES = [

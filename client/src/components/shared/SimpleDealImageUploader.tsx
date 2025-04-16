@@ -467,7 +467,7 @@ export default function SimpleDealImageUploader({
       
       {/* Warning display */}
       {warning && (
-        <Alert variant="warning" className="py-2 bg-amber-50 border-amber-200">
+        <Alert className="py-2 bg-amber-50 border-amber-200">
           <AlertTriangle className="h-4 w-4 mr-2 text-amber-600" />
           <AlertDescription className="text-sm text-amber-700">{warning}</AlertDescription>
         </Alert>
