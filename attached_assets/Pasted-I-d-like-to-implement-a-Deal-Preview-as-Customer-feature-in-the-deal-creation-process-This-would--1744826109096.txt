@@ -1,0 +1,35 @@
+I'd like to implement a "Deal Preview as Customer" feature in the deal creation process. This would allow vendors to see exactly how their deal will appear in the customer app while they're creating it.
+
+Could you build this feature with the following specifications:
+
+1. Preview Component:
+   - Add a "Preview" tab or button in the Review step that shows the deal as customers will see it
+   - Create a mobile phone frame mockup that displays the deal card exactly as it would appear in the customer app
+   - Show both the "browse view" (how it appears in the deals list) and "detail view" (after a customer taps on it)
+
+2. Live-Updating Preview:
+   - Make the preview update in real-time as vendors change the deal title, description, image, etc.
+   - Include a note showing how many characters are visible before truncation in the browse view
+   - Show how the featured/non-featured status affects visibility
+
+3. Key Customer Experience Elements:
+   - Display the recurring schedule for recurring deals ("Available every Tuesday")
+   - Show how the business logo/profile appears alongside the deal
+   - Include the customer-facing "Redeem" button and saved/favorite options
+   - For recurring deals, show how "Available Today" vs "Next Available: Wednesday" would appear
+
+4. Best Practices Guidance:
+   - Add tooltips or small information cards with optimization tips
+   - Examples: "Deals with images get 60% more views" or "Clear, concise titles under 40 characters perform best"
+   - Highlight any potential issues (e.g., "Your description will be truncated in browse view")
+
+5. Different Device Views:
+   - Include toggles to preview on different device sizes (phone vs tablet)
+   - Show how the deal appears in both light and dark mode
+
+This feature will help vendors optimize their deals for maximum engagement by understanding exactly how customers will experience them. It should be highly interactive and accurate to our actual customer app design.
+
+Technical implementation details:
+- Use the same UI components as the customer app to ensure consistency
+- Consider implementing as a separate React component that consumes the current form state
+- Add appropriate a11y attributes for screen readers
