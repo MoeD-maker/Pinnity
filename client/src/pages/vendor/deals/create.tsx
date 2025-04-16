@@ -3,6 +3,7 @@ import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { debounce } from 'lodash';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -47,8 +48,8 @@ import SimpleDealImageUploader from '@/components/shared/SimpleDealImageUploader
 // Helper functions for form state persistence
 const STORAGE_KEY = 'pinnity-deal-form-draft';
 
-// Save form data to localStorage
-const saveFormDraft = (userId: number, data: any, step: number, imageUrl?: string) => {
+// Debounced save function to avoid excessive saving
+const debouncedSave = debounce((userId: number, data: any, step: number, imageUrl?: string) => {
   try {
     const draft = {
       userId,
@@ -58,12 +59,19 @@ const saveFormDraft = (userId: number, data: any, step: number, imageUrl?: strin
       lastUpdated: new Date().toISOString()
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
-    console.log('Form draft saved:', draft);
+    console.log('Form draft saved (debounced):', draft);
     return true;
   } catch (error) {
     console.error('Error saving form draft:', error);
     return false;
   }
+}, 500); // 500ms debounce delay
+
+// Save form data to localStorage
+const saveFormDraft = (userId: number, data: any, step: number, imageUrl?: string) => {
+  // Trigger the debounced save
+  debouncedSave(userId, data, step, imageUrl);
+  return true;
 };
 
 // Load form data from localStorage
@@ -334,19 +342,38 @@ export default function CreateDealPage() {
   // Watch form values for UI updates
   const watchedValues = form.watch();
   
+  // Ref to track initial render
+  const isInitialRender = useRef(true);
+  
   // Save form state when values change
   useEffect(() => {
-    if (user?.id && !submitting) {
+    // Skip saving on initial render to avoid saving default values
+    if (isInitialRender.current) {
+      console.log('Skipping save on initial render');
+      isInitialRender.current = false;
+      return;
+    }
+    
+    // Only save if the user has made changes and we're not submitting
+    if (user?.id && !submitting && form.formState.isDirty) {
       const formData = form.getValues();
-      console.log('Auto-saving form data:', formData);
-      saveFormDraft(user.id, formData, currentStep, previewUrl);
       
-      // Set flag for having a saved draft if this is not from initial load
-      if (!hasSavedDraft) {
-        setHasSavedDraft(true);
+      // Check if there's meaningful data to save (at least title or description)
+      const hasContent = formData.title?.trim() || formData.description?.trim() || formData.category;
+      
+      if (hasContent) {
+        console.log('Auto-saving form data (user made changes):', formData);
+        saveFormDraft(user.id, formData, currentStep, previewUrl);
+        
+        // Set flag for having a saved draft
+        if (!hasSavedDraft) {
+          setHasSavedDraft(true);
+        }
+      } else {
+        console.log('Form has no meaningful content, skipping save');
       }
     }
-  }, [watchedValues, currentStep, previewUrl, user?.id, submitting]);
+  }, [watchedValues, currentStep, previewUrl, user?.id, submitting, form.formState.isDirty]);
   
   // Fetch business data when component mounts
   useEffect(() => {
@@ -496,6 +523,18 @@ export default function CreateDealPage() {
           form.setValue(key as any, value);
         }
       });
+      
+      // Mark form as dirty after loading values to recognize loaded data as modified
+      // This is needed because react-hook-form's setValue doesn't mark the form as dirty by default
+      setTimeout(() => {
+        form.formState.dirtyFields = Object.keys(savedDraft.data).reduce((acc, key) => {
+          acc[key as keyof DealFormValues] = true;
+          return acc;
+        }, {} as Record<keyof DealFormValues, boolean>);
+        
+        // Force form state to update
+        form.trigger();
+      }, 0);
       
       // Set the saved step
       console.log('Setting current step to:', savedDraft.step || 0);
