@@ -273,8 +273,8 @@ export default function VendorProfile() {
     }
   };
   
-  // Handle saving edited hours
-  const handleSaveEditedHours = () => {
+  // Apply changes from current editing session to the business hours state
+  const applyEditChanges = () => {
     if (editingDay !== null) {
       // Update the business hours state with edited values
       setBusinessHours(prevHours => 
@@ -288,11 +288,6 @@ export default function VendorProfile() {
       // Reset editing state
       setEditingDay(null);
       setEditedHours({ openTime: '', closeTime: '' });
-      
-      toast({
-        title: 'Success',
-        description: 'Business hours updated for this day',
-      });
     }
   };
   
@@ -323,6 +318,11 @@ export default function VendorProfile() {
   // Handle saving all business hours
   const handleSaveAllHours = async () => {
     if (!business) return;
+    
+    // If there's an ongoing edit, apply those changes first
+    if (editingDay !== null) {
+      applyEditChanges();
+    }
     
     setSaving(true);
     try {
@@ -682,15 +682,6 @@ export default function VendorProfile() {
                             />
                           </>
                         )}
-                        
-                        <Button 
-                          variant="default" 
-                          size="sm"
-                          onClick={handleSaveEditedHours}
-                          className="bg-[#00796B] hover:bg-[#004D40]"
-                        >
-                          Save
-                        </Button>
                       </div>
                       
                       {/* View mode - shown when not editing */}
@@ -743,14 +734,22 @@ export default function VendorProfile() {
               </div>
             </CardContent>
             <CardFooter className="border-t pt-6">
-              <div className="flex justify-end w-full">
-                <Button 
-                  className="bg-[#00796B] hover:bg-[#004D40]"
-                  onClick={handleSaveAllHours}
-                  disabled={saving || editingDay !== null}
-                >
-                  {saving ? 'Saving...' : 'Save Hours'}
-                </Button>
+              <div className="flex items-center justify-between w-full">
+                {editingDay !== null && (
+                  <p className="text-sm text-amber-600">
+                    <Info className="inline-block mr-1 h-4 w-4" />
+                    Finish editing or click Cancel, then click Save Hours to save all changes
+                  </p>
+                )}
+                <div className="ml-auto">
+                  <Button 
+                    className="bg-[#00796B] hover:bg-[#004D40]"
+                    onClick={handleSaveAllHours}
+                    disabled={saving}
+                  >
+                    {saving ? 'Saving...' : 'Save Hours'}
+                  </Button>
+                </div>
               </div>
             </CardFooter>
           </Card>
