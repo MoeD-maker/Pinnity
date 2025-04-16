@@ -221,7 +221,9 @@ const dealSchema = z.object({
   }
 );
 
-export type DealFormValues = z.infer<typeof dealSchema>;
+export type DealFormValues = z.infer<typeof dealSchema> & {
+  featured?: boolean;
+};
 
 // Step definition for the wizard interface
 const steps = [

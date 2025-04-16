@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-interface DealAvailability {
+export interface DealAvailability {
   isAvailableToday: boolean;
   nextAvailableDay?: number | null;
   nextAvailableDayName?: string | null;
