@@ -192,6 +192,16 @@ export const insertRedemptionRatingSchema = createInsertSchema(redemptionRatings
 export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens);
 export const insertRefreshTokenSchema = createInsertSchema(refreshTokens);
 
+// Custom API schema for deals with string dates and recurring fields
+export const apiDealSchema = insertDealSchema
+  .extend({
+    startDate: z.string(), // Accept string dates from frontend
+    endDate: z.string(),   // Accept string dates from frontend
+    isRecurring: z.boolean().optional().default(false),
+    recurringDays: z.array(z.number().min(0).max(6)).optional().default([])
+  })
+  .omit({ id: true, createdAt: true, approvalDate: true, status: true });
+
 // Login schema
 export const loginUserSchema = z.object({
   email: z.string().email(),
@@ -245,6 +255,7 @@ export type InsertRefreshToken = typeof refreshTokens.$inferInsert;
 // Form schema types
 export type LoginUser = z.infer<typeof loginUserSchema>;
 export type RatingData = z.infer<typeof ratingSchema>;
+export type ApiDealData = z.infer<typeof apiDealSchema>;
 
 // Password reset request schema
 export const passwordResetRequestSchema = z.object({

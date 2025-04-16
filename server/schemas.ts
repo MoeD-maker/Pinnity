@@ -3,6 +3,7 @@ import {
   insertUserSchema, 
   insertBusinessSchema, 
   insertDealSchema,
+  apiDealSchema,
   insertUserFavoriteSchema,
   insertDealRedemptionSchema,
   insertUserNotificationPreferencesSchema,
@@ -286,7 +287,7 @@ export const dealSchemas = {
 
   // Create deal
   createDeal: z.object({
-    body: insertDealSchema.omit({ id: true, createdAt: true })
+    body: apiDealSchema
   }),
 
   // Update deal
@@ -296,7 +297,7 @@ export const dealSchemas = {
         message: "Deal ID must be a valid number"
       })
     }),
-    body: insertDealSchema.partial().omit({ id: true, businessId: true })
+    body: apiDealSchema.partial().omit({ businessId: true })
   }),
 
   // Deal approval
