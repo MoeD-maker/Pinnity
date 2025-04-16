@@ -170,6 +170,17 @@ const DISCOUNT_OPTIONS = [
   { value: '50%', label: '50% off' }
 ];
 
+// Day names for recurring deals
+const DAYS_OF_WEEK = [
+  { value: 0, label: 'Sunday' },
+  { value: 1, label: 'Monday' },
+  { value: 2, label: 'Tuesday' },
+  { value: 3, label: 'Wednesday' },
+  { value: 4, label: 'Thursday' },
+  { value: 5, label: 'Friday' },
+  { value: 6, label: 'Saturday' }
+];
+
 // Form schema for deal creation
 const dealSchema = z.object({
   title: z.string().min(5, { message: 'Title must be at least 5 characters' }).max(100),
@@ -181,6 +192,10 @@ const dealSchema = z.object({
   endDate: z.date({ required_error: 'End date is required' }),
   maxRedemptionsPerCustomer: z.number().min(1).default(1),
 
+  // Recurring deal fields
+  isRecurring: z.boolean().default(false),
+  recurringDays: z.array(z.number().min(0).max(6)).default([]),
+  
   // Standard T&C checkboxes - default to all selected
   standardTerms: z.array(z.string()).default(STANDARD_TERMS.map(term => term.id)),
   // Deal-type specific T&C checkboxes
@@ -193,7 +208,15 @@ const dealSchema = z.object({
   redemptionInstructions: z.string().optional(),
   imageUrl: z.string().optional(),
   acceptTerms: z.boolean().refine(val => val === true, { message: 'You must accept the terms' })
-});
+})
+// Add validation: If isRecurring is true, recurringDays must not be empty
+.refine(
+  (data) => !data.isRecurring || (data.isRecurring && data.recurringDays.length > 0),
+  {
+    message: "Please select at least one day of the week for your recurring deal",
+    path: ["recurringDays"]
+  }
+);
 
 type DealFormValues = z.infer<typeof dealSchema>;
 
@@ -328,6 +351,9 @@ export default function CreateDealPage() {
       startDate: new Date(new Date().setHours(new Date().getHours() + 24)), // Default to 24 hours in future
       endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)), // Default to 1 month duration
       maxRedemptionsPerCustomer: 1,
+      // Recurring deal fields
+      isRecurring: false,
+      recurringDays: [],
       // All standard terms selected by default
       standardTerms: STANDARD_TERMS.map(term => term.id),
       dealTypeTerms: [],

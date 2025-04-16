@@ -59,6 +59,9 @@ export const deals = pgTable("deals", {
   viewCount: integer("view_count").default(0),
   saveCount: integer("save_count").default(0),
   redemptionCount: integer("redemption_count").default(0),
+  // Recurring deal fields
+  isRecurring: boolean("is_recurring").default(false),
+  recurringDays: jsonb("recurring_days").default([]), // Array of days (0-6) where 0=Sunday
 });
 
 // User favorites - saved deals by users
