@@ -524,17 +524,27 @@ export default function CreateDealPage() {
         }
       });
       
-      // Mark form as dirty after loading values to recognize loaded data as modified
-      // This is needed because react-hook-form's setValue doesn't mark the form as dirty by default
+      // Mark form as dirty programmatically after loading values
+      // We can't directly modify formState, so we'll use a different approach
+      
+      // We need a different approach to let the form know these values are "dirty"
+      // Using form.setValue with the third parameter (shouldDirty) set to true
       setTimeout(() => {
-        form.formState.dirtyFields = Object.keys(savedDraft.data).reduce((acc, key) => {
-          acc[key as keyof DealFormValues] = true;
-          return acc;
-        }, {} as Record<keyof DealFormValues, boolean>);
+        // Re-apply the form values with shouldDirty flag
+        Object.entries(savedDraft.data).forEach(([key, value]) => {
+          // Skip undefined values or arrays/objects that might cause issues
+          if (value !== undefined && typeof value !== 'object') {
+            console.log(`Re-setting form field ${key} with shouldDirty=true`);
+            form.setValue(key as any, value, { shouldDirty: true });
+          }
+        });
         
-        // Force form state to update
+        // Trigger validation to update form state
         form.trigger();
-      }, 0);
+        
+        // Log to confirm data was restored
+        console.log('Form values after loading draft:', form.getValues());
+      }, 10);
       
       // Set the saved step
       console.log('Setting current step to:', savedDraft.step || 0);
