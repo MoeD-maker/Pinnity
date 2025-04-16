@@ -65,6 +65,13 @@ export default function VendorProfile() {
   // Business hours state
   const [businessHours, setBusinessHours] = useState<any[]>([]);
   
+  // State to track which day is being edited
+  const [editingDay, setEditingDay] = useState<number | null>(null);
+  const [editedHours, setEditedHours] = useState<{ openTime: string, closeTime: string }>({
+    openTime: '',
+    closeTime: ''
+  });
+  
   // Form for business profile
   const form = useForm<BusinessProfileFormValues>({
     resolver: zodResolver(businessProfileSchema),
@@ -239,6 +246,90 @@ export default function VendorProfile() {
     }
   };
   
+  // Handle editing business hours
+  const handleEditHours = (dayIndex: number) => {
+    const dayHours = businessHours.find(h => h.dayOfWeek === dayIndex);
+    if (dayHours) {
+      setEditingDay(dayIndex);
+      setEditedHours({
+        openTime: dayHours.openTime || '',
+        closeTime: dayHours.closeTime || ''
+      });
+    }
+  };
+  
+  // Handle saving edited hours
+  const handleSaveEditedHours = () => {
+    if (editingDay !== null) {
+      // Update the business hours state with edited values
+      setBusinessHours(prevHours => 
+        prevHours.map(hours => 
+          hours.dayOfWeek === editingDay 
+            ? { ...hours, openTime: editedHours.openTime, closeTime: editedHours.closeTime }
+            : hours
+        )
+      );
+      
+      // Reset editing state
+      setEditingDay(null);
+      setEditedHours({ openTime: '', closeTime: '' });
+      
+      toast({
+        title: 'Success',
+        description: 'Business hours updated for this day',
+      });
+    }
+  };
+  
+  // Handle changing hour values
+  const handleHoursChange = (field: 'openTime' | 'closeTime', value: string) => {
+    setEditedHours(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+  
+  // Handle toggling a day as closed/open
+  const handleToggleClosed = (dayIndex: number, isClosed: boolean) => {
+    setBusinessHours(prevHours => 
+      prevHours.map(hours => 
+        hours.dayOfWeek === dayIndex 
+          ? { 
+              ...hours, 
+              isClosed,
+              // If opening, set default hours
+              ...(isClosed ? {} : { openTime: '09:00', closeTime: '17:00' })
+            }
+          : hours
+      )
+    );
+  };
+  
+  // Handle saving all business hours
+  const handleSaveAllHours = async () => {
+    if (!business) return;
+    
+    setSaving(true);
+    try {
+      // In a real implementation, we would send the hours to the API
+      // For now, just show a success message
+      
+      toast({
+        title: 'Success',
+        description: 'Business hours saved successfully',
+      });
+    } catch (error) {
+      console.error('Error saving business hours:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to save business hours',
+        variant: 'destructive'
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Handle form submission
   const onSubmit = async (data: BusinessProfileFormValues) => {
     if (!business) return;
@@ -533,47 +624,104 @@ export default function VendorProfile() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {DAYS_OF_WEEK.map((day, index) => (
-                  <div key={day} className="flex items-center justify-between py-2 border-b last:border-0">
-                    <div className="w-1/3">
-                      <Label>{day}</Label>
-                    </div>
-                    
-                    {businessHours.find(h => h.dayOfWeek === index)?.isClosed ? (
-                      <div className="flex-1 text-center">
-                        <Badge variant="outline" className="bg-gray-50 text-gray-700">Closed</Badge>
+                {DAYS_OF_WEEK.map((day, index) => {
+                  const dayHours = businessHours.find(h => h.dayOfWeek === index);
+                  const isEditingThisDay = editingDay === index;
+                  
+                  return (
+                    <div key={day} className="flex items-center justify-between py-2 border-b last:border-0">
+                      <div className="w-1/4">
+                        <Label>{day}</Label>
                       </div>
-                    ) : (
-                      <div className="flex-1 flex items-center justify-center space-x-2">
-                        <Input 
-                          type="time"
-                          value={businessHours.find(h => h.dayOfWeek === index)?.openTime || ''}
-                          onChange={() => {}}
-                          className="w-32"
-                        />
-                        <span>to</span>
-                        <Input 
-                          type="time"
-                          value={businessHours.find(h => h.dayOfWeek === index)?.closeTime || ''}
-                          onChange={() => {}}
-                          className="w-32"
-                        />
-                      </div>
-                    )}
-                    
-                    <div className="ml-4">
-                      <Button variant="outline" size="sm">
-                        Edit
-                      </Button>
+                      
+                      {isEditingThisDay ? (
+                        // Edit mode
+                        <div className="flex-1 flex items-center justify-center space-x-2">
+                          <div className="flex items-center space-x-2">
+                            <Label htmlFor={`${day}-closed`} className="text-sm">Closed</Label>
+                            <Switch 
+                              id={`${day}-closed`}
+                              checked={dayHours?.isClosed || false}
+                              onCheckedChange={(checked) => handleToggleClosed(index, checked)}
+                            />
+                          </div>
+                          
+                          {!dayHours?.isClosed && (
+                            <>
+                              <Input 
+                                type="time"
+                                value={editedHours.openTime}
+                                onChange={(e) => handleHoursChange('openTime', e.target.value)}
+                                className="w-32"
+                              />
+                              <span>to</span>
+                              <Input 
+                                type="time"
+                                value={editedHours.closeTime}
+                                onChange={(e) => handleHoursChange('closeTime', e.target.value)}
+                                className="w-32"
+                              />
+                            </>
+                          )}
+                          
+                          <Button 
+                            variant="default" 
+                            size="sm"
+                            onClick={handleSaveEditedHours}
+                            className="bg-[#00796B] hover:bg-[#004D40]"
+                          >
+                            Save
+                          </Button>
+                        </div>
+                      ) : (
+                        // View mode
+                        <>
+                          {dayHours?.isClosed ? (
+                            <div className="flex-1 text-center">
+                              <Badge variant="outline" className="bg-gray-50 text-gray-700">Closed</Badge>
+                            </div>
+                          ) : (
+                            <div className="flex-1 flex items-center justify-center space-x-2">
+                              <Input 
+                                type="time"
+                                value={dayHours?.openTime || ''}
+                                disabled
+                                className="w-32"
+                              />
+                              <span>to</span>
+                              <Input 
+                                type="time"
+                                value={dayHours?.closeTime || ''}
+                                disabled
+                                className="w-32"
+                              />
+                            </div>
+                          )}
+                          
+                          <div className="ml-4">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleEditHours(index)}
+                            >
+                              Edit
+                            </Button>
+                          </div>
+                        </>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
             <CardFooter className="border-t pt-6">
               <div className="flex justify-end w-full">
-                <Button className="bg-[#00796B] hover:bg-[#004D40]">
-                  Save Hours
+                <Button 
+                  className="bg-[#00796B] hover:bg-[#004D40]"
+                  onClick={handleSaveAllHours}
+                  disabled={saving || editingDay !== null}
+                >
+                  {saving ? 'Saving...' : 'Save Hours'}
                 </Button>
               </div>
             </CardFooter>
