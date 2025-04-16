@@ -1422,92 +1422,89 @@ export default function CreateDealPage() {
                 </div>
               </div>
               
-              <Tabs defaultValue="summary" className="w-full">
-                <TabsList className="w-full max-w-md mx-auto grid grid-cols-2">
-                  <TabsTrigger value="summary">Deal Summary</TabsTrigger>
-                  <TabsTrigger value="preview">
-                    <Eye className="h-4 w-4 mr-2" />
-                    Preview as Customer
-                  </TabsTrigger>
-                </TabsList>
+              {/* Deal Summary */}
+              <div className="space-y-4">
+                <h3 className="font-medium">Deal Summary</h3>
                 
-                <TabsContent value="summary" className="pt-4">
-                  <div className="space-y-4">
-                    <h3 className="font-medium">Deal Summary</h3>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium">Title</p>
-                        <p className="text-sm">{watchedValues.title}</p>
-                      </div>
-                      
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium">Category</p>
-                        <p className="text-sm">{CATEGORIES.find(c => c.id === watchedValues.category)?.name || '-'}</p>
-                      </div>
-                      
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium">Deal Type</p>
-                        <p className="text-sm">{DEAL_TYPES.find(t => t.id === watchedValues.dealType)?.name || '-'}</p>
-                      </div>
-                      
-                      {watchedValues.dealType === 'percent_off' && (
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium">Discount</p>
-                          <p className="text-sm">{watchedValues.discount}</p>
-                        </div>
-                      )}
-                      
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium">Start Date</p>
-                        <p className="text-sm">{watchedValues.startDate ? format(watchedValues.startDate, "PPP") : '-'}</p>
-                      </div>
-                      
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium">End Date</p>
-                        <p className="text-sm">{watchedValues.endDate ? format(watchedValues.endDate, "PPP") : '-'}</p>
-                      </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">Title</p>
+                    <p className="text-sm">{watchedValues.title}</p>
+                  </div>
                   
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium">Max Redemptions Per Customer</p>
-                        <p className="text-sm">{watchedValues.maxRedemptionsPerCustomer}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-1 mt-4">
-                      <p className="text-sm font-medium">Description</p>
-                      <p className="text-sm">{watchedValues.description}</p>
-                    </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">Category</p>
+                    <p className="text-sm">{CATEGORIES.find(c => c.id === watchedValues.category)?.name || '-'}</p>
                   </div>
-                </TabsContent>
-                
-                <TabsContent value="preview" className="pt-4">
-                  <div className="flex justify-center">
-                    <DealPreview 
-                      formValues={form.getValues()}
-                      businessName={business?.name || "Your Business"}
-                      businessLogo={business?.logoUrl}
-                      categories={CATEGORIES}
-                      dealTypes={DEAL_TYPES}
-                    />
+                  
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">Deal Type</p>
+                    <p className="text-sm">{DEAL_TYPES.find(t => t.id === watchedValues.dealType)?.name || '-'}</p>
                   </div>
-                </TabsContent>
-              </Tabs>
-                
-                {watchedValues.terms && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Terms & Conditions</p>
-                    <div className="p-3 bg-gray-50 rounded border text-sm space-y-1">
-                      {watchedValues.terms.split('\n').map((term, index) => (
-                        <p key={index} className="text-sm">{term}</p>
-                      ))}
+                  
+                  {watchedValues.dealType === 'percent_off' && (
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">Discount</p>
+                      <p className="text-sm">{watchedValues.discount}</p>
                     </div>
-                    <p className="text-xs text-gray-500 italic">
-                      {watchedValues.standardTerms?.length || 0} standard terms and {watchedValues.dealTypeTerms?.length || 0} deal-specific terms
-                    </p>
+                  )}
+                  
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">Start Date</p>
+                    <p className="text-sm">{watchedValues.startDate ? format(watchedValues.startDate, "PPP") : '-'}</p>
                   </div>
-                )}
+                  
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">End Date</p>
+                    <p className="text-sm">{watchedValues.endDate ? format(watchedValues.endDate, "PPP") : '-'}</p>
+                  </div>
+              
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">Max Redemptions Per Customer</p>
+                    <p className="text-sm">{watchedValues.maxRedemptionsPerCustomer}</p>
+                  </div>
+                </div>
                 
+                <div className="space-y-1 mt-4">
+                  <p className="text-sm font-medium">Description</p>
+                  <p className="text-sm">{watchedValues.description}</p>
+                </div>
+              </div>
+              
+              {/* Customer Preview Section */}
+              <div className="mt-8 pt-4 border-t">
+                <h3 className="font-medium flex items-center mb-4">
+                  <Eye className="h-4 w-4 mr-2" />
+                  Preview as Customer
+                </h3>
+                <div className="flex justify-center">
+                  <DealPreview 
+                    formValues={form.getValues()}
+                    businessName={business?.name || "Your Business"}
+                    businessLogo={business?.logoUrl}
+                    categories={CATEGORIES}
+                    dealTypes={DEAL_TYPES}
+                  />
+                </div>
+              </div>
+              
+              {/* Terms & Conditions */}
+              {watchedValues.terms && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Terms & Conditions</p>
+                  <div className="p-3 bg-gray-50 rounded border text-sm space-y-1">
+                    {watchedValues.terms.split('\n').map((term, index) => (
+                      <p key={index} className="text-sm">{term}</p>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 italic">
+                    {watchedValues.standardTerms?.length || 0} standard terms and {watchedValues.dealTypeTerms?.length || 0} deal-specific terms
+                  </p>
+                </div>
+              )}
+              
+              {/* Redemption Info */}
+              <div className="space-y-4">
                 <div className="space-y-1">
                   <p className="text-sm font-medium">Redemption Code</p>
                   <p className="text-sm font-mono">{watchedValues.redemptionCode}</p>
@@ -1523,6 +1520,7 @@ export default function CreateDealPage() {
               
               <Separator />
               
+              {/* Terms Acceptance */}
               <div className="flex items-start space-x-2">
                 <Checkbox 
                   id="acceptTerms" 
