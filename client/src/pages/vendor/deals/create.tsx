@@ -18,6 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   CalendarIcon, 
   CheckCircle, 
@@ -34,6 +35,7 @@ import {
   AlertCircle,
   CropIcon,
   AlertTriangle,
+  Eye,
   X
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -44,6 +46,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import ImageUploadWithCropper from '@/components/shared/ImageUploadWithCropper';
 import SimpleDealImageUploader from '@/components/shared/SimpleDealImageUploader';
+import DealPreview from '@/components/vendor/DealPreview';
 
 // Helper functions for form state persistence
 const STORAGE_KEY = 'pinnity-deal-form-draft';
@@ -218,7 +221,7 @@ const dealSchema = z.object({
   }
 );
 
-type DealFormValues = z.infer<typeof dealSchema>;
+export type DealFormValues = z.infer<typeof dealSchema>;
 
 // Step definition for the wizard interface
 const steps = [
