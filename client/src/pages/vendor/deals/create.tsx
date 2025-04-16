@@ -298,6 +298,8 @@ export default function CreateDealPage() {
     const standardTermIds = form.getValues("standardTerms") || [];
     const dealTypeTermIds = form.getValues("dealTypeTerms") || [];
     const customTermsText = form.getValues("customTerms") || '';
+    const isRecurring = form.getValues("isRecurring") || false;
+    const recurringDays = form.getValues("recurringDays") || [];
     
     // Get the text of the selected standard terms
     const standardTermsText = standardTermIds
@@ -314,6 +316,15 @@ export default function CreateDealPage() {
     
     // Combine all terms
     const allTerms = [...standardTermsText, ...dealTypeTermsText];
+    
+    // Add recurring deal terms if applicable
+    if (isRecurring && recurringDays.length > 0) {
+      const daysText = recurringDays
+        .sort()
+        .map(d => DAYS_OF_WEEK.find(day => day.value === d)?.label)
+        .join(', ');
+      allTerms.unshift(`Valid only on the following days: ${daysText}`);
+    }
     
     // Add custom terms if any
     if (customTermsText.trim()) {
@@ -692,7 +703,10 @@ export default function CreateDealPage() {
       case 0: // Basics
         return ['title', 'category', 'description', 'dealType', 'discount'];
       case 1: // Terms
-        return ['startDate', 'endDate', 'maxRedemptionsPerCustomer', 'terms'];
+        // Add recurringDays validation when isRecurring is true
+        return form.getValues("isRecurring") 
+          ? ['startDate', 'endDate', 'maxRedemptionsPerCustomer', 'terms', 'isRecurring', 'recurringDays']
+          : ['startDate', 'endDate', 'maxRedemptionsPerCustomer', 'terms'];
       case 2: // Redemption
         return ['redemptionCode', 'redemptionInstructions'];
       case 3: // Review
@@ -930,6 +944,73 @@ export default function CreateDealPage() {
           {/* Step 2: Deal Terms */}
           {currentStep === 1 && (
             <div className="space-y-6">
+              {/* Recurring Deal Toggle */}
+              <div className="flex items-center space-x-2 pb-2 border-b border-gray-200">
+                <Switch
+                  id="isRecurring"
+                  checked={watchedValues.isRecurring}
+                  onCheckedChange={(checked) => {
+                    form.setValue("isRecurring", checked);
+                    // If turning off recurring, clear recurringDays
+                    if (!checked) {
+                      form.setValue("recurringDays", []);
+                    }
+                  }}
+                />
+                <Label htmlFor="isRecurring" className="font-medium cursor-pointer">
+                  This is a recurring deal (e.g., "Taco Tuesdays", "Weekend Special")
+                </Label>
+              </div>
+              
+              {/* Recurring Days Selector (shown only when isRecurring is true) */}
+              {watchedValues.isRecurring && (
+                <div className="space-y-3 p-4 bg-gray-50 rounded-md">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Select days when this deal is valid:</Label>
+                    {form.formState.errors.recurringDays && (
+                      <p className="text-sm text-red-500">{form.formState.errors.recurringDays.message}</p>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-7 gap-2">
+                    {DAYS_OF_WEEK.map(day => (
+                      <div
+                        key={day.value}
+                        className={cn(
+                          "flex items-center justify-center p-2 rounded-md border cursor-pointer transition-colors",
+                          watchedValues.recurringDays?.includes(day.value)
+                            ? "bg-[#00796B] text-white border-[#00796B]"
+                            : "border-gray-300 hover:border-[#00796B] hover:bg-[#00796B10]"
+                        )}
+                        onClick={() => {
+                          const currentDays = [...(watchedValues.recurringDays || [])];
+                          if (currentDays.includes(day.value)) {
+                            // Remove the day
+                            form.setValue("recurringDays", currentDays.filter(d => d !== day.value));
+                          } else {
+                            // Add the day
+                            form.setValue("recurringDays", [...currentDays, day.value].sort());
+                          }
+                        }}
+                      >
+                        {day.label.substring(0, 3)}
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="text-sm mt-2 text-gray-600">
+                    Selected: 
+                    {watchedValues.recurringDays && watchedValues.recurringDays.length > 0 
+                      ? ' Valid every ' + watchedValues.recurringDays
+                          .sort()
+                          .map(d => DAYS_OF_WEEK.find(day => day.value === d)?.label)
+                          .join(', ')
+                      : ' No days selected'
+                    }
+                  </div>
+                </div>
+              )}
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label>Start Date <span className="text-red-500">*</span></Label>
