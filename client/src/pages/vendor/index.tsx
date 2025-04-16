@@ -53,6 +53,7 @@ export default function VendorDashboard() {
   const [filteredDeals, setFilteredDeals] = useState<any[]>([]); // Store filtered deals
   const [selectedDeal, setSelectedDeal] = useState<any>(null); // Selected deal for details
   const [redemptionDialogOpen, setRedemptionDialogOpen] = useState<boolean>(false); // Control redemption details dialog
+  const [statusFilter, setStatusFilter] = useState<string>("all"); // Track selected status filter
   const [stats, setStats] = useState({
     activeDeals: 0,
     viewCount: 0,
@@ -514,7 +515,33 @@ export default function VendorDashboard() {
                 </div>
               </div>
               <div className="w-full sm:w-auto mt-2 sm:mt-0">
-                <Select defaultValue="active">
+                <Select 
+                  value={statusFilter} 
+                  onValueChange={(value) => {
+                    setStatusFilter(value);
+                    // Filter deals based on the selected status
+                    if (value === 'all') {
+                      setDeals(allDeals);
+                    } else {
+                      const now = new Date();
+                      const filtered = allDeals.filter((deal) => {
+                        const isTimeActive = new Date(deal.endDate) >= now && new Date(deal.startDate) <= now;
+                        const isUpcoming = new Date(deal.startDate) > now;
+                        const isExpired = new Date(deal.endDate) < now;
+                        
+                        if (value === 'active') {
+                          return isTimeActive && (deal.status === 'approved' || deal.status === 'active');
+                        } else if (value === 'upcoming') {
+                          return isUpcoming;
+                        } else if (value === 'expired') {
+                          return isExpired || deal.status === 'expired';
+                        }
+                        return true;
+                      });
+                      setDeals(filtered);
+                    }
+                  }}
+                >
                   <SelectTrigger className="w-full sm:w-[180px] text-sm">
                     <SelectValue placeholder="Filter by status" />
                   </SelectTrigger>
@@ -550,9 +577,32 @@ export default function VendorDashboard() {
                 } else if (deal.status === 'rejected') {
                   statusClass = 'bg-red-100 text-red-800';
                   statusText = 'Rejected';
+                } else if (deal.status === 'draft') {
+                  statusClass = 'bg-gray-100 text-gray-700';
+                  statusText = 'Draft';
+                } else if (deal.status === 'canceled') {
+                  statusClass = 'bg-red-50 text-red-600';
+                  statusText = 'Canceled';
                 } else {
-                  statusClass = 'bg-gray-100 text-gray-800';
-                  statusText = 'Unknown';
+                  // Determine a more appropriate status based on dates
+                  const now = new Date();
+                  const isTimeActive = new Date(deal.endDate) >= now && new Date(deal.startDate) <= now;
+                  const isUpcoming = new Date(deal.startDate) > now;
+                  const isExpired = new Date(deal.endDate) < now;
+                  
+                  if (isExpired) {
+                    statusClass = 'bg-gray-100 text-gray-800';
+                    statusText = 'Expired';
+                  } else if (isUpcoming) {
+                    statusClass = 'bg-blue-100 text-blue-800';
+                    statusText = 'Upcoming';
+                  } else if (isTimeActive) {
+                    statusClass = 'bg-green-100 text-green-800';
+                    statusText = 'Active';
+                  } else {
+                    statusClass = 'bg-gray-100 text-gray-800';
+                    statusText = deal.status || 'Inactive';
+                  }
                 }
                 
                 return (
@@ -644,9 +694,25 @@ export default function VendorDashboard() {
                     } else if (deal.status === 'rejected') {
                       statusClass = 'bg-red-100 text-red-800';
                       statusText = 'Rejected';
+                    } else if (deal.status === 'draft') {
+                      statusClass = 'bg-gray-100 text-gray-700';
+                      statusText = 'Draft';
+                    } else if (deal.status === 'canceled') {
+                      statusClass = 'bg-red-50 text-red-600';
+                      statusText = 'Canceled';
                     } else {
-                      statusClass = 'bg-gray-100 text-gray-800';
-                      statusText = 'Unknown';
+                      // Fallback for any other status - typically shouldn't happen
+                      // Instead of "Unknown", use a more specific status based on date
+                      if (isExpired) {
+                        statusClass = 'bg-gray-100 text-gray-800';
+                        statusText = 'Expired';
+                      } else if (isUpcoming) {
+                        statusClass = 'bg-blue-100 text-blue-800';
+                        statusText = 'Upcoming';
+                      } else {
+                        statusClass = 'bg-gray-100 text-gray-800';
+                        statusText = deal.status || 'Inactive';
+                      }
                     }
                     
                     return (
