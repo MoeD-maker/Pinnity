@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,10 +12,11 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { 
-  Building2, 
+  Building2,
   Check, 
   FileText, 
   Image, 
@@ -161,43 +162,57 @@ export default function VendorProfile() {
         const compressImage = async (imageData: string) => {
           try {
             // Create a new image for compression
-            const img = new Image();
-            img.onload = () => {
-              // Create a canvas to draw and compress the image
-              const canvas = document.createElement('canvas');
-              const ctx = canvas.getContext('2d');
-              
-              // Set canvas size to the image dimensions
-              canvas.width = img.width;
-              canvas.height = img.height;
-              
-              if (ctx) {
-                // Draw the image onto the canvas
-                ctx.drawImage(img, 0, 0, img.width, img.height);
-                
-                // Compress the image to JPEG with moderate quality
-                const compressedImage = canvas.toDataURL('image/jpeg', 0.7);
-                
-                // Convert compressed base64 to a File object
-                const base64Response = compressedImage.split(',')[1];
-                if (!base64Response) {
-                  throw new Error('Invalid compressed base64 data');
+            const img = new Image() as HTMLImageElement;
+            
+            // Create a promise to handle the image loading
+            await new Promise<void>((resolve, reject) => {
+              img.onload = () => {
+                try {
+                  // Create a canvas to draw and compress the image
+                  const canvas = document.createElement('canvas');
+                  const ctx = canvas.getContext('2d');
+                  
+                  // Set canvas size to the image dimensions
+                  canvas.width = img.width;
+                  canvas.height = img.height;
+                  
+                  if (ctx) {
+                    // Draw the image onto the canvas
+                    ctx.drawImage(img, 0, 0, img.width, img.height);
+                    
+                    // Compress the image to JPEG with moderate quality
+                    const compressedImage = canvas.toDataURL('image/jpeg', 0.7);
+                    
+                    // Convert compressed base64 to a File object
+                    const base64Response = compressedImage.split(',')[1];
+                    if (!base64Response) {
+                      reject(new Error('Invalid compressed base64 data'));
+                      return;
+                    }
+                    
+                    const binaryString = window.atob(base64Response);
+                    const bytes = new Uint8Array(binaryString.length);
+                    
+                    for (let i = 0; i < binaryString.length; i++) {
+                      bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    
+                    const blob = new Blob([bytes], { type: 'image/jpeg' });
+                    const file = new File([blob], "logo.jpg", { type: "image/jpeg" });
+                    setSelectedFile(file);
+                    
+                    console.log("Successfully processed and compressed image, size:", file.size, "bytes");
+                    resolve();
+                  } else {
+                    reject(new Error('Could not get canvas context'));
+                  }
+                } catch (err) {
+                  reject(err);
                 }
-                
-                const binaryString = window.atob(base64Response);
-                const bytes = new Uint8Array(binaryString.length);
-                
-                for (let i = 0; i < binaryString.length; i++) {
-                  bytes[i] = binaryString.charCodeAt(i);
-                }
-                
-                const blob = new Blob([bytes], { type: 'image/jpeg' });
-                const file = new File([blob], "logo.jpg", { type: "image/jpeg" });
-                setSelectedFile(file);
-                
-                console.log("Successfully processed and compressed image, size:", file.size, "bytes");
-              }
-            };
+              };
+              img.onerror = () => reject(new Error('Image failed to load'));
+            });
+            
             img.src = imageData;
           } catch (err) {
             console.error("Error compressing image:", err);
@@ -625,8 +640,13 @@ export default function VendorProfile() {
             <CardContent>
               <div className="space-y-4">
                 {DAYS_OF_WEEK.map((day, index) => {
+                  // Get the hours for this day
                   const dayHours = businessHours.find(h => h.dayOfWeek === index);
                   const isEditingThisDay = editingDay === index;
+                  
+                  if (!dayHours) {
+                    return null; // Skip if no hours data for this day
+                  }
                   
                   return (
                     <div key={day} className="flex items-center justify-between py-2 border-b last:border-0">
@@ -634,81 +654,89 @@ export default function VendorProfile() {
                         <Label>{day}</Label>
                       </div>
                       
-                      {isEditingThisDay ? (
-                        // Edit mode
-                        <div className="flex-1 flex items-center justify-center space-x-2">
-                          <div className="flex items-center space-x-2">
-                            <Label htmlFor={`${day}-closed`} className="text-sm">Closed</Label>
-                            <Switch 
-                              id={`${day}-closed`}
-                              checked={dayHours?.isClosed || false}
-                              onCheckedChange={(checked) => handleToggleClosed(index, checked)}
+                      {/* Always render both view and edit sections, but hide one based on state */}
+                      <div className={`flex-1 flex items-center justify-center space-x-2 ${isEditingThisDay ? '' : 'hidden'}`}>
+                        <div className="flex items-center space-x-2">
+                          <Label htmlFor={`${day.toLowerCase()}-closed`} className="text-sm">Closed</Label>
+                          <Switch 
+                            id={`${day.toLowerCase()}-closed`}
+                            checked={dayHours.isClosed}
+                            onCheckedChange={(checked) => handleToggleClosed(index, checked)}
+                          />
+                        </div>
+                        
+                        {!dayHours.isClosed && (
+                          <>
+                            <Input 
+                              type="time"
+                              value={editedHours.openTime}
+                              onChange={(e) => handleHoursChange('openTime', e.target.value)}
+                              className="w-32"
+                            />
+                            <span>to</span>
+                            <Input 
+                              type="time"
+                              value={editedHours.closeTime}
+                              onChange={(e) => handleHoursChange('closeTime', e.target.value)}
+                              className="w-32"
+                            />
+                          </>
+                        )}
+                        
+                        <Button 
+                          variant="default" 
+                          size="sm"
+                          onClick={handleSaveEditedHours}
+                          className="bg-[#00796B] hover:bg-[#004D40]"
+                        >
+                          Save
+                        </Button>
+                      </div>
+                      
+                      {/* View mode - shown when not editing */}
+                      <div className={`flex-1 ${isEditingThisDay ? 'hidden' : ''}`}>
+                        {dayHours.isClosed ? (
+                          <div className="text-center">
+                            <Badge variant="outline" className="bg-gray-50 text-gray-700">Closed</Badge>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center space-x-2">
+                            <Input 
+                              type="time"
+                              value={dayHours.openTime || ''}
+                              disabled
+                              className="w-32"
+                            />
+                            <span>to</span>
+                            <Input 
+                              type="time"
+                              value={dayHours.closeTime || ''}
+                              disabled
+                              className="w-32"
                             />
                           </div>
-                          
-                          {!dayHours?.isClosed && (
-                            <>
-                              <Input 
-                                type="time"
-                                value={editedHours.openTime}
-                                onChange={(e) => handleHoursChange('openTime', e.target.value)}
-                                className="w-32"
-                              />
-                              <span>to</span>
-                              <Input 
-                                type="time"
-                                value={editedHours.closeTime}
-                                onChange={(e) => handleHoursChange('closeTime', e.target.value)}
-                                className="w-32"
-                              />
-                            </>
-                          )}
-                          
+                        )}
+                      </div>
+                      
+                      <div className="ml-4">
+                        {isEditingThisDay ? (
                           <Button 
-                            variant="default" 
+                            variant="outline" 
                             size="sm"
-                            onClick={handleSaveEditedHours}
-                            className="bg-[#00796B] hover:bg-[#004D40]"
+                            onClick={() => setEditingDay(null)}
                           >
-                            Save
+                            Cancel
                           </Button>
-                        </div>
-                      ) : (
-                        // View mode
-                        <>
-                          {dayHours?.isClosed ? (
-                            <div className="flex-1 text-center">
-                              <Badge variant="outline" className="bg-gray-50 text-gray-700">Closed</Badge>
-                            </div>
-                          ) : (
-                            <div className="flex-1 flex items-center justify-center space-x-2">
-                              <Input 
-                                type="time"
-                                value={dayHours?.openTime || ''}
-                                disabled
-                                className="w-32"
-                              />
-                              <span>to</span>
-                              <Input 
-                                type="time"
-                                value={dayHours?.closeTime || ''}
-                                disabled
-                                className="w-32"
-                              />
-                            </div>
-                          )}
-                          
-                          <div className="ml-4">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleEditHours(index)}
-                            >
-                              Edit
-                            </Button>
-                          </div>
-                        </>
-                      )}
+                        ) : (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditHours(index)}
+                          >
+                            Edit
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
