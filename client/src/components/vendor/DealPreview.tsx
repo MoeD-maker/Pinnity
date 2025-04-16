@@ -40,7 +40,7 @@ const DealPreview: React.FC<DealPreviewProps> = ({
   const dateRange = startDateFormatted && endDateFormatted ? `${startDateFormatted} - ${endDateFormatted}` : '';
   
   // Get recurring availability information
-  const mockAvailability: DealAvailability = formValues.isRecurring && formValues.recurringDays?.length ? {
+  const mockAvailability: DealAvailability | undefined = formValues.isRecurring && formValues.recurringDays?.length ? {
     isAvailableToday: formValues.recurringDays.includes(new Date().getDay()),
     nextAvailableDay: formValues.recurringDays.sort()[0],
     nextAvailableDayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][

@@ -1422,54 +1422,77 @@ export default function CreateDealPage() {
                 </div>
               </div>
               
-              <div className="space-y-4">
-                <h3 className="font-medium">Deal Summary</h3>
+              <Tabs defaultValue="summary" className="w-full">
+                <TabsList className="w-full max-w-md mx-auto grid grid-cols-2">
+                  <TabsTrigger value="summary">Deal Summary</TabsTrigger>
+                  <TabsTrigger value="preview">
+                    <Eye className="h-4 w-4 mr-2" />
+                    Preview as Customer
+                  </TabsTrigger>
+                </TabsList>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Title</p>
-                    <p className="text-sm">{watchedValues.title}</p>
-                  </div>
+                <TabsContent value="summary" className="pt-4">
+                  <div className="space-y-4">
+                    <h3 className="font-medium">Deal Summary</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">Title</p>
+                        <p className="text-sm">{watchedValues.title}</p>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">Category</p>
+                        <p className="text-sm">{CATEGORIES.find(c => c.id === watchedValues.category)?.name || '-'}</p>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">Deal Type</p>
+                        <p className="text-sm">{DEAL_TYPES.find(t => t.id === watchedValues.dealType)?.name || '-'}</p>
+                      </div>
+                      
+                      {watchedValues.dealType === 'percent_off' && (
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium">Discount</p>
+                          <p className="text-sm">{watchedValues.discount}</p>
+                        </div>
+                      )}
+                      
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">Start Date</p>
+                        <p className="text-sm">{watchedValues.startDate ? format(watchedValues.startDate, "PPP") : '-'}</p>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">End Date</p>
+                        <p className="text-sm">{watchedValues.endDate ? format(watchedValues.endDate, "PPP") : '-'}</p>
+                      </div>
                   
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Category</p>
-                    <p className="text-sm">{CATEGORIES.find(c => c.id === watchedValues.category)?.name || '-'}</p>
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Deal Type</p>
-                    <p className="text-sm">{DEAL_TYPES.find(t => t.id === watchedValues.dealType)?.name || '-'}</p>
-                  </div>
-                  
-                  {watchedValues.dealType === 'percent_off' && (
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Discount</p>
-                      <p className="text-sm">{watchedValues.discount}</p>
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">Max Redemptions Per Customer</p>
+                        <p className="text-sm">{watchedValues.maxRedemptionsPerCustomer}</p>
+                      </div>
                     </div>
-                  )}
-                  
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Start Date</p>
-                    <p className="text-sm">{watchedValues.startDate ? format(watchedValues.startDate, "PPP") : '-'}</p>
+                    
+                    <div className="space-y-1 mt-4">
+                      <p className="text-sm font-medium">Description</p>
+                      <p className="text-sm">{watchedValues.description}</p>
+                    </div>
                   </div>
-                  
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">End Date</p>
-                    <p className="text-sm">{watchedValues.endDate ? format(watchedValues.endDate, "PPP") : '-'}</p>
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Max Redemptions Per Customer</p>
-                    <p className="text-sm">{watchedValues.maxRedemptionsPerCustomer}</p>
-                  </div>
-                  
-
-                </div>
+                </TabsContent>
                 
-                <div className="space-y-1 mt-4">
-                  <p className="text-sm font-medium">Description</p>
-                  <p className="text-sm">{watchedValues.description}</p>
-                </div>
+                <TabsContent value="preview" className="pt-4">
+                  <div className="flex justify-center">
+                    <DealPreview 
+                      formValues={form.getValues()}
+                      businessName={business?.name || "Your Business"}
+                      businessLogo={business?.logoUrl}
+                      categories={CATEGORIES}
+                      dealTypes={DEAL_TYPES}
+                    />
+                  </div>
+                </TabsContent>
+              </Tabs>
                 
                 {watchedValues.terms && (
                   <div className="space-y-2">
