@@ -171,7 +171,49 @@ export function dealRoutes(app: Express): void {
       // Get featured deals from storage
       const featuredDeals = await storage.getFeaturedDeals(limit);
       
-      return res.status(200).json(featuredDeals);
+      // Add availability information for recurring deals
+      const currentDayOfWeek = new Date().getDay();
+      const dealsWithAvailability = featuredDeals.map(deal => {
+        // Skip if not a recurring deal
+        if (!deal.isRecurring) return deal;
+        
+        const recurringDays = Array.isArray(deal.recurringDays) ? deal.recurringDays : [];
+        const isAvailableToday = recurringDays.includes(currentDayOfWeek);
+        
+        // Find next available day
+        let nextAvailableDay = null;
+        if (!isAvailableToday && recurringDays.length > 0) {
+          // Sort days to find next upcoming day
+          const sortedDays = [...recurringDays].sort((a, b) => {
+            // If day is less than current day, it will be in the next week
+            // So we add 7 to it for sorting purposes
+            const adjustedA = a < currentDayOfWeek ? a + 7 : a;
+            const adjustedB = b < currentDayOfWeek ? b + 7 : b;
+            return adjustedA - adjustedB;
+          });
+          
+          // First day after adjusting is the next available
+          const nextDay = sortedDays[0];
+          nextAvailableDay = nextDay >= 7 ? nextDay - 7 : nextDay;
+        }
+        
+        // Get day names
+        const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        const availableDayNames = recurringDays.map(day => dayNames[day]);
+        
+        return {
+          ...deal,
+          availability: {
+            isAvailableToday,
+            nextAvailableDay,
+            nextAvailableDayName: nextAvailableDay !== null ? dayNames[nextAvailableDay] : null,
+            availableDays: recurringDays,
+            availableDayNames: availableDayNames
+          }
+        };
+      });
+      
+      return res.status(200).json(dealsWithAvailability);
     } catch (error) {
       console.error("Get featured deals error:", error);
       return res.status(500).json({ message: "Internal server error" });
@@ -205,6 +247,43 @@ export function dealRoutes(app: Express): void {
       
       if (!deal) {
         return res.status(404).json({ message: "Deal not found" });
+      }
+      
+      // Add availability information for recurring deals
+      if (deal.isRecurring) {
+        const currentDayOfWeek = new Date().getDay();
+        const recurringDays = Array.isArray(deal.recurringDays) ? deal.recurringDays : [];
+        const isAvailableToday = recurringDays.includes(currentDayOfWeek);
+        
+        // Find next available day
+        let nextAvailableDay = null;
+        if (!isAvailableToday && recurringDays.length > 0) {
+          // Sort days to find next upcoming day
+          const sortedDays = [...recurringDays].sort((a, b) => {
+            // If day is less than current day, it will be in the next week
+            // So we add 7 to it for sorting purposes
+            const adjustedA = a < currentDayOfWeek ? a + 7 : a;
+            const adjustedB = b < currentDayOfWeek ? b + 7 : b;
+            return adjustedA - adjustedB;
+          });
+          
+          // First day after adjusting is the next available
+          const nextDay = sortedDays[0];
+          nextAvailableDay = nextDay >= 7 ? nextDay - 7 : nextDay;
+        }
+        
+        // Get day names
+        const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        const availableDayNames = recurringDays.map(day => dayNames[day]);
+        
+        // Add availability info to the deal
+        deal.availability = {
+          isAvailableToday,
+          nextAvailableDay,
+          nextAvailableDayName: nextAvailableDay !== null ? dayNames[nextAvailableDay] : null,
+          availableDays: recurringDays,
+          availableDayNames: availableDayNames
+        };
       }
       
       return res.status(200).json(deal);
