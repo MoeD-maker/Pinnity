@@ -425,6 +425,8 @@ export default function CreateDealPage() {
           const data = await apiRequest(`/api/business/user/${user.id}`);
           
           console.log('Setting business data with ID:', data.id);
+          console.log('Business data:', data);
+          console.log('Business logo URL:', data.logoUrl);
           setBusiness(data);
         } catch (error) {
           console.error('Error loading business data:', error);
@@ -1371,9 +1373,7 @@ export default function CreateDealPage() {
                                   />
                                   <div className={cn(
                                     "absolute w-16 h-16 bg-white/90 rounded-md flex items-center justify-center p-2",
-                                    logoPosition === 'top-left' && "top-2 left-2",
                                     logoPosition === 'top-right' && "top-2 right-2",
-                                    logoPosition === 'bottom-left' && "bottom-2 left-2",
                                     logoPosition === 'bottom-right' && "bottom-2 right-2"
                                   )}>
                                     <img 
@@ -1465,7 +1465,7 @@ export default function CreateDealPage() {
                   <DealPreview 
                     formValues={form.getValues()}
                     businessName={business?.name || "Your Business"}
-                    businessLogo={business?.logoUrl}
+                    businessLogo={useLogo ? business?.logoUrl : undefined}
                     categories={CATEGORIES}
                     dealTypes={DEAL_TYPES}
                   />
