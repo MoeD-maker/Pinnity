@@ -137,13 +137,21 @@ const DealPreview: React.FC<DealPreviewProps> = ({
       
       <CardContent className={`p-3 ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
         <div className="flex items-start space-x-2">
-          {businessLogo && (
+          {businessLogo ? (
             <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-gray-200">
               <img 
                 src={businessLogo} 
                 alt={businessName} 
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain" 
+                onError={(e) => {
+                  console.error('Error loading business logo in browse view');
+                  e.currentTarget.src = 'https://placehold.co/400x400/teal/white?text=B';
+                }}
               />
+            </div>
+          ) : (
+            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-gray-200 bg-gray-100 flex items-center justify-center">
+              <span className="text-xs text-gray-500">Logo</span>
             </div>
           )}
           
@@ -211,6 +219,10 @@ const DealPreview: React.FC<DealPreviewProps> = ({
               src={businessLogo} 
               alt={businessName} 
               className="w-full h-full object-contain"
+              onError={(e) => {
+                console.error('Error loading business logo in detail view');
+                e.currentTarget.src = 'https://placehold.co/400x400/teal/white?text=B';
+              }}
             />
           </div>
         )}
@@ -328,6 +340,11 @@ const DealPreview: React.FC<DealPreviewProps> = ({
     </Card>
   );
   
+  // Debug logs
+  console.log('DealPreview received - businessLogo:', businessLogo);
+  console.log('DealPreview received - businessName:', businessName);
+  console.log('DealPreview received - logoPosition:', logoPosition);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">

@@ -426,7 +426,16 @@ export default function CreateDealPage() {
           
           console.log('Setting business data with ID:', data.id);
           console.log('Business data:', data);
-          console.log('Business logo URL:', data.logoUrl);
+          
+          // Check if logoUrl exists
+          if (!data.logoUrl) {
+            console.warn('Business logo URL is missing or undefined:', data.logoUrl);
+            // Set a default logo for testing to make sure the logo display mechanism works
+            data.logoUrl = 'https://placehold.co/400x400/teal/white?text=Business';
+          } else {
+            console.log('Business logo URL:', data.logoUrl);
+          }
+          
           setBusiness(data);
         } catch (error) {
           console.error('Error loading business data:', error);
