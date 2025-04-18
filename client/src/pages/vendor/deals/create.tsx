@@ -247,7 +247,7 @@ export default function CreateDealPage() {
   const [imageDimensions, setImageDimensions] = useState<{width: number, height: number} | null>(null);
   const [showImageHover, setShowImageHover] = useState(false);
   const [useLogo, setUseLogo] = useState(false);
-  const [logoPosition, setLogoPosition] = useState<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'>('bottom-right');
+  const [logoPosition, setLogoPosition] = useState<'top-right' | 'bottom-right'>('top-right');
   const [dimensionsWarning, setDimensionsWarning] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -293,7 +293,7 @@ export default function CreateDealPage() {
   };
   
   // Change logo position
-  const handleLogoPositionChange = (position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right') => {
+  const handleLogoPositionChange = (position: 'top-right' | 'bottom-right') => {
     setLogoPosition(position);
   };
   
@@ -1345,27 +1345,11 @@ export default function CreateDealPage() {
                               <div className="grid grid-cols-2 gap-2">
                                 <Button
                                   size="sm"
-                                  variant={logoPosition === 'top-left' ? 'default' : 'outline'}
-                                  className="h-10 w-full"
-                                  onClick={() => handleLogoPositionChange('top-left')}
-                                >
-                                  Top Left ↖
-                                </Button>
-                                <Button
-                                  size="sm"
                                   variant={logoPosition === 'top-right' ? 'default' : 'outline'}
                                   className="h-10 w-full"
                                   onClick={() => handleLogoPositionChange('top-right')}
                                 >
                                   Top Right ↗
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant={logoPosition === 'bottom-left' ? 'default' : 'outline'}
-                                  className="h-10 w-full"
-                                  onClick={() => handleLogoPositionChange('bottom-left')}
-                                >
-                                  Bottom Left ↙
                                 </Button>
                                 <Button
                                   size="sm"
