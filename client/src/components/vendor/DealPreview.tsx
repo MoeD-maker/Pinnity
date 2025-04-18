@@ -21,6 +21,19 @@ interface DealPreviewProps {
   dealTypes: { id: string; name: string; icon: React.ReactNode }[];
 }
 
+// Validate businessLogo prop format
+function isValidUrl(url: string | undefined): boolean {
+  if (!url) return false;
+  
+  try {
+    new URL(url);
+    return true;
+  } catch (e) {
+    console.error('Invalid URL provided for businessLogo:', url);
+    return false;
+  }
+}
+
 const DealPreview: React.FC<DealPreviewProps> = ({
   formValues,
   businessName,
@@ -29,6 +42,15 @@ const DealPreview: React.FC<DealPreviewProps> = ({
   categories,
   dealTypes
 }) => {
+  // Log the businessLogo for debugging
+  console.log('DealPreview component received businessLogo:', businessLogo);
+  
+  // Force a valid URL for testing
+  const validLogo = isValidUrl(businessLogo) ? 
+    businessLogo : 
+    'https://placehold.co/400x400/00796B/white?text=Logo';
+  
+  console.log('Using logo URL:', validLogo);
   const [device, setDevice] = useState<'mobile' | 'tablet'>('mobile');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [viewType, setViewType] = useState<'browse' | 'detail'>('browse');
@@ -137,10 +159,10 @@ const DealPreview: React.FC<DealPreviewProps> = ({
       
       <CardContent className={`p-3 ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
         <div className="flex items-start space-x-2">
-          {businessLogo ? (
+          {validLogo ? (
             <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-gray-200">
               <img 
-                src={businessLogo} 
+                src={validLogo} 
                 alt={businessName} 
                 className="w-full h-full object-contain" 
                 onError={(e) => {
@@ -209,14 +231,14 @@ const DealPreview: React.FC<DealPreviewProps> = ({
         )}
         
         {/* Business logo overlay */}
-        {businessLogo && (
+        {validLogo && (
           <div className={cn(
             "absolute w-16 h-16 bg-white/90 rounded-md flex items-center justify-center p-2",
             logoPosition === 'top-right' && "top-4 right-4",
             logoPosition === 'bottom-right' && "bottom-4 right-4"
           )}>
             <img 
-              src={businessLogo} 
+              src={validLogo} 
               alt={businessName} 
               className="w-full h-full object-contain"
               onError={(e) => {
@@ -231,7 +253,7 @@ const DealPreview: React.FC<DealPreviewProps> = ({
         {formValues.isRecurring && mockAvailability && (
           <div className={cn(
             "absolute",
-            businessLogo && logoPosition === 'top-right' ? "top-4 right-24" : "top-4 right-4",
+            validLogo && logoPosition === 'top-right' ? "top-4 right-24" : "top-4 right-4",
           )}>
             <Badge 
               className={`flex items-center gap-1 ${

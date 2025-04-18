@@ -289,7 +289,15 @@ export default function CreateDealPage() {
   
   // Toggle logo option
   const toggleUseLogo = () => {
-    setUseLogo(!useLogo);
+    console.log('Toggle logo called, current value:', useLogo);
+    console.log('Business data available:', business);
+    console.log('Business logo URL:', business?.logoUrl);
+    
+    // Toggle the state
+    setUseLogo(prev => {
+      console.log('Setting useLogo to:', !prev);
+      return !prev;
+    });
   };
   
   // Change logo position
