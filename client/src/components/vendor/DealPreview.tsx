@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info, Calendar, Clock, Sparkles, Heart, MapPin, ThumbsUp, Smartphone, Tablet, Sun, Moon } from "lucide-react";
 import { format } from "date-fns";
+import { cn } from "../../lib/utils";
 import { DealFormValues } from "../../pages/vendor/deals/create";
 import { DealAvailability } from '../shared/DealAvailabilityBadge';
 
@@ -15,6 +16,7 @@ interface DealPreviewProps {
   formValues: DealFormValues;
   businessName: string;
   businessLogo?: string;
+  logoPosition?: 'top-right' | 'bottom-right';
   categories: { id: string; name: string }[];
   dealTypes: { id: string; name: string; icon: React.ReactNode }[];
 }
@@ -23,6 +25,7 @@ const DealPreview: React.FC<DealPreviewProps> = ({
   formValues,
   businessName,
   businessLogo,
+  logoPosition = 'top-right',
   categories,
   dealTypes
 }) => {
@@ -197,9 +200,27 @@ const DealPreview: React.FC<DealPreviewProps> = ({
           </div>
         )}
         
+        {/* Business logo overlay */}
+        {businessLogo && (
+          <div className={cn(
+            "absolute w-16 h-16 bg-white/90 rounded-md flex items-center justify-center p-2",
+            logoPosition === 'top-right' && "top-4 right-4",
+            logoPosition === 'bottom-right' && "bottom-4 right-4"
+          )}>
+            <img 
+              src={businessLogo} 
+              alt={businessName} 
+              className="w-full h-full object-contain"
+            />
+          </div>
+        )}
+        
         {/* Availability badge (if recurring) */}
         {formValues.isRecurring && mockAvailability && (
-          <div className="absolute top-4 right-4">
+          <div className={cn(
+            "absolute",
+            businessLogo && logoPosition === 'top-right' ? "top-4 right-24" : "top-4 right-4",
+          )}>
             <Badge 
               className={`flex items-center gap-1 ${
                 mockAvailability.isAvailableToday 

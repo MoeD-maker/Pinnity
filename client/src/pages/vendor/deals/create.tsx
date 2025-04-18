@@ -1466,6 +1466,7 @@ export default function CreateDealPage() {
                     formValues={form.getValues()}
                     businessName={business?.name || "Your Business"}
                     businessLogo={useLogo ? business?.logoUrl : undefined}
+                    logoPosition={logoPosition}
                     categories={CATEGORIES}
                     dealTypes={DEAL_TYPES}
                   />
