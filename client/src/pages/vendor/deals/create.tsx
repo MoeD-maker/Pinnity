@@ -293,10 +293,27 @@ export default function CreateDealPage() {
     console.log('Business data available:', business);
     console.log('Business logo URL:', business?.logoUrl);
     
+    // Check if business logo is available
+    if (!business?.logoUrl) {
+      console.warn('Business logo URL is missing. Using fallback image.');
+      
+      // If the business exists but has no logo, set a temporary one for testing
+      if (business) {
+        // Create temporary business object with same data but with a placeholder logo
+        const updatedBusiness = {
+          ...business,
+          logoUrl: 'https://placehold.co/400x400/00796B/white?text=Logo'
+        };
+        setBusiness(updatedBusiness);
+        console.log('Set fallback logo URL:', updatedBusiness.logoUrl);
+      }
+    }
+    
     // Toggle the state
     setUseLogo(prev => {
-      console.log('Setting useLogo to:', !prev);
-      return !prev;
+      const newValue = !prev;
+      console.log('Setting useLogo to:', newValue);
+      return newValue;
     });
   };
   
@@ -1482,11 +1499,17 @@ export default function CreateDealPage() {
                   <DealPreview 
                     formValues={form.getValues()}
                     businessName={business?.name || "Your Business"}
-                    businessLogo={useLogo ? business?.logoUrl : undefined}
+                    businessLogo={useLogo ? (business?.logoUrl || 'https://placehold.co/400x400/00796B/white?text=Logo') : undefined}
                     logoPosition={logoPosition}
                     categories={CATEGORIES}
                     dealTypes={DEAL_TYPES}
                   />
+                  {/* Debug info for business logo */}
+                  <div className="mt-2 text-xs text-gray-500">
+                    Logo status: {useLogo ? 'Enabled' : 'Disabled'}, 
+                    Logo URL: {business?.logoUrl ? 'Available' : 'Missing'}, 
+                    Position: {logoPosition}
+                  </div>
                 </div>
               </div>
               
