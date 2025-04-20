@@ -1422,7 +1422,6 @@ export default function CreateDealPage() {
                       </AlertDescription>
                     </Alert>
                   </div>
-                  </div>
                 </div>
               </div>
               
@@ -1475,29 +1474,7 @@ export default function CreateDealPage() {
                 </div>
               </div>
               
-              {/* Customer Preview Section */}
-              <div className="mt-8 pt-4 border-t">
-                <h3 className="font-medium flex items-center mb-4">
-                  <Eye className="h-4 w-4 mr-2" />
-                  Preview as Customer
-                </h3>
-                <div className="flex justify-center">
-                  <DealPreview 
-                    formValues={form.getValues()}
-                    businessName={business?.name || "Your Business"}
-                    businessLogo={business?.logoUrl || 'https://placehold.co/400x400/00796B/white?text=Logo'}
-                    logoPosition={logoPosition}
-                    categories={CATEGORIES}
-                    dealTypes={DEAL_TYPES}
-                  />
-                  {/* Debug info for business logo */}
-                  <div className="mt-2 text-xs text-gray-500">
-                    Logo status: Enabled (mandatory), 
-                    Logo URL: {business?.logoUrl ? 'Available' : 'Missing'}, 
-                    Position: {logoPosition}
-                  </div>
-                </div>
-              </div>
+              {/* We've removed the separate Customer Preview Section as requested */}
               
               {/* Terms & Conditions */}
               {watchedValues.terms && (
