@@ -1332,103 +1332,96 @@ export default function CreateDealPage() {
                 <h3 className="font-medium">Deal Image</h3>
                 
                 <div className="border rounded-lg p-4">
-                  {/* Simplified deal image uploader with intuitive controls */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <SimpleDealImageUploader
-                      onImageChange={(image) => {
-                        if (image) {
-                          setPreviewUrl(image);
-                          // Store the image for form submission
-                          form.setValue("imageUrl", image);
-                          
-                          // Get dimensions for the UI display
-                          const img = new Image();
-                          img.onload = () => {
-                            setImageDimensions({ 
-                              width: img.width, 
-                              height: img.height 
-                            });
-                          };
-                          img.src = image;
-                        } else {
-                          setPreviewUrl('');
-                          form.setValue("imageUrl", '');
-                          setImageDimensions(null);
-                        }
-                      }}
-                      currentImage={previewUrl}
-                      className="w-full"
-                    />
-                    
-                    <div className="space-y-4">
-                      {/* Logo position options */}
-                      {previewUrl && (
-                        <div className="border rounded-md p-4">
-                          <h4 className="font-medium text-sm mb-3">Business Logo Position</h4>
-                          
-                          <div className="space-y-3">
-                            <p className="text-sm text-gray-600">Your business logo will be displayed on the deal image. Please select a position:</p>
-                            <div className="grid grid-cols-2 gap-2">
-                              <Button
-                                size="sm"
-                                variant={logoPosition === 'top-right' ? 'default' : 'outline'}
-                                className="h-10 w-full"
-                                onClick={() => handleLogoPositionChange('top-right')}
-                              >
-                                Top Right ↗
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant={logoPosition === 'bottom-right' ? 'default' : 'outline'}
-                                className="h-10 w-full"
-                                onClick={() => handleLogoPositionChange('bottom-right')}
-                              >
-                                Bottom Right ↘
-                              </Button>
-                            </div>
+                  {/* Simplified deal image uploader with integrated logo */}
+                  <div className="grid grid-cols-1 gap-6">
+                    <div className="relative">
+                      <SimpleDealImageUploader
+                        onImageChange={(image) => {
+                          if (image) {
+                            setPreviewUrl(image);
+                            // Store the image for form submission
+                            form.setValue("imageUrl", image);
                             
-                            {/* Preview with logo overlay on the image */}
-                            {previewUrl && business?.logoUrl && (
-                              <div className="relative mt-3 border rounded-md overflow-hidden aspect-[4/3]">
-                                <img 
-                                  src={previewUrl} 
-                                  alt="Deal preview with logo" 
-                                  className="w-full h-full object-cover"
-                                />
-                                <div className={cn(
-                                  "absolute w-16 h-16 bg-white/90 rounded-md flex items-center justify-center p-2",
-                                  logoPosition === 'top-right' && "top-2 right-2",
-                                  logoPosition === 'bottom-right' && "bottom-2 right-2"
-                                )}>
-                                  <img 
-                                    src={business.logoUrl} 
-                                    alt={business.name} 
-                                    className="w-full h-full object-contain"
-                                    onError={(e) => {
-                                      // On error, load a placeholder
-                                      e.currentTarget.src = 'https://placehold.co/400x400/teal/white?text=Logo';
-                                    }}
-                                  />
-                                </div>
-                              </div>
-                            )}
+                            // Get dimensions for the UI display
+                            const img = new Image();
+                            img.onload = () => {
+                              setImageDimensions({ 
+                                width: img.width, 
+                                height: img.height 
+                              });
+                            };
+                            img.src = image;
+                          } else {
+                            setPreviewUrl('');
+                            form.setValue("imageUrl", '');
+                            setImageDimensions(null);
+                          }
+                        }}
+                        currentImage={previewUrl}
+                        className="w-full"
+                      />
+                      
+                      {/* Business logo overlay directly on the main upload preview */}
+                      {previewUrl && business?.logoUrl && (
+                        <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+                          <div className={cn(
+                            "absolute w-16 h-16 bg-white/90 rounded-md flex items-center justify-center p-2",
+                            logoPosition === 'top-right' && "top-4 right-4",
+                            logoPosition === 'bottom-right' && "bottom-4 right-4"
+                          )}>
+                            <img 
+                              src={business.logoUrl} 
+                              alt={business.name} 
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                // On error, load a placeholder
+                                e.currentTarget.src = 'https://placehold.co/400x400/teal/white?text=Logo';
+                              }}
+                            />
                           </div>
                         </div>
                       )}
-                      
-                      <Alert className="bg-blue-50 border-blue-200">
-                        <Info className="h-4 w-4 mr-2 text-blue-500" />
-                        <AlertDescription className="text-xs text-blue-700">
-                          <strong>Image Tips:</strong>
-                          <ul className="list-disc pl-4 mt-1 space-y-1">
-                            <li>Use high-quality, eye-catching images that showcase your deal</li>
-                            <li>Landscape format (4:3 ratio) works best for featured promotions</li>
-                            <li>Avoid excessive text in the image</li>
-                            <li>Maintain clear branding that aligns with your business</li>
-                          </ul>
-                        </AlertDescription>
-                      </Alert>
                     </div>
+                    
+                    {/* Logo position selection */}
+                    {previewUrl && (
+                      <div className="flex flex-col space-y-3">
+                        <h4 className="font-medium text-sm">Business Logo Position</h4>
+                        <p className="text-sm text-gray-600">Your business logo will be displayed on the deal image. Please select a position:</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            size="sm"
+                            variant={logoPosition === 'top-right' ? 'default' : 'outline'}
+                            className="h-10 w-full"
+                            onClick={() => handleLogoPositionChange('top-right')}
+                          >
+                            Top Right ↗
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={logoPosition === 'bottom-right' ? 'default' : 'outline'}
+                            className="h-10 w-full"
+                            onClick={() => handleLogoPositionChange('bottom-right')}
+                          >
+                            Bottom Right ↘
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <Alert className="bg-blue-50 border-blue-200">
+                      <Info className="h-4 w-4 mr-2 text-blue-500" />
+                      <AlertDescription className="text-xs text-blue-700">
+                        <strong>Image Tips:</strong>
+                        <ul className="list-disc pl-4 mt-1 space-y-1">
+                          <li>Use high-quality, eye-catching images that showcase your deal</li>
+                          <li>Landscape format (4:3 ratio) works best for featured promotions</li>
+                          <li>Avoid excessive text in the image</li>
+                          <li>Maintain clear branding that aligns with your business</li>
+                        </ul>
+                      </AlertDescription>
+                    </Alert>
+                  </div>
                   </div>
                 </div>
               </div>
