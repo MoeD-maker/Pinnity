@@ -15,8 +15,8 @@ import { DealAvailability } from '../shared/DealAvailabilityBadge';
 interface DealPreviewProps {
   formValues: DealFormValues;
   businessName: string;
-  businessLogo?: string;
-  logoPosition?: 'top-right' | 'bottom-right';
+  businessLogo: string; // No longer optional - logo is mandatory
+  logoPosition: 'top-right' | 'bottom-right';
   categories: { id: string; name: string }[];
   dealTypes: { id: string; name: string; icon: React.ReactNode }[];
 }

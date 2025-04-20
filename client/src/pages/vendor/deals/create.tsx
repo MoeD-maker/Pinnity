@@ -444,16 +444,21 @@ export default function CreateDealPage() {
           console.log('Setting business data with ID:', data.id);
           console.log('Business data:', data);
           
-          // Check if logoUrl exists
+          // Check if logoUrl exists and use a fallback if it doesn't
+          // Logo is now mandatory for all deals, so we ensure it exists
           if (!data.logoUrl) {
             console.warn('Business logo URL is missing or undefined:', data.logoUrl);
-            // Set a default logo for testing to make sure the logo display mechanism works
+            // Set a default logo as fallback
             data.logoUrl = 'https://placehold.co/400x400/teal/white?text=Business';
           } else {
             console.log('Business logo URL:', data.logoUrl);
           }
           
+          // Store the updated business data with guaranteed logo
           setBusiness(data);
+          
+          // Ensure the business has a logo (mandatory)
+          ensureBusinessLogo();
         } catch (error) {
           console.error('Error loading business data:', error);
           toast({
@@ -1487,14 +1492,14 @@ export default function CreateDealPage() {
                   <DealPreview 
                     formValues={form.getValues()}
                     businessName={business?.name || "Your Business"}
-                    businessLogo={useLogo ? (business?.logoUrl || 'https://placehold.co/400x400/00796B/white?text=Logo') : undefined}
+                    businessLogo={business?.logoUrl || 'https://placehold.co/400x400/00796B/white?text=Logo'}
                     logoPosition={logoPosition}
                     categories={CATEGORIES}
                     dealTypes={DEAL_TYPES}
                   />
                   {/* Debug info for business logo */}
                   <div className="mt-2 text-xs text-gray-500">
-                    Logo status: {useLogo ? 'Enabled' : 'Disabled'}, 
+                    Logo status: Enabled (mandatory), 
                     Logo URL: {business?.logoUrl ? 'Available' : 'Missing'}, 
                     Position: {logoPosition}
                   </div>
