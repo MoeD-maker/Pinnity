@@ -105,6 +105,25 @@ const DealPreview: React.FC<DealPreviewProps> = ({
           </div>
         )}
         
+        {/* Business logo overlay (smaller in browse view) */}
+        {validLogo && (
+          <div className={cn(
+            "absolute w-12 h-12 bg-white/90 rounded-md flex items-center justify-center p-1.5",
+            logoPosition === 'top-right' && "top-2 right-2",
+            logoPosition === 'bottom-right' && "bottom-2 right-2"
+          )}>
+            <img 
+              src={validLogo} 
+              alt={businessName} 
+              className="w-full h-full object-contain"
+              onError={(e) => {
+                console.error('Error loading business logo in browse view overlay');
+                e.currentTarget.src = 'https://placehold.co/400x400/teal/white?text=B';
+              }}
+            />
+          </div>
+        )}
+        
         {/* Category badge */}
         <div className="absolute top-2 left-2">
           <Badge className="bg-blue-100 text-blue-800 border-blue-200">
@@ -114,7 +133,10 @@ const DealPreview: React.FC<DealPreviewProps> = ({
         
         {/* Featured badge (if applicable) */}
         {formValues.featured && (
-          <div className="absolute top-2 right-2">
+          <div className={cn(
+            "absolute",
+            validLogo && logoPosition === 'top-right' ? "top-2 right-16" : "top-2 right-2"
+          )}>
             <Badge className="bg-[#00796B] text-white flex items-center gap-1">
               <Sparkles className="h-3 w-3" />
               <span>Featured</span>
@@ -133,7 +155,10 @@ const DealPreview: React.FC<DealPreviewProps> = ({
         
         {/* Availability badge (if recurring) */}
         {formValues.isRecurring && mockAvailability && (
-          <div className="absolute bottom-2 right-2">
+          <div className={cn(
+            "absolute",
+            validLogo && logoPosition === 'bottom-right' ? "bottom-2 right-16" : "bottom-2 right-2"
+          )}>
             <Badge 
               className={`flex items-center gap-1 ${
                 mockAvailability.isAvailableToday 
