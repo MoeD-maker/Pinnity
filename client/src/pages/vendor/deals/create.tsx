@@ -246,7 +246,7 @@ export default function CreateDealPage() {
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [imageDimensions, setImageDimensions] = useState<{width: number, height: number} | null>(null);
   const [showImageHover, setShowImageHover] = useState(false);
-  const [useLogo, setUseLogo] = useState(false);
+  // Logo is now mandatory, so we removed the useLogo toggle
   const [logoPosition, setLogoPosition] = useState<'top-right' | 'bottom-right'>('top-right');
   const [dimensionsWarning, setDimensionsWarning] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -287,9 +287,8 @@ export default function CreateDealPage() {
     fileInputRef.current?.click();
   };
   
-  // Toggle logo option
-  const toggleUseLogo = () => {
-    console.log('Toggle logo called, current value:', useLogo);
+  // Ensure business has a logo (since logo display is now mandatory)
+  const ensureBusinessLogo = () => {
     console.log('Business data available:', business);
     console.log('Business logo URL:', business?.logoUrl);
     
@@ -297,7 +296,7 @@ export default function CreateDealPage() {
     if (!business?.logoUrl) {
       console.warn('Business logo URL is missing. Using fallback image.');
       
-      // If the business exists but has no logo, set a temporary one for testing
+      // If the business exists but has no logo, set a temporary one
       if (business) {
         // Create temporary business object with same data but with a placeholder logo
         const updatedBusiness = {
@@ -308,13 +307,6 @@ export default function CreateDealPage() {
         console.log('Set fallback logo URL:', updatedBusiness.logoUrl);
       }
     }
-    
-    // Toggle the state
-    setUseLogo(prev => {
-      const newValue = !prev;
-      console.log('Setting useLogo to:', newValue);
-      return newValue;
-    });
   };
   
   // Change logo position
@@ -1364,62 +1356,58 @@ export default function CreateDealPage() {
                     />
                     
                     <div className="space-y-4">
-                      {/* Logo overlay options */}
+                      {/* Logo position options */}
                       {previewUrl && (
                         <div className="border rounded-md p-4">
-                          <h4 className="font-medium text-sm mb-3">Business Logo Options</h4>
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center space-x-2">
-                              <Switch id="use-logo" checked={useLogo} onCheckedChange={toggleUseLogo} />
-                              <Label htmlFor="use-logo" className="text-sm">Add business logo to image</Label>
-                            </div>
-                          </div>
+                          <h4 className="font-medium text-sm mb-3">Business Logo Position</h4>
                           
-                          {useLogo && (
-                            <div className="space-y-3">
-                              <p className="text-sm">Logo Position:</p>
-                              <div className="grid grid-cols-2 gap-2">
-                                <Button
-                                  size="sm"
-                                  variant={logoPosition === 'top-right' ? 'default' : 'outline'}
-                                  className="h-10 w-full"
-                                  onClick={() => handleLogoPositionChange('top-right')}
-                                >
-                                  Top Right ↗
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant={logoPosition === 'bottom-right' ? 'default' : 'outline'}
-                                  className="h-10 w-full"
-                                  onClick={() => handleLogoPositionChange('bottom-right')}
-                                >
-                                  Bottom Right ↘
-                                </Button>
-                              </div>
-                              
-                              {/* Preview with logo overlay */}
-                              {previewUrl && useLogo && business?.logoUrl && (
-                                <div className="relative mt-3 border rounded-md overflow-hidden aspect-[4/3]">
-                                  <img 
-                                    src={previewUrl} 
-                                    alt="Deal preview with logo" 
-                                    className="w-full h-full object-cover"
-                                  />
-                                  <div className={cn(
-                                    "absolute w-16 h-16 bg-white/90 rounded-md flex items-center justify-center p-2",
-                                    logoPosition === 'top-right' && "top-2 right-2",
-                                    logoPosition === 'bottom-right' && "bottom-2 right-2"
-                                  )}>
-                                    <img 
-                                      src={business.logoUrl} 
-                                      alt={business.name} 
-                                      className="w-full h-full object-contain"
-                                    />
-                                  </div>
-                                </div>
-                              )}
+                          <div className="space-y-3">
+                            <p className="text-sm text-gray-600">Your business logo will be displayed on the deal image. Please select a position:</p>
+                            <div className="grid grid-cols-2 gap-2">
+                              <Button
+                                size="sm"
+                                variant={logoPosition === 'top-right' ? 'default' : 'outline'}
+                                className="h-10 w-full"
+                                onClick={() => handleLogoPositionChange('top-right')}
+                              >
+                                Top Right ↗
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant={logoPosition === 'bottom-right' ? 'default' : 'outline'}
+                                className="h-10 w-full"
+                                onClick={() => handleLogoPositionChange('bottom-right')}
+                              >
+                                Bottom Right ↘
+                              </Button>
                             </div>
-                          )}
+                            
+                            {/* Preview with logo overlay on the image */}
+                            {previewUrl && business?.logoUrl && (
+                              <div className="relative mt-3 border rounded-md overflow-hidden aspect-[4/3]">
+                                <img 
+                                  src={previewUrl} 
+                                  alt="Deal preview with logo" 
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className={cn(
+                                  "absolute w-16 h-16 bg-white/90 rounded-md flex items-center justify-center p-2",
+                                  logoPosition === 'top-right' && "top-2 right-2",
+                                  logoPosition === 'bottom-right' && "bottom-2 right-2"
+                                )}>
+                                  <img 
+                                    src={business.logoUrl} 
+                                    alt={business.name} 
+                                    className="w-full h-full object-contain"
+                                    onError={(e) => {
+                                      // On error, load a placeholder
+                                      e.currentTarget.src = 'https://placehold.co/400x400/teal/white?text=Logo';
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
                       
