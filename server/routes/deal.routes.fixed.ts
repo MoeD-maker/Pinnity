@@ -332,7 +332,7 @@ export function dealRoutes(app: Express): void {
         }
         
         // Ensure the business is verified
-        if (business.verificationStatus !== "approved") {
+        if (business.verificationStatus !== "verified" && business.verificationStatus !== "approved") {
           return res.status(403).json({ 
             message: "Your business must be verified before creating deals",
             verificationStatus: business.verificationStatus 
