@@ -21,9 +21,14 @@ interface DealPreviewProps {
   dealTypes: { id: string; name: string; icon: React.ReactNode }[];
 }
 
-// Validate businessLogo prop format
+// Validate businessLogo prop format and handle data URLs
 function isValidUrl(url: string | undefined): boolean {
   if (!url) return false;
+  
+  // Allow data URLs (base64 images)
+  if (url.startsWith('data:')) {
+    return true;
+  }
   
   try {
     new URL(url);
