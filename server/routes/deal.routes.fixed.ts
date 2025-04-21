@@ -11,6 +11,31 @@ import {
 } from "../../src/utils/routeVersioning";
 
 /**
+ * Ensure dates from request body are properly converted to Date objects
+ * This prevents "value.toISOString is not a function" errors
+ */
+function ensureDatesAreConverted(body: any) {
+  // Extract date fields and rest of body
+  const { startDate, endDate, ...restBody } = body;
+  
+  // Convert ISO strings to Date objects if they aren't already
+  const convertedStartDate = startDate && typeof startDate === 'string' 
+    ? new Date(startDate) 
+    : startDate;
+  
+  const convertedEndDate = endDate && typeof endDate === 'string' 
+    ? new Date(endDate) 
+    : endDate;
+  
+  // Return body with fixed dates
+  return {
+    ...restBody,
+    startDate: convertedStartDate,
+    endDate: convertedEndDate
+  };
+}
+
+/**
  * Deal routes for listing, creating, and managing deals
  */
 export function dealRoutes(app: Express): void {
