@@ -47,6 +47,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import ImageUploadWithCropper from '@/components/shared/ImageUploadWithCropper';
 import SimpleDealImageUploader from '@/components/shared/SimpleDealImageUploader';
 import DealPreview from '@/components/vendor/DealPreview';
+import CustomerDealPreview from '@/components/vendor/CustomerDealPreview';
 
 // Helper functions for form state persistence
 const STORAGE_KEY = 'pinnity-deal-form-draft';
@@ -1380,39 +1381,50 @@ export default function CreateDealPage() {
                 </AlertDescription>
               </Alert>
               
-              {/* Deal Image Upload */}
-              <div className="space-y-4">
-                <h3 className="font-medium">Deal Image</h3>
+              {/* Review Tabs: Summary and Customer Preview */}
+              <Tabs defaultValue="summary" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="summary">Deal Summary</TabsTrigger>
+                  <TabsTrigger value="preview" className="flex items-center gap-1">
+                    <Eye className="h-4 w-4" />
+                    <span>Preview as Customer</span>
+                  </TabsTrigger>
+                </TabsList>
                 
-                <div className="border rounded-lg p-4">
-                  {/* Simplified deal image uploader with integrated logo */}
-                  <div className="grid grid-cols-1 gap-6">
-                    <div className="relative">
-                      <SimpleDealImageUploader
-                        onImageChange={(image) => {
-                          if (image) {
-                            setPreviewUrl(image);
-                            // Store the image for form submission
-                            form.setValue("imageUrl", image);
-                            
-                            // Get dimensions for the UI display
-                            const img = new Image();
-                            img.onload = () => {
-                              setImageDimensions({ 
-                                width: img.width, 
-                                height: img.height 
-                              });
-                            };
-                            img.src = image;
-                          } else {
-                            setPreviewUrl('');
-                            form.setValue("imageUrl", '');
-                            setImageDimensions(null);
-                          }
-                        }}
-                        currentImage={previewUrl}
-                        className="w-full"
-                      />
+                <TabsContent value="summary" className="space-y-6 mt-4">
+                  {/* Deal Image Upload */}
+                  <div className="space-y-4">
+                    <h3 className="font-medium">Deal Image</h3>
+                    
+                    <div className="border rounded-lg p-4">
+                      {/* Simplified deal image uploader with integrated logo */}
+                      <div className="grid grid-cols-1 gap-6">
+                        <div className="relative">
+                          <SimpleDealImageUploader
+                            onImageChange={(image) => {
+                              if (image) {
+                                setPreviewUrl(image);
+                                // Store the image for form submission
+                                form.setValue("imageUrl", image);
+                                
+                                // Get dimensions for the UI display
+                                const img = new Image();
+                                img.onload = () => {
+                                  setImageDimensions({ 
+                                    width: img.width, 
+                                    height: img.height 
+                                  });
+                                };
+                                img.src = image;
+                              } else {
+                                setPreviewUrl('');
+                                form.setValue("imageUrl", '');
+                                setImageDimensions(null);
+                              }
+                            }}
+                            currentImage={previewUrl}
+                            className="w-full"
+                          />
                       
                       {/* Business logo overlay directly on the main upload preview */}
                       {console.log('Logo rendering check - previewUrl:', previewUrl)}
