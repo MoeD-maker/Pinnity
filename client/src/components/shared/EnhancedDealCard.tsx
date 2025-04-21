@@ -144,9 +144,9 @@ const EnhancedDealCard: React.FC<EnhancedDealCardProps> = ({
         {/* Business Identity area - new addition */}
         <div className="flex items-center gap-3 mb-2 border-b pb-2">
           <div className="h-10 w-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
-            {deal.business?.logoUrl ? (
+            {deal.business?.logoUrl || deal.business?.image_url ? (
               <img 
-                src={deal.business.logoUrl} 
+                src={deal.business.logoUrl || deal.business.image_url} 
                 alt={deal.business.businessName}
                 className="h-full w-full object-cover"
               />
