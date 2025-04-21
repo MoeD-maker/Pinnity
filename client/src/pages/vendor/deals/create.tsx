@@ -289,12 +289,12 @@ export default function CreateDealPage() {
   
   // Ensure business has a logo (since logo display is now mandatory)
   const ensureBusinessLogo = () => {
-    console.log('Business data available:', business);
-    console.log('Business logo URL:', business?.logoUrl);
+    console.log('LOGO DEBUG - Business data available:', business);
+    console.log('LOGO DEBUG - Business logo URL:', business?.logoUrl);
     
     // Check if business logo is available
     if (!business?.logoUrl) {
-      console.warn('Business logo URL is missing. Using fallback image.');
+      console.warn('LOGO DEBUG - Business logo URL is missing. Using fallback image.');
       
       // If the business exists but has no logo, set a temporary one
       if (business) {
@@ -304,7 +304,23 @@ export default function CreateDealPage() {
           logoUrl: 'https://placehold.co/400x400/00796B/white?text=Logo'
         };
         setBusiness(updatedBusiness);
-        console.log('Set fallback logo URL:', updatedBusiness.logoUrl);
+        console.log('LOGO DEBUG - Set fallback logo URL:', updatedBusiness.logoUrl);
+      }
+    } else {
+      // Logo exists but let's check if it's a valid URL
+      try {
+        const url = new URL(business.logoUrl);
+        console.log('LOGO DEBUG - Logo URL is valid:', url.toString());
+      } catch (e) {
+        console.error('LOGO DEBUG - Logo URL is invalid:', business.logoUrl, e);
+        
+        // Fix invalid URL by updating with a placeholder
+        const updatedBusiness = {
+          ...business,
+          logoUrl: 'https://placehold.co/400x400/00796B/white?text=Logo'
+        };
+        setBusiness(updatedBusiness);
+        console.log('LOGO DEBUG - Set fallback logo URL for invalid URL:', updatedBusiness.logoUrl);
       }
     }
   };
@@ -1362,6 +1378,9 @@ export default function CreateDealPage() {
                       />
                       
                       {/* Business logo overlay directly on the main upload preview */}
+                      {console.log('Logo rendering check - previewUrl:', previewUrl)}
+                      {console.log('Logo rendering check - business:', business)}
+                      {console.log('Logo rendering check - business?.logoUrl:', business?.logoUrl)}
                       {previewUrl && business?.logoUrl && (
                         <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
                           <div className={cn(
@@ -1369,11 +1388,13 @@ export default function CreateDealPage() {
                             logoPosition === 'top-right' && "top-4 right-4",
                             logoPosition === 'bottom-right' && "bottom-4 right-4"
                           )}>
+                            {/* Logo source rendering */}
                             <img 
                               src={business.logoUrl} 
                               alt={business.name} 
                               className="w-full h-full object-contain"
                               onError={(e) => {
+                                console.error('Error loading business logo in main image preview:', e);
                                 // On error, load a placeholder
                                 e.currentTarget.src = 'https://placehold.co/400x400/teal/white?text=Logo';
                               }}
