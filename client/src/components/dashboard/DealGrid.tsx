@@ -87,11 +87,11 @@ export default function DealGrid({
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full pb-16">
         {deals.map((deal, index) => (
-          <DealCard 
+          <EnhancedDealCard 
             key={`deal-${deal.id}-${index}`} 
             deal={deal} 
             onSelect={() => onSelect(deal.id)} 
-            isCached={isCached}
+            distanceText="2.4 miles"
           />
         ))}
       </div>
