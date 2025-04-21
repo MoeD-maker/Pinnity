@@ -9,7 +9,6 @@ import {
   MapPin, 
   Calendar, 
   Clock, 
-  QrCode,
   ThumbsUp,
   Share2,
   ChevronRight,
@@ -203,13 +202,7 @@ const EnhancedDealCard: React.FC<EnhancedDealCardProps> = ({
         </div>
       </CardContent>
       
-      <CardFooter className="p-3 sm:p-4 pt-1 flex justify-between items-center">
-        {/* QR code indicator - enhanced */}
-        <div className="flex items-center text-xs text-muted-foreground">
-          <QrCode className="h-4 w-4 mr-1" />
-          <span>Scan to redeem</span>
-        </div>
-        
+      <CardFooter className="p-3 sm:p-4 pt-1 flex justify-end items-center">
         {/* View Deal button - enhanced */}
         <Button 
           onClick={(e) => {
