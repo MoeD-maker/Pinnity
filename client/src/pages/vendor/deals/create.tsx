@@ -289,58 +289,61 @@ export default function CreateDealPage() {
   
   // Ensure business has a logo (since logo display is now mandatory)
   const ensureBusinessLogo = () => {
-    console.log('LOGO DEBUG - Business data available:', business);
-    console.log('LOGO DEBUG - Business logo URL:', business?.logoUrl);
-    console.log('LOGO DEBUG - Business image URL:', business?.imageUrl);
+    if (!business) return;
     
-    // First, check if we need to map imageUrl to logoUrl
-    if (business && !business.logoUrl && business.imageUrl) {
-      console.log('LOGO DEBUG - Mapping business imageUrl to logoUrl:', business.imageUrl);
-      const updatedBusiness = {
-        ...business,
-        logoUrl: business.imageUrl
-      };
-      setBusiness(updatedBusiness);
-      console.log('LOGO DEBUG - Successfully mapped imageUrl to logoUrl');
-      return; // Exit early since we've updated the business object
+    console.log('LOGO DEBUG - Business data check - ID:', business.id);
+    console.log('LOGO DEBUG - Fields check - logoUrl:', business.logoUrl);
+    console.log('LOGO DEBUG - Fields check - imageUrl:', business.imageUrl);
+    
+    // Create a copy of the business object for potential updates
+    let needsUpdate = false;
+    const updatedBusiness = { ...business };
+    
+    // Ensure cross-compatibility between logoUrl and imageUrl
+    if (!updatedBusiness.logoUrl && updatedBusiness.imageUrl) {
+      console.log('LOGO DEBUG - Adding logoUrl from imageUrl:', updatedBusiness.imageUrl);
+      updatedBusiness.logoUrl = updatedBusiness.imageUrl;
+      needsUpdate = true;
     }
     
-    // Check if business logo is available
-    if (!business?.logoUrl) {
-      console.warn('LOGO DEBUG - No business logo URL or image URL found. Using fallback image.');
-      
-      // If the business exists but has no logo, set a temporary one
-      if (business) {
-        // Create temporary business object with same data but with a placeholder logo
-        const updatedBusiness = {
-          ...business,
-          logoUrl: 'https://placehold.co/400x400/00796B/white?text=Logo'
-        };
-        setBusiness(updatedBusiness);
-        console.log('LOGO DEBUG - Set fallback logo URL:', updatedBusiness.logoUrl);
-      }
-    } else {
-      // Logo exists but let's check if it's a valid URL or data URL
-      try {
-        // Handle both regular URLs and data URLs
-        if (business.logoUrl.startsWith('data:')) {
+    if (!updatedBusiness.imageUrl && updatedBusiness.logoUrl) {
+      console.log('LOGO DEBUG - Adding imageUrl from logoUrl:', updatedBusiness.logoUrl);
+      updatedBusiness.imageUrl = updatedBusiness.logoUrl;
+      needsUpdate = true;
+    }
+    
+    // If neither field has a value, set a fallback
+    if (!updatedBusiness.logoUrl && !updatedBusiness.imageUrl) {
+      console.warn('LOGO DEBUG - No logo URL found, setting fallback');
+      updatedBusiness.logoUrl = 'https://placehold.co/400x400/00796B/white?text=Logo';
+      updatedBusiness.imageUrl = 'https://placehold.co/400x400/00796B/white?text=Logo';
+      needsUpdate = true;
+    }
+    
+    // Validate URLs
+    try {
+      // Handle both regular URLs and data URLs
+      if (updatedBusiness.logoUrl) {
+        if (updatedBusiness.logoUrl.startsWith('data:')) {
           console.log('LOGO DEBUG - Logo URL is a valid data URL');
         } else {
-          const url = new URL(business.logoUrl);
+          const url = new URL(updatedBusiness.logoUrl);
           console.log('LOGO DEBUG - Logo URL is valid:', url.toString());
         }
-      } catch (e) {
-        console.error('LOGO DEBUG - Logo URL is invalid:', business.logoUrl, e);
-        
-        // Fix invalid URL by updating with a placeholder
-        const updatedBusiness = {
-          ...business,
-          logoUrl: 'https://placehold.co/400x400/00796B/white?text=Logo'
-        };
-        setBusiness(updatedBusiness);
-        console.log('LOGO DEBUG - Set fallback logo URL for invalid URL:', updatedBusiness.logoUrl);
       }
+    } catch (e) {
+      console.error('LOGO DEBUG - Logo URL is invalid, setting fallback');
+      updatedBusiness.logoUrl = 'https://placehold.co/400x400/00796B/white?text=Logo';
+      updatedBusiness.imageUrl = 'https://placehold.co/400x400/00796B/white?text=Logo';
+      needsUpdate = true;
     }
+    
+    // Apply updates if needed
+    if (needsUpdate) {
+      console.log('LOGO DEBUG - Updating business with enhanced data:', updatedBusiness);
+      setBusiness(updatedBusiness);
+    }
+  }
   };
   
   // Change logo position
@@ -477,26 +480,34 @@ export default function CreateDealPage() {
           
           console.log('Setting business data with ID:', data.id);
           console.log('Business data:', data);
+          console.log('DEBUG - Business imageUrl:', data.imageUrl);
+          console.log('DEBUG - Business logoUrl:', data.logoUrl);
           
-          // Map the imageUrl to logoUrl for consistency in the UI
-          // This addresses the schema mismatch between client & server
-          if (!data.logoUrl && data.imageUrl) {
-            console.log('Mapping business imageUrl to logoUrl:', data.imageUrl);
-            data.logoUrl = data.imageUrl;
+          // Ensure consistent property naming - the database field is 'imageUrl'
+          // but the client code expects 'logoUrl'. Map between them for consistency.
+          const enhancedData = {
+            ...data,
+            // Ensure logoUrl exists by copying it from imageUrl if necessary
+            logoUrl: data.logoUrl || data.imageUrl || null
+          };
+          
+          // For robustness, make imageUrl available too if only logoUrl exists
+          if (!enhancedData.imageUrl && enhancedData.logoUrl) {
+            enhancedData.imageUrl = enhancedData.logoUrl;
           }
           
-          // Check if logoUrl exists and use a fallback if it doesn't
-          // Logo is now mandatory for all deals, so we ensure it exists
-          if (!data.logoUrl) {
+          // Check if a logo is available through either field
+          if (!enhancedData.logoUrl) {
             console.warn('Business logo URL is missing or undefined. No imageUrl or logoUrl found.');
             // Set a default logo as fallback
-            data.logoUrl = 'https://placehold.co/400x400/teal/white?text=Business';
+            enhancedData.logoUrl = 'https://placehold.co/400x400/teal/white?text=Business';
           } else {
-            console.log('Business logo URL:', data.logoUrl);
+            console.log('Business logo URL set:', enhancedData.logoUrl);
           }
           
           // Store the updated business data with guaranteed logo
-          setBusiness(data);
+          console.log('Setting enhanced business data:', enhancedData);
+          setBusiness(enhancedData);
           
           // Ensure the business has a logo (mandatory)
           ensureBusinessLogo();
