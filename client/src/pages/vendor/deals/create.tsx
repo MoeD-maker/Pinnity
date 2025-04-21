@@ -1493,7 +1493,19 @@ export default function CreateDealPage() {
                     </Alert>
                   </div>
                 </div>
-              </div>
+              </TabsContent>
+              
+              <TabsContent value="preview" className="space-y-6 mt-4">
+                {/* Customer Deal Preview */}
+                <CustomerDealPreview 
+                  formValues={watchedValues}
+                  businessName={business?.businessName || ''}
+                  businessLogo={business?.logoUrl || business?.image_url || ''}
+                  categories={CATEGORIES}
+                  dealTypes={DEAL_TYPES}
+                />
+              </TabsContent>
+              </Tabs>
               
               {/* Deal Summary */}
               <div className="space-y-4">
