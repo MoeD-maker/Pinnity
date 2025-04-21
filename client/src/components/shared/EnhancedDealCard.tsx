@@ -145,17 +145,24 @@ const EnhancedDealCard: React.FC<EnhancedDealCardProps> = ({
         <div className="flex items-center gap-3 mb-2 border-b pb-2">
           <div className="h-10 w-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
             {deal.business?.logoUrl || deal.business?.image_url ? (
-              <img 
-                src={deal.business.logoUrl || deal.business.image_url} 
-                alt={deal.business.businessName}
-                className="h-full w-full object-cover"
-                onError={(e) => {
-                  console.error("Logo failed to load:", e);
-                  // Replace with fallback on error
-                  e.currentTarget.style.display = "none";
-                  e.currentTarget.parentElement?.querySelector('div')?.classList.remove('hidden');
-                }}
-              />
+              <>
+                {console.log("Attempting to load logo for business:", deal.business.businessName)}
+                {console.log("Logo URL:", deal.business.logoUrl || deal.business.image_url)}
+                {console.log("Logo URL starts with:", (deal.business.logoUrl || deal.business.image_url || "").substring(0, 30))}
+                <img 
+                  src={deal.business.logoUrl || deal.business.image_url} 
+                  alt={deal.business.businessName}
+                  className="h-full w-full object-cover"
+                  onLoad={() => console.log("Logo loaded successfully for:", deal.business.businessName)}
+                  onError={(e) => {
+                    console.error("Logo failed to load for:", deal.business.businessName);
+                    console.error("Error event:", e);
+                    // Replace with fallback on error
+                    e.currentTarget.style.display = "none";
+                    e.currentTarget.parentElement?.querySelector('div')?.classList.remove('hidden');
+                  }}
+                />
+              </>
             ) : null}
             <div className={`h-full w-full flex items-center justify-center bg-primary/10 text-primary font-semibold ${deal.business?.logoUrl || deal.business?.image_url ? 'hidden' : ''}`}>
               {deal.business.businessName.substring(0, 2).toUpperCase()}
