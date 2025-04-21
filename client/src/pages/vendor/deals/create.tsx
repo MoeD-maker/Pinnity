@@ -756,7 +756,8 @@ export default function CreateDealPage() {
       console.log('Submitting deal:', dealData);
       
       // Use the apiRequest helper which handles auth tokens automatically
-      const deal = await apiRequest('/api/deals', {
+      // Use the newer v1 API endpoint
+      const deal = await apiRequest('/api/v1/deals', {
         method: 'POST',
         data: dealData
       });
