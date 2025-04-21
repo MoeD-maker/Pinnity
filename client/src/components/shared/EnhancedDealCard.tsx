@@ -149,12 +149,17 @@ const EnhancedDealCard: React.FC<EnhancedDealCardProps> = ({
                 src={deal.business.logoUrl || deal.business.image_url} 
                 alt={deal.business.businessName}
                 className="h-full w-full object-cover"
+                onError={(e) => {
+                  console.error("Logo failed to load:", e);
+                  // Replace with fallback on error
+                  e.currentTarget.style.display = "none";
+                  e.currentTarget.parentElement?.querySelector('div')?.classList.remove('hidden');
+                }}
               />
-            ) : (
-              <div className="h-full w-full flex items-center justify-center bg-primary/10 text-primary font-semibold">
-                {deal.business.businessName.substring(0, 2).toUpperCase()}
-              </div>
-            )}
+            ) : null}
+            <div className={`h-full w-full flex items-center justify-center bg-primary/10 text-primary font-semibold ${deal.business?.logoUrl || deal.business?.image_url ? 'hidden' : ''}`}>
+              {deal.business.businessName.substring(0, 2).toUpperCase()}
+            </div>
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-medium text-sm line-clamp-1">{deal.business.businessName}</p>
