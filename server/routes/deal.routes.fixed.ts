@@ -186,6 +186,27 @@ export function dealRoutes(app: Express): void {
     }
   });
 
+  // Debug endpoint to check all deals (TEMPORARY)
+  app.get('/api/debug/deals', async (req: Request, res: Response) => {
+    try {
+      const allDeals = await storage.getDeals();
+      return res.status(200).json({
+        count: allDeals.length,
+        deals: allDeals.map(deal => ({
+          id: deal.id,
+          title: deal.title,
+          businessId: deal.businessId,
+          businessName: deal.business.businessName,
+          status: deal.status,
+          createdAt: deal.createdAt
+        }))
+      });
+    } catch (error) {
+      console.error("Debug deals error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Get featured deals
   const [vFeaturedDealsPath, lFeaturedDealsPath] = createVersionedRoutes('/deals/featured');
   
