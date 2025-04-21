@@ -18,6 +18,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import DealAvailabilityBadge from '@/components/shared/DealAvailabilityBadge';
+import EnhancedDealCard from '@/components/shared/EnhancedDealCard';
 import { formatDistanceToNow } from 'date-fns';
 import { isExpiringSoon, getExpirationText, isExpired } from '@/utils/dealReminders';
 import ExpiringSoonBadge from '@/components/deals/ExpiringSoonBadge';
@@ -167,14 +168,12 @@ export default function EnhancedDealGrid({
           : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 w-full pb-16 max-w-full overflow-hidden"
         }>
           {deals.map((deal, index) => (
-            <DealCard 
+            <EnhancedDealCard 
               key={deal.id} 
               deal={deal} 
-              onSelect={() => onSelect(deal.id)} 
-              isCached={isCached}
-              isLarge={viewMode === 'large'}
+              onSelect={() => onSelect(deal.id)}
               distanceText={getDistanceIndicator(index)}
-              sortType={sortBy}
+              isLarge={viewMode === 'large'}
             />
           ))}
         </div>

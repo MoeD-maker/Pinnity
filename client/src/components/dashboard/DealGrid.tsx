@@ -16,6 +16,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { checkDealRedemptionStatus } from '@/lib/dealUtils';
 import CachedDataAlert from '@/components/ui/CachedDataAlert';
 import DealAvailabilityBadge from '@/components/shared/DealAvailabilityBadge';
+import EnhancedDealCard from '@/components/shared/EnhancedDealCard';
 
 // Use a looser type for the API response since it may not match the database schema exactly
 interface DealWithBusiness {

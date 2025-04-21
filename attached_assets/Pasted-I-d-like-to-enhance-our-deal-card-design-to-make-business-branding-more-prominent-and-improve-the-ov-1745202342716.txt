@@ -1,0 +1,30 @@
+I'd like to enhance our deal card design to make business branding more prominent and improve the overall customer experience. Please implement these specific improvements:
+
+1. **Business Identity Upgrade**
+   - Create a dedicated business identity area at the top of the content section (just below the image)
+   - Add a larger business logo (at least 40x40px) aligned left with the business name
+   - Display the business name and logo in a horizontal arrangement with proper spacing
+   - Add a subtle verified checkmark badge next to verified business names
+
+2. **Recurring Deal Indicators**
+   - For recurring deals, add a clear "Available on: Tuesdays & Thursdays" indicator below the expiration date
+   - Use a calendar or clock icon to visually distinguish this from regular expiration info
+   - When a recurring deal is viewable on an "available day," add a green "Available Today" badge
+
+3. **Information Hierarchy Adjustments**
+   - Keep the discount percentage (50%) prominent in the top right as it is now
+   - Move the category tag ("Food & Dining") to align with the business information
+   - Add subtle visual separation between the business info and deal description
+   - Keep distance and expiration information grouped together as they currently are
+
+4. **Quick Action Improvements**
+   - Add a share icon button alongside the heart/favorite button
+   - Ensure the QR code/scan icon is clearly visible and properly labeled
+   - Make the "View Deal" CTA more prominent with a color that contrasts with your brand colors
+
+5. **Deal Status Enhancement**
+   - For deals ending soon (< 3 days), change expiration text to highlight urgency ("Ending soon: 2 days left")
+   - For highly popular deals, add a subtle indicator showing popularity ("Popular: 50+ redeemed")
+   - For new deals (< 3 days old), add a "New" badge near the title
+
+Please maintain the overall clean, card-based aesthetic while implementing these changes. All enhancements should be responsive and maintain proper proportions across device sizes.
