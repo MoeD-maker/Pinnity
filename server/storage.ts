@@ -2192,19 +2192,35 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createDeal(dealData: Omit<InsertDeal, "id" | "createdAt">): Promise<Deal> {
+    // Process date fields to ensure they are proper Date objects
+    const processedData = {
+      ...dealData,
+      startDate: dealData.startDate ? new Date(dealData.startDate) : dealData.startDate,
+      endDate: dealData.endDate ? new Date(dealData.endDate) : dealData.endDate,
+      createdAt: new Date()
+    };
+    
     const [addedDeal] = await db.insert(deals)
-      .values({
-        ...dealData,
-        createdAt: new Date()
-      })
+      .values(processedData)
       .returning();
     
     return addedDeal;
   }
 
   async updateDeal(id: number, dealData: Partial<Omit<InsertDeal, "id" | "businessId">>): Promise<Deal> {
+    // Process date fields if they exist
+    const processedData = { ...dealData };
+    
+    if (processedData.startDate) {
+      processedData.startDate = new Date(processedData.startDate);
+    }
+    
+    if (processedData.endDate) {
+      processedData.endDate = new Date(processedData.endDate);
+    }
+    
     const [updatedDeal] = await db.update(deals)
-      .set(dealData)
+      .set(processedData)
       .where(eq(deals.id, id))
       .returning();
     
@@ -2248,10 +2264,16 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Deal not found");
     }
     
+    // Ensure dates are proper Date objects
+    const startDate = originalDeal.startDate ? new Date(originalDeal.startDate) : null;
+    const endDate = originalDeal.endDate ? new Date(originalDeal.endDate) : null;
+    
     const [newDeal] = await db.insert(deals)
       .values({
         ...originalDeal,
         id: undefined, // Let the database assign a new ID
+        startDate,
+        endDate,
         title: `${originalDeal.title} (Copy)`,
         createdAt: new Date(),
         viewCount: 0,
