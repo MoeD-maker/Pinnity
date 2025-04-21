@@ -739,12 +739,13 @@ export default function CreateDealPage() {
         throw new Error("Business information not available. Please try again or contact support.");
       }
       
-      // Convert dates to ISO string format
+      // Don't convert dates to strings - send the Date objects directly
+      // The server handles the proper conversion in storage.ts
       const dealData = {
         ...values,
-        startDate: values.startDate?.toISOString(),
-        endDate: values.endDate?.toISOString(),
-        businessId: business.id, // Ensure the business ID is included
+        startDate: values.startDate, // Send as Date object, not string
+        endDate: values.endDate,     // Send as Date object, not string
+        businessId: business.id,     // Ensure the business ID is included
         // Let the server set the status to pending
         viewCount: 0,
         saveCount: 0,
