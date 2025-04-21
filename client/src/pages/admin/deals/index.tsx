@@ -107,11 +107,12 @@ export default function DealsPage() {
 
   // Fetch deal data
   const { data: deals = [], isLoading, refetch: refetchDeals } = useQuery({
-    queryKey: ['admin', 'deals'],
+    queryKey: ['admin', 'deals', filter.status],
     queryFn: async () => {
       try {
-        // Get deals with pending status first
-        const response = await fetch('/api/deals');
+        // Get deals with the selected status - default to pending
+        const status = filter.status || 'pending';
+        const response = await fetch(`/api/admin/deals/status/${status}`);
         
         // Check if response is from cache
         const isCached = response.headers.get('X-Is-Cached') === 'true';
@@ -137,6 +138,7 @@ export default function DealsPage() {
           lastUpdated: deal.createdAt
         }));
         
+        console.log(`Fetched ${dealData.length} deals with status: ${status}`);
         return dealData;
       } catch (error) {
         console.error('Error fetching deals:', error);
@@ -156,7 +158,7 @@ export default function DealsPage() {
       return response;
     },
     onSuccess: () => {
-      // Invalidate queries to refetch data
+      // Invalidate queries to refetch data - invalidate all status filters
       queryClient.invalidateQueries({ queryKey: ['admin', 'deals'] });
     }
   });
