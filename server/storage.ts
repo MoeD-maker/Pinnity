@@ -1364,10 +1364,31 @@ export class MemStorage implements IStorage {
   }
   
   async getDealsByStatus(status: string): Promise<(Deal & { business: Business })[]> {
-    const deals = Array.from(this.deals.values())
-      .filter(deal => deal.status === status);
+    console.log(`STORAGE: Getting deals with status "${status}"`);
     
-    return Promise.all(deals.map(async (deal) => {
+    // Get all deals and log their statuses for debugging
+    const allDeals = Array.from(this.deals.values());
+    const statuses = allDeals.map(deal => deal.status);
+    const statusCounts = statuses.reduce((acc, curr) => {
+      acc[curr] = (acc[curr] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    console.log(`STORAGE: Deal status counts: ${JSON.stringify(statusCounts)}`);
+    
+    // Filter deals by requested status
+    const filteredDeals = allDeals.filter(deal => {
+      const matches = deal.status === status;
+      if (status === 'pending') {
+        console.log(`STORAGE: Deal ID ${deal.id}, status: "${deal.status}", matches pending: ${matches}`);
+      }
+      return matches;
+    });
+    
+    console.log(`STORAGE: Found ${filteredDeals.length} deals with status "${status}"`);
+    
+    // Add business data to each deal
+    return Promise.all(filteredDeals.map(async (deal) => {
       const business = this.businesses.get(deal.businessId);
       if (!business) {
         throw new Error(`Business with ID ${deal.businessId} not found`);
