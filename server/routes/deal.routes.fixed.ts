@@ -104,13 +104,14 @@ export function dealRoutes(app: Express): void {
           nextAvailableDay = nextDay >= 7 ? nextDay - 7 : nextDay;
         }
         
+        // Using type assertion to add availability property
         return {
           ...deal,
           availability: {
             isAvailableToday,
             nextAvailableDay
           }
-        };
+        } as any;
       });
       
       return res.status(200).json(dealsWithAvailability);
@@ -201,6 +202,7 @@ export function dealRoutes(app: Express): void {
         const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
         const availableDayNames = recurringDays.map(day => dayNames[day]);
         
+        // Using type assertion to add availability property
         return {
           ...deal,
           availability: {
@@ -210,7 +212,7 @@ export function dealRoutes(app: Express): void {
             availableDays: recurringDays,
             availableDayNames: availableDayNames
           }
-        };
+        } as any;
       });
       
       return res.status(200).json(dealsWithAvailability);
@@ -277,7 +279,7 @@ export function dealRoutes(app: Express): void {
         const availableDayNames = recurringDays.map(day => dayNames[day]);
         
         // Add availability info to the deal
-        deal.availability = {
+        (deal as any).availability = {
           isAvailableToday,
           nextAvailableDay,
           nextAvailableDayName: nextAvailableDay !== null ? dayNames[nextAvailableDay] : null,

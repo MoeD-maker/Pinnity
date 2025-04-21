@@ -343,7 +343,6 @@ export default function CreateDealPage() {
       console.log('LOGO DEBUG - Updating business with enhanced data:', updatedBusiness);
       setBusiness(updatedBusiness);
     }
-  }
   };
   
   // Change logo position
