@@ -291,10 +291,23 @@ export default function CreateDealPage() {
   const ensureBusinessLogo = () => {
     console.log('LOGO DEBUG - Business data available:', business);
     console.log('LOGO DEBUG - Business logo URL:', business?.logoUrl);
+    console.log('LOGO DEBUG - Business image URL:', business?.imageUrl);
+    
+    // First, check if we need to map imageUrl to logoUrl
+    if (business && !business.logoUrl && business.imageUrl) {
+      console.log('LOGO DEBUG - Mapping business imageUrl to logoUrl:', business.imageUrl);
+      const updatedBusiness = {
+        ...business,
+        logoUrl: business.imageUrl
+      };
+      setBusiness(updatedBusiness);
+      console.log('LOGO DEBUG - Successfully mapped imageUrl to logoUrl');
+      return; // Exit early since we've updated the business object
+    }
     
     // Check if business logo is available
     if (!business?.logoUrl) {
-      console.warn('LOGO DEBUG - Business logo URL is missing. Using fallback image.');
+      console.warn('LOGO DEBUG - No business logo URL or image URL found. Using fallback image.');
       
       // If the business exists but has no logo, set a temporary one
       if (business) {
@@ -307,10 +320,15 @@ export default function CreateDealPage() {
         console.log('LOGO DEBUG - Set fallback logo URL:', updatedBusiness.logoUrl);
       }
     } else {
-      // Logo exists but let's check if it's a valid URL
+      // Logo exists but let's check if it's a valid URL or data URL
       try {
-        const url = new URL(business.logoUrl);
-        console.log('LOGO DEBUG - Logo URL is valid:', url.toString());
+        // Handle both regular URLs and data URLs
+        if (business.logoUrl.startsWith('data:')) {
+          console.log('LOGO DEBUG - Logo URL is a valid data URL');
+        } else {
+          const url = new URL(business.logoUrl);
+          console.log('LOGO DEBUG - Logo URL is valid:', url.toString());
+        }
       } catch (e) {
         console.error('LOGO DEBUG - Logo URL is invalid:', business.logoUrl, e);
         
@@ -460,10 +478,17 @@ export default function CreateDealPage() {
           console.log('Setting business data with ID:', data.id);
           console.log('Business data:', data);
           
+          // Map the imageUrl to logoUrl for consistency in the UI
+          // This addresses the schema mismatch between client & server
+          if (!data.logoUrl && data.imageUrl) {
+            console.log('Mapping business imageUrl to logoUrl:', data.imageUrl);
+            data.logoUrl = data.imageUrl;
+          }
+          
           // Check if logoUrl exists and use a fallback if it doesn't
           // Logo is now mandatory for all deals, so we ensure it exists
           if (!data.logoUrl) {
-            console.warn('Business logo URL is missing or undefined:', data.logoUrl);
+            console.warn('Business logo URL is missing or undefined. No imageUrl or logoUrl found.');
             // Set a default logo as fallback
             data.logoUrl = 'https://placehold.co/400x400/teal/white?text=Business';
           } else {
