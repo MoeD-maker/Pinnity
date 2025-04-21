@@ -354,8 +354,16 @@ export function adminRoutes(app: Express): void {
     async (req: Request, res: Response) => {
       try {
         const status = req.params.status;
+        console.log(`DEBUG: Getting deals with status "${status}" (versioned route)`);
+        
+        // Debug: Get all deals directly for comparison
+        const debug = await storage.getDeals();
+        const pendingCount = debug.filter(d => d.status === "pending").length;
+        const activeCount = debug.filter(d => d.status === "active").length;
+        console.log(`DEBUG: All deals: ${debug.length}, Pending: ${pendingCount}, Active: ${activeCount}`);
         
         const deals = await storage.getDealsByStatus(status);
+        console.log(`DEBUG: Returned deals with status "${status}": ${deals.length}`);
         
         return res.status(200).json(deals);
       } catch (error) {
@@ -372,8 +380,16 @@ export function adminRoutes(app: Express): void {
     async (req: Request, res: Response) => {
       try {
         const status = req.params.status;
+        console.log(`DEBUG: Getting deals with status "${status}" (legacy route)`);
+        
+        // Debug: Get all deals directly for comparison
+        const debug = await storage.getDeals();
+        const pendingCount = debug.filter(d => d.status === "pending").length;
+        const activeCount = debug.filter(d => d.status === "active").length;
+        console.log(`DEBUG: All deals: ${debug.length}, Pending: ${pendingCount}, Active: ${activeCount}`);
         
         const deals = await storage.getDealsByStatus(status);
+        console.log(`DEBUG: Returned deals with status "${status}": ${deals.length}`);
         
         return res.status(200).json(deals);
       } catch (error) {
