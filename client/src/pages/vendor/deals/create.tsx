@@ -1426,32 +1426,33 @@ export default function CreateDealPage() {
                             currentImage={previewUrl}
                             className="w-full"
                           />
-                      
-                      {/* Business logo overlay directly on the main upload preview */}
-                      {console.log('Logo rendering check - previewUrl:', previewUrl)}
-                      {console.log('Logo rendering check - business:', business)}
-                      {console.log('Logo rendering check - business?.imageUrl:', business?.imageUrl)}
-                      {previewUrl && business?.imageUrl && (
-                        <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-                          <div className={cn(
-                            "absolute w-16 h-16 bg-white/90 rounded-md flex items-center justify-center p-2",
-                            logoPosition === 'top-right' && "top-4 right-4",
-                            logoPosition === 'bottom-right' && "bottom-4 right-4"
-                          )}>
-                            {/* Logo source rendering */}
-                            <img 
-                              src={business.imageUrl} 
-                              alt={business.businessName} 
-                              className="w-full h-full object-contain"
-                              onError={(e) => {
-                                console.error('Error loading business logo in main image preview:', e);
-                                // On error, load a placeholder
-                                e.currentTarget.src = 'https://placehold.co/400x400/teal/white?text=Logo';
-                              }}
-                            />
-                          </div>
+                        
+                          {/* Business logo overlay directly on the main upload preview */}
+                          {console.log('Logo rendering check - previewUrl:', previewUrl)}
+                          {console.log('Logo rendering check - business:', business)}
+                          {console.log('Logo rendering check - business?.imageUrl:', business?.imageUrl)}
+                          {previewUrl && business?.imageUrl && (
+                            <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+                              <div className={cn(
+                                "absolute w-16 h-16 bg-white/90 rounded-md flex items-center justify-center p-2",
+                                logoPosition === 'top-right' && "top-4 right-4",
+                                logoPosition === 'bottom-right' && "bottom-4 right-4"
+                              )}>
+                                {/* Logo source rendering */}
+                                <img 
+                                  src={business.imageUrl} 
+                                  alt={business.businessName} 
+                                  className="w-full h-full object-contain"
+                                  onError={(e) => {
+                                    console.error('Error loading business logo in main image preview:', e);
+                                    // On error, load a placeholder
+                                    e.currentTarget.src = 'https://placehold.co/400x400/teal/white?text=Logo';
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      )}
                     </div>
                     
                     {/* Logo position selection */}

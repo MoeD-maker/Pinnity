@@ -34,7 +34,7 @@ interface DealWithBusiness {
   business: {
     id?: number;
     businessName: string;
-    logoUrl?: string;
+    imageUrl?: string;
     address?: string;
     phone?: string;
     website?: string;
