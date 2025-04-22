@@ -2383,14 +2383,18 @@ export class DatabaseStorage implements IStorage {
     return updatedDeal;
   }
 
-  async getDealsByStatus(status: string): Promise<(Deal & { business: Business })[]> {
+  async getDealsByStatus(status: string): Promise<(Deal & { business: Business & { logoUrl?: string } })[]> {
     return await db.select()
       .from(deals)
       .innerJoin(businesses, eq(deals.businessId, businesses.id))
       .where(eq(deals.status, status))
       .then(rows => rows.map(row => ({
         ...row.deals,
-        business: row.businesses
+        business: {
+          ...row.businesses,
+          // Ensure logoUrl exists for front-end compatibility
+          logoUrl: row.businesses.imageUrl
+        }
       })));
   }
 

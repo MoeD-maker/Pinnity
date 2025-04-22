@@ -163,23 +163,33 @@ const EnhancedDealCard: React.FC<EnhancedDealCardProps> = ({
               return (
                 <>
                   {shouldShowImage ? (
-                    <img 
-                      src={url} 
+                    <img
+                      src={url}
                       alt={deal.business.businessName}
                       className="h-full w-full object-cover"
-                      onLoad={() => console.log("Logo loaded successfully for:", deal.business.businessName)}
                       onError={(e) => {
+                        // hide broken image
+                        e.currentTarget.style.display = 'none';
+                        // Show the fallback initials div
+                        const parent = e.currentTarget.parentElement;
+                        const fallback = parent?.querySelector('.initials-fallback');
+                        if (fallback) {
+                          fallback.classList.remove('hidden');
+                        }
                         console.error("Logo failed to load for:", deal.business.businessName);
-                        // Replace with fallback on error
-                        e.currentTarget.style.display = "none";
-                        e.currentTarget.parentElement?.querySelector('div')?.classList.remove('hidden');
                       }}
                     />
-                  ) : null}
+                  ) : (
+                    // initials fallback when no URL available
+                    <div className="h-full w-full flex items-center justify-center bg-primary/10 text-primary font-semibold">
+                      {deal.business.businessName.substring(0, 2).toUpperCase()}
+                    </div>
+                  )}
                 </>
               );
             })()}
-            <div className={`h-full w-full flex items-center justify-center bg-primary/10 text-primary font-semibold ${deal.business?.logoUrl || deal.business?.image_url ? 'hidden' : ''}`}>
+            {/* This div is the fallback for when image loading fails */}
+            <div className="initials-fallback h-full w-full flex items-center justify-center bg-primary/10 text-primary font-semibold hidden">
               {deal.business.businessName.substring(0, 2).toUpperCase()}
             </div>
           </div>
