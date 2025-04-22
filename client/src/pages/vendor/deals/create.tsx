@@ -1500,7 +1500,7 @@ export default function CreateDealPage() {
                 <CustomerDealPreview 
                   formValues={watchedValues}
                   businessName={business?.businessName || ''}
-                  businessLogo={business?.logoUrl || business?.image_url || ''}
+                  businessLogo={business?.imageUrl || ''}
                   categories={CATEGORIES}
                   dealTypes={DEAL_TYPES}
                 />

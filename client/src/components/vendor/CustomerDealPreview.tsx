@@ -19,7 +19,8 @@ import {
   Sun, 
   Moon,
   Share2,
-  ChevronRight
+  ChevronRight,
+  AlertTriangle
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "../../lib/utils";
@@ -86,7 +87,7 @@ const CustomerDealPreview: React.FC<CustomerDealPreviewProps> = ({
     business: {
       id: 0, // Placeholder ID
       businessName: businessName,
-      logoUrl: businessLogo,
+      imageUrl: businessLogo, // Using imageUrl instead of logoUrl for consistency
       address: '123 Main St', // Placeholder
       phone: '(555) 123-4567', // Placeholder
       website: 'www.example.com' // Placeholder
@@ -129,8 +130,8 @@ const CustomerDealPreview: React.FC<CustomerDealPreviewProps> = ({
     },
     recurring: {
       text: formValues.isRecurring 
-        ? 'Recurring deals perform better when they're available at least 2 days per week' 
-        : 'Recurring deals get 40% more engagement than one-time deals',
+        ? "Recurring deals perform better when they're available at least 2 days per week" 
+        : "Recurring deals get 40% more engagement than one-time deals",
       warning: null
     }
   };
