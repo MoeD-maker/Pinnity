@@ -2167,17 +2167,21 @@ export class DatabaseStorage implements IStorage {
     return updatedDocument;
   }
 
-  async getDeals(): Promise<(Deal & { business: Business })[]> {
+  async getDeals(): Promise<(Deal & { business: Business & { logoUrl?: string } })[]> {
     return await db.select()
       .from(deals)
       .innerJoin(businesses, eq(deals.businessId, businesses.id))
       .then(rows => rows.map(row => ({
         ...row.deals,
-        business: row.businesses
+        business: {
+          ...row.businesses,
+          // Ensure logoUrl exists for front-end compatibility
+          logoUrl: row.businesses.imageUrl
+        }
       })));
   }
 
-  async getDeal(id: number): Promise<(Deal & { business: Business }) | undefined> {
+  async getDeal(id: number): Promise<(Deal & { business: Business & { logoUrl?: string } }) | undefined> {
     const result = await db.select()
       .from(deals)
       .innerJoin(businesses, eq(deals.businessId, businesses.id))
@@ -2189,17 +2193,41 @@ export class DatabaseStorage implements IStorage {
     
     return {
       ...result[0].deals,
-      business: result[0].businesses
+      business: {
+        ...result[0].businesses,
+        // Ensure logoUrl exists for front-end compatibility
+        logoUrl: result[0].businesses.imageUrl
+      }
     };
   }
 
-  async getDealsByBusiness(businessId: number): Promise<Deal[]> {
-    return await db.select()
+  async getDealsByBusiness(businessId: number): Promise<(Deal & { business: Business & { logoUrl?: string } })[]> {
+    // First fetch the business to ensure we have the data
+    const business = await this.getBusiness(businessId);
+    if (!business) {
+      return [];
+    }
+    
+    // Add logoUrl property for compatibility with front-end components
+    const enhancedBusiness = {
+      ...business,
+      // Use imageUrl as logoUrl if it exists
+      logoUrl: business.imageUrl
+    };
+    
+    // Fetch deals and include the enhanced business object
+    const dealsData = await db.select()
       .from(deals)
       .where(eq(deals.businessId, businessId));
+    
+    // Return deals with the business object included
+    return dealsData.map(deal => ({
+      ...deal,
+      business: enhancedBusiness
+    }));
   }
 
-  async getFeaturedDeals(limit = 10): Promise<(Deal & { business: Business })[]> {
+  async getFeaturedDeals(limit = 10): Promise<(Deal & { business: Business & { logoUrl?: string } })[]> {
     return await db.select()
       .from(deals)
       .innerJoin(businesses, eq(deals.businessId, businesses.id))
@@ -2208,7 +2236,11 @@ export class DatabaseStorage implements IStorage {
       .limit(limit)
       .then(rows => rows.map(row => ({
         ...row.deals,
-        business: row.businesses
+        business: {
+          ...row.businesses,
+          // Ensure logoUrl exists for front-end compatibility
+          logoUrl: row.businesses.imageUrl
+        }
       })));
   }
 
