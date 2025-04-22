@@ -293,49 +293,50 @@ export default function CreateDealPage() {
     if (!business) return;
     
     console.log('LOGO DEBUG - Business data check - ID:', business.id);
-    console.log('LOGO DEBUG - Fields check - logoUrl:', business.logoUrl);
     console.log('LOGO DEBUG - Fields check - imageUrl:', business.imageUrl);
+    // For backward compatibility, we check logoUrl too
+    console.log('LOGO DEBUG - Fields check - logoUrl:', business.logoUrl);
     
     // Create a copy of the business object for potential updates
     let needsUpdate = false;
     const updatedBusiness = { ...business };
     
-    // Ensure cross-compatibility between logoUrl and imageUrl
-    if (!updatedBusiness.logoUrl && updatedBusiness.imageUrl) {
-      console.log('LOGO DEBUG - Adding logoUrl from imageUrl:', updatedBusiness.imageUrl);
-      updatedBusiness.logoUrl = updatedBusiness.imageUrl;
-      needsUpdate = true;
-    }
-    
+    // Standardize on imageUrl as the primary field, but keep logoUrl for backward compatibility
     if (!updatedBusiness.imageUrl && updatedBusiness.logoUrl) {
       console.log('LOGO DEBUG - Adding imageUrl from logoUrl:', updatedBusiness.logoUrl);
       updatedBusiness.imageUrl = updatedBusiness.logoUrl;
       needsUpdate = true;
     }
     
+    if (!updatedBusiness.logoUrl && updatedBusiness.imageUrl) {
+      console.log('LOGO DEBUG - Adding logoUrl from imageUrl for backward compatibility:', updatedBusiness.imageUrl);
+      updatedBusiness.logoUrl = updatedBusiness.imageUrl;
+      needsUpdate = true;
+    }
+    
     // If neither field has a value, set a fallback
-    if (!updatedBusiness.logoUrl && !updatedBusiness.imageUrl) {
-      console.warn('LOGO DEBUG - No logo URL found, setting fallback');
-      updatedBusiness.logoUrl = 'https://placehold.co/400x400/00796B/white?text=Logo';
+    if (!updatedBusiness.imageUrl) {
+      console.warn('LOGO DEBUG - No image URL found, setting fallback');
       updatedBusiness.imageUrl = 'https://placehold.co/400x400/00796B/white?text=Logo';
+      updatedBusiness.logoUrl = updatedBusiness.imageUrl; // For backward compatibility
       needsUpdate = true;
     }
     
     // Validate URLs
     try {
       // Handle both regular URLs and data URLs
-      if (updatedBusiness.logoUrl) {
-        if (updatedBusiness.logoUrl.startsWith('data:')) {
-          console.log('LOGO DEBUG - Logo URL is a valid data URL');
+      if (updatedBusiness.imageUrl) {
+        if (updatedBusiness.imageUrl.startsWith('data:')) {
+          console.log('LOGO DEBUG - Image URL is a valid data URL');
         } else {
-          const url = new URL(updatedBusiness.logoUrl);
-          console.log('LOGO DEBUG - Logo URL is valid:', url.toString());
+          const url = new URL(updatedBusiness.imageUrl);
+          console.log('LOGO DEBUG - Image URL is valid:', url.toString());
         }
       }
     } catch (e) {
-      console.error('LOGO DEBUG - Logo URL is invalid, setting fallback');
-      updatedBusiness.logoUrl = 'https://placehold.co/400x400/00796B/white?text=Logo';
+      console.error('LOGO DEBUG - Image URL is invalid, setting fallback');
       updatedBusiness.imageUrl = 'https://placehold.co/400x400/00796B/white?text=Logo';
+      updatedBusiness.logoUrl = updatedBusiness.imageUrl; // For backward compatibility
       needsUpdate = true;
     }
     
@@ -487,22 +488,22 @@ export default function CreateDealPage() {
           // but the client code expects 'logoUrl'. Map between them for consistency.
           const enhancedData = {
             ...data,
-            // Ensure logoUrl exists by copying it from imageUrl if necessary
-            logoUrl: data.logoUrl || data.imageUrl || null
+            // Standardize on imageUrl, this is the field defined in the database schema
+            imageUrl: data.imageUrl || data.logoUrl || null
           };
           
-          // For robustness, make imageUrl available too if only logoUrl exists
-          if (!enhancedData.imageUrl && enhancedData.logoUrl) {
-            enhancedData.imageUrl = enhancedData.logoUrl;
+          // For backward compatibility, make logoUrl available too if only imageUrl exists
+          if (!enhancedData.logoUrl && enhancedData.imageUrl) {
+            enhancedData.logoUrl = enhancedData.imageUrl;
           }
           
-          // Check if a logo is available through either field
-          if (!enhancedData.logoUrl) {
-            console.warn('Business logo URL is missing or undefined. No imageUrl or logoUrl found.');
-            // Set a default logo as fallback
-            enhancedData.logoUrl = 'https://placehold.co/400x400/teal/white?text=Business';
+          // Check if an image is available
+          if (!enhancedData.imageUrl) {
+            console.warn('Business logo URL is missing or undefined. No imageUrl found.');
+            // Set a default image as fallback
+            enhancedData.imageUrl = 'https://placehold.co/400x400/teal/white?text=Business';
           } else {
-            console.log('Business logo URL set:', enhancedData.logoUrl);
+            console.log('Business image URL set:', enhancedData.imageUrl);
           }
           
           // Store the updated business data with guaranteed logo
@@ -1429,8 +1430,8 @@ export default function CreateDealPage() {
                       {/* Business logo overlay directly on the main upload preview */}
                       {console.log('Logo rendering check - previewUrl:', previewUrl)}
                       {console.log('Logo rendering check - business:', business)}
-                      {console.log('Logo rendering check - business?.logoUrl:', business?.logoUrl)}
-                      {previewUrl && business?.logoUrl && (
+                      {console.log('Logo rendering check - business?.imageUrl:', business?.imageUrl)}
+                      {previewUrl && business?.imageUrl && (
                         <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
                           <div className={cn(
                             "absolute w-16 h-16 bg-white/90 rounded-md flex items-center justify-center p-2",
@@ -1439,8 +1440,8 @@ export default function CreateDealPage() {
                           )}>
                             {/* Logo source rendering */}
                             <img 
-                              src={business.logoUrl} 
-                              alt={business.name} 
+                              src={business.imageUrl} 
+                              alt={business.businessName} 
                               className="w-full h-full object-contain"
                               onError={(e) => {
                                 console.error('Error loading business logo in main image preview:', e);
