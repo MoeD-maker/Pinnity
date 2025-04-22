@@ -145,8 +145,8 @@ const EnhancedDealCard: React.FC<EnhancedDealCardProps> = ({
         <div className="flex items-center gap-3 mb-2 border-b pb-2">
           <div className="h-10 w-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
             {(() => {
-              // Fix for data URLs that are causing loading issues
-              const url = deal.business?.logoUrl || deal.business?.image_url;
+              // Use imageUrl directly from the business object
+              const url = deal.business?.imageUrl;
               // Don't try to load if the URL is extremely long (likely a malformed data URL)
               const isDataUrl = url && url.startsWith('data:');
               const isValidDataUrl = isDataUrl && url.includes('base64') && url.length < 100000;
