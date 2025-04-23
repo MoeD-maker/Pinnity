@@ -1,0 +1,80 @@
+Fix and connect all Admin dashboard functionalities in the Pinnity app. Right now the admin sees placeholder/test data. Here's the checklist:
+
+🔐 1. Protect All Admin Routes
+In all /admin/* pages (e.g., admin/index.tsx, admin/deals/index.tsx, admin/vendors/index.tsx), wrap the component with:
+
+tsx
+Copy
+const { user } = useAuth();
+useEffect(() => {
+  if (!user || user.userType !== "admin") {
+    navigate("/login");
+  }
+}, [user]);
+✅ Only users with userType === "admin" (like admin@test.com) should access those routes.
+
+📊 2. Wire Up Dashboard Stats (admin/index.tsx)
+In /admin/index.tsx, remove or replace mock data like stats.pendingDeals = 7.
+
+Un-comment and implement:
+
+tsx
+Copy
+const response = await apiRequest("/api/admin/dashboard");
+setStats(response.stats);
+If the /api/admin/dashboard route doesn’t exist yet, create it in admin.routes.ts:
+
+ts
+Copy
+app.get("/api/admin/dashboard", authenticate, authorize("admin"), async (req, res) => {
+  const stats = {
+    pendingDeals: await db.countDeals({ status: "pending" }),
+    activeDeals: await db.countDeals({ status: "approved" }),
+    pendingVendors: await db.countBusinesses({ verificationStatus: "pending" }),
+  };
+  res.json({ stats });
+});
+🧾 3. Fix Vendor Approvals Dashboard (admin/vendors/index.tsx)
+This page should fetch businesses where:
+
+sql
+Copy
+verificationStatus = 'pending'
+Make sure the API returns this list.
+
+Show them in a table with action buttons:
+
+✅ Approve → update status to verificationStatus = "verified"
+
+❌ Reject → mark them accordingly
+
+🎟️ 4. Fix Deal Approvals Dashboard (admin/deals/index.tsx)
+This page must fetch deals where:
+
+sql
+Copy
+status = 'pending'
+Show the list of deals with title, business name, discount, and dates.
+
+Add buttons:
+
+✅ Approve → set status = "approved"
+
+❌ Reject → set status = "rejected"
+
+📥 5. Make Sure Vendor Deal Submissions Set status: "pending"
+Already handled in deal.routes.new.ts:
+
+ts
+Copy
+status: "pending"
+✅ Confirm that vendor-side form uses this route and the deal is being saved properly.
+
+✅ Final Test:
+Login as admin@test.com
+
+Approve a new business
+
+Approve a submitted deal
+
+See updated stats in dashboard
