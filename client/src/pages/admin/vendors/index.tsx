@@ -125,7 +125,16 @@ export default function VendorsPage() {
   const fetchBusinesses = async () => {
     setIsLoading(true);
     try {
-      const response = await apiRequest("/api/admin/businesses");
+      // First try the versioned route, if that fails, fall back to the legacy route
+      let response;
+      try {
+        response = await apiRequest("/api/v1/admin/businesses");
+        console.log("Successfully fetched businesses with versioned route");
+      } catch (error) {
+        console.log("Versioned route failed, falling back to legacy route");
+        response = await apiRequest("/api/admin/businesses");
+      }
+      
       if (response) {
         // Transform the data to match our interface if needed
         const formattedBusinesses = response.map((business: any) => ({
