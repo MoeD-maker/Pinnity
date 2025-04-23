@@ -282,6 +282,48 @@ export function dealRoutes(app: Express): void {
       return res.status(500).json({ message: "Internal server error" });
     }
   });
+  
+  // Filter deals by status (versioned and legacy routes)
+  const [vDealsByStatusPath, lDealsByStatusPath] = createVersionedRoutes('/deals/status/:status');
+  
+  // Versioned deals by status route
+  app.get(vDealsByStatusPath, 
+    versionHeadersMiddleware(),
+    authenticate,
+    async (req: Request, res: Response) => {
+    try {
+      console.log(`Fetching deals with status: ${req.params.status}`);
+      const status = req.params.status;
+      
+      // Get deals with requested status
+      const deals = await storage.getDealsByStatus(status);
+      
+      console.log(`Found ${deals.length} deals with status '${status}'`);
+      
+      return res.status(200).json(deals);
+    } catch (error) {
+      console.error(`Error fetching deals by status ${req.params.status}:`, error);
+      return res.status(500).json({ message: "Error fetching deals by status" });
+    }
+  });
+  
+  // Legacy deals by status route
+  app.get(lDealsByStatusPath, 
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate,
+    async (req: Request, res: Response) => {
+    try {
+      const status = req.params.status;
+      
+      // Get deals with requested status
+      const deals = await storage.getDealsByStatus(status);
+      
+      return res.status(200).json(deals);
+    } catch (error) {
+      console.error(`Error fetching deals by status ${req.params.status}:`, error);
+      return res.status(500).json({ message: "Error fetching deals by status" });
+    }
+  });
 
   // Get specific deal
   const [vDealPath, lDealPath] = createVersionedRoutes('/deals/:id');
