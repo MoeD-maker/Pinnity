@@ -51,8 +51,14 @@ export function dealRoutes(app: Express): void {
       const availableToday = req.query.availableToday === 'true';
       const dayOfWeek = req.query.dayOfWeek ? parseInt(req.query.dayOfWeek as string) : undefined;
       
-      // Get all deals from storage
-      const deals = await storage.getDeals();
+      // Get user role and ID for status filtering
+      const userRole = req.user?.userType || 'individual';
+      const userId = req.user?.userId;
+      
+      console.log(`API: Getting deals for user role: ${userRole}, userId: ${userId || 'none'}`);
+      
+      // Get all deals from storage with role-based filtering
+      const deals = await storage.getDeals(userRole, userId);
       
       // Apply filters if provided
       let filteredDeals = deals;
@@ -194,8 +200,14 @@ export function dealRoutes(app: Express): void {
       // Get limit from query params or use default
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
       
-      // Get featured deals from storage
-      const featuredDeals = await storage.getFeaturedDeals(limit);
+      // Get user role and ID for status filtering
+      const userRole = req.user?.userType || 'individual';
+      const userId = req.user?.userId;
+      
+      console.log(`API: Getting featured deals for user role: ${userRole}, userId: ${userId || 'none'}`);
+      
+      // Get featured deals from storage with role-based filtering
+      const featuredDeals = await storage.getFeaturedDeals(limit, userRole, userId);
       
       // Add availability information for recurring deals
       const currentDayOfWeek = new Date().getDay();

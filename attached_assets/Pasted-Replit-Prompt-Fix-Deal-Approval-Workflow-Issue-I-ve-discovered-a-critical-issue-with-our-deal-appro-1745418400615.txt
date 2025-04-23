@@ -1,0 +1,43 @@
+Replit Prompt: Fix Deal Approval Workflow Issue
+I've discovered a critical issue with our deal approval workflow. When I create a new deal using a vendor account (ziad@vendor.com), the deal immediately appears live to customers, completely bypassing the required admin approval process.
+
+Please fix this issue by implementing the following changes:
+
+1. **Deal Creation Status Check**
+   - Verify that the `/api/deals` POST endpoint correctly sets new deals to "pending" status
+   - Add a direct status check in the deal creation controller to ensure every new deal gets the "pending" status unless created by an admin
+   - Add a server-side log entry when deals are created to record the initial status
+   - Ensure businessId and userId are properly validated during creation
+
+2. **Deal Visibility Rules**
+   - Update the consumer-facing API endpoints to exclude deals with "pending" status
+   - Add user-role based filtering to getDeals() and getFeaturedDeals() methods:
+     - For regular customers: Only return deals with "approved" or "active" status
+     - For vendors: Return ALL their own deals but clearly indicate "pending" status
+     - For admins: Return all deals with appropriate status indicators
+   - Ensure the getDealsByBusiness(businessId) method returns ALL deals including pending ones when called by the vendor who owns that business
+
+3. **Status Indicators for Vendors**
+   - Add clear "Pending Approval" status indicators on vendor dashboard for deals awaiting approval
+   - Include estimated approval time information 
+   - Add a "Draft" status for deals that are saved but not yet submitted
+   - Consider adding an "Edit" option for pending deals that haven't been approved yet
+
+4. **Permission Verification**
+   - Verify that the vendor account isn't incorrectly assigned admin privileges
+   - Add explicit logging when deal status changes occur
+   - Ensure the ownership check is working properly for vendor-specific deal retrieval
+
+5. **Admin Dashboard Update**
+   - Ensure the admin dashboard shows pending deals clearly
+   - Add a notification system for admins when new deals require approval
+
+Please prioritize fixing this issue as unapproved deals are currently visible to all customers. The expected behavior is:
+1. Vendor creates a deal → Status is set to "pending"
+2. Deal appears in vendor's dashboard as "pending approval"
+3. Deal appears in admin approval dashboard
+4. Deal is NOT visible to regular customers
+5. Admin approves deal → Status changes to "approved" or "active"
+6. Only then should the deal become visible to customers
+
+This is a high-priority fix as it impacts our approval workflow and quality control process.

@@ -2167,18 +2167,57 @@ export class DatabaseStorage implements IStorage {
     return updatedDocument;
   }
 
-  async getDeals(): Promise<(Deal & { business: Business & { logoUrl?: string } })[]> {
-    return await db.select()
+  async getDeals(userRole: string = 'individual', userId?: number): Promise<(Deal & { business: Business & { logoUrl?: string } })[]> {
+    console.log(`STORAGE: Getting deals for user role: ${userRole}, userId: ${userId || 'none'}`);
+    
+    // Build the base query
+    let query = db.select()
       .from(deals)
-      .innerJoin(businesses, eq(deals.businessId, businesses.id))
-      .then(rows => rows.map(row => ({
-        ...row.deals,
-        business: {
-          ...row.businesses,
-          // Ensure logoUrl exists for front-end compatibility
-          logoUrl: row.businesses.imageUrl
-        }
-      })));
+      .innerJoin(businesses, eq(deals.businessId, businesses.id));
+    
+    // Apply role-based filtering
+    if (userRole === 'individual') {
+      // For customers, only return approved or active deals
+      query = query.where(
+        sql`${deals.status} = 'approved' OR ${deals.status} = 'active'`
+      );
+    } else if (userRole === 'business' && userId) {
+      // For business users, return all their own deals but filter others
+      const businessData = await this.getBusinessByUserId(userId);
+      if (businessData) {
+        const businessId = businessData.id;
+        query = query.where(
+          sql`(${deals.businessId} = ${businessId}) OR (${deals.status} = 'approved' OR ${deals.status} = 'active')`
+        );
+      } else {
+        // If no business found, default to approved/active only
+        query = query.where(
+          sql`${deals.status} = 'approved' OR ${deals.status} = 'active'`
+        );
+      }
+    }
+    // For admins (default), return all deals without filtering
+    
+    // Execute the query and format results
+    const result = await query;
+    
+    // Log the status distribution
+    const statuses = result.map(row => row.deals.status);
+    const statusCounts = statuses.reduce((acc, curr) => {
+      acc[curr] = (acc[curr] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    console.log(`STORAGE: Returning deals with status distribution: ${JSON.stringify(statusCounts)}`);
+    
+    return result.map(row => ({
+      ...row.deals,
+      business: {
+        ...row.businesses,
+        // Ensure logoUrl exists for front-end compatibility
+        logoUrl: row.businesses.imageUrl
+      }
+    }));
   }
 
   async getDeal(id: number): Promise<(Deal & { business: Business & { logoUrl?: string } }) | undefined> {
@@ -2227,21 +2266,61 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async getFeaturedDeals(limit = 10): Promise<(Deal & { business: Business & { logoUrl?: string } })[]> {
-    return await db.select()
+  async getFeaturedDeals(limit = 10, userRole: string = 'individual', userId?: number): Promise<(Deal & { business: Business & { logoUrl?: string } })[]> {
+    console.log(`STORAGE: Getting featured deals for user role: ${userRole}, userId: ${userId || 'none'}`);
+    
+    // Build the base query for featured deals
+    let query = db.select()
       .from(deals)
       .innerJoin(businesses, eq(deals.businessId, businesses.id))
-      .where(eq(deals.featured, true))
-      .orderBy(desc(deals.createdAt))
-      .limit(limit)
-      .then(rows => rows.map(row => ({
-        ...row.deals,
-        business: {
-          ...row.businesses,
-          // Ensure logoUrl exists for front-end compatibility
-          logoUrl: row.businesses.imageUrl
-        }
-      })));
+      .where(eq(deals.featured, true));
+    
+    // Apply role-based filtering (same logic as getDeals)
+    if (userRole === 'individual') {
+      // For customers, only return approved or active deals
+      query = query.where(
+        sql`(${deals.status} = 'approved' OR ${deals.status} = 'active')`
+      );
+    } else if (userRole === 'business' && userId) {
+      // For business users, return all their own deals but filter others
+      const businessData = await this.getBusinessByUserId(userId);
+      if (businessData) {
+        const businessId = businessData.id;
+        query = query.where(
+          sql`(${deals.businessId} = ${businessId}) OR (${deals.status} = 'approved' OR ${deals.status} = 'active')`
+        );
+      } else {
+        // If no business found, default to approved/active only
+        query = query.where(
+          sql`(${deals.status} = 'approved' OR ${deals.status} = 'active')`
+        );
+      }
+    }
+    // For admins (default), return all featured deals without filtering
+    
+    // Apply ordering and limit
+    query = query.orderBy(desc(deals.createdAt)).limit(limit);
+    
+    // Execute the query
+    const result = await query;
+    
+    // Log the status distribution
+    const statuses = result.map(row => row.deals.status);
+    const statusCounts = statuses.reduce((acc, curr) => {
+      acc[curr] = (acc[curr] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    console.log(`STORAGE: Returning featured deals with status distribution: ${JSON.stringify(statusCounts)}`);
+    
+    return result.map(row => ({
+      ...row.deals,
+      business: {
+        ...row.businesses,
+        // Ensure logoUrl exists for front-end compatibility
+        logoUrl: row.businesses.imageUrl
+      }
+    }));
   }
 
   async createDeal(dealData: Omit<InsertDeal, "id" | "createdAt">): Promise<Deal> {
