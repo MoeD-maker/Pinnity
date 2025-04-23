@@ -54,6 +54,7 @@ export interface IStorage {
   updateBusiness(id: number, businessData: Partial<Omit<InsertBusiness, "id" | "userId">>): Promise<Business>;
   updateBusinessVerificationStatus(id: number, status: string, feedback?: string): Promise<Business>;
   getAllBusinesses(): Promise<(Business & { user: User })[]>;
+  getBusinessesByStatus(status: string): Promise<(Business & { user: User })[]>;
   
   // Business Hours methods
   getBusinessHours(businessId: number): Promise<BusinessHours[]>;
@@ -2038,6 +2039,22 @@ export class DatabaseStorage implements IStorage {
         ...row.businesses,
         user: row.users
       })));
+  }
+
+  async getBusinessesByStatus(status: string): Promise<(Business & { user: User })[]> {
+    console.log(`DatabaseStorage.getBusinessesByStatus("${status}") called`);
+    
+    return await db.select()
+      .from(businesses)
+      .innerJoin(users, eq(businesses.userId, users.id))
+      .where(eq(businesses.verificationStatus, status))
+      .then(rows => {
+        console.log(`Found ${rows.length} businesses with status "${status}"`);
+        return rows.map(row => ({
+          ...row.businesses,
+          user: row.users
+        }));
+      });
   }
 
   async getBusiness(id: number): Promise<Business | undefined> {
