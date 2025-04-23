@@ -13,6 +13,132 @@ import {
  * Admin routes for user and business management
  */
 export function adminRoutes(app: Express): void {
+  // Get dashboard stats
+  const [vDashboardPath, lDashboardPath] = createVersionedRoutes('/admin/dashboard');
+  
+  // Versioned dashboard route
+  app.get(vDashboardPath, 
+    versionHeadersMiddleware(),
+    authenticate, 
+    authorize(['admin']), 
+    async (_req: Request, res: Response) => {
+    try {
+      // Get counts for different entities
+      const pendingDeals = (await storage.getDealsByStatus('pending')).length;
+      const activeDeals = (await storage.getDealsByStatus('active')).length;
+      const rejectedDeals = (await storage.getDealsByStatus('rejected')).length;
+      const expiredDeals = (await storage.getDealsByStatus('expired')).length;
+      
+      // Get businesses with pending verification
+      const businesses = await storage.getAllBusinesses();
+      const pendingVendors = businesses.filter(b => b.verificationStatus === 'pending').length;
+      
+      // Get total user count
+      const users = await storage.getAllUsers();
+      const totalUsers = users.length;
+      
+      // Get recent activity (newest first, limit 5)
+      // We'll combine different types of activity (deal submissions, vendor applications, etc.)
+      const recentActivity = [];
+      
+      // Get recent deal submissions (5 newest)
+      const deals = await storage.getDeals();
+      const recentDeals = deals
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 5)
+        .map(deal => ({
+          id: deal.id,
+          type: "deal_submission",
+          status: deal.status,
+          title: "New Deal Submitted",
+          description: `${deal.business?.businessName || 'A business'} submitted '${deal.title}'`,
+          timestamp: new Date(deal.createdAt).toISOString()
+        }));
+      
+      recentActivity.push(...recentDeals);
+      
+      // Return the stats
+      return res.status(200).json({
+        stats: {
+          pendingDeals,
+          activeDeals,
+          rejectedDeals,
+          expiredDeals,
+          pendingVendors,
+          totalUsers,
+          alertCount: pendingDeals + pendingVendors // Simple alert count as sum of pending items
+        },
+        recentActivity: recentActivity
+          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+          .slice(0, 5)
+      });
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+      return res.status(500).json({ message: "Error fetching dashboard stats" });
+    }
+  });
+  
+  // Legacy dashboard route
+  app.get(lDashboardPath, 
+    authenticate, 
+    authorize(['admin']), 
+    async (_req: Request, res: Response) => {
+    try {
+      // Get counts for different entities
+      const pendingDeals = (await storage.getDealsByStatus('pending')).length;
+      const activeDeals = (await storage.getDealsByStatus('active')).length;
+      const rejectedDeals = (await storage.getDealsByStatus('rejected')).length;
+      const expiredDeals = (await storage.getDealsByStatus('expired')).length;
+      
+      // Get businesses with pending verification
+      const businesses = await storage.getAllBusinesses();
+      const pendingVendors = businesses.filter(b => b.verificationStatus === 'pending').length;
+      
+      // Get total user count
+      const users = await storage.getAllUsers();
+      const totalUsers = users.length;
+      
+      // Get recent activity (newest first, limit 5)
+      // We'll combine different types of activity (deal submissions, vendor applications, etc.)
+      const recentActivity = [];
+      
+      // Get recent deal submissions (5 newest)
+      const deals = await storage.getDeals();
+      const recentDeals = deals
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 5)
+        .map(deal => ({
+          id: deal.id,
+          type: "deal_submission",
+          status: deal.status,
+          title: "New Deal Submitted",
+          description: `${deal.business?.businessName || 'A business'} submitted '${deal.title}'`,
+          timestamp: new Date(deal.createdAt).toISOString()
+        }));
+      
+      recentActivity.push(...recentDeals);
+      
+      // Return the stats
+      return res.status(200).json({
+        stats: {
+          pendingDeals,
+          activeDeals,
+          rejectedDeals,
+          expiredDeals,
+          pendingVendors,
+          totalUsers,
+          alertCount: pendingDeals + pendingVendors // Simple alert count as sum of pending items
+        },
+        recentActivity: recentActivity
+          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+          .slice(0, 5)
+      });
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+      return res.status(500).json({ message: "Error fetching dashboard stats" });
+    }
+  });
+
   // Get all users (versioned and legacy routes)
   const [vUsersPath, lUsersPath] = createVersionedRoutes('/admin/users');
   
