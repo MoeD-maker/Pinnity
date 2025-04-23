@@ -1363,7 +1363,7 @@ export class MemStorage implements IStorage {
     return updatedDeal;
   }
   
-  async getDealsByStatus(status: string): Promise<(Deal & { business: Business })[]> {
+  async getDealsByStatus(status: string): Promise<(Deal & { business: Business & { logoUrl?: string } })[]> {
     console.log(`STORAGE: Getting deals with status "${status}"`);
     
     // Get all deals and log their statuses for debugging
@@ -1387,13 +1387,20 @@ export class MemStorage implements IStorage {
     
     console.log(`STORAGE: Found ${filteredDeals.length} deals with status "${status}"`);
     
-    // Add business data to each deal
+    // Add business data to each deal with logoUrl for frontend compatibility
     return Promise.all(filteredDeals.map(async (deal) => {
       const business = this.businesses.get(deal.businessId);
       if (!business) {
         throw new Error(`Business with ID ${deal.businessId} not found`);
       }
-      return { ...deal, business };
+      return { 
+        ...deal, 
+        business: {
+          ...business,
+          // Ensure logoUrl exists for front-end compatibility
+          logoUrl: business.imageUrl
+        }
+      };
     }));
   }
   
