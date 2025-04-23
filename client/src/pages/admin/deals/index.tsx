@@ -112,7 +112,22 @@ export default function DealsPage() {
       try {
         // Get deals with the selected status - default to pending
         const status = filter.status || 'pending';
-        const response = await fetch(`/api/admin/deals/status/${status}`);
+        
+        // Fix: Use the correct API endpoint path that matches the server routes
+        // First try the versioned route
+        let response;
+        console.log(`Trying to fetch deals with status: ${status}`);
+        
+        try {
+          // Attempt to use the versioned route first
+          response = await fetch(`/api/v1/deals/status/${status}`);
+          console.log('Using versioned API route: /api/v1/deals/status/' + status);
+        } catch (err) {
+          console.log('Versioned route failed, falling back to legacy route');
+          // Fall back to legacy route if versioned route fails
+          response = await fetch(`/api/deals/status/${status}`);
+          console.log('Using legacy API route: /api/deals/status/' + status);
+        }
         
         // Check if response is from cache
         const isCached = response.headers.get('X-Is-Cached') === 'true';
@@ -127,6 +142,7 @@ export default function DealsPage() {
         const data = await response.json();
         
         if (!data) {
+          console.log('No data returned from API');
           return [];
         }
         
@@ -142,6 +158,11 @@ export default function DealsPage() {
         return dealData;
       } catch (error) {
         console.error('Error fetching deals:', error);
+        toast({
+          title: "Error fetching deals",
+          description: "There was a problem loading deals. Please try again.",
+          variant: "destructive",
+        });
         return [];
       }
     }
