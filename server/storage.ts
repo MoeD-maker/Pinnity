@@ -2470,18 +2470,37 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getDealsByStatus(status: string): Promise<(Deal & { business: Business & { logoUrl?: string } })[]> {
-    return await db.select()
+    console.log(`DEBUG: DatabaseStorage.getDealsByStatus("${status}") called`);
+    
+    // For debugging - log all possible deals
+    const allDeals = await db.select().from(deals);
+    const statusCounts = {};
+    allDeals.forEach(deal => {
+      statusCounts[deal.status] = (statusCounts[deal.status] || 0) + 1;
+    });
+    console.log(`DEBUG: All deals in the database: ${allDeals.length}`);
+    console.log(`DEBUG: Status distribution: ${JSON.stringify(statusCounts)}`);
+    
+    // Execute query
+    const result = await db.select()
       .from(deals)
       .innerJoin(businesses, eq(deals.businessId, businesses.id))
-      .where(eq(deals.status, status))
-      .then(rows => rows.map(row => ({
-        ...row.deals,
-        business: {
-          ...row.businesses,
-          // Ensure logoUrl exists for front-end compatibility
-          logoUrl: row.businesses.imageUrl
-        }
-      })));
+      .where(eq(deals.status, status));
+    
+    console.log(`DEBUG: Query returned ${result.length} deals with status "${status}"`);
+    
+    // Map to final format
+    const mappedResults = result.map(row => ({
+      ...row.deals,
+      business: {
+        ...row.businesses,
+        // Ensure logoUrl exists for front-end compatibility
+        logoUrl: row.businesses.imageUrl
+      }
+    }));
+    
+    console.log(`DEBUG: Returning ${mappedResults.length} deals with status "${status}"`);
+    return mappedResults;
   }
 
   async createDealApproval(approvalData: Omit<InsertDealApproval, "id" | "submittedAt">): Promise<DealApproval> {
