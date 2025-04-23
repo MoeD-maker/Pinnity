@@ -1063,6 +1063,7 @@ function EmptyState({
 }
 
 function DealCard({ deal }: { deal: any }) {
+  const [, setLocation] = useLocation();
   const isActive = new Date(deal.endDate) >= new Date() && new Date(deal.startDate) <= new Date();
   const isUpcoming = new Date(deal.startDate) > new Date();
   const isExpired = new Date(deal.endDate) < new Date();
@@ -1080,6 +1081,17 @@ function DealCard({ deal }: { deal: any }) {
     else if (isUpcoming) statusLabel = 'Upcoming';
     else statusLabel = 'Active';
   }
+  
+  // Navigation handlers
+  const handleEditDeal = () => {
+    console.log(`Navigating to edit page for deal ${deal.id}`);
+    setLocation(`/vendor/deals/edit/${deal.id}`);
+  };
+  
+  const handleManageDeal = () => {
+    console.log(`Navigating to manage page for deal ${deal.id}`);
+    setLocation(`/vendor/deals/manage/${deal.id}`);
+  };
   
   return (
     <Card className="overflow-hidden h-full flex flex-col shadow-sm hover:shadow transition-shadow duration-200">
@@ -1125,10 +1137,20 @@ function DealCard({ deal }: { deal: any }) {
         </div>
       </CardContent>
       <CardFooter className="border-t pt-2 sm:pt-3 pb-2 sm:pb-3 px-3 sm:px-4 md:px-6 flex flex-row gap-2 justify-between">
-        <Button variant="outline" size="sm" className="text-xs h-7 sm:h-8 px-2 sm:px-3 whitespace-nowrap">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="text-xs h-7 sm:h-8 px-2 sm:px-3 whitespace-nowrap"
+          onClick={handleEditDeal}
+        >
           <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" /> Edit
         </Button>
-        <Button size="sm" variant="ghost" className="text-xs h-7 sm:h-8 text-gray-500 px-2 sm:px-3 whitespace-nowrap">
+        <Button 
+          size="sm" 
+          variant="ghost" 
+          className="text-xs h-7 sm:h-8 text-gray-500 px-2 sm:px-3 whitespace-nowrap"
+          onClick={handleManageDeal}
+        >
           <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" /> Manage
         </Button>
       </CardFooter>
