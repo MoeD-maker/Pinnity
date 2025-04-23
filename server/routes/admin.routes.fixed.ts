@@ -13,6 +13,97 @@ import {
  * Admin routes for user and business management
  */
 export function adminRoutes(app: Express): void {
+  // Debug endpoints
+  const [vDebugDealsPath, lDebugDealsPath] = createVersionedRoutes('/admin/debug/deals');
+  
+  // Versioned debug deals endpoint
+  app.get(vDebugDealsPath,
+    versionHeadersMiddleware(),
+    authenticate,
+    authorize(['admin']),
+    async (_req: Request, res: Response) => {
+    try {
+      console.log("DEBUG ENDPOINT: Accessing /admin/debug/deals");
+      // Get all deals
+      const allDeals = await storage.getDeals();
+      
+      // Group them by status
+      const dealsByStatus: Record<string, any[]> = {};
+      
+      // Initialize with empty arrays for common statuses
+      dealsByStatus.pending = [];
+      dealsByStatus.active = [];
+      dealsByStatus.rejected = [];
+      dealsByStatus.expired = [];
+      dealsByStatus.pending_revision = [];
+      
+      // Categorize deals by status
+      allDeals.forEach(deal => {
+        const status = deal.status || 'unknown';
+        if (!dealsByStatus[status]) {
+          dealsByStatus[status] = [];
+        }
+        dealsByStatus[status].push(deal);
+      });
+      
+      // Get statuses distribution
+      const statusCounts: Record<string, number> = {};
+      Object.keys(dealsByStatus).forEach(status => {
+        statusCounts[status] = dealsByStatus[status].length;
+      });
+      
+      return res.status(200).json({
+        totalDeals: allDeals.length,
+        statusCounts,
+        dealsByStatus
+      });
+    } catch (error) {
+      console.error("Error in debug endpoint:", error);
+      return res.status(500).json({ message: "Error in debug endpoint", error: String(error) });
+    }
+  });
+  
+  // Legacy debug deals endpoint
+  app.get(lDebugDealsPath,
+    authenticate,
+    authorize(['admin']),
+    async (_req: Request, res: Response) => {
+    try {
+      // Same implementation as versioned endpoint
+      const allDeals = await storage.getDeals();
+      
+      const dealsByStatus: Record<string, any[]> = {};
+      
+      dealsByStatus.pending = [];
+      dealsByStatus.active = [];
+      dealsByStatus.rejected = [];
+      dealsByStatus.expired = [];
+      dealsByStatus.pending_revision = [];
+      
+      allDeals.forEach(deal => {
+        const status = deal.status || 'unknown';
+        if (!dealsByStatus[status]) {
+          dealsByStatus[status] = [];
+        }
+        dealsByStatus[status].push(deal);
+      });
+      
+      const statusCounts: Record<string, number> = {};
+      Object.keys(dealsByStatus).forEach(status => {
+        statusCounts[status] = dealsByStatus[status].length;
+      });
+      
+      return res.status(200).json({
+        totalDeals: allDeals.length,
+        statusCounts,
+        dealsByStatus
+      });
+    } catch (error) {
+      console.error("Error in debug endpoint:", error);
+      return res.status(500).json({ message: "Error in debug endpoint", error: String(error) });
+    }
+  });
+  
   // Get dashboard stats
   const [vDashboardPath, lDashboardPath] = createVersionedRoutes('/admin/dashboard');
   
