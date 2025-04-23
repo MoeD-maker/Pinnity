@@ -39,7 +39,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { DatePicker } from "@/components/ui/date-picker";
+// Using input for dates instead of DatePicker due to component issues
+import { Calendar } from "@/components/ui/calendar";
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Save, Calendar, UploadCloud, Trash, AlertTriangle, Info, CheckCircle } from 'lucide-react';
@@ -653,7 +654,16 @@ export default function EditDealPage() {
                           render={({ field }) => (
                             <FormItem className="flex flex-col">
                               <FormLabel>Start Date*</FormLabel>
-                              <DatePicker date={field.value} setDate={field.onChange} />
+                              <FormControl>
+                                <Input 
+                                  type="date" 
+                                  value={field.value ? format(field.value, 'yyyy-MM-dd') : ''}
+                                  onChange={(e) => {
+                                    const date = e.target.value ? new Date(e.target.value) : new Date();
+                                    field.onChange(date);
+                                  }}
+                                />
+                              </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -665,7 +675,16 @@ export default function EditDealPage() {
                           render={({ field }) => (
                             <FormItem className="flex flex-col">
                               <FormLabel>End Date*</FormLabel>
-                              <DatePicker date={field.value} setDate={field.onChange} />
+                              <FormControl>
+                                <Input 
+                                  type="date" 
+                                  value={field.value ? format(field.value, 'yyyy-MM-dd') : ''}
+                                  onChange={(e) => {
+                                    const date = e.target.value ? new Date(e.target.value) : new Date();
+                                    field.onChange(date);
+                                  }}
+                                />
+                              </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
