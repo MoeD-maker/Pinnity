@@ -115,32 +115,52 @@ export default function DealsPage() {
         // Get deals with the selected status - default to pending
         const status = filter.status || 'pending';
         
-        // Fix: Use the correct API endpoint path that matches the server routes
-        // First try the versioned route
+        // First attempt the versioned route, then fallback to legacy route if it fails
         console.log(`Trying to fetch deals with status: ${status}`);
         
-        // Use apiRequest helper function to fetch data
-        const response = await apiRequest(`/api/v1/deals/status/${status}`);
+        let response;
+        // Try versioned route first
+        try {
+          response = await apiRequest(`/api/v1/deals/status/${status}`);
+          console.log(`Successfully fetched deals from versioned route: /api/v1/deals/status/${status}`);
+        } catch (error) {
+          // Fall back to legacy route if versioned route fails
+          console.log(`Versioned route failed, falling back to legacy route: /api/deals/status/${status}`);
+          response = await apiRequest(`/api/deals/status/${status}`);
+        }
         
-        // Update cache status - assuming consistent API response format
+        // Update cache status
         setDealsCacheStatus({
-          isCached: false, // Since we're using apiRequest which doesn't expose headers
+          isCached: false,
           cacheDate: Date.now()
         });
         
-        const data = response;
+        console.log('Deals API response:', response);
         
-        if (!data) {
-          console.log('No data returned from API');
+        if (!response || !Array.isArray(response)) {
+          console.error('Invalid deal data returned from API:', response);
+          toast({
+            title: "Data format error",
+            description: "The deal data returned from the server was invalid. Please try again.",
+            variant: "destructive",
+          });
           return [];
         }
         
         // Map the response to match our expected deal structure
         // Converting createdAt to submissionDate for display
-        const dealData = data.map((deal: any) => ({
+        const dealData = response.map((deal: any) => ({
           ...deal,
-          submissionDate: deal.createdAt,
-          lastUpdated: deal.createdAt
+          submissionDate: deal.createdAt || new Date().toISOString(),
+          lastUpdated: deal.updatedAt || deal.createdAt || new Date().toISOString(),
+          // Ensure all required fields exist
+          status: deal.status || 'pending',
+          businessId: deal.businessId || 0,
+          // Make sure business is defined
+          business: deal.business || {
+            id: deal.businessId || 0,
+            businessName: 'Unknown Business'
+          }
         }));
         
         console.log(`Fetched ${dealData.length} deals with status: ${status}`);

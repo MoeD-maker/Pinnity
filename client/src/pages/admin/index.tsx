@@ -171,16 +171,27 @@ const AdminDashboardPage = () => {
   // Generate alerts based on stats
   const [alerts, setAlerts] = useState<{ id: number; title: string; description: string; priority: string }[]>([]);
 
-  // In a real application, you would fetch this data from your API
+  // Fetch actual dashboard data from the API
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         console.log("Fetching dashboard data...");
-        const response = await apiRequest("/api/admin/dashboard");
-        console.log("Dashboard data:", response);
+        
+        // First try the versioned route, if that fails, fall back to the legacy route
+        let response;
+        try {
+          response = await apiRequest("/api/v1/admin/dashboard");
+          console.log("Successfully fetched dashboard data with versioned route");
+        } catch (error) {
+          console.log("Versioned route failed, falling back to legacy route");
+          response = await apiRequest("/api/admin/dashboard");
+        }
+        
+        console.log("Dashboard data response:", response);
         
         // Update stats from API response
         if (response && response.stats) {
+          console.log("Setting stats from API:", response.stats);
           setStats(response.stats);
           
           // Generate alerts based on stats
@@ -205,10 +216,24 @@ const AdminDashboardPage = () => {
           }
           
           setAlerts(newAlerts);
+        } else {
+          console.error("No stats data in response:", response);
+          
+          // Fallback stats to prevent UI errors
+          setStats({
+            pendingVendors: 0,
+            pendingDeals: 0,
+            activeDeals: 0,
+            totalUsers: 0,
+            rejectedDeals: 0,
+            expiredDeals: 0,
+            alertCount: 0
+          });
         }
         
         // Update recent activity from API response
-        if (response && response.recentActivity) {
+        if (response && response.recentActivity && Array.isArray(response.recentActivity)) {
+          console.log("Setting activity data:", response.recentActivity);
           // Format timestamps for display
           const formattedActivity = response.recentActivity.map((activity: any) => {
             const timestamp = new Date(activity.timestamp);
@@ -234,9 +259,17 @@ const AdminDashboardPage = () => {
           });
           
           setRecentActivity(formattedActivity);
+        } else {
+          console.error("No activity data in response or invalid format");
+          setRecentActivity([]);
         }
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load dashboard data. Please try again.",
+          variant: "destructive"
+        });
       }
     };
 
