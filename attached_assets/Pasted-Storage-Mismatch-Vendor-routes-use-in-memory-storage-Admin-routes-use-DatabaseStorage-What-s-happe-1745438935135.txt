@@ -1,0 +1,115 @@
+Storage Mismatch: Vendor routes use in-memory storage, Admin routes use DatabaseStorage
+What’s happening
+In storage.ts you define two classes:
+
+MemStorage (in-memory maps): its createDeal and createBusiness simply do this.deals.set(...) or this.businesses.set(...), never touching your real DB.
+
+DatabaseStorage (Drizzle + real DB): its getDealsByStatus and getBusinessesByStatus run db.select().from(...) against your actual tables.
+
+Your vendor-facing routes (in deal.routes.new.ts and business.routes.ts) are wired up to MemStorage by default.
+
+Your admin routes (in admin.routes.ts) call DatabaseStorage.getDealsByStatus("pending") and getBusinessesByStatus("pending").
+
+Because newly created deals and businesses live only in memory, the admin DB queries always return zero “pending” rows.
+
+How the fix works
+Wire all of your route handlers—both vendor and admin—to the same storage instance. Remove the MemStorage injection entirely (or swap it for DatabaseStorage) so that when a vendor creates a deal or a business, it actually writes into your DB. Then your admin queries will see it.
+
+<details> <summary>💻 Prompt to give Replit</summary>
+cpp
+Copy
+Edit
+🔄 Unify storage layer:
+
+1. In your server entry (probably in registerRoutes or wherever you do `new MemStorage()`), replace:
+
+   ```ts
+   const storage = new MemStorage();
+with:
+
+ts
+Copy
+Edit
+const storage = new DatabaseStorage(db);
+(importing DatabaseStorage from your storage.ts)
+
+Remove any references to MemStorage, so that every route (deal.routes., business.routes., admin.routes.*) uses this same storage instance.
+
+Restart the server.
+
+perl
+Copy
+Edit
+</details>
+
+**How to verify**  
+- Create a new vendor (`/api/v1/businesses`) as `ziad@vendor.com`.  
+- Check your actual DB table (e.g. via a DB client or a quick `SELECT * FROM businesses`)—you should see the new row with `verificationStatus = 'pending'`.  
+- Then log in as `admin@test.com` → **Admin → Vendors**: the new vendor should appear in the “Pending” list.
+
+---
+
+## 2) No Default Status on Creation: `createDeal`/`createBusiness` never set `status = "pending"`
+
+### What’s happening  
+Even if you switch to DatabaseStorage, your `createDeal` (and similarly `createBusiness`) method only spreads the incoming data:
+
+```ts
+const deal: Deal = {
+  ...dealData,
+  id,
+  createdAt: new Date(),
+};
+If your vendor-side form doesn’t include status: "pending" (and it doesn’t), you end up with deal.status = undefined. Your admin filter only matches rows WHERE status = 'pending' (or 'pending_revision'), so it never returns these new rows.
+
+How the fix works
+In your create handlers, explicitly inject status: "pending" (and for businesses, verificationStatus: "pending").
+
+<details> <summary>💻 Prompt to give Replit</summary>
+csharp
+Copy
+Edit
+📥 Set default pending status:
+
+1. In server/routes/deal.routes.new.ts → POST /api/v1/deals:
+   ```ts
+   const dealData = {
+     ...req.body,
+     status: "pending",       // ← add this
+     createdAt: new Date(),   // if not already handled
+   };
+   const deal = await storage.createDeal(dealData);
+In server/routes/business.routes.ts → POST /api/v1/businesses:
+
+ts
+Copy
+Edit
+const businessData = {
+  ...req.body,
+  verificationStatus: "pending",  // ← add this
+  createdAt: new Date(),
+};
+const business = await storage.createBusiness(businessData);
+sql
+Copy
+Edit
+</details>
+
+**How to verify**  
+- Open your DB client and run:
+  ```sql
+  SELECT status FROM deals ORDER BY createdAt DESC LIMIT 1;
+You should see "pending".
+
+Then request /api/v1/deals/status/pending in Postman or your UI; the new deal should be returned.
+
+Similarly for /api/v1/businesses/pending.
+
+Recap of Verification Steps
+Swap in DatabaseStorage for all routes.
+
+Re-seed or create a vendor and a deal via your vendor UI.
+
+Check your actual DB tables to confirm rows exist with status = 'pending' and verificationStatus = 'pending'.
+
+Log in as admin@test.com and visit Admin → Vendors and Admin → Deals. They should both list the new entries.
