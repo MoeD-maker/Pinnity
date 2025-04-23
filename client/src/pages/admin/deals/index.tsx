@@ -117,31 +117,18 @@ export default function DealsPage() {
         
         // Fix: Use the correct API endpoint path that matches the server routes
         // First try the versioned route
-        let response;
         console.log(`Trying to fetch deals with status: ${status}`);
         
-        try {
-          // Attempt to use the versioned route first
-          response = await fetch(`/api/v1/deals/status/${status}`);
-          console.log('Using versioned API route: /api/v1/deals/status/' + status);
-        } catch (err) {
-          console.log('Versioned route failed, falling back to legacy route');
-          // Fall back to legacy route if versioned route fails
-          response = await fetch(`/api/deals/status/${status}`);
-          console.log('Using legacy API route: /api/deals/status/' + status);
-        }
+        // Use apiRequest helper function to fetch data
+        const response = await apiRequest(`/api/v1/deals/status/${status}`);
         
-        // Check if response is from cache
-        const isCached = response.headers.get('X-Is-Cached') === 'true';
-        const cacheDate = response.headers.get('X-Cache-Date');
-        
-        // Update cache status
+        // Update cache status - assuming consistent API response format
         setDealsCacheStatus({
-          isCached,
-          cacheDate: cacheDate ? parseInt(cacheDate, 10) : undefined
+          isCached: false, // Since we're using apiRequest which doesn't expose headers
+          cacheDate: Date.now()
         });
         
-        const data = await response.json();
+        const data = response;
         
         if (!data) {
           console.log('No data returned from API');

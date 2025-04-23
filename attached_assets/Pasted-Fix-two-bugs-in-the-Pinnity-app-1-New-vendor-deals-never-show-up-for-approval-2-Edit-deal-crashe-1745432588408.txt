@@ -1,0 +1,72 @@
+Fix two bugs in the Pinnity app
+1) New vendor deals never show up for approval
+2) “Edit deal” crashes the vendor dashboard
+
+Background
+
+Admin dashboard (/client/src/pages/admin/deals/index.tsx) is still showing mock data and isn’t fetching your real pending deals endpoint.
+
+Vendor “edit deal” page (/client/src/pages/vendor/deals/edit/[id].tsx) refers to dealId, but that variable is never defined, causing a ReferenceError.
+
+Tasks
+
+Wire up real “pending deals” API on Admin page
+
+In admin/deals/index.tsx, locate the useQuery’s queryFn.
+
+Replace the hard-coded fetch(/api/v1/deals/status/${status}) / fetch(/api/deals/status/${status}) with a call to your existing apiRequest helper:
+
+ts
+Copy
+Edit
+const response = await apiRequest(`/api/v1/deals/status/${status}`);
+Ensure this path exactly matches the route in your backend.
+
+Remove any placeholder deals = [...] arrays so it only renders actual data.
+
+Create / confirm backend route for “deals by status”
+
+In server/routes/deal.routes*.ts, confirm you have:
+
+ts
+Copy
+Edit
+app.get('/api/v1/deals/status/:status', authenticate, authorize('admin'), async (req, res) => {
+  const { status } = req.params;
+  const deals = await storage.getDeals({ status });
+  res.json(deals);
+});
+If you only have /api/deals/status/:status, either add the /api/v1 alias or update the frontend to match.
+
+Fix the “Edit Deal” crash
+
+Open client/src/pages/vendor/deals/edit/[id].tsx.
+
+Right after:
+
+ts
+Copy
+Edit
+const { id } = useParams<{ id: string }>();
+add:
+
+ts
+Copy
+Edit
+const dealId = parseInt(id, 10);
+if (Number.isNaN(dealId)) {
+  toast.error('Invalid deal ID'); return;
+}
+Replace all references to ${dealId} in your fetches/mutations (e.g. /api/deals/${dealId}) with this new dealId variable.
+
+Wrap your render in a if (loading) return <Spinner />; so you don’t try to render before data arrives.
+
+Final Test
+
+Log in as ziad@vendor.com → create a new deal.
+
+Log out and log in as admin@test.com.
+
+Navigate to Admin → Deals → verify your “Pending” list now includes the deal you just created.
+
+Back in the Vendor dashboard, click Edit on any deal → confirm the edit form loads without crashing.

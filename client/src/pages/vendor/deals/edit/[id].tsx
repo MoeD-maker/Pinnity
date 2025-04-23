@@ -96,7 +96,23 @@ const dealFormSchema = z.object({
 
 export default function EditDealPage() {
   const { id } = useParams<{ id: string }>();
-  const dealId = parseInt(id);
+  const dealId = parseInt(id, 10);
+  if (Number.isNaN(dealId)) {
+    // If dealId is not a valid number, return an error
+    return (
+      <div className="container p-4 mx-auto max-w-6xl">
+        <div className="flex justify-center items-center h-screen">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Invalid Deal ID</h1>
+            <p className="mb-4">The deal ID provided is not valid.</p>
+            <Button onClick={() => window.location.href = '/vendor'}>
+              Return to Dashboard
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(true);
