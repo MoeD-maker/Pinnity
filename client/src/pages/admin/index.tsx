@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,8 @@ import {
   Activity 
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface StatCardProps {
   title: string;
@@ -128,93 +131,122 @@ const ActivityCard = ({ activity }: { activity: ActivityItem }) => {
 };
 
 const AdminDashboardPage = () => {
+  const { user } = useAuth();
+  const [location, setLocation] = useLocation();
+  const { toast } = useToast();
+  
+  // Check if user is admin and redirect if not
+  useEffect(() => {
+    if (!user) {
+      console.log("No user found, redirecting to login");
+      setLocation("/auth");
+      return;
+    }
+    
+    if (user.userType !== "admin") {
+      console.log("User is not admin, redirecting to dashboard");
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to access the admin area",
+        variant: "destructive"
+      });
+      setLocation("/");
+      return;
+    }
+    
+    console.log("Admin authentication successful");
+  }, [user, setLocation, toast]);
   const [stats, setStats] = useState({
-    pendingVendors: 12,
-    pendingDeals: 24,
-    activeDeals: 85,
-    totalUsers: 542,
-    alertCount: 3
+    pendingVendors: 0,
+    pendingDeals: 0,
+    activeDeals: 0,
+    totalUsers: 0,
+    rejectedDeals: 0,
+    expiredDeals: 0,
+    alertCount: 0
   });
 
-  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([
-    {
-      id: 1,
-      type: "vendor_application",
-      status: "pending",
-      title: "New Vendor Application",
-      description: "Coffee Corner has applied for vendor verification",
-      timestamp: "10 minutes ago"
-    },
-    {
-      id: 2,
-      type: "deal_submission",
-      status: "pending",
-      title: "New Deal Submitted",
-      description: "Urban Threads submitted '50% Off Summer Collection'",
-      timestamp: "25 minutes ago"
-    },
-    {
-      id: 3,
-      type: "deal_redemption",
-      status: "completed",
-      title: "Deal Redemption",
-      description: "Bistro Delight's 'Free Appetizer' was redeemed 15 times today",
-      timestamp: "1 hour ago"
-    },
-    {
-      id: 4,
-      type: "user_registration",
-      status: "completed",
-      title: "User Growth",
-      description: "25 new users registered in the last 24 hours",
-      timestamp: "2 hours ago"
-    },
-    {
-      id: 5,
-      type: "deal_submission",
-      status: "approved",
-      title: "Deal Approved",
-      description: "Morning Brew Café's 'BOGO Coffee' deal was approved",
-      timestamp: "3 hours ago"
-    }
-  ]);
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
 
-  const [alerts, setAlerts] = useState([
-    {
-      id: 1,
-      title: "Vendor Verification Required",
-      description: "3 vendors have been waiting for verification for over 48 hours",
-      priority: "high"
-    },
-    {
-      id: 2,
-      title: "Deal Approval Backlog",
-      description: "8 deals have been pending approval for over 24 hours",
-      priority: "medium"
-    },
-    {
-      id: 3,
-      title: "User Complaint",
-      description: "A user has reported an issue with a redeemed deal at 'Bistro Delight'",
-      priority: "medium"
-    }
-  ]);
+  // Generate alerts based on stats
+  const [alerts, setAlerts] = useState<{ id: number; title: string; description: string; priority: string }[]>([]);
 
   // In a real application, you would fetch this data from your API
   useEffect(() => {
-    // Simulating API call
     const fetchDashboardData = async () => {
       try {
-        // const response = await apiRequest("/api/admin/dashboard");
-        // setStats(response.stats);
-        // setRecentActivity(response.recentActivity);
-        // setAlerts(response.alerts);
+        console.log("Fetching dashboard data...");
+        const response = await apiRequest("/api/admin/dashboard");
+        console.log("Dashboard data:", response);
+        
+        // Update stats from API response
+        if (response && response.stats) {
+          setStats(response.stats);
+          
+          // Generate alerts based on stats
+          const newAlerts = [];
+          
+          if (response.stats.pendingVendors > 0) {
+            newAlerts.push({
+              id: 1,
+              title: "Vendor Verification Required",
+              description: `${response.stats.pendingVendors} vendors are waiting for verification`,
+              priority: response.stats.pendingVendors > 3 ? "high" : "medium"
+            });
+          }
+          
+          if (response.stats.pendingDeals > 0) {
+            newAlerts.push({
+              id: 2,
+              title: "Deal Approval Backlog",
+              description: `${response.stats.pendingDeals} deals are pending approval`,
+              priority: response.stats.pendingDeals > 5 ? "high" : "medium"
+            });
+          }
+          
+          setAlerts(newAlerts);
+        }
+        
+        // Update recent activity from API response
+        if (response && response.recentActivity) {
+          // Format timestamps for display
+          const formattedActivity = response.recentActivity.map((activity: any) => {
+            const timestamp = new Date(activity.timestamp);
+            const now = new Date();
+            const diffMs = now.getTime() - timestamp.getTime();
+            const diffMinutes = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            
+            let timeAgo;
+            if (diffMinutes < 60) {
+              timeAgo = `${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''} ago`;
+            } else if (diffHours < 24) {
+              timeAgo = `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+            } else {
+              timeAgo = `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+            }
+            
+            return {
+              ...activity,
+              timestamp: timeAgo
+            };
+          });
+          
+          setRecentActivity(formattedActivity);
+        }
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
       }
     };
 
     fetchDashboardData();
+    
+    // Set up periodic refresh every 5 minutes
+    const refreshInterval = setInterval(fetchDashboardData, 5 * 60 * 1000);
+    
+    // Clean up interval on unmount
+    return () => clearInterval(refreshInterval);
   }, []);
 
   return (

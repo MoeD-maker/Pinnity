@@ -39,7 +39,8 @@ import {
 } from 'lucide-react';
 import { useLocation } from 'wouter';
 import ViewDetailsLink from '@/components/admin/ViewDetailsLink';
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 // Types for deal and business data
@@ -77,6 +78,7 @@ interface Deal {
 
 export default function DealsPage() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [location, setLocation] = useLocation();
   const [filter, setFilter] = useState({
     status: "pending",
