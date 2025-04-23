@@ -24,14 +24,29 @@ export function adminRoutes(app: Express): void {
     async (_req: Request, res: Response) => {
     try {
       // Get counts for different entities
-      const pendingDeals = (await storage.getDealsByStatus('pending')).length;
+      // For pending, we need to include both 'pending' and 'pending_revision' statuses
+      const pendingDealsResult = await storage.getDealsByStatus('pending');
+      // Already includes pending_revision deals now with our fix
+      const pendingDeals = pendingDealsResult.length;
+      
       const activeDeals = (await storage.getDealsByStatus('active')).length;
       const rejectedDeals = (await storage.getDealsByStatus('rejected')).length;
       const expiredDeals = (await storage.getDealsByStatus('expired')).length;
       
+      console.log(`DASHBOARD: Found ${pendingDeals} pending deals, ${activeDeals} active deals`);
+      
       // Get businesses with pending verification
       const businesses = await storage.getAllBusinesses();
-      const pendingVendors = businesses.filter(b => b.verificationStatus === 'pending').length;
+      // Check for variations in verification status values
+      const verificationStatuses = new Set(businesses.map(b => b.verificationStatus));
+      console.log(`DASHBOARD: Business verification statuses in system: ${Array.from(verificationStatuses).join(', ')}`);
+      
+      const pendingVendors = businesses.filter(b => 
+        b.verificationStatus === 'pending' || 
+        b.verificationStatus === 'pending_verification'
+      ).length;
+      
+      console.log(`DASHBOARD: Found ${pendingVendors} pending vendors out of ${businesses.length} total`);
       
       // Get total user count
       const users = await storage.getAllUsers();
@@ -473,6 +488,54 @@ export function adminRoutes(app: Express): void {
   // Get deals by status (versioned and legacy routes)
   const [vDealsByStatusPath, lDealsByStatusPath] = createVersionedRoutes('/deals/status/:status');
   
+  // Add debug route to see all deals in the database with their statuses
+  app.get('/api/v1/admin/debug/deals', 
+    authenticate, 
+    authorize(['admin']),
+    async (_req: Request, res: Response) => {
+      try {
+        const allDeals = await storage.getDeals();
+        
+        // Log detailed info about each deal and its status
+        console.log("All deals in database:");
+        allDeals.forEach(deal => {
+          console.log(`Deal ID: ${deal.id}, Title: ${deal.title}, Status: ${deal.status}, Business: ${deal.business?.businessName || 'Unknown'}`);
+        });
+        
+        // Group deals by status for easier analysis
+        const dealsByStatus = {
+          pending: allDeals.filter(d => d.status === 'pending'),
+          active: allDeals.filter(d => d.status === 'active'),
+          rejected: allDeals.filter(d => d.status === 'rejected'),
+          expired: allDeals.filter(d => d.status === 'expired'),
+          pending_revision: allDeals.filter(d => d.status === 'pending_revision'),
+          other: allDeals.filter(d => !['pending', 'active', 'rejected', 'expired', 'pending_revision'].includes(d.status))
+        };
+        
+        // Log counts by status
+        Object.entries(dealsByStatus).forEach(([status, deals]) => {
+          console.log(`Status "${status}": ${deals.length} deals`);
+        });
+        
+        return res.status(200).json({
+          totalDeals: allDeals.length,
+          dealCounts: {
+            pending: dealsByStatus.pending.length,
+            active: dealsByStatus.active.length,
+            rejected: dealsByStatus.rejected.length,
+            expired: dealsByStatus.expired.length,
+            pending_revision: dealsByStatus.pending_revision.length,
+            other: dealsByStatus.other.length
+          },
+          dealsByStatus
+        });
+      } catch (error) {
+        console.error("Debug route error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+  
   app.get(vDealsByStatusPath, 
     versionHeadersMiddleware(),
     authenticate, 
@@ -490,6 +553,18 @@ export function adminRoutes(app: Express): void {
         
         const deals = await storage.getDealsByStatus(status);
         console.log(`DEBUG: Returned deals with status "${status}": ${deals.length}`);
+        
+        if (deals.length === 0) {
+          // Try querying storage directly to check case sensitivity or whitespace issues
+          const allDeals = await storage.getDeals();
+          const matchingDeals = allDeals.filter(d => d.status.toLowerCase().trim() === status.toLowerCase().trim());
+          console.log(`DEBUG: Direct filter found ${matchingDeals.length} deals with status "${status}" (case insensitive)`);
+          
+          if (matchingDeals.length > 0) {
+            console.log(`DEBUG: Status values in database: ${matchingDeals.map(d => `"${d.status}"`).join(', ')}`);
+            return res.status(200).json(matchingDeals);
+          }
+        }
         
         return res.status(200).json(deals);
       } catch (error) {

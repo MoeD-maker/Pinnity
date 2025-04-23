@@ -2481,12 +2481,27 @@ export class DatabaseStorage implements IStorage {
     console.log(`DEBUG: All deals in the database: ${allDeals.length}`);
     console.log(`DEBUG: Status distribution: ${JSON.stringify(statusCounts)}`);
     
-    // Execute query
-    const result = await db.select()
-      .from(deals)
-      .innerJoin(businesses, eq(deals.businessId, businesses.id))
-      .where(eq(deals.status, status));
+    // The dashboard might show different counts compared to what we filter here
+    // This is because 'pending' is shown on dashboard, but stored as different values in DB
+    let query;
+    if (status === 'pending') {
+      // For 'pending' status, we need to catch deals with status 'pending_revision' as well
+      query = db.select()
+        .from(deals)
+        .innerJoin(businesses, eq(deals.businessId, businesses.id))
+        .where(sql`${deals.status} = 'pending' OR ${deals.status} = 'pending_revision'`);
+      
+      console.log('DEBUG: Using OR condition for pending deals to include pending_revision');
+    } else {
+      // For other statuses, use exact match
+      query = db.select()
+        .from(deals)
+        .innerJoin(businesses, eq(deals.businessId, businesses.id))
+        .where(eq(deals.status, status));
+    }
     
+    // Execute query
+    const result = await query;
     console.log(`DEBUG: Query returned ${result.length} deals with status "${status}"`);
     
     // Map to final format
