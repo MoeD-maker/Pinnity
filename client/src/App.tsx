@@ -50,6 +50,8 @@ const AdminAnalytics = lazy(() => import("@/pages/admin/analytics"));
 // Vendor pages
 const VendorDashboard = lazy(() => import("@/pages/vendor"));
 const CreateDeal = lazy(() => import("@/pages/vendor/deals/create"));
+const EditDeal = lazy(() => import("@/pages/vendor/deals/edit/[id]"));
+const ManageDeal = lazy(() => import("@/pages/vendor/deals/manage/[id]"));
 const VendorProfile = lazy(() => import("@/pages/vendor/profile"));
 
 // Fallback loading component with better styling
@@ -544,6 +546,22 @@ function Router() {
         {(params) => (
           <Suspense fallback={<LoadingFallback />}>
             <AuthenticatedRoute component={CreateDeal} params={params} />
+          </Suspense>
+        )}
+      </Route>
+      
+      <Route path="/vendor/deals/edit/:id">
+        {(params) => (
+          <Suspense fallback={<LoadingFallback />}>
+            <AuthenticatedRoute component={EditDeal} params={params} />
+          </Suspense>
+        )}
+      </Route>
+      
+      <Route path="/vendor/deals/manage/:id">
+        {(params) => (
+          <Suspense fallback={<LoadingFallback />}>
+            <AuthenticatedRoute component={ManageDeal} params={params} />
           </Suspense>
         )}
       </Route>

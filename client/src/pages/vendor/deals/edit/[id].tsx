@@ -1,354 +1,378 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'wouter';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
-import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { z } from 'zod';
+import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
+import { queryClient } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Separator } from '@/components/ui/separator';
-import { Checkbox } from '@/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  CalendarIcon, 
-  CheckCircle, 
-  ChevronLeft, 
-  ChevronRight, 
-  Info, 
-  Percent, 
-  Tag, 
-  Clock, 
-  Truck, 
-  ShoppingBag,
-  UploadCloud,
-  ImageIcon,
-  AlertCircle,
-  CropIcon,
-  AlertTriangle,
-  Eye,
-  X,
-  ArrowLeft
-} from 'lucide-react';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
-import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Switch } from '@/components/ui/switch';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  FormDescription,
+} from '@/components/ui/form';
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import ImageUploadWithCropper from '@/components/shared/ImageUploadWithCropper';
-import SimpleDealImageUploader from '@/components/shared/SimpleDealImageUploader';
-import DealPreview from '@/components/vendor/DealPreview';
-import CustomerDealPreview from '@/components/vendor/CustomerDealPreview';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ArrowLeft, Save, Calendar, UploadCloud, Trash, AlertTriangle, Info, CheckCircle } from 'lucide-react';
+import { DealPreview } from '@/components/vendor/DealPreview';
+import { Badge } from '@/components/ui/badge';
+import { Toggle } from '@/components/ui/toggle';
+import { Switch } from '@/components/ui/switch';
 
-// Define deal categories
-const CATEGORIES = [
-  { id: 'food_drink', name: 'Food & Drink' },
-  { id: 'shopping', name: 'Shopping' },
-  { id: 'entertainment', name: 'Entertainment' },
-  { id: 'health_beauty', name: 'Health & Beauty' },
-  { id: 'travel', name: 'Travel' },
-  { id: 'services', name: 'Services' },
-  { id: 'other', name: 'Other' }
-];
-
-// Deal type options
-const DEAL_TYPES = [
-  { id: 'percent_off', name: 'Percentage Off', icon: <Percent className="h-4 w-4" /> },
-  { id: 'bogo', name: 'Buy One Get One Free', icon: <ShoppingBag className="h-4 w-4" /> },
-  { id: 'free_item', name: 'Free Item with Purchase', icon: <Tag className="h-4 w-4" /> },
-  { id: 'fixed_amount', name: 'Fixed Amount Off', icon: <Truck className="h-4 w-4" /> }
-];
-
-// Standard terms and conditions checkboxes
-const STANDARD_TERMS = [
-  { id: 'no_combine', text: 'Cannot be combined with any other offers or discounts' },
-  { id: 'one_per_customer', text: 'Limit one per customer' },
-  { id: 'no_cash', text: 'No cash value' },
-  { id: 'while_supplies', text: 'While supplies last' },
-  { id: 'excludes_tax', text: 'Does not include tax or gratuity' },
-  { id: 'management_rights', text: 'Management reserves the right to modify or cancel at any time' }
-];
-
-// Form schema for deal editing
-const dealSchema = z.object({
-  title: z.string().min(5, { message: 'Title must be at least 5 characters' }).max(100),
-  category: z.string({ required_error: 'Please select a category' }),
-  description: z.string().min(20, { message: 'Description must be at least 20 characters' }).max(500),
-  dealType: z.string({ required_error: 'Please select a deal type' }),
-  discount: z.string().optional(),
-  startDate: z.date({ required_error: 'Start date is required' }),
-  endDate: z.date({ required_error: 'End date is required' }),
-  maxRedemptionsPerCustomer: z.number().min(1).default(1),
-
-  // Recurring deal fields
-  isRecurring: z.boolean().default(false),
-  recurringDays: z.array(z.number().min(0).max(6)).default([]),
-  
-  // Standard T&C checkboxes
-  standardTerms: z.array(z.string()).default(STANDARD_TERMS.map(term => term.id)),
-  // Deal-type specific T&C checkboxes
-  dealTypeTerms: z.array(z.string()).default([]),
-  // Additional custom terms
-  customTerms: z.string().optional(),
-  // The combined terms string that will be stored
+// Define the schema for deal form validation
+const dealFormSchema = z.object({
+  title: z.string().min(3, { message: "Title must be at least 3 characters" }).max(100, { message: "Title cannot exceed 100 characters" }),
+  description: z.string().min(20, { message: "Description must be at least 20 characters" }).max(500, { message: "Description cannot exceed 500 characters" }),
+  category: z.string().min(1, { message: "Please select a category" }),
+  dealType: z.string().min(1, { message: "Please select a deal type" }),
+  discount: z.string().min(1, { message: "Please provide discount details" }),
+  startDate: z.date({ required_error: "Start date is required" }),
+  endDate: z.date({ required_error: "End date is required" }),
   terms: z.string().optional(),
-  redemptionCode: z.string().min(4, { message: 'Redemption code must be at least 4 characters' }).max(8, { message: 'Redemption code cannot exceed 8 characters' }),
+  maxRedemptionsPerCustomer: z.coerce.number().int().min(1, { message: "Must allow at least 1 redemption per customer" }).default(1),
+  redemptionCode: z.string().min(3, { message: "Redemption code must be at least 3 characters long" }).max(20, { message: "Redemption code cannot exceed 20 characters" }),
   redemptionInstructions: z.string().optional(),
   imageUrl: z.string().optional(),
-  acceptTerms: z.boolean().refine(val => val === true, { message: 'You must accept the terms' })
-})
-// Add validation: If isRecurring is true, recurringDays must not be empty
-.refine(
-  (data) => !data.isRecurring || (data.isRecurring && data.recurringDays.length > 0),
+  isLimited: z.boolean().default(false),
+  maxRedemptions: z.coerce.number().int().optional(),
+  isRecurring: z.boolean().default(false),
+  recurringDays: z.array(z.number()).optional(),
+  status: z.string().optional(),
+}).refine(
+  (data) => {
+    return !data.isLimited || (data.isLimited && data.maxRedemptions && data.maxRedemptions >= 1);
+  },
   {
-    message: "Please select at least one day of the week for your recurring deal",
-    path: ["recurringDays"]
+    message: "Please specify the maximum number of redemptions",
+    path: ["maxRedemptions"],
+  }
+).refine(
+  (data) => {
+    return !data.isRecurring || (data.isRecurring && data.recurringDays && data.recurringDays.length > 0);
+  },
+  {
+    message: "Please select at least one day for recurring deals",
+    path: ["recurringDays"],
+  }
+).refine(
+  (data) => {
+    return data.endDate >= data.startDate;
+  },
+  {
+    message: "End date must be after start date",
+    path: ["endDate"],
   }
 );
-
-type DealFormValues = z.infer<typeof dealSchema> & {
-  featured?: boolean;
-};
 
 export default function EditDealPage() {
   const { id } = useParams<{ id: string }>();
   const dealId = parseInt(id);
-  const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [currentTab, setCurrentTab] = useState("basics");
-  const [previewTerms, setPreviewTerms] = useState("");
-  const [business, setBusiness] = useState<any>(null);
-  const [dealImage, setDealImage] = useState<string>("");
-
-  // Set up form with default values
-  const form = useForm<DealFormValues>({
-    resolver: zodResolver(dealSchema),
+  const [dealStatus, setDealStatus] = useState<string>('');
+  const [currentTab, setCurrentTab] = useState('basic');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [dealData, setDealData] = useState<any>(null);
+  const [showApprovalWarning, setShowApprovalWarning] = useState(false);
+  
+  // Initialize form
+  const form = useForm<z.infer<typeof dealFormSchema>>({
+    resolver: zodResolver(dealFormSchema),
     defaultValues: {
-      title: "",
-      category: "",
-      description: "",
-      dealType: "",
-      discount: "",
+      title: '',
+      description: '',
+      category: '',
+      dealType: '',
+      discount: '',
       startDate: new Date(),
-      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 1 week from now
+      endDate: new Date(new Date().setDate(new Date().getDate() + 14)), // Default to 2 weeks from now
+      terms: '',
       maxRedemptionsPerCustomer: 1,
+      redemptionCode: '',
+      redemptionInstructions: '',
+      imageUrl: '',
+      isLimited: false,
+      maxRedemptions: undefined,
       isRecurring: false,
       recurringDays: [],
-      standardTerms: STANDARD_TERMS.map(term => term.id),
-      dealTypeTerms: [],
-      customTerms: "",
-      terms: "",
-      redemptionCode: "",
-      redemptionInstructions: "",
-      imageUrl: "",
-      acceptTerms: false
-    }
+    },
   });
-
-  // Fetch the deal data
+  
+  // Watch form values for preview and validation
+  const formValues = form.watch();
+  
+  // Fetch deal data when the component mounts
   useEffect(() => {
-    async function fetchData() {
+    async function fetchDealData() {
       try {
         setLoading(true);
+        const data = await apiRequest(`/api/deals/${dealId}`);
         
-        // Fetch business data for the logged-in user
-        if (user && user.id) {
-          const businessResponse = await apiRequest(`/api/business/user/${user.id}`);
-          if (businessResponse) {
-            setBusiness(businessResponse);
+        if (data) {
+          // Store the original data for reference
+          setDealData(data);
+          setDealStatus(data.status || 'draft');
+          
+          // Format dates
+          const startDate = data.startDate ? new Date(data.startDate) : new Date();
+          const endDate = data.endDate ? new Date(data.endDate) : new Date(new Date().setDate(new Date().getDate() + 14));
+          
+          // Set image preview if available
+          if (data.imageUrl) {
+            setPreviewImage(data.imageUrl);
           }
-        }
-
-        // Fetch the deal by ID
-        const dealResponse = await apiRequest(`/api/deals/${dealId}`);
-
-        if (dealResponse) {
-          // Format dates for form
-          const startDate = new Date(dealResponse.startDate);
-          const endDate = new Date(dealResponse.endDate);
-
-          // Parse terms to separate standard and custom terms
-          let standardTermsSelection = STANDARD_TERMS.map(term => term.id);
-          let dealTypeTermsSelection: string[] = [];
-          let customTermsText = "";
-
-          if (dealResponse.terms) {
-            // This is a simplified approach - in a real app you might need 
-            // more sophisticated parsing logic depending on how terms are stored
-            standardTermsSelection = STANDARD_TERMS
-              .filter(term => dealResponse.terms?.includes(term.text))
-              .map(term => term.id);
-            
-            // Any text not matching standard terms could be considered custom
-            customTermsText = dealResponse.terms;
-          }
-
-          // Set the image URL
-          if (dealResponse.imageUrl) {
-            setDealImage(dealResponse.imageUrl);
-          }
-
-          // Set all form values
+          
+          // Populate form with existing data
           form.reset({
-            title: dealResponse.title,
-            category: dealResponse.category,
-            description: dealResponse.description,
-            dealType: dealResponse.dealType,
-            discount: dealResponse.discount || "",
+            title: data.title || '',
+            description: data.description || '',
+            category: data.category || '',
+            dealType: data.dealType || '',
+            discount: data.discount || '',
             startDate,
             endDate,
-            maxRedemptionsPerCustomer: dealResponse.maxRedemptionsPerCustomer || 1,
-            isRecurring: Boolean(dealResponse.recurringDays?.length),
-            recurringDays: dealResponse.recurringDays || [],
-            standardTerms: standardTermsSelection,
-            dealTypeTerms: dealTypeTermsSelection,
-            customTerms: customTermsText,
-            terms: dealResponse.terms,
-            redemptionCode: dealResponse.redemptionCode || "",
-            redemptionInstructions: dealResponse.redemptionInstructions || "",
-            imageUrl: dealResponse.imageUrl,
-            acceptTerms: true // Pre-accepted since it's an edit
+            terms: data.terms || '',
+            maxRedemptionsPerCustomer: data.maxRedemptionsPerCustomer || 1,
+            redemptionCode: data.redemptionCode || '',
+            redemptionInstructions: data.redemptionInstructions || '',
+            imageUrl: data.imageUrl || '',
+            isLimited: !!data.maxRedemptions,
+            maxRedemptions: data.maxRedemptions || undefined,
+            isRecurring: !!data.isRecurring,
+            recurringDays: data.recurringDays || [],
+            status: data.status || 'draft',
           });
+          
+          // Show approval warning for deals in approval process
+          if (['pending', 'approved', 'active'].includes(data.status)) {
+            setShowApprovalWarning(true);
+          }
         } else {
-          // Handle the case where deal is not found
           toast({
-            title: "Deal Not Found",
-            description: "The requested deal could not be found.",
-            variant: "destructive"
+            title: "Deal not found",
+            description: "The requested deal could not be loaded.",
+            variant: "destructive",
           });
-          setLocation("/vendor");
+          setLocation('/vendor');
         }
       } catch (error) {
-        console.error("Error fetching deal:", error);
+        console.error("Error fetching deal data:", error);
         toast({
           title: "Error",
-          description: "Failed to load deal data. Please try again.",
-          variant: "destructive"
+          description: "There was a problem loading the deal. Please try again.",
+          variant: "destructive",
         });
       } finally {
         setLoading(false);
       }
     }
-
-    fetchData();
-  }, [user, dealId, form, toast, setLocation]);
-
-  // Compile terms into a single string for submission
-  const compileTerms = () => {
-    let compiledTerms = "";
     
-    // Add standard terms
-    const selectedStandardTerms = form.getValues().standardTerms || [];
-    const standardTermsText = STANDARD_TERMS
-      .filter(term => selectedStandardTerms.includes(term.id))
-      .map(term => term.text)
-      .join('\n');
-    
-    if (standardTermsText) {
-      compiledTerms += standardTermsText;
+    fetchDealData();
+  }, [dealId, setLocation, toast, form]);
+  
+  // Validate recurring days selection
+  const validateRecurringDays = () => {
+    if (formValues.isRecurring && (!formValues.recurringDays || formValues.recurringDays.length === 0)) {
+      return "Please select at least one day for recurring deals";
     }
-    
-    // Add custom terms
-    const customTermsText = form.getValues().customTerms;
-    if (customTermsText && customTermsText.trim()) {
-      if (compiledTerms) compiledTerms += '\n';
-      compiledTerms += customTermsText.trim();
+    return true;
+  };
+  
+  // Handle image file selection
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      
+      // Create a preview URL
+      const imageUrl = URL.createObjectURL(file);
+      setPreviewImage(imageUrl);
+      setImageFile(file);
+      
+      // Update the form with the new image URL (temp for preview)
+      form.setValue('imageUrl', 'uploading...');
     }
-    
-    return compiledTerms;
   };
-
-  // Update terms preview whenever terms-related fields change
-  useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      if (name?.includes('Terms') || name === 'customTerms') {
-        setPreviewTerms(compileTerms());
-      }
-    });
-    
-    // Set initial preview
-    setPreviewTerms(compileTerms());
-    
-    return () => subscription.unsubscribe();
-  }, [form.watch]);
-
-  // Handle image upload
-  const handleImageChange = (url: string) => {
-    setDealImage(url);
-    form.setValue("imageUrl", url);
-  };
-
+  
   // Handle form submission
-  const onSubmit = async (data: DealFormValues) => {
+  const onSubmit = async (values: z.infer<typeof dealFormSchema>) => {
     try {
       setSubmitting(true);
       
-      // Make sure the terms are compiled correctly
-      const compiledTerms = compileTerms();
-      data.terms = compiledTerms;
+      let finalValues = { ...values };
       
-      // Set the uploaded image
-      data.imageUrl = dealImage;
-
-      // Resubmit deal for approval if it was previously rejected or needed revision
-      const deal = await apiRequest(`/api/deals/${dealId}`);
-      let resubmitForApproval = false;
-      
-      if (deal && (deal.status === 'rejected' || deal.status === 'pending_revision')) {
-        resubmitForApproval = true;
+      // Handle image upload first if there's a new image
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append('image', imageFile);
+        
+        // Upload the image
+        const uploadResponse = await apiRequest('/api/uploads/deal-image', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            // No Content-Type header for multipart/form-data, browser sets it automatically
+          },
+          // Specify raw response since we're dealing with FormData
+          rawResponse: true,
+        });
+        
+        if (uploadResponse && uploadResponse.imageUrl) {
+          finalValues.imageUrl = uploadResponse.imageUrl;
+        } else {
+          throw new Error("Image upload failed");
+        }
       }
       
-      // Send the update request
-      const updatedDeal = await apiRequest(`/api/deals/${dealId}`, {
-        method: 'PUT',
-        data: {
-          ...data,
-          // If resubmitting, explicitly set status back to 'pending'
-          status: resubmitForApproval ? 'pending' : undefined
+      // Only include maxRedemptions if isLimited is true
+      if (!finalValues.isLimited) {
+        finalValues.maxRedemptions = undefined;
+      }
+      
+      // Only include recurringDays if isRecurring is true
+      if (!finalValues.isRecurring) {
+        finalValues.recurringDays = [];
+      }
+      
+      // Prepare the deal update payload
+      const updatePayload = {
+        title: finalValues.title,
+        description: finalValues.description,
+        category: finalValues.category,
+        dealType: finalValues.dealType,
+        discount: finalValues.discount,
+        startDate: finalValues.startDate,
+        endDate: finalValues.endDate,
+        terms: finalValues.terms,
+        maxRedemptionsPerCustomer: finalValues.maxRedemptionsPerCustomer,
+        redemptionCode: finalValues.redemptionCode,
+        redemptionInstructions: finalValues.redemptionInstructions,
+        imageUrl: finalValues.imageUrl || previewImage,
+        maxRedemptions: finalValues.isLimited ? finalValues.maxRedemptions : null,
+        isRecurring: finalValues.isRecurring,
+        recurringDays: finalValues.isRecurring ? finalValues.recurringDays : [],
+      };
+      
+      // Preserve status if it's already in a special state
+      if (dealStatus !== 'draft') {
+        // If deal was rejected or revision requested, update status to pending
+        if (dealStatus === 'rejected' || dealStatus === 'pending_revision') {
+          // When resubmitting after rejection/revision, set back to pending
+          updatePayload.status = 'pending';
         }
+      }
+      
+      // Update the deal
+      const updatedDeal = await apiRequest(`/api/deals/${dealId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updatePayload),
       });
       
       if (updatedDeal) {
+        // Invalidate any cached deal data to ensure fresh data is fetched
+        queryClient.invalidateQueries({ queryKey: ['/api/deals'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/deals', dealId] });
+        queryClient.invalidateQueries({ queryKey: ['/api/business'] });
+        
         toast({
-          title: "Deal Updated",
-          description: resubmitForApproval 
-            ? "Deal has been updated and resubmitted for approval" 
-            : "Deal has been successfully updated",
+          title: "Deal updated",
+          description: "Your deal has been successfully updated.",
         });
         
-        // Navigate back to vendor dashboard
-        setLocation("/vendor");
+        // Navigate back to vendor dashboard or stay on edit page depending on status
+        if (dealStatus === 'rejected' || dealStatus === 'pending_revision') {
+          // If we just resubmitted a rejected/revision deal, go back to dashboard
+          setLocation('/vendor');
+        } else {
+          // Reset the form with the new values to prevent unsaved changes warnings
+          form.reset(form.getValues());
+          
+          // Refresh the deal data
+          const refreshedData = await apiRequest(`/api/deals/${dealId}`);
+          if (refreshedData) {
+            setDealData(refreshedData);
+            setDealStatus(refreshedData.status || 'draft');
+          }
+        }
       }
     } catch (error) {
       console.error("Error updating deal:", error);
       toast({
-        title: "Error",
-        description: "Failed to update deal. Please try again.",
-        variant: "destructive"
+        title: "Update failed",
+        description: "There was a problem updating your deal. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setSubmitting(false);
     }
   };
-
+  
+  // Handle deal deletion
+  const handleDeleteDeal = async () => {
+    try {
+      setSubmitting(true);
+      
+      await apiRequest(`/api/deals/${dealId}`, {
+        method: 'DELETE',
+      });
+      
+      // Invalidate queries to update the UI
+      queryClient.invalidateQueries({ queryKey: ['/api/deals'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/business'] });
+      
+      toast({
+        title: "Deal deleted",
+        description: "Your deal has been successfully deleted.",
+      });
+      
+      // Navigate back to vendor dashboard
+      setLocation('/vendor');
+    } catch (error) {
+      console.error("Error deleting deal:", error);
+      toast({
+        title: "Delete failed",
+        description: "There was a problem deleting your deal. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+      setDeleteDialogOpen(false);
+    }
+  };
+  
+  // Loading state
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -356,7 +380,37 @@ export default function EditDealPage() {
       </div>
     );
   }
-
+  
+  // Get status badge variant
+  const getStatusBadge = () => {
+    const statusMap: Record<string, string> = {
+      'draft': 'bg-gray-100 text-gray-700 border-gray-200',
+      'pending': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      'active': 'bg-green-100 text-green-800 border-green-200',
+      'approved': 'bg-green-100 text-green-800 border-green-200',
+      'rejected': 'bg-red-100 text-red-800 border-red-200',
+      'pending_revision': 'bg-orange-100 text-orange-800 border-orange-200',
+      'expired': 'bg-gray-100 text-gray-700 border-gray-200'
+    };
+    
+    return statusMap[dealStatus] || 'bg-gray-100 text-gray-700 border-gray-200';
+  };
+  
+  // Format status text
+  const getStatusText = () => {
+    const statusTextMap: Record<string, string> = {
+      'draft': 'Draft',
+      'pending': 'Pending Approval',
+      'active': 'Active',
+      'approved': 'Approved',
+      'rejected': 'Rejected',
+      'pending_revision': 'Revision Requested',
+      'expired': 'Expired'
+    };
+    
+    return statusTextMap[dealStatus] || 'Unknown';
+  };
+  
   return (
     <div className="container p-4 mx-auto max-w-6xl">
       <Breadcrumb className="mb-6">
@@ -368,583 +422,590 @@ export default function EditDealPage() {
           <BreadcrumbLink>Edit Deal</BreadcrumbLink>
         </BreadcrumbItem>
       </Breadcrumb>
-
-      <div className="flex items-center justify-between mb-6">
+      
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Edit Deal</h1>
-          <p className="text-muted-foreground">
-            Update details for this deal
-          </p>
+          <div className="flex items-center mt-2">
+            <Badge className={getStatusBadge()}>
+              {getStatusText()}
+            </Badge>
+          </div>
         </div>
-        <Button 
-          variant="outline" 
-          onClick={() => setLocation("/vendor")}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Dashboard
-        </Button>
+        
+        <div className="flex space-x-2">
+          <Button variant="ghost" onClick={() => setLocation('/vendor')} disabled={submitting}>
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back
+          </Button>
+          
+          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" disabled={submitting}>
+                <Trash className="mr-2 h-4 w-4" /> Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the deal
+                  and remove the data from our servers.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteDeal} className="bg-destructive text-destructive-foreground">
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
-
-      <form onSubmit={form.handleSubmit(onSubmit)}>
-        <Tabs defaultValue="basics" value={currentTab} onValueChange={setCurrentTab}>
-          <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="basics">Basic Details</TabsTrigger>
-            <TabsTrigger value="terms">Terms & Redemption</TabsTrigger>
-            <TabsTrigger value="preview">Preview</TabsTrigger>
-          </TabsList>
-          
-          {/* Basic Details Tab */}
-          <TabsContent value="basics">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="md:col-span-2 space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Deal Information</CardTitle>
-                    <CardDescription>Enter the basic information about your deal</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="title">Deal Title <span className="text-red-500">*</span></Label>
-                      <Input
-                        id="title"
-                        placeholder="e.g., 50% Off Premium Coffee"
-                        {...form.register("title")}
-                      />
-                      {form.formState.errors.title && (
-                        <p className="text-sm text-red-500">{form.formState.errors.title.message}</p>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="category">Category <span className="text-red-500">*</span></Label>
-                      <Select
-                        onValueChange={value => form.setValue("category", value)}
-                        defaultValue={form.getValues().category}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {CATEGORIES.map(category => (
-                            <SelectItem key={category.id} value={category.id}>
-                              {category.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {form.formState.errors.category && (
-                        <p className="text-sm text-red-500">{form.formState.errors.category.message}</p>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="description">Description <span className="text-red-500">*</span></Label>
-                      <Textarea
-                        id="description"
-                        placeholder="Describe your deal in detail..."
-                        className="min-h-[100px]"
-                        {...form.register("description")}
-                      />
-                      {form.formState.errors.description && (
-                        <p className="text-sm text-red-500">{form.formState.errors.description.message}</p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+      
+      {/* Status alerts for deals with special statuses */}
+      {dealStatus === 'pending' && (
+        <Alert className="mb-6 border-yellow-200 bg-yellow-50">
+          <Info className="h-4 w-4 text-yellow-700" />
+          <AlertDescription className="text-yellow-700">
+            <p>This deal is currently under review by our team. Any changes you make will reset the approval process.</p>
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {dealStatus === 'rejected' && dealData?.rejectionReason && (
+        <Alert className="mb-6 border-red-200 bg-red-50">
+          <AlertTriangle className="h-4 w-4 text-red-700" />
+          <AlertDescription className="text-red-700">
+            <p className="font-medium">Your deal was rejected for the following reason:</p>
+            <p className="mt-1">{dealData.rejectionReason}</p>
+            <p className="mt-2">Please make the necessary changes and resubmit.</p>
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {dealStatus === 'pending_revision' && dealData?.revisionNotes && (
+        <Alert className="mb-6 border-orange-200 bg-orange-50">
+          <Info className="h-4 w-4 text-orange-700" />
+          <AlertDescription className="text-orange-700">
+            <p className="font-medium">Our team has requested the following revisions:</p>
+            <p className="mt-1">{dealData.revisionNotes}</p>
+            <p className="mt-2">Please update your deal and resubmit for approval.</p>
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {dealStatus === 'approved' && dealData && (
+        <Alert className="mb-6 border-green-200 bg-green-50">
+          <Info className="h-4 w-4 text-green-700" />
+          <AlertDescription className="text-green-700">
+            <p>This deal has been approved. Any significant changes will require re-approval.</p>
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {showApprovalWarning && (
+        <Alert className="mb-6 border-blue-200 bg-blue-50">
+          <Info className="h-4 w-4 text-blue-700" />
+          <AlertDescription className="text-blue-700">
+            <p>Making changes to this deal will require it to go through the approval process again. Your changes will be saved as a draft until approved.</p>
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle>Deal Information</CardTitle>
+              <CardDescription>Update your deal details below</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-3 mb-6">
+                  <TabsTrigger value="basic">Basic Info</TabsTrigger>
+                  <TabsTrigger value="details">Details</TabsTrigger>
+                  <TabsTrigger value="redemption">Redemption</TabsTrigger>
+                </TabsList>
                 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Deal Type & Value</CardTitle>
-                    <CardDescription>Select the type of deal you're offering</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Deal Type <span className="text-red-500">*</span></Label>
-                      <RadioGroup
-                        onValueChange={value => form.setValue("dealType", value)}
-                        defaultValue={form.getValues().dealType}
-                        className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2"
-                      >
-                        {DEAL_TYPES.map(type => (
-                          <div key={type.id} className="flex items-center">
-                            <RadioGroupItem value={type.id} id={`deal-type-${type.id}`} className="peer sr-only" />
-                            <Label
-                              htmlFor={`deal-type-${type.id}`}
-                              className="flex items-center space-x-2 rounded-md border-2 border-muted bg-transparent p-3 hover:border-accent peer-checked:border-primary peer-checked:bg-primary/5 cursor-pointer w-full"
-                            >
-                              <div className="flex-shrink-0 rounded-full border p-1">
-                                {type.icon}
-                              </div>
-                              <div className="text-sm font-medium leading-none">{type.name}</div>
-                            </Label>
-                          </div>
-                        ))}
-                      </RadioGroup>
-                      {form.formState.errors.dealType && (
-                        <p className="text-sm text-red-500">{form.formState.errors.dealType.message}</p>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="discount">Discount Value <span className="text-red-500">*</span></Label>
-                      <div className="flex items-center space-x-2">
-                        <Input
-                          id="discount"
-                          placeholder={form.getValues().dealType === 'percent_off' ? "e.g., 50%" : "e.g., $10"}
-                          {...form.register("discount")}
-                        />
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {form.getValues().dealType === 'percent_off' ? 
-                          "Enter the percentage discount (e.g., 50%, 25%)" :
-                          form.getValues().dealType === 'fixed_amount' ?
-                            "Enter the fixed amount discount (e.g., $10, $25)" :
-                            "Enter the value or description of the offer"}
-                      </p>
-                      {form.formState.errors.discount && (
-                        <p className="text-sm text-red-500">{form.formState.errors.discount.message}</p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Deal Dates</CardTitle>
-                    <CardDescription>Set when your deal starts and ends</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="startDate">Start Date <span className="text-red-500">*</span></Label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant={"outline"}
-                              className={cn(
-                                "w-full justify-start text-left font-normal",
-                                !form.getValues().startDate && "text-muted-foreground"
-                              )}
-                            >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {form.getValues().startDate ? (
-                                format(form.getValues().startDate, "PPP")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
-                            <Calendar
-                              mode="single"
-                              selected={form.getValues().startDate}
-                              onSelect={date => date && form.setValue("startDate", date)}
-                              disabled={(date) => date < new Date()}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        {form.formState.errors.startDate && (
-                          <p className="text-sm text-red-500">{form.formState.errors.startDate.message}</p>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                    {/* Basic Info Tab */}
+                    <TabsContent value="basic" className="space-y-4 mt-0">
+                      <FormField
+                        control={form.control}
+                        name="title"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Deal Title*</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g. 20% Off All Pizzas" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
                         )}
-                      </div>
+                      />
                       
-                      <div className="space-y-2">
-                        <Label htmlFor="endDate">End Date <span className="text-red-500">*</span></Label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant={"outline"}
-                              className={cn(
-                                "w-full justify-start text-left font-normal",
-                                !form.getValues().endDate && "text-muted-foreground"
-                              )}
-                            >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {form.getValues().endDate ? (
-                                format(form.getValues().endDate, "PPP")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
-                            <Calendar
-                              mode="single"
-                              selected={form.getValues().endDate}
-                              onSelect={date => date && form.setValue("endDate", date)}
-                              disabled={(date) => 
-                                date < new Date() || 
-                                (form.getValues().startDate && date < form.getValues().startDate)
-                              }
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        {form.formState.errors.endDate && (
-                          <p className="text-sm text-red-500">{form.formState.errors.endDate.message}</p>
+                      <FormField
+                        control={form.control}
+                        name="description"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Description*</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Describe your deal" 
+                                className="min-h-[120px]" 
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Provide a clear description of what customers will get.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
                         )}
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          id="isRecurring"
-                          checked={form.getValues().isRecurring}
-                          onCheckedChange={checked => form.setValue("isRecurring", checked)}
-                        />
-                        <Label htmlFor="isRecurring" className="cursor-pointer">This is a recurring deal</Label>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p className="w-[250px] text-xs">
-                                Recurring deals repeat on specific days of the week during the date range.
-                                For example, a "Taco Tuesday" deal would recur every Tuesday between the start and end dates.
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
+                      />
                       
-                      {form.getValues().isRecurring && (
-                        <div className="pt-2">
-                          <Label className="mb-2 block text-sm">Select Days <span className="text-red-500">*</span></Label>
-                          <div className="flex flex-wrap gap-2">
-                            {[
-                              { value: 0, label: 'Sunday' },
-                              { value: 1, label: 'Monday' },
-                              { value: 2, label: 'Tuesday' },
-                              { value: 3, label: 'Wednesday' },
-                              { value: 4, label: 'Thursday' },
-                              { value: 5, label: 'Friday' },
-                              { value: 6, label: 'Saturday' }
-                            ].map(day => (
-                              <div key={day.value} className="flex items-center">
-                                <Checkbox
-                                  id={`day-${day.value}`}
-                                  checked={form.getValues().recurringDays?.includes(day.value)}
-                                  onCheckedChange={checked => {
-                                    const currentDays = form.getValues().recurringDays || [];
-                                    const newDays = checked
-                                      ? [...currentDays, day.value].sort()
-                                      : currentDays.filter(d => d !== day.value);
-                                    form.setValue("recurringDays", newDays);
-                                  }}
-                                  className="mr-2"
-                                />
-                                <Label htmlFor={`day-${day.value}`} className="text-sm cursor-pointer">
-                                  {day.label}
-                                </Label>
-                              </div>
-                            ))}
-                          </div>
-                          {form.formState.errors.recurringDays && (
-                            <p className="text-sm text-red-500">{form.formState.errors.recurringDays.message}</p>
+                      <FormField
+                        control={form.control}
+                        name="category"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Category*</FormLabel>
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select a category" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="food">Food & Dining</SelectItem>
+                                <SelectItem value="retail">Retail</SelectItem>
+                                <SelectItem value="beauty">Beauty & Wellness</SelectItem>
+                                <SelectItem value="entertainment">Entertainment</SelectItem>
+                                <SelectItem value="fitness">Fitness</SelectItem>
+                                <SelectItem value="travel">Travel</SelectItem>
+                                <SelectItem value="services">Services</SelectItem>
+                                <SelectItem value="other">Other</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="dealType"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Deal Type*</FormLabel>
+                              <Select value={field.value} onValueChange={field.onChange}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select deal type" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="percentage_off">Percentage Off</SelectItem>
+                                  <SelectItem value="fixed_amount">Fixed Amount Off</SelectItem>
+                                  <SelectItem value="buy_one_get_one">Buy One Get One</SelectItem>
+                                  <SelectItem value="free_item">Free Item</SelectItem>
+                                  <SelectItem value="special_price">Special Price</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
                           )}
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Deal Image</CardTitle>
-                    <CardDescription>Upload an image for your deal (optional)</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <SimpleDealImageUploader
-                        onImageChange={handleImageChange}
-                        existingImageUrl={dealImage}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-              
-              <div className="md:col-span-1 space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Preview</CardTitle>
-                    <CardDescription>How your deal will appear</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <DealPreview 
-                      values={{
-                        ...form.getValues(),
-                        imageUrl: dealImage,
-                        business: business
-                      }}
-                    />
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-            
-            <div className="mt-6 flex justify-between">
-              <Button type="button" variant="outline" onClick={() => setLocation("/vendor")}>
-                Cancel
-              </Button>
-              <Button type="button" onClick={() => setCurrentTab("terms")}>
-                Next <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          </TabsContent>
-          
-          {/* Terms & Redemption Tab */}
-          <TabsContent value="terms">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="md:col-span-2 space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Terms & Conditions</CardTitle>
-                    <CardDescription>Set terms and conditions for your deal</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-4">
-                      <Label className="text-base font-medium">Standard Terms</Label>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {STANDARD_TERMS.map(term => (
-                          <div key={term.id} className="flex items-start space-x-2">
-                            <Checkbox
-                              id={`term-${term.id}`}
-                              checked={form.getValues().standardTerms?.includes(term.id)}
-                              onCheckedChange={checked => {
-                                const currentTerms = form.getValues().standardTerms || [];
-                                const newTerms = checked
-                                  ? [...currentTerms, term.id]
-                                  : currentTerms.filter(t => t !== term.id);
-                                form.setValue("standardTerms", newTerms);
-                              }}
-                              className="mt-1"
-                            />
-                            <Label htmlFor={`term-${term.id}`} className="text-sm cursor-pointer">
-                              {term.text}
-                            </Label>
-                          </div>
-                        ))}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="discount"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Discount Details*</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  placeholder={
+                                    formValues.dealType === 'percentage_off' ? 'e.g. 20% off' :
+                                    formValues.dealType === 'fixed_amount' ? 'e.g. $10 off' :
+                                    formValues.dealType === 'buy_one_get_one' ? 'e.g. Buy 1 Get 1 Free' :
+                                    formValues.dealType === 'free_item' ? 'e.g. Free Appetizer' :
+                                    formValues.dealType === 'special_price' ? 'e.g. Only $9.99' :
+                                    'Discount details'
+                                  } 
+                                  {...field} 
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                       </div>
-                    </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="startDate"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <FormLabel>Start Date*</FormLabel>
+                              <DatePicker date={field.value} setDate={field.onChange} />
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="endDate"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <FormLabel>End Date*</FormLabel>
+                              <DatePicker date={field.value} setDate={field.onChange} />
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      <div className="border rounded-md p-4">
+                        <FormField
+                          control={form.control}
+                          name="imageUrl"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Deal Image</FormLabel>
+                              <FormControl>
+                                <div className="space-y-4">
+                                  {previewImage && (
+                                    <div className="relative aspect-video w-full overflow-hidden rounded-md border border-dashed">
+                                      <img 
+                                        src={previewImage} 
+                                        alt="Deal preview" 
+                                        className="h-full w-full object-cover" 
+                                      />
+                                    </div>
+                                  )}
+                                  
+                                  <div className="flex items-center justify-center">
+                                    <label htmlFor="deal-image" className="cursor-pointer">
+                                      <div className="flex items-center justify-center rounded-md border border-dashed px-3 py-2 text-sm hover:bg-accent">
+                                        <UploadCloud className="mr-2 h-4 w-4" />
+                                        <span>{previewImage ? 'Change Image' : 'Upload Image'}</span>
+                                      </div>
+                                      <input
+                                        id="deal-image"
+                                        type="file"
+                                        accept="image/*"
+                                        className="sr-only"
+                                        onChange={handleImageChange}
+                                      />
+                                    </label>
+                                  </div>
+                                </div>
+                              </FormControl>
+                              <FormDescription>
+                                Recommended size: 1200x630 pixels. JPG or PNG format.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      <div className="flex justify-end">
+                        <Button
+                          type="button"
+                          onClick={() => setCurrentTab('details')}
+                          className="ml-auto"
+                        >
+                          Next: Details
+                        </Button>
+                      </div>
+                    </TabsContent>
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="customTerms">Additional Terms & Conditions</Label>
-                      <Textarea
-                        id="customTerms"
-                        placeholder="Add any additional terms specific to your deal..."
-                        className="min-h-[120px]"
-                        {...form.register("customTerms")}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Add any additional terms specific to this deal. These will be displayed to customers before redemption.
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Redemption Details</CardTitle>
-                    <CardDescription>Set up how customers will redeem your deal</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="maxRedemptionsPerCustomer">Max Redemptions Per Customer</Label>
-                      <Input
-                        id="maxRedemptionsPerCustomer"
-                        type="number"
-                        min="1"
-                        {...form.register("maxRedemptionsPerCustomer", {
-                          valueAsNumber: true,
-                        })}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        How many times can a single customer redeem this deal?
-                      </p>
-                      {form.formState.errors.maxRedemptionsPerCustomer && (
-                        <p className="text-sm text-red-500">{form.formState.errors.maxRedemptionsPerCustomer.message}</p>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="redemptionCode">Redemption Code <span className="text-red-500">*</span></Label>
-                      <Input
-                        id="redemptionCode"
-                        placeholder="e.g., COFFEE50"
-                        {...form.register("redemptionCode")}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        This is the code customers will show when redeeming your deal in-store
-                      </p>
-                      {form.formState.errors.redemptionCode && (
-                        <p className="text-sm text-red-500">{form.formState.errors.redemptionCode.message}</p>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="redemptionInstructions">Redemption Instructions</Label>
-                      <Textarea
-                        id="redemptionInstructions"
-                        placeholder="Instructions for redeeming this deal..."
-                        {...form.register("redemptionInstructions")}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Provide clear instructions on how customers can redeem this deal (e.g., "Show this code at checkout")
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Agreement</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-start space-x-2">
-                      <Checkbox
-                        id="acceptTerms"
-                        checked={form.getValues().acceptTerms}
-                        onCheckedChange={checked => form.setValue("acceptTerms", checked === true)}
-                        className="mt-1"
-                      />
-                      <div>
-                        <Label htmlFor="acceptTerms" className="cursor-pointer">
-                          I confirm that this deal complies with all platform guidelines and terms of service
-                        </Label>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          By checking this box, you agree that this deal adheres to our platform guidelines 
-                          and that you have the authority to offer this deal on behalf of your business.
-                        </p>
-                        {form.formState.errors.acceptTerms && (
-                          <p className="text-sm text-red-500 mt-1">{form.formState.errors.acceptTerms.message}</p>
+                    {/* Details Tab */}
+                    <TabsContent value="details" className="space-y-4 mt-0">
+                      <FormField
+                        control={form.control}
+                        name="terms"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Terms & Conditions</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Enter terms and conditions" 
+                                className="min-h-[120px]" 
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Specify any limitations, restrictions, or important information about your deal.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
                         )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-              
-              <div className="md:col-span-1 space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Terms Preview</CardTitle>
-                    <CardDescription>How your terms will appear to customers</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="bg-muted p-3 rounded-md text-sm">
-                      {previewTerms ? (
-                        previewTerms.split('\n').map((term, i) => (
-                          <p key={i} className="mb-2">{term}</p>
-                        ))
-                      ) : (
-                        <p className="text-muted-foreground italic">No terms selected yet.</p>
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="isLimited"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">
+                                Limited Quantity
+                              </FormLabel>
+                              <FormDescription>
+                                Set a maximum number of times this deal can be redeemed.
+                              </FormDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      {formValues.isLimited && (
+                        <FormField
+                          control={form.control}
+                          name="maxRedemptions"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Maximum Redemptions</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  placeholder="e.g. 100"
+                                  {...field}
+                                  value={field.value === undefined ? '' : field.value}
+                                  onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value))}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                How many times can this deal be redeemed in total?
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                       )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-            
-            <div className="mt-6 flex justify-between">
-              <Button type="button" variant="outline" onClick={() => setCurrentTab("basics")}>
-                <ChevronLeft className="mr-2 h-4 w-4" /> Back
-              </Button>
-              <Button type="button" onClick={() => setCurrentTab("preview")}>
-                Next <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          </TabsContent>
-          
-          {/* Preview Tab */}
-          <TabsContent value="preview">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-              <div>
-                <h3 className="text-xl font-semibold mb-4">Business View</h3>
-                <DealPreview 
-                  values={{
-                    ...form.getValues(),
-                    imageUrl: dealImage,
-                    business: business
-                  }}
-                />
-              </div>
-              
-              <div>
-                <h3 className="text-xl font-semibold mb-4">Customer View</h3>
-                <CustomerDealPreview 
-                  values={{
-                    ...form.getValues(),
-                    imageUrl: dealImage,
-                    business: business
-                  }}
-                />
-              </div>
-            </div>
-            
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>Final Review</CardTitle>
-                <CardDescription>Review your deal before submission</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  <li className="flex items-center text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    All required fields are complete
-                  </li>
-                  <li className="flex items-center text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    You've provided clear terms and conditions
-                  </li>
-                  <li className="flex items-center text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Deal dates are correctly set
-                  </li>
-                  {dealImage ? (
-                    <li className="flex items-center text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                      Deal image uploaded
-                    </li>
-                  ) : (
-                    <li className="flex items-center text-sm">
-                      <AlertCircle className="h-4 w-4 text-amber-500 mr-2" />
-                      Deal image (optional) is missing
-                    </li>
-                  )}
-                </ul>
-              </CardContent>
-            </Card>
-            
-            <Alert variant="warning" className="mb-8">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                After updating, your deal may need to be reviewed by our team before becoming active.
-              </AlertDescription>
-            </Alert>
-            
-            <div className="flex justify-between">
-              <Button type="button" variant="outline" onClick={() => setCurrentTab("terms")}>
-                <ChevronLeft className="mr-2 h-4 w-4" /> Back
-              </Button>
-              <Button type="submit" disabled={submitting} className="bg-[#00796B] hover:bg-[#005b4f]">
-                {submitting ? (
-                  <>
-                    <span className="animate-spin mr-2">⏳</span> Updating...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="mr-2 h-4 w-4" /> Update Deal
-                  </>
-                )}
-              </Button>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </form>
+                      
+                      <FormField
+                        control={form.control}
+                        name="isRecurring"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">
+                                Recurring Deal
+                              </FormLabel>
+                              <FormDescription>
+                                Is this deal only available on specific days of the week?
+                              </FormDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      {formValues.isRecurring && (
+                        <FormField
+                          control={form.control}
+                          name="recurringDays"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Available Days</FormLabel>
+                              <FormDescription>
+                                Select the days when this deal is available.
+                              </FormDescription>
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day, index) => (
+                                  <Toggle
+                                    key={day}
+                                    pressed={field.value?.includes(index)}
+                                    onPressedChange={(pressed) => {
+                                      const currentDays = field.value || [];
+                                      const newDays = pressed
+                                        ? [...currentDays, index]
+                                        : currentDays.filter((d) => d !== index);
+                                      field.onChange(newDays);
+                                    }}
+                                    variant="outline"
+                                    size="sm"
+                                    className="data-[state=on]:bg-primary data-[state=on]:text-white"
+                                  >
+                                    {day.slice(0, 3)}
+                                  </Toggle>
+                                ))}
+                              </div>
+                              <FormMessage className="mt-2" />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+                      
+                      <div className="flex justify-between">
+                        <Button
+                          type="button"
+                          onClick={() => setCurrentTab('basic')}
+                          variant="outline"
+                        >
+                          Previous: Basic Info
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={() => setCurrentTab('redemption')}
+                        >
+                          Next: Redemption
+                        </Button>
+                      </div>
+                    </TabsContent>
+                    
+                    {/* Redemption Tab */}
+                    <TabsContent value="redemption" className="space-y-4 mt-0">
+                      <FormField
+                        control={form.control}
+                        name="redemptionCode"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Redemption Code*</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="e.g. SUMMER2023" 
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Create a code customers can provide when redeeming in-store.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="maxRedemptionsPerCustomer"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Max Redemptions Per Customer*</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min={1}
+                                placeholder="e.g. 1"
+                                {...field}
+                                value={field.value}
+                                onChange={(e) => field.onChange(parseInt(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              How many times can a single customer redeem this deal?
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="redemptionInstructions"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Redemption Instructions</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="e.g. Show this code to the cashier when ordering" 
+                                className="min-h-[80px]" 
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Provide clear instructions on how customers should redeem this deal.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <div className="flex justify-between">
+                        <Button
+                          type="button"
+                          onClick={() => setCurrentTab('details')}
+                          variant="outline"
+                        >
+                          Previous: Details
+                        </Button>
+                        <Button
+                          type="submit"
+                          disabled={submitting}
+                          className="ml-auto"
+                        >
+                          {submitting ? (
+                            <>
+                              <div className="animate-spin mr-2 h-4 w-4 border-2 border-b-transparent rounded-full"></div>
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <Save className="mr-2 h-4 w-4" /> 
+                              Save Changes
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </TabsContent>
+                  </form>
+                </Form>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Preview Card */}
+        <div className="lg:col-span-1">
+          <Card className="sticky top-6">
+            <CardHeader>
+              <CardTitle>Deal Preview</CardTitle>
+              <CardDescription>
+                How your deal will appear to customers
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DealPreview 
+                title={formValues.title || "Deal Title"}
+                description={formValues.description || "Deal description will appear here."}
+                imageUrl={previewImage || undefined}
+                discount={formValues.discount || "Discount"}
+                business={dealData?.business || { businessName: "Your Business" }}
+                startDate={formValues.startDate}
+                endDate={formValues.endDate}
+                dealType={formValues.dealType || "percentage_off"}
+                category={formValues.category || "food"}
+                isPreview
+              />
+            </CardContent>
+            <CardFooter className="text-sm text-muted-foreground">
+              <p>This is a preview of how your deal will appear in the app.</p>
+            </CardFooter>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
