@@ -1003,6 +1003,27 @@ export class MemStorage implements IStorage {
     return result;
   }
   
+  async getBusinessesByStatus(status: string): Promise<(Business & { user: User })[]> {
+    console.log(`MemStorage.getBusinessesByStatus("${status}") called`);
+    
+    // Filter businesses by verification status
+    const filteredBusinesses = Array.from(this.businesses.values())
+      .filter(business => business.verificationStatus === status);
+      
+    console.log(`Found ${filteredBusinesses.length} businesses with status "${status}"`);
+    
+    // Add user data to each business
+    const result: (Business & { user: User })[] = [];
+    for (const business of filteredBusinesses) {
+      const user = await this.getUser(business.userId);
+      if (user) {
+        result.push({ ...business, user });
+      }
+    }
+    
+    return result;
+  }
+  
   // Business methods
   async getBusiness(id: number): Promise<Business | undefined> {
     return this.businesses.get(id);

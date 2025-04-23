@@ -503,6 +503,68 @@ export function adminRoutes(app: Express): void {
       }
     }
   );
+  
+  // Add routes to fetch pending businesses (vendors)
+  const [vPendingBusinessesPath, lPendingBusinessesPath] = createVersionedRoutes('/admin/businesses/pending');
+  
+  // Versioned pending businesses endpoint
+  app.get(vPendingBusinessesPath,
+    versionHeadersMiddleware(),
+    authenticate,
+    authorize(['admin']),
+    async (_req: Request, res: Response) => {
+      try {
+        console.log("Admin: Fetching pending businesses");
+        const pendingBusinesses = await storage.getBusinessesByStatus("pending");
+        
+        // Filter out sensitive data
+        const sanitizedBusinesses = pendingBusinesses.map(business => {
+          const { user, ...businessData } = business;
+          const { password, ...userData } = user;
+          
+          return {
+            ...businessData,
+            user: userData
+          };
+        });
+        
+        console.log(`Admin: Found ${sanitizedBusinesses.length} pending businesses`);
+        return res.status(200).json(sanitizedBusinesses);
+      } catch (error) {
+        console.error("Get pending businesses error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
+  // Legacy pending businesses endpoint
+  app.get(lPendingBusinessesPath,
+    authenticate,
+    authorize(['admin']),
+    async (_req: Request, res: Response) => {
+      try {
+        console.log("Admin (legacy): Fetching pending businesses");
+        const pendingBusinesses = await storage.getBusinessesByStatus("pending");
+        
+        // Filter out sensitive data
+        const sanitizedBusinesses = pendingBusinesses.map(business => {
+          const { user, ...businessData } = business;
+          const { password, ...userData } = user;
+          
+          return {
+            ...businessData,
+            user: userData
+          };
+        });
+        
+        console.log(`Admin (legacy): Found ${sanitizedBusinesses.length} pending businesses`);
+        return res.status(200).json(sanitizedBusinesses);
+      } catch (error) {
+        console.error("Get pending businesses error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
 
   app.get(lBusinessesPath, 
     [versionHeadersMiddleware(), deprecationMiddleware],
