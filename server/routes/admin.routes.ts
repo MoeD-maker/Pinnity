@@ -193,11 +193,45 @@ export function adminRoutes(app: Express): void {
     }
   });
   
-  // Get all businesses
-  app.get("/api/admin/businesses", authenticate, authorize(['admin']), async (_req: Request, res: Response) => {
+  // Create versioned route paths for businesses
+  const [vBusinessesPath, lBusinessesPath] = createVersionedRoutes('/admin/businesses');
+  
+  // Get all businesses or filter by status - versioned route
+  app.get(vBusinessesPath, authenticate, authorize(['admin']), async (req: Request, res: Response) => {
     try {
-      const businesses = await storage.getAllBusinesses();
-      return res.status(200).json(businesses);
+      // Check if status is provided as a query parameter
+      const status = req.query.status as string;
+      
+      if (status) {
+        console.log(`Fetching businesses with status: ${status} (versioned route)`);
+        const businesses = await storage.getBusinessesByStatus(status);
+        return res.status(200).json(businesses);
+      } else {
+        console.log('Fetching all businesses (versioned route)');
+        const businesses = await storage.getAllBusinesses();
+        return res.status(200).json(businesses);
+      }
+    } catch (error) {
+      console.error("Error fetching businesses:", error);
+      return res.status(500).json({ message: "Error fetching businesses" });
+    }
+  });
+  
+  // Get all businesses or filter by status - legacy route (for backward compatibility)
+  app.get("/api/admin/businesses", authenticate, authorize(['admin']), async (req: Request, res: Response) => {
+    try {
+      // Check if status is provided as a query parameter
+      const status = req.query.status as string;
+      
+      if (status) {
+        console.log(`Fetching businesses with status: ${status} (legacy route)`);
+        const businesses = await storage.getBusinessesByStatus(status);
+        return res.status(200).json(businesses);
+      } else {
+        console.log('Fetching all businesses (legacy route)');
+        const businesses = await storage.getAllBusinesses();
+        return res.status(200).json(businesses);
+      }
     } catch (error) {
       console.error("Error fetching businesses:", error);
       return res.status(500).json({ message: "Error fetching businesses" });
