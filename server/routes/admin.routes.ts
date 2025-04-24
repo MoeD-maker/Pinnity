@@ -335,6 +335,52 @@ export function adminRoutes(app: Express): void {
     }
   });
 
+  // Debug deals endpoint
+  app.get("/api/admin/debug/deals", authenticate, authorize(['admin']), async (_req: Request, res: Response) => {
+    try {
+      console.log("DEBUG ENDPOINT: Accessing /admin/debug/deals");
+      // Get all deals
+      const allDeals = await storage.getDeals();
+      
+      // Group them by status
+      const dealsByStatus: Record<string, any[]> = {};
+      
+      // Initialize with empty arrays for common statuses
+      dealsByStatus.pending = [];
+      dealsByStatus.active = [];
+      dealsByStatus.rejected = [];
+      dealsByStatus.expired = [];
+      dealsByStatus.pending_revision = [];
+      
+      // Categorize deals by status
+      allDeals.forEach(deal => {
+        const status = deal.status || 'unknown';
+        if (!dealsByStatus[status]) {
+          dealsByStatus[status] = [];
+        }
+        dealsByStatus[status].push(deal);
+      });
+      
+      // Get statuses distribution
+      const statusCounts: Record<string, number> = {};
+      Object.keys(dealsByStatus).forEach(status => {
+        statusCounts[status] = dealsByStatus[status].length;
+      });
+      
+      return res.status(200).json({
+        totalDeals: allDeals.length,
+        statusCounts,
+        dealsByStatus: Object.keys(dealsByStatus).reduce((acc, status) => {
+          acc[status] = sanitizeDeals(ensureArray(dealsByStatus[status]));
+          return acc;
+        }, {} as Record<string, any[]>)
+      });
+    } catch (error) {
+      console.error("Error in debug endpoint:", error);
+      return res.status(500).json({ message: "Error in debug endpoint", error: String(error) });
+    }
+  });
+
   // Deal approval routes
   app.put("/api/deal-approvals/:id", authenticate, authorize(['admin']), async (req: Request, res: Response) => {
     try {
@@ -359,7 +405,14 @@ export function adminRoutes(app: Express): void {
         await storage.updateDealStatus(approval.dealId, 'pending_revision');
       }
       
-      return res.status(200).json(approval);
+      // Get the updated deal to return with the response
+      const updatedDeal = await storage.getDealById(approval.dealId);
+      const sanitizedDeal = sanitizeDeal(updatedDeal);
+      
+      return res.status(200).json({
+        approval,
+        deal: sanitizedDeal
+      });
     } catch (error) {
       console.error("Error updating approval:", error);
       return res.status(500).json({ message: "Error updating approval" });
@@ -376,7 +429,9 @@ export function adminRoutes(app: Express): void {
       }
       
       const deals = await storage.getDealsByStatus(status);
+      console.log(`Found ${deals.length} deals with status "${status}"`);
       
+      let resultDeals;
       // If business user, filter deals to only show their own
       if (req.user?.userType === 'business') {
         const business = await storage.getBusinessByUserId(req.user.userId);
@@ -384,11 +439,13 @@ export function adminRoutes(app: Express): void {
           return res.status(404).json({ message: "Business not found" });
         }
         
-        const filteredDeals = deals.filter(deal => deal.business.id === business.id);
-        return res.status(200).json(filteredDeals);
+        const filteredDeals = deals.filter(deal => deal.business?.id === business.id);
+        resultDeals = sanitizeDeals(ensureArray(filteredDeals));
+      } else {
+        resultDeals = sanitizeDeals(ensureArray(deals));
       }
       
-      return res.status(200).json(deals);
+      return res.status(200).json(resultDeals);
     } catch (error) {
       console.error("Error fetching deals by status:", error);
       return res.status(500).json({ message: "Error fetching deals" });
@@ -406,7 +463,8 @@ export function adminRoutes(app: Express): void {
       }
       
       const deal = await storage.updateDealStatus(dealId, status);
-      return res.status(200).json(deal);
+      const sanitizedDeal = sanitizeDeal(deal);
+      return res.status(200).json(sanitizedDeal);
     } catch (error) {
       console.error("Error updating deal status:", error);
       return res.status(500).json({ message: "Error updating deal status" });
@@ -424,7 +482,8 @@ export function adminRoutes(app: Express): void {
       }
       
       const deal = await storage.updateDeal(dealId, { featured });
-      return res.status(200).json(deal);
+      const sanitizedDeal = sanitizeDeal(deal);
+      return res.status(200).json(sanitizedDeal);
     } catch (error) {
       console.error("Error updating deal featured status:", error);
       return res.status(500).json({ message: "Error updating deal featured status" });
