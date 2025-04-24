@@ -1,24 +1,57 @@
 import type { Express, Request, Response } from "express";
 import { storage } from "../storage";
 import { authenticate, authorize } from "../middleware";
-import { createVersionedRoutes } from "../../src/utils/routeVersioning";
+import { 
+  createVersionedRoutes,
+  versionHeadersMiddleware,
+  deprecationMiddleware
+} from "../../src/utils/routeVersioning";
+import {
+  sanitizeDeal,
+  sanitizeDeals,
+  sanitizeBusiness,
+  sanitizeBusinesses,
+  ensureArray
+} from "../utils/sanitize";
 
 /**
  * Admin routes for user and business management
  */
 export function adminRoutes(app: Express): void {
-  // Get dashboard stats
-  app.get("/api/admin/dashboard", authenticate, authorize(['admin']), async (_req: Request, res: Response) => {
+  // Get dashboard stats (versioned endpoint)
+  const [vDashboardPath, lDashboardPath] = createVersionedRoutes('/admin/dashboard');
+  
+  // Versioned dashboard route
+  app.get(vDashboardPath, 
+    versionHeadersMiddleware(),
+    authenticate, 
+    authorize(['admin']), 
+    async (_req: Request, res: Response) => {
     try {
       // Get counts for different entities
-      const pendingDeals = (await storage.getDealsByStatus('pending')).length;
+      // For pending, we need to include both 'pending' and 'pending_revision' statuses
+      const pendingDealsResult = await storage.getDealsByStatus('pending');
+      // Already includes pending_revision deals now with our fix
+      const pendingDeals = pendingDealsResult.length;
+      
       const activeDeals = (await storage.getDealsByStatus('active')).length;
       const rejectedDeals = (await storage.getDealsByStatus('rejected')).length;
       const expiredDeals = (await storage.getDealsByStatus('expired')).length;
       
+      console.log(`DASHBOARD: Found ${pendingDeals} pending deals, ${activeDeals} active deals`);
+      
       // Get businesses with pending verification
       const businesses = await storage.getAllBusinesses();
-      const pendingVendors = businesses.filter(b => b.verificationStatus === 'pending').length;
+      // Check for variations in verification status values
+      const verificationStatuses = new Set(businesses.map(b => b.verificationStatus));
+      console.log(`DASHBOARD: Business verification statuses in system: ${Array.from(verificationStatuses).join(', ')}`);
+      
+      const pendingVendors = businesses.filter(b => 
+        b.verificationStatus === 'pending' || 
+        b.verificationStatus === 'pending_verification'
+      ).length;
+      
+      console.log(`DASHBOARD: Found ${pendingVendors} pending vendors out of ${businesses.length} total`);
       
       // Get total user count
       const users = await storage.getAllUsers();
@@ -26,23 +59,28 @@ export function adminRoutes(app: Express): void {
       
       // Get recent activity (newest first, limit 5)
       // We'll combine different types of activity (deal submissions, vendor applications, etc.)
-      const recentActivity = [];
       
       // Get recent deal submissions (5 newest)
       const deals = await storage.getDeals();
-      const recentDeals = deals
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      const dealsArray = ensureArray(deals);
+      const recentDeals = dealsArray
+        .sort((a: any, b: any) => {
+          const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return bDate - aDate;
+        })
         .slice(0, 5)
-        .map(deal => ({
-          id: deal.id,
+        .map((deal: any) => ({
+          id: deal.id || 0,
           type: "deal_submission",
-          status: deal.status,
+          status: deal.status || "pending",
           title: "New Deal Submitted",
-          description: `${deal.business?.businessName || 'A business'} submitted '${deal.title}'`,
-          timestamp: new Date(deal.createdAt).toISOString()
+          description: `${deal.business?.businessName || 'A business'} submitted '${deal.title || 'Untitled Deal'}'`,
+          timestamp: new Date(deal.createdAt || new Date()).toISOString()
         }));
       
-      recentActivity.push(...recentDeals);
+      // Combine all recent activity types
+      const recentActivity = [...recentDeals];
       
       // Return the stats
       return res.status(200).json({
@@ -56,7 +94,11 @@ export function adminRoutes(app: Express): void {
           alertCount: pendingDeals + pendingVendors // Simple alert count as sum of pending items
         },
         recentActivity: recentActivity
-          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+          .sort((a: any, b: any) => {
+            const aDate = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+            const bDate = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+            return bDate - aDate;
+          })
           .slice(0, 5)
       });
     } catch (error) {
@@ -208,11 +250,13 @@ export function adminRoutes(app: Express): void {
       if (status) {
         console.log(`Fetching businesses with status: ${status} (versioned route)`);
         const businesses = await storage.getBusinessesByStatus(status);
-        return res.status(200).json(businesses);
+        const sanitizedBusinesses = sanitizeBusinesses(ensureArray(businesses));
+        return res.status(200).json(sanitizedBusinesses);
       } else {
         console.log('Fetching all businesses (versioned route)');
         const businesses = await storage.getAllBusinesses();
-        return res.status(200).json(businesses);
+        const sanitizedBusinesses = sanitizeBusinesses(ensureArray(businesses));
+        return res.status(200).json(sanitizedBusinesses);
       }
     } catch (error) {
       console.error("Error fetching businesses:", error);
@@ -229,11 +273,13 @@ export function adminRoutes(app: Express): void {
       if (status) {
         console.log(`Fetching businesses with status: ${status} (legacy route)`);
         const businesses = await storage.getBusinessesByStatus(status);
-        return res.status(200).json(businesses);
+        const sanitizedBusinesses = sanitizeBusinesses(ensureArray(businesses));
+        return res.status(200).json(sanitizedBusinesses);
       } else {
         console.log('Fetching all businesses (legacy route)');
         const businesses = await storage.getAllBusinesses();
-        return res.status(200).json(businesses);
+        const sanitizedBusinesses = sanitizeBusinesses(ensureArray(businesses));
+        return res.status(200).json(sanitizedBusinesses);
       }
     } catch (error) {
       console.error("Error fetching businesses:", error);
@@ -257,7 +303,8 @@ export function adminRoutes(app: Express): void {
         });
       }
       
-      return res.status(200).json(businesses);
+      const sanitizedBusinesses = sanitizeBusinesses(ensureArray(businesses));
+      return res.status(200).json(sanitizedBusinesses);
     } catch (error) {
       console.error("Error fetching pending businesses:", error);
       return res.status(500).json({ message: "Error fetching pending businesses" });
@@ -280,7 +327,8 @@ export function adminRoutes(app: Express): void {
         });
       }
       
-      return res.status(200).json(businesses);
+      const sanitizedBusinesses = sanitizeBusinesses(ensureArray(businesses));
+      return res.status(200).json(sanitizedBusinesses);
     } catch (error) {
       console.error("Error fetching pending businesses:", error);
       return res.status(500).json({ message: "Error fetching pending businesses" });
