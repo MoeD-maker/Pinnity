@@ -13,11 +13,14 @@ async function createPendingTestData() {
   console.log("Creating pending test data...");
   
   try {
+    // Generate a timestamp to create unique usernames and emails
+    const timestamp = Date.now();
+    
     // 1. Create pending vendor account
     const [pendingVendor] = await db.insert(users)
       .values({
-        username: "pending_vendor",
-        email: "pending@vendor.com",
+        username: `pending_vendor_${timestamp}`,
+        email: `pending${timestamp}@vendor.com`,
         password: hashPassword("Pending123!"),
         firstName: "Pending",
         lastName: "Vendor",
@@ -33,7 +36,7 @@ async function createPendingTestData() {
     const [pendingBusiness] = await db.insert(businesses)
       .values({
         userId: pendingVendor.id,
-        businessName: "Pending Business",
+        businessName: `Pending Business ${timestamp}`,
         businessCategory: "services",
         description: "A pending business awaiting approval",
         address: "300 Pending St, Anytown, USA",
