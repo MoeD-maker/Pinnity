@@ -196,6 +196,9 @@ export function adminRoutes(app: Express): void {
   // Create versioned route paths for businesses
   const [vBusinessesPath, lBusinessesPath] = createVersionedRoutes('/admin/businesses');
   
+  // Create versioned route paths for pending businesses specifically
+  const [vPendingBusinessesPath, lPendingBusinessesPath] = createVersionedRoutes('/admin/businesses/pending');
+  
   // Get all businesses or filter by status - versioned route
   app.get(vBusinessesPath, authenticate, authorize(['admin']), async (req: Request, res: Response) => {
     try {
@@ -235,6 +238,30 @@ export function adminRoutes(app: Express): void {
     } catch (error) {
       console.error("Error fetching businesses:", error);
       return res.status(500).json({ message: "Error fetching businesses" });
+    }
+  });
+  
+  // Get pending businesses - versioned route (dedicated endpoint)
+  app.get(vPendingBusinessesPath, authenticate, authorize(['admin']), async (_req: Request, res: Response) => {
+    try {
+      console.log('Fetching pending businesses (versioned dedicated route)');
+      const businesses = await storage.getBusinessesByStatus('pending');
+      return res.status(200).json(businesses);
+    } catch (error) {
+      console.error("Error fetching pending businesses:", error);
+      return res.status(500).json({ message: "Error fetching pending businesses" });
+    }
+  });
+  
+  // Get pending businesses - legacy route (dedicated endpoint)
+  app.get(lPendingBusinessesPath, authenticate, authorize(['admin']), async (_req: Request, res: Response) => {
+    try {
+      console.log('Fetching pending businesses (legacy dedicated route)');
+      const businesses = await storage.getBusinessesByStatus('pending');
+      return res.status(200).json(businesses);
+    } catch (error) {
+      console.error("Error fetching pending businesses:", error);
+      return res.status(500).json({ message: "Error fetching pending businesses" });
     }
   });
 
