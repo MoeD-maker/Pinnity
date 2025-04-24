@@ -246,6 +246,17 @@ export function adminRoutes(app: Express): void {
     try {
       console.log('Fetching pending businesses (versioned dedicated route)');
       const businesses = await storage.getBusinessesByStatus('pending');
+      console.log(`Found ${businesses.length} pending businesses`);
+      
+      // Add more detailed debugging
+      if (businesses.length > 0) {
+        console.log('First pending business:', {
+          id: businesses[0].id,
+          name: businesses[0].businessName,
+          status: businesses[0].verificationStatus
+        });
+      }
+      
       return res.status(200).json(businesses);
     } catch (error) {
       console.error("Error fetching pending businesses:", error);
@@ -258,6 +269,17 @@ export function adminRoutes(app: Express): void {
     try {
       console.log('Fetching pending businesses (legacy dedicated route)');
       const businesses = await storage.getBusinessesByStatus('pending');
+      console.log(`Found ${businesses.length} pending businesses (legacy route)`);
+      
+      // Add more detailed debugging
+      if (businesses.length > 0) {
+        console.log('First pending business (legacy route):', {
+          id: businesses[0].id,
+          name: businesses[0].businessName,
+          status: businesses[0].verificationStatus
+        });
+      }
+      
       return res.status(200).json(businesses);
     } catch (error) {
       console.error("Error fetching pending businesses:", error);
