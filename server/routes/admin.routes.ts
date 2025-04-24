@@ -91,14 +91,10 @@ export function adminRoutes(app: Express): void {
           expiredDeals,
           pendingVendors,
           totalUsers,
-          alertCount: pendingDeals + pendingVendors // Simple alert count as sum of pending items
+          alertCount: pendingDeals + pendingVendors // Simple alert system
         },
-        recentActivity: recentActivity
-          .sort((a: any, b: any) => {
-            const aDate = a.timestamp ? new Date(a.timestamp).getTime() : 0;
-            const bDate = b.timestamp ? new Date(b.timestamp).getTime() : 0;
-            return bDate - aDate;
-          })
+        recentActivity: sanitizeDeals(recentDeals)
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
           .slice(0, 5)
       });
     } catch (error) {
@@ -405,9 +401,10 @@ export function adminRoutes(app: Express): void {
         await storage.updateDealStatus(approval.dealId, 'pending_revision');
       }
       
-      // Get the updated deal to return with the response
-      const updatedDeal = await storage.getDealById(approval.dealId);
-      const sanitizedDeal = sanitizeDeal(updatedDeal);
+      // Get all deals to find the updated one
+      const allDeals = await storage.getDeals();
+      const updatedDeal = allDeals.find(deal => deal.id === approval.dealId);
+      const sanitizedDeal = updatedDeal ? sanitizeDeal(updatedDeal) : null;
       
       return res.status(200).json({
         approval,
