@@ -119,6 +119,17 @@ export interface IStorage {
   getUserRatings(userId: number): Promise<(RedemptionRating & { deal: Deal, business: Business })[]>;
   getBusinessRatings(businessId: number): Promise<RedemptionRating[]>;
   getBusinessRatingSummary(businessId: number): Promise<{ averageRating: number, totalRatings: number, ratingCounts: Record<number, number> }>;
+  
+  // Deal approval additional methods
+  getPendingApprovalForDeal(dealId: number): Promise<DealApproval | undefined>;
+  
+  // Notification methods
+  createNotification(notification: { userId: number, type: string, title: string, message: string, resourceId?: number, resourceType?: string }): Promise<any>;
+  getUserNotifications(userId: number): Promise<any[]>;
+  markNotificationAsRead(notificationId: number): Promise<any>;
+  markAllUserNotificationsAsRead(userId: number): Promise<number>;
+  hasUserRedeemedDeal(userId: number, dealId: number): Promise<boolean>;
+  getUserRedemptionCountForDeal(userId: number, dealId: number): Promise<number>;
 }
 
 // Hash passwords for storage
@@ -150,6 +161,9 @@ export class MemStorage implements IStorage {
   // Refresh tokens
   private refreshTokens: Map<string, RefreshToken>;
   
+  // Notifications
+  private notifications: Map<number, Notification>;
+  
   private currentUserId: number;
   private currentBusinessId: number;
   private currentDealId: number;
@@ -161,6 +175,7 @@ export class MemStorage implements IStorage {
   private currentBusinessSocialId: number;
   private currentBusinessDocumentId: number;
   private currentRedemptionRatingId: number;
+  private currentNotificationId: number;
 
   constructor() {
     this.users = new Map();
@@ -185,6 +200,9 @@ export class MemStorage implements IStorage {
     // Initialize refresh tokens
     this.refreshTokens = new Map();
     
+    // Initialize notifications
+    this.notifications = new Map();
+    
     this.currentUserId = 1;
     this.currentBusinessId = 1;
     this.currentDealId = 1;
@@ -196,6 +214,7 @@ export class MemStorage implements IStorage {
     this.currentBusinessSocialId = 1;
     this.currentBusinessDocumentId = 1;
     this.currentRedemptionRatingId = 1;
+    this.currentNotificationId = 1;
     
     // Populate with sample data
     this.initializeSampleData();
