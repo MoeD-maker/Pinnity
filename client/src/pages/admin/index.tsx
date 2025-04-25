@@ -177,17 +177,23 @@ const AdminDashboardPage = () => {
       try {
         console.log("Fetching dashboard data...");
         
-        // Fetch from the correct versioned endpoint that returns live data
+        // Log the exact API route being called
         console.log("Fetching from API route: /api/v1/admin/dashboard");
         const response = await apiRequest("/api/v1/admin/dashboard");
-        console.log("Successfully fetched dashboard data with versioned route");
+        console.log("Dashboard API response:", response);
         
-        console.log("Dashboard data response:", response);
-        
-        // Update stats from API response
         if (response && response.stats) {
           console.log("Setting stats from API:", response.stats);
+          // Rest of the code...
           setStats(response.stats);
+        } else {
+          console.error("No stats data in response:", response);
+        }
+        
+        // Log pending deals specifically
+        if (response && response.pendingDeals) {
+          console.log("Pending deals from API:", response.pendingDeals);
+        }
           
           // Generate alerts based on stats
           const newAlerts = [];

@@ -4,6 +4,7 @@ import { authenticate } from "../middleware";
 import { insertDealSchema } from "@shared/schema";
 import { z } from "zod";
 import { createVersionedRoutes, versionHeadersMiddleware, deprecationMiddleware } from "../../src/utils/routeVersioning";
+import { ensureArray, sanitizeDeals } from "../utils";
 
 /**
  * Deal routes for listing, creating, and managing deals
@@ -54,8 +55,11 @@ export function dealRoutes(app: Express): void {
       
       console.log(`Found ${deals.length} deals with status '${status}'`);
       
-      // Return as array to fix client-side data format error
-      return res.status(200).json(Array.isArray(deals) ? deals : []);
+      // Use ensureArray to guarantee we're returning an array format
+      const dealsArray = ensureArray(deals);
+      console.log(`Converted deals to array format, length: ${dealsArray.length}`);
+      
+      return res.status(200).json(dealsArray);
     } catch (error) {
       console.error(`Error fetching deals by status ${req.params.status}:`, error);
       return res.status(500).json({ message: "Error fetching deals by status" });
@@ -72,8 +76,11 @@ export function dealRoutes(app: Express): void {
       // Get deals with requested status
       const deals = await storage.getDealsByStatus(status);
       
-      // Return as array to fix client-side data format error
-      return res.status(200).json(Array.isArray(deals) ? deals : []);
+      // Use ensureArray to guarantee we're returning an array format
+      const dealsArray = ensureArray(deals);
+      console.log(`Legacy route: Converted deals to array format, length: ${dealsArray.length}`);
+      
+      return res.status(200).json(dealsArray);
     } catch (error) {
       console.error(`Error fetching deals by status ${req.params.status}:`, error);
       return res.status(500).json({ message: "Error fetching deals by status" });

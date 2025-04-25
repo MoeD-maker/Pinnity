@@ -163,8 +163,23 @@ export default function DealsPage() {
         
         console.log('Deals API response:', response);
         
+        // If response is an object with numeric keys rather than an array, convert it to an array
+        if (response && typeof response === 'object' && !Array.isArray(response)) {
+          console.log('Converting object with numeric keys to array:', response);
+          const keys = Object.keys(response);
+          // Check if all keys are numeric
+          const isNumericKeysObject = keys.length > 0 && keys.every(key => !isNaN(Number(key)));
+          
+          if (isNumericKeysObject) {
+            // Convert to array
+            const dealsArray = keys.map(key => response[key]);
+            console.log('Converted deals array:', dealsArray);
+            response = dealsArray;
+          }
+        }
+        
         if (!response || !Array.isArray(response)) {
-          console.error('Invalid deal data returned from API:', response);
+          console.error('Invalid deal data returned from API after conversion attempt:', response);
           toast({
             title: "Data format error",
             description: "The deal data returned from the server was invalid. Please try again.",
