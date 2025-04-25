@@ -111,8 +111,30 @@ export default function AnalyticsPage() {
       // const response = await apiRequest(`/api/admin/analytics?timeRange=${timeRange}`);
       // setAnalyticsData(response);
       
-      // For now, we use mock data for demonstration
-      generateMockData();
+      // TO-DO: Replace with real API data from backend once implemented
+      // For now use empty placeholder data until backend analytics endpoint is ready
+      setAnalyticsData({
+        totalUsers: 0,
+        totalBusinesses: 0,
+        totalDeals: 0,
+        totalRedemptions: 0,
+        activeDeals: 0,
+        pendingDeals: 0,
+        usersGrowth: 0,
+        businessesGrowth: 0,
+        dealsGrowth: 0,
+        redemptionsGrowth: 0,
+        redemptionsOverTime: [],
+        dealsByCategory: [],
+        dealsByStatus: [],
+        topDeals: [],
+        recentUsers: [],
+        popularBusinesses: [],
+        usersByType: [],
+        engagementRate: 0,
+        redemptionsByDay: [],
+        averageRating: 0
+      });
     } catch (error) {
       console.error("Error fetching analytics data:", error);
     } finally {
@@ -424,7 +446,7 @@ export default function AnalyticsPage() {
                 />
                 <StatCard 
                   title="Conversion Rate" 
-                  value="23.5%" 
+                  value="0%" 
                   icon={<TrendingUp className="h-4 w-4" />}
                   color="bg-emerald-50 text-emerald-500"
                 />
