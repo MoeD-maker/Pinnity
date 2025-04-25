@@ -30,16 +30,15 @@ export function adminRoutes(app: Express): void {
     authorize(["admin"]),
     async (_req: Request, res: Response) => {
       try {
-        // Deals
-        const pendingDealsResult = await storage.getDealsByStatus("pending");
+        // Deals - ensure we always get arrays back
+        const pendingDealsResult = ensureArray(await storage.getDealsByStatus("pending"));
         const pendingDealsCount = pendingDealsResult.length;
+        console.log(`Raw pending deals: ${JSON.stringify(pendingDealsResult).substring(0, 100)}...`);
 
-        const activeDealsCount = (await storage.getDealsByStatus("active"))
-          .length;
-        const rejectedDealsCount = (await storage.getDealsByStatus("rejected"))
-          .length;
-        const expiredDealsCount = (await storage.getDealsByStatus("expired"))
-          .length;
+        // Always ensure we get arrays for these counts
+        const activeDealsCount = ensureArray(await storage.getDealsByStatus("active")).length;
+        const rejectedDealsCount = ensureArray(await storage.getDealsByStatus("rejected")).length;
+        const expiredDealsCount = ensureArray(await storage.getDealsByStatus("expired")).length;
 
         console.log(`Found ${pendingDealsCount} pending deals.`);
 
