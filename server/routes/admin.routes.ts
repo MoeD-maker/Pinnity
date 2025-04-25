@@ -52,6 +52,9 @@ export function adminRoutes(app: Express): void {
         const users = await storage.getAllUsers();
         const totalUsers = users.length;
 
+        const sanitizedPendingDeals = sanitizeDeals(pendingDealsResult);
+        const sanitizedPendingVendors = sanitizeBusinesses(pendingBusinesses);
+
         // Prepare Response
         return res.status(200).json({
           stats: {
@@ -63,11 +66,11 @@ export function adminRoutes(app: Express): void {
             totalUsers,
             alertCount: pendingDealsCount + pendingVendorsCount
           },
-          recentActivity: sanitizeDeals(pendingDealsResult)
+          recentActivity: sanitizedPendingDeals
             .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
             .slice(0, 5),
-          pendingDeals: sanitizeDeals(pendingDealsResult), // ✅ Real pending deals
-          pendingVendors: sanitizeBusinesses(pendingBusinesses) // ✅ Real pending vendors
+          pendingDeals: sanitizedPendingDeals, // ✅ Real pending deals
+          pendingVendors: sanitizedPendingVendors // ✅ Real pending vendors 
         });
 
       } catch (error) {
@@ -91,9 +94,10 @@ export function adminRoutes(app: Express): void {
           b.verificationStatus === 'pending_verification'
         );
 
-        return res.status(200).json({
-          businesses: sanitizeBusinesses(pendingBusinesses) // ✅ Key must match what frontend expects
-        });
+        // Return array directly to match frontend expectations
+        const sanitizedBusinesses = sanitizeBusinesses(pendingBusinesses);
+        console.log(`Returning ${sanitizedBusinesses.length} pending vendors directly as array`);
+        return res.status(200).json(sanitizedBusinesses);
 
       } catch (error) {
         console.error("Admin Vendors Fetch Error:", error);
