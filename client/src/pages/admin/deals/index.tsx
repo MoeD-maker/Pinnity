@@ -205,24 +205,46 @@ export default function DealsPage() {
 
   // Mutation for approving deals
   const approveDealMutation = useMutation({
-    mutationFn: async (dealId: number) => {
-      // Use the real API endpoint to update the deal status
+    mutationFn: async ({ dealId, feedback }: { dealId: number, feedback?: string }) => {
+      // Use the real API endpoint to update the deal status with optional feedback
+      console.log(`Approving deal ${dealId} with feedback: ${feedback || 'none'}`);
       const response = await apiRequest(`/api/deals/${dealId}/status`, {
         method: 'PUT',
-        data: { status: 'approved' }
+        data: { 
+          status: 'approved',
+          feedback: feedback || null
+        }
       });
       return response;
     },
     onSuccess: () => {
       // Invalidate queries to refetch data - invalidate all status filters
       queryClient.invalidateQueries({ queryKey: ['admin', 'deals'] });
+      toast({
+        title: "Deal approved",
+        description: "The deal has been approved and is now live.",
+        variant: "default",
+      });
+    },
+    onError: (error) => {
+      console.error("Error approving deal:", error);
+      toast({
+        title: "Error approving deal",
+        description: "There was a problem approving the deal. Please try again.",
+        variant: "destructive",
+      });
     }
   });
 
   // Mutation for rejecting deals
   const rejectDealMutation = useMutation({
     mutationFn: async ({ dealId, reason }: { dealId: number, reason: string }) => {
-      // Use real API to update deal status to rejected
+      // Use real API to update deal status to rejected with feedback
+      console.log(`Rejecting deal ${dealId} with reason: ${reason}`);
+      if (!reason || reason.trim() === '') {
+        throw new Error("Rejection reason is required");
+      }
+      
       const response = await apiRequest(`/api/deals/${dealId}/status`, {
         method: 'PUT',
         data: { 
@@ -239,6 +261,60 @@ export default function DealsPage() {
       setSelectedDealForRejection(null);
       // Invalidate queries to refetch data
       queryClient.invalidateQueries({ queryKey: ['admin', 'deals'] });
+      toast({
+        title: "Deal rejected",
+        description: "The deal has been rejected with feedback.",
+        variant: "default",
+      });
+    },
+    onError: (error) => {
+      console.error("Error rejecting deal:", error);
+      toast({
+        title: "Error rejecting deal",
+        description: error instanceof Error ? error.message : "There was a problem rejecting the deal. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Mutation for requesting modifications on deals
+  const requestModificationMutation = useMutation({
+    mutationFn: async ({ dealId, feedback }: { dealId: number, feedback: string }) => {
+      // Use real API to update deal status to pending_revision with feedback
+      console.log(`Requesting modifications for deal ${dealId} with feedback: ${feedback}`);
+      if (!feedback || feedback.trim() === '') {
+        throw new Error("Modification details are required");
+      }
+      
+      const response = await apiRequest(`/api/deals/${dealId}/status`, {
+        method: 'PUT',
+        data: { 
+          status: 'pending_revision',
+          feedback: feedback
+        }
+      });
+      return response;
+    },
+    onSuccess: () => {
+      // Close dialog and reset form
+      setModifyDialogOpen(false);
+      setModificationsMessage("");
+      setSelectedDealForModification(null);
+      // Invalidate queries to refetch data
+      queryClient.invalidateQueries({ queryKey: ['admin', 'deals'] });
+      toast({
+        title: "Modifications requested",
+        description: "The vendor has been notified about the requested changes.",
+        variant: "default",
+      });
+    },
+    onError: (error) => {
+      console.error("Error requesting modifications:", error);
+      toast({
+        title: "Error requesting modifications",
+        description: error instanceof Error ? error.message : "There was a problem requesting modifications. Please try again.",
+        variant: "destructive",
+      });
     }
   });
 
@@ -402,8 +478,8 @@ export default function DealsPage() {
     }
   };
 
-  const handleApproveDeal = (dealId: number) => {
-    approveDealMutation.mutate(dealId);
+  const handleApproveDeal = (dealId: number, feedback?: string) => {
+    approveDealMutation.mutate({ dealId, feedback });
   };
 
   const handleRejectDeal = () => {
@@ -752,7 +828,7 @@ export default function DealsPage() {
                               {deal.status === "pending" && (
                                 <DropdownMenuItem 
                                   className="cursor-pointer text-green-600"
-                                  onClick={() => handleApproveDeal(deal.id)}
+                                  onClick={() => handleApproveDeal(deal.id, '')}
                                 >
                                   <Check className="mr-2 h-4 w-4" />
                                   <span>Approve</span>
@@ -866,7 +942,7 @@ export default function DealsPage() {
                   className="text-green-600"
                   onClick={() => {
                     // Handle bulk approval
-                    selectedDeals.forEach(id => approveDealMutation.mutate(id));
+                    selectedDeals.forEach(id => approveDealMutation.mutate({dealId: id}));
                   }}
                 >
                   <Check className="mr-2 h-4 w-4" />

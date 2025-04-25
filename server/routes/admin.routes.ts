@@ -825,7 +825,7 @@ export function adminRoutes(app: Express): void {
     },
   );
 
-  // Update deal status
+  // Update deal status with feedback
   app.put(
     "/api/deals/:id/status",
     authenticate,
@@ -833,13 +833,14 @@ export function adminRoutes(app: Express): void {
     async (req: Request, res: Response) => {
       try {
         const dealId = parseInt(req.params.id);
-        const { status } = req.body;
+        const { status, feedback } = req.body;
 
         if (
           !status ||
           ![
             "pending",
             "active",
+            "approved", // Allow both "active" and "approved" for consistency
             "expired",
             "rejected",
             "pending_revision",
@@ -847,8 +848,47 @@ export function adminRoutes(app: Express): void {
         ) {
           return res.status(400).json({ message: "Invalid status" });
         }
-
-        const deal = await storage.updateDealStatus(dealId, status);
+        
+        console.log(`Updating deal ${dealId} status to ${status} with feedback: ${feedback || "none"}`);
+        
+        // Map "approved" to "active" in the database status
+        const dbStatus = status === "approved" ? "active" : status;
+        
+        // 1. Update the deal status
+        const deal = await storage.updateDealStatus(dealId, dbStatus);
+        
+        // 2. Update the deal approval record with feedback
+        if (feedback || status === "rejected" || status === "pending_revision") {
+          try {
+            // Get the most recent deal approval
+            const approval = await storage.getDealApproval(dealId);
+            
+            if (approval) {
+              // Update the approval record
+              await storage.updateDealApproval(approval.id, {
+                reviewerId: req.user?.userId,
+                status: dbStatus,
+                feedback: feedback || null,
+                reviewedAt: new Date()
+              });
+              console.log(`Updated deal approval record ${approval.id} with feedback`);
+            } else {
+              // Create a new approval record if none exists
+              await storage.createDealApproval({
+                dealId: dealId,
+                submitterId: deal.businessId, // Use business ID as submitter
+                reviewerId: req.user?.userId,
+                status: dbStatus,
+                feedback: feedback || null
+              });
+              console.log(`Created new deal approval record with feedback`);
+            }
+          } catch (approvalError) {
+            console.error("Error updating deal approval:", approvalError);
+            // Continue even if approval update fails - the deal status is more important
+          }
+        }
+        
         const sanitizedDeal = sanitizeDeal(deal);
         return res.status(200).json(sanitizedDeal);
       } catch (error) {
