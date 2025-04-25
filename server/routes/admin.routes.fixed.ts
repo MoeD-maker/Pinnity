@@ -8,6 +8,57 @@ import {
   versionHeadersMiddleware,
   deprecationMiddleware
 } from "../../src/utils/routeVersioning";
+import { type Deal, type Business, type User } from "@shared/schema";
+
+/**
+ * Sanitize deals for frontend consumption by removing sensitive data
+ * and ensuring consistent object structure
+ */
+function sanitizeDeals(deals: (Deal & { business?: Business })[]): any[] {
+  return deals.map(deal => {
+    const sanitizedDeal = {
+      id: deal.id,
+      title: deal.title || 'Untitled Deal',
+      description: deal.description || '',
+      category: deal.category || '',
+      imageUrl: deal.imageUrl || '',
+      startDate: deal.startDate || new Date(),
+      endDate: deal.endDate || new Date(),
+      status: deal.status || 'pending',
+      businessId: deal.businessId,
+      businessName: deal.business?.businessName || 'Unknown Business',
+      dealType: deal.dealType || '',
+      discount: deal.discount || '',
+      terms: deal.terms || '',
+      featured: deal.featured || false,
+      createdAt: deal.createdAt || new Date()
+    };
+    
+    return sanitizedDeal;
+  });
+}
+
+/**
+ * Sanitize businesses for frontend consumption by removing sensitive data
+ * and ensuring consistent object structure
+ */
+function sanitizeBusinesses(businesses: (Business & { user: User })[]): any[] {
+  return businesses.map(business => {
+    const { user, ...businessData } = business;
+    const { password, ...userData } = user;
+    
+    return {
+      ...businessData,
+      businessName: business.businessName || 'Unnamed Business',
+      businessCategory: business.businessCategory || 'Other',
+      verificationStatus: business.verificationStatus || 'pending',
+      description: business.description || '',
+      address: business.address || '',
+      phone: business.phone || '',
+      user: userData
+    };
+  });
+}
 
 /**
  * Admin routes for user and business management
@@ -132,10 +183,13 @@ export function adminRoutes(app: Express): void {
       const verificationStatuses = new Set(businesses.map(b => b.verificationStatus));
       console.log(`DASHBOARD: Business verification statuses in system: ${Array.from(verificationStatuses).join(', ')}`);
       
-      const pendingVendors = businesses.filter(b => 
+      // Filter pending vendors (businesses awaiting verification)
+      const pendingVendorsBusiness = businesses.filter(b => 
         b.verificationStatus === 'pending' || 
         b.verificationStatus === 'pending_verification'
-      ).length;
+      );
+      
+      const pendingVendors = pendingVendorsBusiness.length;
       
       console.log(`DASHBOARD: Found ${pendingVendors} pending vendors out of ${businesses.length} total`);
       
@@ -163,7 +217,9 @@ export function adminRoutes(app: Express): void {
       
       recentActivity.push(...recentDeals);
       
-      // Return the stats
+      console.log(`DASHBOARD: Including ${pendingDealsResult.length} full pending deals and ${pendingVendorsBusiness.length} full pending vendors in response`);
+      
+      // Return the stats along with full pending deals and vendors data
       return res.status(200).json({
         stats: {
           pendingDeals,
@@ -176,7 +232,10 @@ export function adminRoutes(app: Express): void {
         },
         recentActivity: recentActivity
           .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-          .slice(0, 5)
+          .slice(0, 5),
+        // Include the full sanitized deals and vendors    
+        pendingDeals: sanitizeDeals(pendingDealsResult),
+        pendingVendors: sanitizeBusinesses(pendingVendorsBusiness)
       });
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);
@@ -191,14 +250,24 @@ export function adminRoutes(app: Express): void {
     async (_req: Request, res: Response) => {
     try {
       // Get counts for different entities
-      const pendingDeals = (await storage.getDealsByStatus('pending')).length;
+      const pendingDealsResult = await storage.getDealsByStatus('pending');
+      const pendingDeals = pendingDealsResult.length;
       const activeDeals = (await storage.getDealsByStatus('active')).length;
       const rejectedDeals = (await storage.getDealsByStatus('rejected')).length;
       const expiredDeals = (await storage.getDealsByStatus('expired')).length;
       
       // Get businesses with pending verification
       const businesses = await storage.getAllBusinesses();
-      const pendingVendors = businesses.filter(b => b.verificationStatus === 'pending').length;
+      // Filter pending vendors (businesses awaiting verification)
+      const pendingVendorsBusiness = businesses.filter(b => 
+        b.verificationStatus === 'pending' || 
+        b.verificationStatus === 'pending_verification'
+      );
+      
+      const pendingVendors = pendingVendorsBusiness.length;
+      
+      console.log(`DASHBOARD (legacy): Found ${pendingDeals} pending deals, ${activeDeals} active deals`);
+      console.log(`DASHBOARD (legacy): Found ${pendingVendors} pending vendors out of ${businesses.length} total`);
       
       // Get total user count
       const users = await storage.getAllUsers();
@@ -224,7 +293,9 @@ export function adminRoutes(app: Express): void {
       
       recentActivity.push(...recentDeals);
       
-      // Return the stats
+      console.log(`DASHBOARD (legacy): Including ${pendingDealsResult.length} full pending deals and ${pendingVendorsBusiness.length} full pending vendors in response`);
+      
+      // Return the stats along with full pending deals and vendors data
       return res.status(200).json({
         stats: {
           pendingDeals,
@@ -237,7 +308,10 @@ export function adminRoutes(app: Express): void {
         },
         recentActivity: recentActivity
           .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-          .slice(0, 5)
+          .slice(0, 5),
+        // Include the full sanitized deals and vendors
+        pendingDeals: sanitizeDeals(pendingDealsResult),
+        pendingVendors: sanitizeBusinesses(pendingVendorsBusiness)
       });
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);
