@@ -106,6 +106,46 @@ export function adminRoutes(app: Express): void {
     }
   );
   
+  // Versioned GET /api/v1/admin/businesses
+  app.get('/api/v1/admin/businesses',
+    versionHeadersMiddleware(),
+    authenticate,
+    authorize(['admin']),
+    async (_req: Request, res: Response) => {
+      try {
+        const businesses = await storage.getAllBusinesses();
+        const sanitizedBusinesses = sanitizeBusinesses(businesses);
+        
+        // Return array directly to match frontend expectations
+        console.log(`Returning ${sanitizedBusinesses.length} businesses directly as array in /api/v1/admin/businesses`);
+        return res.status(200).json(sanitizedBusinesses);
+      } catch (err) {
+        console.error("Admin Businesses Fetch Error:", err);
+        return res.status(500).json({ error: "Unable to fetch businesses." });
+      }
+    }
+  );
+  
+  // Legacy GET /api/admin/businesses
+  app.get('/api/admin/businesses',
+    versionHeadersMiddleware(),
+    authenticate,
+    authorize(['admin']),
+    async (_req: Request, res: Response) => {
+      try {
+        const businesses = await storage.getAllBusinesses();
+        const sanitizedBusinesses = sanitizeBusinesses(businesses);
+        
+        // Return array directly to match frontend expectations
+        console.log(`Returning ${sanitizedBusinesses.length} businesses directly as array in /api/admin/businesses`);
+        return res.status(200).json(sanitizedBusinesses);
+      } catch (err) {
+        console.error("Legacy Admin Businesses Fetch Error:", err);
+        return res.status(500).json({ error: "Unable to fetch businesses." });
+      }
+    }
+  );
+  
   // Create versioned route paths
   const [vUsersPath, lUsersPath] = createVersionedRoutes('/admin/users');
   
