@@ -110,12 +110,16 @@ export function adminRoutes(app: Express): void {
             b.verificationStatus === "pending_verification",
         );
 
-        // Return array directly to match frontend expectations
-        const sanitizedBusinesses = sanitizeBusinesses(pendingBusinesses);
+        // Ensure proper sanitization and array format
+        const sanitizedBusinesses = Array.isArray(pendingBusinesses) ? sanitizeBusinesses(pendingBusinesses) : [];
         console.log(
-          `Returning ${sanitizedBusinesses.length} pending vendors directly as array`,
+          `Admin (v1): Found ${sanitizedBusinesses.length} pending businesses`,
         );
-        return res.status(200).json(sanitizedBusinesses);
+        return res.status(200).json({
+          businesses: sanitizedBusinesses,
+          total: businesses.length,
+          pending: sanitizedBusinesses.length
+        });
       } catch (error) {
         console.error("Admin Vendors Fetch Error:", error);
         return res.status(500).json({ error: "Unable to fetch vendors." });
@@ -154,8 +158,16 @@ export function adminRoutes(app: Express): void {
             b.verificationStatus === "pending" ||
             b.verificationStatus === "pending_verification",
         );
+
+        // Ensure proper sanitization and array format
+        const sanitizedBusinesses = Array.isArray(pending) ? sanitizeBusinesses(pending) : [];
+        console.log(
+          `Admin (legacy): Found ${sanitizedBusinesses.length} pending businesses`,
+        );
         return res.status(200).json({
-          businesses: sanitizeBusinesses(pending),
+          businesses: sanitizedBusinesses,
+          total: all.length,
+          pending: sanitizedBusinesses.length
         });
       } catch (err) {
         console.error("Legacy Admin Businesses Fetch Error:", err);
