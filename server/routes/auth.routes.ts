@@ -19,7 +19,8 @@ import { setAuthCookie, clearCookie } from "../utils/cookieUtils";
 import { withCustomAge, authCookieConfig } from "../utils/cookieConfig";
 import { 
   createVersionedRoutes, 
-  versionHeadersMiddleware
+  versionHeadersMiddleware,
+  deprecationMiddleware
 } from "../../src/utils/routeVersioning";
 
 /**

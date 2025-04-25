@@ -1,6 +1,8 @@
 import type { Express, Request, Response } from "express";
 import { storage } from "../storage";
 import { authenticate, authorize } from "../middleware";
+import { validate } from "../middleware/validationMiddleware";
+import { adminSchemas } from "../schemas";
 import {
   createVersionedRoutes,
   versionHeadersMiddleware,

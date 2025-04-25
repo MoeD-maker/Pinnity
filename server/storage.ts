@@ -1,7 +1,7 @@
 import { 
   users, businesses, deals, userFavorites, dealRedemptions, userNotificationPreferences,
   dealApprovals, businessHours, businessSocial, businessDocuments, redemptionRatings,
-  passwordResetTokens, refreshTokens,
+  passwordResetTokens, refreshTokens, notifications,
   type User, type InsertUser, type Business, type InsertBusiness, 
   type Deal, type InsertDeal, type UserFavorite, type InsertUserFavorite,
   type DealRedemption, type InsertDealRedemption, 
@@ -12,7 +12,8 @@ import {
   type BusinessDocument, type InsertBusinessDocument,
   type RedemptionRating, type InsertRedemptionRating, type RatingData,
   type PasswordResetToken, type InsertPasswordResetToken,
-  type RefreshToken, type InsertRefreshToken
+  type RefreshToken, type InsertRefreshToken,
+  type Notification, type InsertNotification
 } from "@shared/schema";
 import bcrypt from 'bcryptjs';
 import { db } from './db';

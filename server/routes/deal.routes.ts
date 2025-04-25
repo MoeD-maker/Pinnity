@@ -1,6 +1,14 @@
 import type { Express, Request, Response } from "express";
 import { storage } from "../storage";
-import { authenticate } from "../middleware";
+import { authenticate, authorize, checkOwnership } from "../middleware";
+import { validate } from "../middleware/validationMiddleware";
+import { dealSchemas } from "../schemas";
+import { apiRateLimiter } from "../middleware/rateLimit";
+import { 
+  createVersionedRoutes, 
+  versionHeadersMiddleware,
+  deprecationMiddleware
+} from "../../src/utils/routeVersioning";
 import { insertDealSchema } from "@shared/schema";
 import { z } from "zod";
 
