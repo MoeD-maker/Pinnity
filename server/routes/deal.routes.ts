@@ -3,6 +3,7 @@ import { storage } from "../storage";
 import { authenticate } from "../middleware";
 import { insertDealSchema } from "@shared/schema";
 import { z } from "zod";
+import { createVersionedRoutes, versionHeadersMiddleware, deprecationMiddleware } from "../../src/utils/routeVersioning";
 
 /**
  * Deal routes for listing, creating, and managing deals
@@ -33,6 +34,49 @@ export function dealRoutes(app: Express): void {
     } catch (error) {
       console.error("Get featured deals error:", error);
       return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Get deals by status (versioned and legacy routes)
+  const [vDealsByStatusPath, lDealsByStatusPath] = createVersionedRoutes('/deals/status/:status');
+  
+  // Versioned deals by status route
+  app.get(vDealsByStatusPath, 
+    versionHeadersMiddleware(),
+    authenticate,
+    async (req: Request, res: Response) => {
+    try {
+      console.log(`Fetching deals with status: ${req.params.status}`);
+      const status = req.params.status;
+      
+      // Get deals with requested status
+      const deals = await storage.getDealsByStatus(status);
+      
+      console.log(`Found ${deals.length} deals with status '${status}'`);
+      
+      // Return as array to fix client-side data format error
+      return res.status(200).json(Array.isArray(deals) ? deals : []);
+    } catch (error) {
+      console.error(`Error fetching deals by status ${req.params.status}:`, error);
+      return res.status(500).json({ message: "Error fetching deals by status" });
+    }
+  });
+  
+  // Legacy deals by status route
+  app.get(lDealsByStatusPath, 
+    authenticate,
+    async (req: Request, res: Response) => {
+    try {
+      const status = req.params.status;
+      
+      // Get deals with requested status
+      const deals = await storage.getDealsByStatus(status);
+      
+      // Return as array to fix client-side data format error
+      return res.status(200).json(Array.isArray(deals) ? deals : []);
+    } catch (error) {
+      console.error(`Error fetching deals by status ${req.params.status}:`, error);
+      return res.status(500).json({ message: "Error fetching deals by status" });
     }
   });
 
