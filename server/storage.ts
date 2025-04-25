@@ -2946,6 +2946,97 @@ export class DatabaseStorage implements IStorage {
       ratingCounts
     };
   }
+
+  // Deal approval additional methods
+  async getPendingApprovalForDeal(dealId: number): Promise<DealApproval | undefined> {
+    const pendingApprovals = await db.select()
+      .from(dealApprovals)
+      .where(and(
+        eq(dealApprovals.dealId, dealId),
+        eq(dealApprovals.status, 'pending')
+      ))
+      .orderBy(desc(dealApprovals.submittedAt))
+      .limit(1);
+    
+    return pendingApprovals.length > 0 ? pendingApprovals[0] : undefined;
+  }
+  
+  // Notification methods
+  async createNotification(notification: { userId: number, type: string, title?: string, message?: string, resourceId?: number, resourceType?: string, data?: any }): Promise<any> {
+    const newNotification = {
+      userId: notification.userId,
+      type: notification.type,
+      title: notification.title || '',
+      message: notification.message || '',
+      resourceId: notification.resourceId || null,
+      resourceType: notification.resourceType || null,
+      data: notification.data || {},
+      createdAt: new Date(),
+      read: false
+    };
+    
+    // Insert into notifications table
+    const [inserted] = await db.insert(notifications)
+      .values(newNotification)
+      .returning();
+    
+    return inserted;
+  }
+  
+  async getUserNotifications(userId: number): Promise<any[]> {
+    const userNotifications = await db.select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt));
+    
+    return userNotifications;
+  }
+  
+  async markNotificationAsRead(notificationId: number): Promise<any> {
+    const [updated] = await db.update(notifications)
+      .set({ read: true })
+      .where(eq(notifications.id, notificationId))
+      .returning();
+    
+    if (!updated) {
+      throw new Error('Notification not found');
+    }
+    
+    return updated;
+  }
+  
+  async markAllUserNotificationsAsRead(userId: number): Promise<number> {
+    const result = await db.update(notifications)
+      .set({ read: true })
+      .where(and(
+        eq(notifications.userId, userId),
+        eq(notifications.read, false)
+      ));
+    
+    return result.rowCount || 0;
+  }
+  
+  async hasUserRedeemedDeal(userId: number, dealId: number): Promise<boolean> {
+    const existingRedemptions = await db.select({ count: count() })
+      .from(dealRedemptions)
+      .where(and(
+        eq(dealRedemptions.userId, userId),
+        eq(dealRedemptions.dealId, dealId)
+      ));
+    
+    return (existingRedemptions[0]?.count || 0) > 0;
+  }
+  
+  async getUserRedemptionCountForDeal(userId: number, dealId: number): Promise<number> {
+    const result = await db.select({ count: count() })
+      .from(dealRedemptions)
+      .where(and(
+        eq(dealRedemptions.userId, userId),
+        eq(dealRedemptions.dealId, dealId)
+      ));
+    
+    return result[0]?.count || 0;
+  }
 }
 
 // Use the DatabaseStorage implementation
