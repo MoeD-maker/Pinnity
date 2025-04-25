@@ -92,7 +92,12 @@ export interface IStorage {
   createDealApproval(approval: Omit<InsertDealApproval, "id" | "submittedAt">): Promise<DealApproval>;
   getDealApproval(dealId: number): Promise<DealApproval | undefined>;
   getDealApprovalHistory(dealId: number): Promise<DealApproval[]>;
-  updateDealApproval(id: number, status: string, reviewerId?: number, feedback?: string): Promise<DealApproval>;
+  updateDealApproval(id: number, data: { 
+    status?: string;
+    reviewerId?: number;
+    feedback?: string | null;
+    reviewedAt?: Date;
+  }): Promise<DealApproval>;
   
   // User favorites methods
   getUserFavorites(userId: number): Promise<(UserFavorite & { deal: Deal & { business: Business } })[]>;
@@ -1456,7 +1461,12 @@ export class MemStorage implements IStorage {
       .sort((a, b) => b.submittedAt.getTime() - a.submittedAt.getTime());
   }
   
-  async updateDealApproval(id: number, status: string, reviewerId?: number, feedback?: string): Promise<DealApproval> {
+  async updateDealApproval(id: number, data: { 
+    status?: string;
+    reviewerId?: number;
+    feedback?: string | null;
+    reviewedAt?: Date;
+  }): Promise<DealApproval> {
     const approval = this.dealApprovals.get(id);
     if (!approval) {
       throw new Error("Deal approval not found");
@@ -1464,17 +1474,17 @@ export class MemStorage implements IStorage {
     
     const updatedApproval: DealApproval = {
       ...approval,
-      status,
-      reviewerId,
-      reviewedAt: new Date(),
-      feedback: feedback || approval.feedback,
+      status: data.status || approval.status,
+      reviewerId: data.reviewerId !== undefined ? data.reviewerId : approval.reviewerId,
+      feedback: data.feedback !== undefined ? data.feedback : approval.feedback,
+      reviewedAt: data.reviewedAt || new Date(),
     };
     
     this.dealApprovals.set(id, updatedApproval);
     
     // Update the deal status if approval is accepted or rejected
-    if (status === "approved" || status === "rejected") {
-      const dealStatus = status === "approved" ? "active" : "rejected";
+    if (data.status === "approved" || data.status === "rejected") {
+      const dealStatus = data.status === "approved" ? "active" : "rejected";
       await this.updateDealStatus(approval.dealId, dealStatus);
     }
     
@@ -2591,14 +2601,27 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(dealApprovals.submittedAt));
   }
 
-  async updateDealApproval(id: number, status: string, reviewerId?: number, feedback?: string): Promise<DealApproval> {
+  async updateDealApproval(id: number, data: { 
+    status?: string;
+    reviewerId?: number;
+    feedback?: string | null;
+    reviewedAt?: Date;
+  }): Promise<DealApproval> {
+    const [approval] = await db.select().from(dealApprovals).where(eq(dealApprovals.id, id));
+    
+    if (!approval) {
+      throw new Error("Deal approval not found");
+    }
+
+    // Prepare update data with only the fields that are provided
+    const updateData: any = {};
+    if (data.status !== undefined) updateData.status = data.status;
+    if (data.reviewerId !== undefined) updateData.reviewerId = data.reviewerId;
+    if (data.feedback !== undefined) updateData.feedback = data.feedback;
+    updateData.reviewedAt = data.reviewedAt || new Date();
+    
     const [updatedApproval] = await db.update(dealApprovals)
-      .set({
-        status,
-        reviewerId,
-        feedback,
-        reviewedAt: new Date()
-      })
+      .set(updateData)
       .where(eq(dealApprovals.id, id))
       .returning();
     
