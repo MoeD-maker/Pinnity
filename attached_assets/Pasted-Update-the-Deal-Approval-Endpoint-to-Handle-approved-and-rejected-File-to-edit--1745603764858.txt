@@ -1,0 +1,99 @@
+Update the Deal Approval Endpoint to Handle “approved” and “rejected”**
+
+---
+
+#### File to edit
+
+server/routes/deal.routes.ts
+
+yaml
+Copy
+Edit
+
+---
+
+#### What to change
+
+In the `POST /api/deals/:dealId/approval` handler, **replace** the current logic that always creates a pending approval with the following steps:
+
+1. **Read** the admin’s decision and comment from the request body:
+   ```ts
+   const { status, comment, approvalId } = req.body;
+   // status will be "approved" or "rejected"
+Update the existing approval record instead of creating a new one:
+
+ts
+Copy
+Edit
+const updatedApproval = await storage.updateDealApproval(
+  approvalId,
+  status,
+  req.user!.userId,
+  comment
+);
+Update the deal’s own status in the deals table:
+
+ts
+Copy
+Edit
+await storage.updateDealStatus(
+  Number(dealId),
+  status === "approved" ? "active" : "rejected"
+);
+Return the updated approval object:
+
+ts
+Copy
+Edit
+return res.status(200).json(updatedApproval);
+Full “Before → After” patch excerpt
+diff
+Copy
+Edit
+app.post("/api/deals/:dealId/approval",
+  authenticate, authorize(["admin"]),
+  async (req, res) => {
+    try {
+-     // Old: always create a new pending approval
+-     const approval = await storage.createDealApproval({
+-       dealId: Number(req.params.dealId),
+-       submitterId: req.user!.userId,
+-       status: "pending"
+-     });
+-     return res.status(201).json(approval);
+
++     // Read decision and comment
++     const { status, comment, approvalId } = req.body;
++
++     // Update the existing approval record
++     const updatedApproval = await storage.updateDealApproval(
++       approvalId,
++       status,
++       req.user!.userId,
++       comment
++     );
++
++     // Flip the deal’s status
++     await storage.updateDealStatus(
++       Number(req.params.dealId),
++       status === "approved" ? "active" : "rejected"
++     );
++
++     // Respond with the updated approval
++     return res.status(200).json(updatedApproval);
+
+    } catch (error) {
+      console.error("Deal approval error:", error);
+      return res.status(500).json({ error: "Unable to process approval." });
+    }
+  }
+);
+Steps
+Open server/routes/deal.routes.ts
+
+Locate the app.post("/api/deals/:dealId/approval" handler
+
+Replace the old approval-creation logic with the patched block above
+
+Save and restart your server
+

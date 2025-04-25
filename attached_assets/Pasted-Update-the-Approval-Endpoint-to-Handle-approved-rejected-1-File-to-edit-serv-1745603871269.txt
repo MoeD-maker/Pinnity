@@ -1,0 +1,82 @@
+Update the Approval Endpoint to Handle “approved” & “rejected”**
+
+---
+
+### 1. File to edit
+server/routes/deal.routes.ts
+
+yaml
+Copy
+Edit
+
+---
+
+### 2. Locate the handler
+Find the Express route for:
+```ts
+app.post("/api/deals/:dealId/approval", authenticate, authorize(["admin"]), async (req, res) => { … });
+3. Replace its current body (the part that always calls createDealApproval) with this block:
+diff
+Copy
+Edit
+-  // Old: always create a new pending approval
+-  const approval = await storage.createDealApproval({
+-    dealId: Number(req.params.dealId),
+-    submitterId: req.user!.userId,
+-    status: "pending"
+-  });
+-  return res.status(201).json(approval);
++  // Read admin’s decision & optional comment
++  const { status, comment } = req.body;
++
++  // Find the existing pending approval record
++  const pending = await storage.getPendingApprovalForDeal(Number(req.params.dealId));
++  if (!pending) {
++    return res.status(404).json({ error: "No pending approval found" });
++  }
++
++  // Update that approval entry
++  const updated = await storage.updateDealApproval(
++    pending.id,
++    status,              // "approved" or "rejected"
++    req.user!.userId,    // admin’s userId
++    comment              // optional admin note
++  );
++
++  // Flip the deal’s own status
++  await storage.updateDealStatus(
++    Number(req.params.dealId),
++    status === "approved" ? "active" : "rejected"
++  );
++
++  // Notify the vendor
++  await storage.createNotification({
++    userId: pending.submitterId,
++    type: status === "approved" ? "deal-approved" : "deal-rejected",
++    data: { dealId: Number(req.params.dealId), comment }
++  });
++
++  // Return the updated approval
++  return res.status(200).json(updated);
+4. Save & Restart
+Save deal.routes.ts.
+
+Stop and Run your Replit app.
+
+5. Verify
+Create a new deal as a vendor.
+
+As admin, call:
+
+bash
+Copy
+Edit
+POST /api/deals/<newDealId>/approval
+{ "status":"approved", "comment":"Looks great!" }
+Then check:
+
+/api/v1/admin/deals shows no longer “pending” that deal.
+
+Vendor’s dashboard shows it as active and you receive the notification.
+
+Repeat with "status":"rejected" to confirm the rejection flow.
