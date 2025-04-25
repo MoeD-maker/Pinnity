@@ -2629,6 +2629,12 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Approval record not found");
     }
     
+    // Update the deal status if approval is approved or rejected
+    if (data.status === "approved" || data.status === "rejected") {
+      const dealStatus = data.status === "approved" ? "active" : "rejected";
+      await this.updateDealStatus(approval.dealId, dealStatus);
+    }
+    
     return updatedApproval;
   }
 

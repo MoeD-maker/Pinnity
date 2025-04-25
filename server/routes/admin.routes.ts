@@ -745,9 +745,12 @@ export function adminRoutes(app: Express): void {
 
         const approval = await storage.updateDealApproval(
           approvalId,
-          status,
-          reviewerId,
-          feedback,
+          {
+            status,
+            reviewerId,
+            feedback,
+            reviewedAt: new Date()
+          }
         );
 
         // If deal is approved, update the deal status as well
