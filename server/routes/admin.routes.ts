@@ -487,6 +487,186 @@ export function adminRoutes(app: Express): void {
     },
   );
 
+  // Analytics endpoint for admin dashboard
+  const [vAnalyticsPath, lAnalyticsPath] = createVersionedRoutes("/admin/analytics");
+  
+  // Versioned analytics endpoint
+  app.get(
+    vAnalyticsPath,
+    versionHeadersMiddleware(),
+    authenticate,
+    authorize(["admin"]),
+    async (req: Request, res: Response) => {
+      try {
+        console.log("Fetching analytics data for admin dashboard");
+        const timeRange = req.query.timeRange as string || "30days";
+        console.log(`Time range requested: ${timeRange}`);
+        
+        // Get deal statistics
+        const allDeals = await storage.getDeals();
+        const pendingDeals = await storage.getDealsByStatus("pending");
+        const activeDeals = await storage.getDealsByStatus("active");
+        const rejectedDeals = await storage.getDealsByStatus("rejected");
+        const expiredDeals = await storage.getDealsByStatus("expired");
+        
+        // Get user statistics
+        const allUsers = await storage.getAllUsers();
+        const individualUsers = allUsers.filter(user => user.userType === "individual");
+        const businessUsers = allUsers.filter(user => user.userType === "business");
+        const adminUsers = allUsers.filter(user => user.userType === "admin");
+        
+        // Get business statistics
+        const allBusinesses = await storage.getAllBusinesses();
+        
+        // Calculate total redemptions
+        let totalRedemptions = 0;
+        for (const deal of allDeals) {
+          totalRedemptions += deal.redemptionCount || 0;
+        }
+        
+        // Get deals by category
+        const categoryCounts: Record<string, number> = {};
+        allDeals.forEach(deal => {
+          const category = deal.category || "Uncategorized";
+          categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+        });
+        
+        const dealsByCategory = Object.entries(categoryCounts).map(([name, value]) => ({ name, value }));
+        
+        // Get deals by status
+        const dealsByStatus = [
+          { name: "Active", value: activeDeals.length },
+          { name: "Pending", value: pendingDeals.length },
+          { name: "Rejected", value: rejectedDeals.length },
+          { name: "Expired", value: expiredDeals.length }
+        ];
+        
+        // Get users by type
+        const usersByType = [
+          { name: "Individual", value: individualUsers.length },
+          { name: "Business", value: businessUsers.length },
+          { name: "Admin", value: adminUsers.length }
+        ];
+        
+        // Get top deals by views
+        const topDealsByViews = [...allDeals]
+          .sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
+          .slice(0, 10)
+          .map(deal => ({
+            id: deal.id,
+            title: deal.title,
+            category: deal.category,
+            startDate: deal.startDate.toISOString(),
+            endDate: deal.endDate.toISOString(),
+            views: deal.viewCount || 0,
+            redemptions: deal.redemptionCount || 0,
+            savedCount: deal.saveCount || 0
+          }));
+        
+        // Get recent users
+        const recentUsers = [...allUsers]
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(0, 10)
+          .map(user => ({
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            userType: user.userType,
+            created_at: user.created_at
+          }));
+        
+        // Get popular businesses (using deals count as popularity metric)
+        const businessPopularity: Record<number, number> = {};
+        allDeals.forEach(deal => {
+          const businessId = deal.businessId;
+          businessPopularity[businessId] = (businessPopularity[businessId] || 0) + 1;
+        });
+        
+        const popularBusinessesIds = Object.entries(businessPopularity)
+          .sort(([, countA], [, countB]) => countB - countA)
+          .slice(0, 10)
+          .map(([id]) => parseInt(id));
+        
+        const popularBusinesses = allBusinesses
+          .filter(business => popularBusinessesIds.includes(business.id))
+          .map(business => ({
+            id: business.id,
+            businessName: business.businessName,
+            businessCategory: business.businessCategory,
+            status: business.verificationStatus
+          }));
+        
+        // Calculate dummy growth metrics based on available data
+        // In a real scenario, we would compare with previous period data
+        const usersGrowth = 5; // 5% growth (placeholder)
+        const businessesGrowth = 8; // 8% growth (placeholder)
+        const dealsGrowth = 12; // 12% growth (placeholder)
+        const redemptionsGrowth = 15; // 15% growth (placeholder)
+        
+        // Build the final response object
+        const analyticsData = {
+          totalUsers: allUsers.length,
+          totalBusinesses: allBusinesses.length,
+          totalDeals: allDeals.length,
+          totalRedemptions,
+          activeDeals: activeDeals.length,
+          pendingDeals: pendingDeals.length,
+          usersGrowth,
+          businessesGrowth,
+          dealsGrowth,
+          redemptionsGrowth,
+          redemptionsOverTime: [], // Would require historical data
+          dealsByCategory,
+          dealsByStatus,
+          topDeals: topDealsByViews,
+          recentUsers,
+          popularBusinesses,
+          usersByType,
+          engagementRate: Math.round((totalRedemptions / (allDeals.reduce((sum, deal) => sum + (deal.viewCount || 0), 0) || 1)) * 100), // Redemptions / Views
+          redemptionsByDay: [], // Would require historical data
+          averageRating: 4.2 // Placeholder until ratings are implemented
+        };
+        
+        console.log("Successfully generated analytics data");
+        return res.status(200).json(analyticsData);
+      } catch (error) {
+        console.error("Error generating analytics data:", error);
+        return res.status(500).json({ message: "Error generating analytics data" });
+      }
+    }
+  );
+  
+  // Legacy analytics endpoint
+  app.get(
+    lAnalyticsPath,
+    authenticate,
+    authorize(["admin"]),
+    async (req: Request, res: Response) => {
+      try {
+        console.log("Fetching analytics data for admin dashboard (legacy route)");
+        const timeRange = req.query.timeRange as string || "30days";
+        
+        // Forward to the versioned implementation
+        const versionedUrl = `/api/v1/admin/analytics?timeRange=${timeRange}`;
+        console.log(`Forwarding to versioned endpoint: ${versionedUrl}`);
+        
+        // This implementation reuses the versioned endpoint
+        const response = await fetch(`http://localhost:${process.env.PORT || 3000}${versionedUrl}`, {
+          headers: {
+            'Cookie': req.headers.cookie || '',
+            'Authorization': req.headers.authorization || ''
+          }
+        });
+        
+        const data = await response.json();
+        return res.status(response.status).json(data);
+      } catch (error) {
+        console.error("Error in legacy analytics endpoint:", error);
+        return res.status(500).json({ message: "Error generating analytics data" });
+      }
+    }
+  );
+
   // Debug deals endpoint
   app.get(
     "/api/admin/debug/deals",

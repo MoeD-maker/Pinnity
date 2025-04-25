@@ -107,188 +107,48 @@ export default function AnalyticsPage() {
   const fetchAnalyticsData = async () => {
     setIsLoading(true);
     try {
-      // In a real application, you would use a real API endpoint
-      // const response = await apiRequest(`/api/admin/analytics?timeRange=${timeRange}`);
-      // setAnalyticsData(response);
+      // Use the real API endpoint to fetch analytics data
+      console.log(`Fetching analytics data with timeRange: ${timeRange}`);
+      const response = await apiRequest(`/api/v1/admin/analytics?timeRange=${timeRange}`);
       
-      // TO-DO: Replace with real API data from backend once implemented
-      // For now use empty placeholder data until backend analytics endpoint is ready
-      setAnalyticsData({
-        totalUsers: 0,
-        totalBusinesses: 0,
-        totalDeals: 0,
-        totalRedemptions: 0,
-        activeDeals: 0,
-        pendingDeals: 0,
-        usersGrowth: 0,
-        businessesGrowth: 0,
-        dealsGrowth: 0,
-        redemptionsGrowth: 0,
-        redemptionsOverTime: [],
-        dealsByCategory: [],
-        dealsByStatus: [],
-        topDeals: [],
-        recentUsers: [],
-        popularBusinesses: [],
-        usersByType: [],
-        engagementRate: 0,
-        redemptionsByDay: [],
-        averageRating: 0
-      });
+      if (response) {
+        console.log("Analytics data received:", response);
+        setAnalyticsData(response);
+      } else {
+        console.error("No data returned from analytics API");
+        // Set empty state for error handling
+        setAnalyticsData({
+          totalUsers: 0,
+          totalBusinesses: 0,
+          totalDeals: 0,
+          totalRedemptions: 0,
+          activeDeals: 0,
+          pendingDeals: 0,
+          usersGrowth: 0,
+          businessesGrowth: 0,
+          dealsGrowth: 0,
+          redemptionsGrowth: 0,
+          redemptionsOverTime: [],
+          dealsByCategory: [],
+          dealsByStatus: [],
+          topDeals: [],
+          recentUsers: [],
+          popularBusinesses: [],
+          usersByType: [],
+          engagementRate: 0,
+          redemptionsByDay: [],
+          averageRating: 0
+        });
+      }
     } catch (error) {
       console.error("Error fetching analytics data:", error);
+      // Show error message to user
     } finally {
       setIsLoading(false);
     }
   };
 
-  const generateMockData = () => {
-    // Generate dates for the time range
-    const today = new Date();
-    let startDate;
-    
-    if (timeRange === "7days") {
-      startDate = subDays(today, 7);
-    } else if (timeRange === "30days") {
-      startDate = subDays(today, 30);
-    } else {
-      startDate = subDays(today, 90);
-    }
-    
-    const dateRange = eachDayOfInterval({ start: startDate, end: today });
-    
-    // Generate redemptions over time
-    const redemptionsOverTime = dateRange.map(date => ({
-      date: format(date, "yyyy-MM-dd"),
-      count: Math.floor(Math.random() * 30) + 5
-    }));
-    
-    // Deal categories
-    const categories = ["Food & Drink", "Retail", "Entertainment", "Services", "Health & Beauty"];
-    const dealsByCategory = categories.map(name => ({
-      name,
-      value: Math.floor(Math.random() * 50) + 10
-    }));
-    
-    // Deal statuses
-    const statuses = ["Active", "Pending", "Expired", "Rejected"];
-    const dealsByStatus = statuses.map(name => ({
-      name,
-      value: Math.floor(Math.random() * 30) + 5
-    }));
-    
-    // Days of week for redemptions
-    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-    const redemptionsByDay = days.map(day => ({
-      day,
-      count: Math.floor(Math.random() * 100) + 20
-    }));
-    
-    // User types
-    const userTypes = ["Individual", "Business", "Admin"];
-    const usersByType = userTypes.map(name => ({
-      name,
-      value: name === "Individual" ? 150 : name === "Business" ? 45 : 5
-    }));
-    
-    // Mock analytics data
-    const mockData: AnalyticsData = {
-      totalUsers: 200,
-      totalBusinesses: 45,
-      totalDeals: 120,
-      totalRedemptions: 850,
-      activeDeals: 75,
-      pendingDeals: 15,
-      usersGrowth: 12,
-      businessesGrowth: 8,
-      dealsGrowth: 15,
-      redemptionsGrowth: 20,
-      redemptionsOverTime,
-      dealsByCategory,
-      dealsByStatus,
-      topDeals: [
-        {
-          id: 1,
-          title: "50% Off Your First Coffee",
-          category: "Food & Drink",
-          startDate: "2023-01-01",
-          endDate: "2023-12-31",
-          views: 450,
-          redemptions: 120,
-          savedCount: 80
-        },
-        {
-          id: 2,
-          title: "Buy One Get One Free Movie Tickets",
-          category: "Entertainment",
-          startDate: "2023-02-15",
-          endDate: "2023-06-15",
-          views: 380,
-          redemptions: 95,
-          savedCount: 65
-        },
-        {
-          id: 3,
-          title: "30% Off All Haircuts",
-          category: "Health & Beauty",
-          startDate: "2023-03-01",
-          endDate: "2023-05-31",
-          views: 320,
-          redemptions: 85,
-          savedCount: 60
-        }
-      ],
-      recentUsers: [
-        {
-          id: 101,
-          username: "janesmith",
-          email: "jane.smith@example.com",
-          userType: "individual",
-          created_at: "2023-04-15T10:30:00Z"
-        },
-        {
-          id: 102,
-          username: "johndoe",
-          email: "john.doe@example.com",
-          userType: "individual",
-          created_at: "2023-04-14T14:45:00Z"
-        },
-        {
-          id: 103,
-          username: "coffeeshop",
-          email: "info@localcoffee.com",
-          userType: "business",
-          created_at: "2023-04-13T09:15:00Z"
-        }
-      ],
-      popularBusinesses: [
-        {
-          id: 201,
-          businessName: "Morning Brew Café",
-          businessCategory: "Food & Drink",
-          status: "approved"
-        },
-        {
-          id: 202,
-          businessName: "City Cinema",
-          businessCategory: "Entertainment",
-          status: "approved"
-        },
-        {
-          id: 203,
-          businessName: "Style Studio",
-          businessCategory: "Health & Beauty",
-          status: "approved"
-        }
-      ],
-      usersByType,
-      engagementRate: 65,
-      redemptionsByDay,
-      averageRating: 4.2
-    };
-    
-    setAnalyticsData(mockData);
-  };
+  // Analytics data now comes from the real API endpoint
 
   // Custom card for stats
   const StatCard = ({ 
