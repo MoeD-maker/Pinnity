@@ -1766,6 +1766,91 @@ export class MemStorage implements IStorage {
       ratingCounts
     };
   }
+  
+  // Deal approval additional methods
+  async getPendingApprovalForDeal(dealId: number): Promise<DealApproval | undefined> {
+    // Find the most recent pending approval for this deal
+    const approvals = Array.from(this.dealApprovals.values())
+      .filter(approval => approval.dealId === dealId && approval.status === 'pending')
+      .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+    
+    return approvals.length > 0 ? approvals[0] : undefined;
+  }
+  
+  // Notification methods
+  async createNotification(notification: { userId: number, type: string, title?: string, message?: string, resourceId?: number, resourceType?: string, data?: any }): Promise<Notification> {
+    const id = this.currentNotificationId++;
+    const now = new Date();
+    
+    const newNotification: Notification = {
+      id,
+      userId: notification.userId,
+      type: notification.type,
+      title: notification.title || '',
+      message: notification.message || '',
+      resourceId: notification.resourceId || null,
+      resourceType: notification.resourceType || null,
+      data: notification.data || {},
+      createdAt: now,
+      read: false
+    };
+    
+    this.notifications.set(id, newNotification);
+    return newNotification;
+  }
+  
+  async getUserNotifications(userId: number): Promise<Notification[]> {
+    return Array.from(this.notifications.values())
+      .filter(notification => notification.userId === userId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+  
+  async markNotificationAsRead(notificationId: number): Promise<Notification> {
+    const notification = this.notifications.get(notificationId);
+    if (!notification) {
+      throw new Error('Notification not found');
+    }
+    
+    const updatedNotification = {
+      ...notification,
+      read: true
+    };
+    
+    this.notifications.set(notificationId, updatedNotification);
+    return updatedNotification;
+  }
+  
+  async markAllUserNotificationsAsRead(userId: number): Promise<number> {
+    let count = 0;
+    
+    for (const [id, notification] of this.notifications.entries()) {
+      if (notification.userId === userId && !notification.read) {
+        this.notifications.set(id, {
+          ...notification,
+          read: true
+        });
+        count++;
+      }
+    }
+    
+    return count;
+  }
+  
+  async hasUserRedeemedDeal(userId: number, dealId: number): Promise<boolean> {
+    const redemptions = Array.from(this.dealRedemptions.values());
+    return redemptions.some(redemption => 
+      redemption.userId === userId && 
+      redemption.dealId === dealId
+    );
+  }
+  
+  async getUserRedemptionCountForDeal(userId: number, dealId: number): Promise<number> {
+    const redemptions = Array.from(this.dealRedemptions.values());
+    return redemptions.filter(redemption => 
+      redemption.userId === userId && 
+      redemption.dealId === dealId
+    ).length;
+  }
 }
 
 export class DatabaseStorage implements IStorage {
