@@ -1,10 +1,10 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { adminRoutes } from './admin.routes.fixed';
-import { authRoutes } from './auth.routes.fixed';
-import { userRoutes } from './user.routes.fixed';
-import { dealRoutes } from './deal.routes.fixed';
-import { businessRoutes } from './business.routes.fixed';
+import { adminRoutes } from './admin.routes';
+import { authRoutes } from './auth.routes';
+import { userRoutes } from './user.routes';
+import { dealRoutes } from './deal.routes';
+import { businessRoutes } from './business.routes';
 import { Request, Response, NextFunction } from "express";
 import { 
   deprecationMiddleware, 
