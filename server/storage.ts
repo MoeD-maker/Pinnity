@@ -1851,6 +1851,87 @@ export class MemStorage implements IStorage {
       redemption.dealId === dealId
     ).length;
   }
+  
+  // Refresh token methods implementation
+  async createRefreshToken(userId: number, token: string, expiresAt: Date, clientInfo?: { ipAddress?: string, userAgent?: string, deviceInfo?: string }): Promise<RefreshToken> {
+    const refreshToken: RefreshToken = {
+      id: token,
+      userId,
+      createdAt: new Date(),
+      token,
+      expiresAt,
+      ipAddress: clientInfo?.ipAddress || null,
+      userAgent: clientInfo?.userAgent || null,
+      isRevoked: false,
+      lastUsedAt: null,
+      deviceInfo: clientInfo?.deviceInfo || null
+    };
+    
+    this.refreshTokens.set(token, refreshToken);
+    return refreshToken;
+  }
+  
+  async getRefreshToken(token: string): Promise<RefreshToken | undefined> {
+    return this.refreshTokens.get(token);
+  }
+  
+  async revokeRefreshToken(token: string): Promise<boolean> {
+    const refreshToken = this.refreshTokens.get(token);
+    if (!refreshToken) {
+      return false;
+    }
+    
+    const updatedToken = {
+      ...refreshToken,
+      isRevoked: true
+    };
+    
+    this.refreshTokens.set(token, updatedToken);
+    return true;
+  }
+  
+  async revokeAllUserRefreshTokens(userId: number): Promise<number> {
+    let count = 0;
+    
+    for (const [token, refreshToken] of this.refreshTokens.entries()) {
+      if (refreshToken.userId === userId && !refreshToken.isRevoked) {
+        this.refreshTokens.set(token, {
+          ...refreshToken,
+          isRevoked: true
+        });
+        count++;
+      }
+    }
+    
+    return count;
+  }
+  
+  async rotateRefreshToken(oldToken: string, newToken: string, expiresAt: Date): Promise<RefreshToken | null> {
+    const oldRefreshToken = this.refreshTokens.get(oldToken);
+    if (!oldRefreshToken || oldRefreshToken.isRevoked) {
+      return null;
+    }
+    
+    // Revoke the old token
+    await this.revokeRefreshToken(oldToken);
+    
+    // Create a new token with the same user information
+    const newRefreshToken: RefreshToken = {
+      id: newToken,
+      userId: oldRefreshToken.userId,
+      createdAt: new Date(),
+      token: newToken,
+      expiresAt,
+      ipAddress: oldRefreshToken.ipAddress,
+      userAgent: oldRefreshToken.userAgent,
+      isRevoked: false,
+      lastUsedAt: new Date(),
+      deviceInfo: oldRefreshToken.deviceInfo
+    };
+    
+    this.refreshTokens.set(newToken, newRefreshToken);
+    return newRefreshToken;
+  }
 }
 
 export class DatabaseStorage implements IStorage {
