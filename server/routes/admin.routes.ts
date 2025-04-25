@@ -247,11 +247,15 @@ export function adminRoutes(app: Express): void {
         console.log(`Fetching businesses with status: ${status} (versioned route)`);
         const businesses = await storage.getBusinessesByStatus(status);
         const sanitizedBusinesses = sanitizeBusinesses(ensureArray(businesses));
+        // Return array directly to match frontend expectations
+        console.log(`Returning ${sanitizedBusinesses.length} businesses with status ${status}`);
         return res.status(200).json(sanitizedBusinesses);
       } else {
         console.log('Fetching all businesses (versioned route)');
         const businesses = await storage.getAllBusinesses();
         const sanitizedBusinesses = sanitizeBusinesses(ensureArray(businesses));
+        // Return array directly to match frontend expectations
+        console.log(`Returning ${sanitizedBusinesses.length} total businesses`);
         return res.status(200).json(sanitizedBusinesses);
       }
     } catch (error) {
@@ -300,6 +304,8 @@ export function adminRoutes(app: Express): void {
       }
       
       const sanitizedBusinesses = sanitizeBusinesses(ensureArray(businesses));
+      // Return array directly to match frontend expectations
+      console.log(`Returning ${sanitizedBusinesses.length} sanitized pending businesses`);
       return res.status(200).json(sanitizedBusinesses);
     } catch (error) {
       console.error("Error fetching pending businesses:", error);
@@ -324,6 +330,8 @@ export function adminRoutes(app: Express): void {
       }
       
       const sanitizedBusinesses = sanitizeBusinesses(ensureArray(businesses));
+      // Return array directly to match frontend expectations
+      console.log(`Returning ${sanitizedBusinesses.length} sanitized pending businesses (legacy route)`);
       return res.status(200).json(sanitizedBusinesses);
     } catch (error) {
       console.error("Error fetching pending businesses:", error);
