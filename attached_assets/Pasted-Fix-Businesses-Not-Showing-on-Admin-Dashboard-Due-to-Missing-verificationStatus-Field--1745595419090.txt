@@ -1,0 +1,80 @@
+Fix: Businesses Not Showing on Admin Dashboard Due to Missing verificationStatus Field
+
+---
+
+### ❗ The Problem
+
+Newly created businesses (vendors) are not appearing on the admin dashboard because the `verificationStatus` field is missing or undefined at creation.
+
+The admin dashboard filters vendors using:
+
+```ts
+business.verificationStatus === 'pending' || business.verificationStatus === 'pending_verification'
+If a vendor is created without a verificationStatus, it will:
+
+Not show up on the admin panel
+
+Not be counted in pending/approved/rejected stats
+
+Possibly break the frontend with “Invalid response format”
+
+✅ What You Need to Do
+1. Locate the Business Creation Logic
+Look in one of these files (whichever contains vendor registration or business onboarding):
+
+vendor.routes.ts
+
+auth.routes.ts
+
+business.routes.ts
+
+OR the relevant function in server/storage.ts
+
+2. Add Default Verification Status
+Update the db.insert(businesses).values(...) call to include this field:
+
+ts
+Copy
+Edit
+verificationStatus: 'pending'
+✅ Example Before:
+ts
+Copy
+Edit
+await db.insert(businesses).values({
+  name: req.body.name,
+  userId: req.user.id,
+  ...
+});
+✅ Example After:
+ts
+Copy
+Edit
+await db.insert(businesses).values({
+  name: req.body.name,
+  userId: req.user.id,
+  verificationStatus: 'pending',
+  ...
+});
+✅ Bonus: Update Existing Records (Optional but Recommended)
+Also create a one-time script to update existing businesses missing a verification status:
+
+ts
+Copy
+Edit
+await db.update(businesses)
+  .set({ verificationStatus: 'pending' })
+  .where(isNull(businesses.verificationStatus));
+Save this as a script like fix-missing-verification.ts and run it once.
+
+✅ Outcome
+After this fix:
+
+All new vendors will have verificationStatus = 'pending' by default
+
+The admin dashboard will correctly show and approve new vendors
+
+The red “Failed to fetch businesses” error will disappear
+
+The backend will return consistent, valid business data
+

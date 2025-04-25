@@ -1812,11 +1812,14 @@ export class DatabaseStorage implements IStorage {
         })
         .returning();
       
-      // Then create the business
+      // Then create the business with default 'pending' verification status if not set
       const [business] = await tx.insert(businesses)
         .values({
           ...businessData,
-          userId: user.id
+          userId: user.id,
+          // Always ensure we have a default verificationStatus of 'pending' 
+          // if one is not explicitly provided
+          verificationStatus: businessData.verificationStatus || 'pending'
         })
         .returning();
       
@@ -1829,7 +1832,11 @@ export class DatabaseStorage implements IStorage {
 
   private async createBusiness(businessData: Omit<InsertBusiness, "id">): Promise<Business> {
     const [business] = await db.insert(businesses)
-      .values(businessData)
+      .values({
+        ...businessData,
+        // Always ensure there's a default verificationStatus
+        verificationStatus: businessData.verificationStatus || 'pending'
+      })
       .returning();
     
     return business;
