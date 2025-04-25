@@ -130,17 +130,30 @@ export default function VendorsPage() {
       let pendingResponse;
       
       try {
+        console.log("Attempting to fetch all businesses...");
         // Get all businesses for the full listing
-        response = await apiRequest("/api/v1/admin/businesses");
-        console.log("Successfully fetched all businesses with versioned route");
+        try {
+          response = await apiRequest("/api/v1/admin/businesses");
+          console.log("Successfully fetched all businesses with versioned route:", response);
+        } catch (allBusinessError) {
+          console.error("Error fetching all businesses:", allBusinessError);
+          throw allBusinessError; // Rethrow to be caught by outer try/catch
+        }
         
+        console.log("Attempting to fetch pending businesses...");
         // Specifically get pending businesses to ensure we have the latest data
-        pendingResponse = await apiRequest("/api/v1/admin/businesses/pending");
-        console.log("Successfully fetched pending businesses:", pendingResponse?.length || 0);
+        try {
+          pendingResponse = await apiRequest("/api/v1/admin/businesses/pending");
+          console.log("Successfully fetched pending businesses:", pendingResponse?.length || 0);
+        } catch (pendingError) {
+          console.error("Error fetching pending businesses:", pendingError);
+          // Don't throw here, we can continue with just the all businesses response
+        }
         
         // If we got pending businesses, merge them with the main list
         // This ensures we have the latest pending vendors
-        if (pendingResponse && pendingResponse.length > 0) {
+        if (pendingResponse && pendingResponse.length > 0 && response) {
+          console.log("Merging pending businesses with main list");
           // Map of existing business IDs to avoid duplicates
           const businessIds = new Set(response.map((b: any) => b.id));
           
@@ -150,14 +163,22 @@ export default function VendorsPage() {
               response.push(pendingBusiness);
             }
           });
+          console.log("After merge, total businesses:", response.length);
         }
       } catch (error) {
-        console.log("Versioned route failed, falling back to legacy route");
+        console.log("Versioned routes failed, falling back to legacy routes");
         try {
+          console.log("Attempting legacy all businesses route...");
           response = await apiRequest("/api/admin/businesses");
+          console.log("Successfully fetched all businesses with legacy route");
+          
+          console.log("Attempting legacy pending businesses route...");
           pendingResponse = await apiRequest("/api/admin/businesses/pending");
+          console.log("Successfully fetched pending businesses with legacy route");
         } catch (fallbackError) {
           console.error("Both versioned and legacy routes failed:", fallbackError);
+          // Set response to empty array if both approaches fail, to avoid undefined errors
+          response = [];
         }
       }
       
