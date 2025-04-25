@@ -58,10 +58,13 @@ export function adminRoutes(app: Express): void {
         const users = await storage.getAllUsers();
         const totalUsers = users.length;
 
-        const sanitizedPendingDeals = sanitizeDeals(pendingDealsResult);
-        const sanitizedPendingVendors = sanitizeBusinesses(pendingBusinesses);
+        // Ensure arrays and proper sanitization
+        const sanitizedPendingDeals = sanitizeDeals(Array.isArray(pendingDealsResult) ? pendingDealsResult : Object.values(pendingDealsResult));
+        const sanitizedPendingVendors = sanitizeBusinesses(Array.isArray(pendingBusinesses) ? pendingBusinesses : Object.values(pendingBusinesses));
 
-        // Prepare Response
+        console.log(`Processed ${sanitizedPendingDeals.length} pending deals and ${sanitizedPendingVendors.length} pending vendors`);
+
+        // Prepare Response with proper array formatting
         return res.status(200).json({
           stats: {
             pendingDeals: pendingDealsCount,
@@ -79,8 +82,8 @@ export function adminRoutes(app: Express): void {
                 new Date(a.createdAt).getTime(),
             )
             .slice(0, 5),
-          pendingDeals: sanitizedPendingDeals, // ✅ Real pending deals
-          pendingVendors: sanitizedPendingVendors, // ✅ Real pending vendors
+          pendingDeals: Array.isArray(sanitizedPendingDeals) ? sanitizedPendingDeals : [],
+          pendingVendors: Array.isArray(sanitizedPendingVendors) ? sanitizedPendingVendors : [],
         });
       } catch (error) {
         console.error("Admin Dashboard Error:", error);
