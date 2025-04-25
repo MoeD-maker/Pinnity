@@ -22,86 +22,86 @@ export function adminRoutes(app: Express): void {
   const [vDashboardPath, lDashboardPath] = createVersionedRoutes('/admin/dashboard');
   
   // Versioned dashboard route
-  app.get(vDashboardPath, 
+  app.get(vDashboardPath,
     versionHeadersMiddleware(),
-    authenticate, 
-    authorize(['admin']), 
+    authenticate,
+    authorize(['admin']),
     async (_req: Request, res: Response) => {
-    try {
-      // Get counts for different entities
-      // For pending, we need to include both 'pending' and 'pending_revision' statuses
-      const pendingDealsResult = await storage.getDealsByStatus('pending');
-      // Already includes pending_revision deals now with our fix
-      const pendingDeals = pendingDealsResult.length;
-      
-      const activeDeals = (await storage.getDealsByStatus('active')).length;
-      const rejectedDeals = (await storage.getDealsByStatus('rejected')).length;
-      const expiredDeals = (await storage.getDealsByStatus('expired')).length;
-      
-      console.log(`DASHBOARD: Found ${pendingDeals} pending deals, ${activeDeals} active deals`);
-      
-      // Get businesses with pending verification
-      const businesses = await storage.getAllBusinesses();
-      // Check for variations in verification status values
-      const verificationStatuses = new Set(businesses.map(b => b.verificationStatus));
-      console.log(`DASHBOARD: Business verification statuses in system: ${Array.from(verificationStatuses).join(', ')}`);
-      
-      const pendingVendors = businesses.filter(b => 
-        b.verificationStatus === 'pending' || 
-        b.verificationStatus === 'pending_verification'
-      ).length;
-      
-      console.log(`DASHBOARD: Found ${pendingVendors} pending vendors out of ${businesses.length} total`);
-      
-      // Get total user count
-      const users = await storage.getAllUsers();
-      const totalUsers = users.length;
-      
-      // Get recent activity (newest first, limit 5)
-      // We'll combine different types of activity (deal submissions, vendor applications, etc.)
-      
-      // Get recent deal submissions (5 newest)
-      const deals = await storage.getDeals();
-      const dealsArray = ensureArray(deals);
-      const recentDeals = dealsArray
-        .sort((a: any, b: any) => {
-          const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-          return bDate - aDate;
-        })
-        .slice(0, 5)
-        .map((deal: any) => ({
-          id: deal.id || 0,
-          type: "deal_submission",
-          status: deal.status || "pending",
-          title: "New Deal Submitted",
-          description: `${deal.business?.businessName || 'A business'} submitted '${deal.title || 'Untitled Deal'}'`,
-          timestamp: new Date(deal.createdAt || new Date()).toISOString()
-        }));
-      
-      // Combine all recent activity types
-      const recentActivity = [...recentDeals];
-      
-      // Return the stats
-      return res.status(200).json({
-        stats: {
-          pendingDeals,
-          activeDeals,
-          rejectedDeals,
-          expiredDeals,
-          pendingVendors,
-          totalUsers,
-          alertCount: pendingDeals + pendingVendors // Simple alert system
-        },
-        recentActivity: sanitizeDeals(recentDeals)
-          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-          .slice(0, 5)
-      });
-    } catch (error) {
-      console.error("Error fetching dashboard stats:", error);
-      return res.status(500).json({ message: "Error fetching dashboard stats" });
+      try {
+        // Deals
+        const pendingDealsResult = await storage.getDealsByStatus('pending');
+        const pendingDealsCount = pendingDealsResult.length;
+
+        const activeDealsCount = (await storage.getDealsByStatus('active')).length;
+        const rejectedDealsCount = (await storage.getDealsByStatus('rejected')).length;
+        const expiredDealsCount = (await storage.getDealsByStatus('expired')).length;
+
+        console.log(`Found ${pendingDealsCount} pending deals.`);
+
+        // Businesses
+        const businesses = await storage.getAllBusinesses();
+        const pendingBusinesses = businesses.filter(b => 
+          b.verificationStatus === 'pending' || 
+          b.verificationStatus === 'pending_verification'
+        );
+        const pendingVendorsCount = pendingBusinesses.length;
+
+        console.log(`Found ${pendingVendorsCount} pending vendors.`);
+
+        // Users
+        const users = await storage.getAllUsers();
+        const totalUsers = users.length;
+
+        // Prepare Response
+        return res.status(200).json({
+          stats: {
+            pendingDeals: pendingDealsCount,
+            activeDeals: activeDealsCount,
+            rejectedDeals: rejectedDealsCount,
+            expiredDeals: expiredDealsCount,
+            pendingVendors: pendingVendorsCount,
+            totalUsers,
+            alertCount: pendingDealsCount + pendingVendorsCount
+          },
+          recentActivity: sanitizeDeals(pendingDealsResult)
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .slice(0, 5),
+          pendingDeals: sanitizeDeals(pendingDealsResult), // ✅ Real pending deals
+          pendingVendors: sanitizeBusinesses(pendingBusinesses) // ✅ Real pending vendors
+        });
+
+      } catch (error) {
+        console.error("Admin Dashboard Error:", error);
+        return res.status(500).json({ error: "Something went wrong loading the dashboard." });
+      }
     }
-  });
+  );
+  // GET /api/v1/admin/vendors
+  app.get('/api/v1/admin/vendors',
+    versionHeadersMiddleware(),
+    authenticate,
+    authorize(['admin']),
+    async (_req: Request, res: Response) => {
+      try {
+        const businesses = await storage.getAllBusinesses();
+
+        // Filter only pending or pending_verification businesses
+        const pendingBusinesses = businesses.filter(b =>
+          b.verificationStatus === 'pending' ||
+          b.verificationStatus === 'pending_verification'
+        );
+
+        return res.status(200).json({
+          businesses: sanitizeBusinesses(pendingBusinesses) // ✅ Key must match what frontend expects
+        });
+
+      } catch (error) {
+        console.error("Admin Vendors Fetch Error:", error);
+        return res.status(500).json({ error: "Unable to fetch vendors." });
+      }
+    }
+  );
+  
   // Create versioned route paths
   const [vUsersPath, lUsersPath] = createVersionedRoutes('/admin/users');
   
