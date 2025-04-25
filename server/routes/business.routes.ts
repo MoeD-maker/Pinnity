@@ -1,15 +1,13 @@
 import type { Express, Request, Response } from "express";
 import { storage } from "../storage";
 import { authenticate, checkOwnership } from "../middleware";
-import { validate } from "../middleware/validationMiddleware";
-import { businessSchemas } from "../schemas";
+import { ratingSchema } from "@shared/schema";
 import { apiRateLimiter, adminRateLimiter } from "../middleware/rateLimit";
-import { validateBusinessProfile, validateBusinessHours, validateBusinessVerification } from "../middleware/businessValidation";
 import { 
-  createVersionedRoutes, 
-  versionHeadersMiddleware,
-  deprecationMiddleware
-} from "../../src/utils/routeVersioning";
+  validateBusinessProfile, 
+  validateBusinessHours, 
+  validateBusinessVerification 
+} from "../middleware/businessValidation";
 
 /**
  * Business routes for business management and related operations

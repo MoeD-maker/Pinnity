@@ -1,8 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { storage } from "../storage";
 import { authenticate, authorize } from "../middleware";
-import { validate } from "../middleware/validationMiddleware";
-import { adminSchemas } from "../schemas";
 import {
   createVersionedRoutes,
   versionHeadersMiddleware,
@@ -34,6 +32,8 @@ export function adminRoutes(app: Express): void {
       try {
         // Deals
         const pendingDealsResult = await storage.getDealsByStatus("pending");
+        const pendingDealsCount = pendingDealsResult.length;
+
         const activeDealsCount = (await storage.getDealsByStatus("active"))
           .length;
         const rejectedDealsCount = (await storage.getDealsByStatus("rejected"))
@@ -41,7 +41,7 @@ export function adminRoutes(app: Express): void {
         const expiredDealsCount = (await storage.getDealsByStatus("expired"))
           .length;
 
-        console.log(`Found ${pendingDealsResult.length} pending deals.`);
+        console.log(`Found ${pendingDealsCount} pending deals.`);
 
         // Businesses
         const businesses = await storage.getAllBusinesses();
@@ -58,55 +58,29 @@ export function adminRoutes(app: Express): void {
         const users = await storage.getAllUsers();
         const totalUsers = users.length;
 
-        // Process pending deals with business data
-        const sanitizedPendingDeals = await Promise.all(
-          pendingDealsResult.map(async (deal) => {
-            const business = await storage.getBusiness(deal.businessId);
-            return {
-              ...deal,
-              business: {
-                ...business,
-                logoUrl: business?.imageUrl
-              }
-            };
-          })
-        );
+        const sanitizedPendingDeals = sanitizeDeals(pendingDealsResult);
+        const sanitizedPendingVendors = sanitizeBusinesses(pendingBusinesses);
 
-        // Process pending vendors with complete business data
-        const sanitizedPendingVendors = pendingBusinesses.map(business => ({
-          ...business,
-          logoUrl: business.imageUrl
-        }));
-
-        console.log(`Processed ${sanitizedPendingDeals.length} pending deals and ${sanitizedPendingVendors.length} pending vendors`);
-
-        // Format recent activity
-        const recentDealActivity = sanitizedPendingDeals
-          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-          .slice(0, 5)
-          .map(deal => ({
-            id: deal.id,
-            type: 'deal_submission',
-            title: deal.title,
-            businessName: deal.business?.businessName || 'Unknown Business',
-            timestamp: deal.createdAt,
-            status: deal.status
-          }));
-
-        // Return complete response
+        // Prepare Response
         return res.status(200).json({
           stats: {
-            pendingDeals: pendingDealsResult.length,
+            pendingDeals: pendingDealsCount,
             activeDeals: activeDealsCount,
             rejectedDeals: rejectedDealsCount,
             expiredDeals: expiredDealsCount,
-            pendingVendors: pendingBusinesses.length,
+            pendingVendors: pendingVendorsCount,
             totalUsers,
-            alertCount: pendingDealsResult.length + pendingBusinesses.length,
+            alertCount: pendingDealsCount + pendingVendorsCount,
           },
-          recentActivity: recentDealActivity,
-          pendingDeals: sanitizedPendingDeals,
-          pendingVendors: sanitizedPendingVendors,
+          recentActivity: sanitizedPendingDeals
+            .sort(
+              (a, b) =>
+                new Date(b.createdAt).getTime() -
+                new Date(a.createdAt).getTime(),
+            )
+            .slice(0, 5),
+          pendingDeals: sanitizedPendingDeals, // ✅ Real pending deals
+          pendingVendors: sanitizedPendingVendors, // ✅ Real pending vendors
         });
       } catch (error) {
         console.error("Admin Dashboard Error:", error);
@@ -133,16 +107,12 @@ export function adminRoutes(app: Express): void {
             b.verificationStatus === "pending_verification",
         );
 
-        // Ensure proper sanitization and array format
-        const sanitizedBusinesses = Array.isArray(pendingBusinesses) ? sanitizeBusinesses(pendingBusinesses) : [];
+        // Return array directly to match frontend expectations
+        const sanitizedBusinesses = sanitizeBusinesses(pendingBusinesses);
         console.log(
-          `Admin (v1): Found ${sanitizedBusinesses.length} pending businesses`,
+          `Returning ${sanitizedBusinesses.length} pending vendors directly as array`,
         );
-        return res.status(200).json({
-          businesses: sanitizedBusinesses,
-          total: businesses.length,
-          pending: sanitizedBusinesses.length
-        });
+        return res.status(200).json(sanitizedBusinesses);
       } catch (error) {
         console.error("Admin Vendors Fetch Error:", error);
         return res.status(500).json({ error: "Unable to fetch vendors." });
@@ -181,16 +151,8 @@ export function adminRoutes(app: Express): void {
             b.verificationStatus === "pending" ||
             b.verificationStatus === "pending_verification",
         );
-
-        // Ensure proper sanitization and array format
-        const sanitizedBusinesses = Array.isArray(pending) ? sanitizeBusinesses(pending) : [];
-        console.log(
-          `Admin (legacy): Found ${sanitizedBusinesses.length} pending businesses`,
-        );
         return res.status(200).json({
-          businesses: sanitizedBusinesses,
-          total: all.length,
-          pending: sanitizedBusinesses.length
+          businesses: sanitizeBusinesses(pending),
         });
       } catch (err) {
         console.error("Legacy Admin Businesses Fetch Error:", err);

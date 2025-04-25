@@ -177,20 +177,6 @@ export const refreshTokens = pgTable("refresh_tokens", {
   deviceInfo: text("device_info"),
 });
 
-// User notifications
-export const notifications = pgTable("notifications", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  type: text("type").notNull(), // e.g., "deal-approved", "deal-rejected", "new-message", etc.
-  title: text("title").notNull(),
-  message: text("message").notNull(),
-  read: boolean("read").default(false).notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  resourceId: integer("resource_id"), // Optional ID of related resource (e.g., dealId)
-  resourceType: text("resource_type"), // Optional type of related resource (e.g., "deal")
-  data: json("data").default({}) // Additional JSON data specific to notification type
-});
-
 // Create Zod schemas for insertion
 export const insertUserSchema = createInsertSchema(users);
 export const insertBusinessSchema = createInsertSchema(businesses);
@@ -205,7 +191,6 @@ export const insertBusinessDocumentSchema = createInsertSchema(businessDocuments
 export const insertRedemptionRatingSchema = createInsertSchema(redemptionRatings);
 export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens);
 export const insertRefreshTokenSchema = createInsertSchema(refreshTokens);
-export const insertNotificationSchema = createInsertSchema(notifications);
 
 // Custom API schema for deals with string dates and recurring fields
 export const apiDealSchema = insertDealSchema
@@ -266,10 +251,6 @@ export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
 // Refresh token types
 export type RefreshToken = typeof refreshTokens.$inferSelect;
 export type InsertRefreshToken = typeof refreshTokens.$inferInsert;
-
-// Notification types
-export type Notification = typeof notifications.$inferSelect;
-export type InsertNotification = typeof notifications.$inferInsert;
 
 // Form schema types
 export type LoginUser = z.infer<typeof loginUserSchema>;

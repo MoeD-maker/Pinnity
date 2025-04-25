@@ -205,35 +205,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Fetch complete user data if needed
         if (!user || user.id !== response.userId) {
           const userData = await apiRequest(`/api/v1/user/${response.userId}`);
-          
-          // Very important - merge the userType from the token response with user data
-          // This ensures the correct userType is preserved in the refresh flow
-          if (userData && userData.id) {
-            const mergedUserData = {
-              ...userData,
-              userType: response.userType // Always use userType from token response
-            };
-            
-            console.log(`Token refresh: Setting user with preserved userType '${response.userType}'`);
-            setUser(mergedUserData);
-          } else {
-            // If user data fetch failed, at least update the userType
-            if (user) {
-              setUser({
-                ...user,
-                userType: response.userType
-              });
-            }
-          }
-        } else {
-          // Even if we don't need to fetch user data, make sure userType is correct
-          setUser(currentUser => currentUser ? {
-            ...currentUser,
-            userType: response.userType
-          } : null);
+          setUser(userData);
         }
         
-        console.log('Token refresh successful with userType:', response.userType);
+        console.log('Token refresh successful');
         return true;
       }
       
@@ -560,24 +535,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log(`[${timestamp}] Fetching complete user data...`);
         try {
           const userData = await apiRequest(`/api/v1/user/${response.userId}`);
-          console.log(`[${timestamp}] User data received:`, userData);
+          console.log(`[${timestamp}] User data received:`, userData ? 'Successfully' : 'Failed');
           
-          // Very important - merge the userType from the login response with user data
-          // This ensures the correct userType is preserved even if the profile API doesn't include it
-          if (userData && userData.id) {
-            const mergedUserData = {
-              ...userData,
-              userType: response.userType // Always use userType from login response
-            };
-            
-            console.log(`[${timestamp}] Setting user with userType '${response.userType}' from login response`);
-            
-            // Update authentication state before setting user data to prevent UI flashing
-            setAuthState('authenticated');
-            setUser(mergedUserData);
-          } else {
-            throw new Error('Invalid user data received');
-          }
+          // Update authentication state before setting user data to prevent UI flashing
+          setAuthState('authenticated');
+          setUser(userData);
           
           // Start token refresh timer - in case the user stays logged in for a long time
           if (isMountedRef.current) {

@@ -1,7 +1,7 @@
 import { 
   users, businesses, deals, userFavorites, dealRedemptions, userNotificationPreferences,
   dealApprovals, businessHours, businessSocial, businessDocuments, redemptionRatings,
-  passwordResetTokens, refreshTokens, notifications,
+  passwordResetTokens, refreshTokens,
   type User, type InsertUser, type Business, type InsertBusiness, 
   type Deal, type InsertDeal, type UserFavorite, type InsertUserFavorite,
   type DealRedemption, type InsertDealRedemption, 
@@ -12,8 +12,7 @@ import {
   type BusinessDocument, type InsertBusinessDocument,
   type RedemptionRating, type InsertRedemptionRating, type RatingData,
   type PasswordResetToken, type InsertPasswordResetToken,
-  type RefreshToken, type InsertRefreshToken,
-  type Notification, type InsertNotification
+  type RefreshToken, type InsertRefreshToken
 } from "@shared/schema";
 import bcrypt from 'bcryptjs';
 import { db } from './db';
@@ -119,17 +118,6 @@ export interface IStorage {
   getUserRatings(userId: number): Promise<(RedemptionRating & { deal: Deal, business: Business })[]>;
   getBusinessRatings(businessId: number): Promise<RedemptionRating[]>;
   getBusinessRatingSummary(businessId: number): Promise<{ averageRating: number, totalRatings: number, ratingCounts: Record<number, number> }>;
-  
-  // Deal approval additional methods
-  getPendingApprovalForDeal(dealId: number): Promise<DealApproval | undefined>;
-  
-  // Notification methods
-  createNotification(notification: { userId: number, type: string, title: string, message: string, resourceId?: number, resourceType?: string }): Promise<any>;
-  getUserNotifications(userId: number): Promise<any[]>;
-  markNotificationAsRead(notificationId: number): Promise<any>;
-  markAllUserNotificationsAsRead(userId: number): Promise<number>;
-  hasUserRedeemedDeal(userId: number, dealId: number): Promise<boolean>;
-  getUserRedemptionCountForDeal(userId: number, dealId: number): Promise<number>;
 }
 
 // Hash passwords for storage
@@ -161,9 +149,6 @@ export class MemStorage implements IStorage {
   // Refresh tokens
   private refreshTokens: Map<string, RefreshToken>;
   
-  // Notifications
-  private notifications: Map<number, Notification>;
-  
   private currentUserId: number;
   private currentBusinessId: number;
   private currentDealId: number;
@@ -175,7 +160,6 @@ export class MemStorage implements IStorage {
   private currentBusinessSocialId: number;
   private currentBusinessDocumentId: number;
   private currentRedemptionRatingId: number;
-  private currentNotificationId: number;
 
   constructor() {
     this.users = new Map();
@@ -200,9 +184,6 @@ export class MemStorage implements IStorage {
     // Initialize refresh tokens
     this.refreshTokens = new Map();
     
-    // Initialize notifications
-    this.notifications = new Map();
-    
     this.currentUserId = 1;
     this.currentBusinessId = 1;
     this.currentDealId = 1;
@@ -214,7 +195,6 @@ export class MemStorage implements IStorage {
     this.currentBusinessSocialId = 1;
     this.currentBusinessDocumentId = 1;
     this.currentRedemptionRatingId = 1;
-    this.currentNotificationId = 1;
     
     // Populate with sample data
     this.initializeSampleData();
@@ -1766,172 +1746,6 @@ export class MemStorage implements IStorage {
       ratingCounts
     };
   }
-  
-  // Deal approval additional methods
-  async getPendingApprovalForDeal(dealId: number): Promise<DealApproval | undefined> {
-    // Find the most recent pending approval for this deal
-    const approvals = Array.from(this.dealApprovals.values())
-      .filter(approval => approval.dealId === dealId && approval.status === 'pending')
-      .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
-    
-    return approvals.length > 0 ? approvals[0] : undefined;
-  }
-  
-  // Notification methods
-  async createNotification(notification: { userId: number, type: string, title?: string, message?: string, resourceId?: number, resourceType?: string, data?: any }): Promise<Notification> {
-    const id = this.currentNotificationId++;
-    const now = new Date();
-    
-    const newNotification: Notification = {
-      id,
-      userId: notification.userId,
-      type: notification.type,
-      title: notification.title || '',
-      message: notification.message || '',
-      resourceId: notification.resourceId || null,
-      resourceType: notification.resourceType || null,
-      data: notification.data || {},
-      createdAt: now,
-      read: false
-    };
-    
-    this.notifications.set(id, newNotification);
-    return newNotification;
-  }
-  
-  async getUserNotifications(userId: number): Promise<Notification[]> {
-    return Array.from(this.notifications.values())
-      .filter(notification => notification.userId === userId)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }
-  
-  async markNotificationAsRead(notificationId: number): Promise<Notification> {
-    const notification = this.notifications.get(notificationId);
-    if (!notification) {
-      throw new Error('Notification not found');
-    }
-    
-    const updatedNotification = {
-      ...notification,
-      read: true
-    };
-    
-    this.notifications.set(notificationId, updatedNotification);
-    return updatedNotification;
-  }
-  
-  async markAllUserNotificationsAsRead(userId: number): Promise<number> {
-    let count = 0;
-    
-    for (const [id, notification] of this.notifications.entries()) {
-      if (notification.userId === userId && !notification.read) {
-        this.notifications.set(id, {
-          ...notification,
-          read: true
-        });
-        count++;
-      }
-    }
-    
-    return count;
-  }
-  
-  async hasUserRedeemedDeal(userId: number, dealId: number): Promise<boolean> {
-    const redemptions = Array.from(this.dealRedemptions.values());
-    return redemptions.some(redemption => 
-      redemption.userId === userId && 
-      redemption.dealId === dealId
-    );
-  }
-  
-  async getUserRedemptionCountForDeal(userId: number, dealId: number): Promise<number> {
-    const redemptions = Array.from(this.dealRedemptions.values());
-    return redemptions.filter(redemption => 
-      redemption.userId === userId && 
-      redemption.dealId === dealId
-    ).length;
-  }
-  
-  // Refresh token methods implementation
-  async createRefreshToken(userId: number, token: string, expiresAt: Date, clientInfo?: { ipAddress?: string, userAgent?: string, deviceInfo?: string }): Promise<RefreshToken> {
-    const refreshToken: RefreshToken = {
-      id: token,
-      userId,
-      createdAt: new Date(),
-      token,
-      expiresAt,
-      ipAddress: clientInfo?.ipAddress || null,
-      userAgent: clientInfo?.userAgent || null,
-      isRevoked: false,
-      lastUsedAt: null,
-      deviceInfo: clientInfo?.deviceInfo || null
-    };
-    
-    this.refreshTokens.set(token, refreshToken);
-    return refreshToken;
-  }
-  
-  async getRefreshToken(token: string): Promise<RefreshToken | undefined> {
-    return this.refreshTokens.get(token);
-  }
-  
-  async revokeRefreshToken(token: string): Promise<boolean> {
-    const refreshToken = this.refreshTokens.get(token);
-    if (!refreshToken) {
-      return false;
-    }
-    
-    const updatedToken = {
-      ...refreshToken,
-      isRevoked: true
-    };
-    
-    this.refreshTokens.set(token, updatedToken);
-    return true;
-  }
-  
-  async revokeAllUserRefreshTokens(userId: number): Promise<number> {
-    let count = 0;
-    
-    for (const [token, refreshToken] of this.refreshTokens.entries()) {
-      if (refreshToken.userId === userId && !refreshToken.isRevoked) {
-        this.refreshTokens.set(token, {
-          ...refreshToken,
-          isRevoked: true
-        });
-        count++;
-      }
-    }
-    
-    return count;
-  }
-  
-  async rotateRefreshToken(oldToken: string, newToken: string, expiresAt: Date): Promise<RefreshToken | null> {
-    const oldRefreshToken = this.refreshTokens.get(oldToken);
-    if (!oldRefreshToken || oldRefreshToken.isRevoked) {
-      return null;
-    }
-    
-    // Revoke the old token
-    await this.revokeRefreshToken(oldToken);
-    
-    // Create a new token with the same user information
-    const newRefreshToken: RefreshToken = {
-      id: newToken,
-      userId: oldRefreshToken.userId,
-      createdAt: new Date(),
-      token: newToken,
-      expiresAt,
-      ipAddress: oldRefreshToken.ipAddress,
-      userAgent: oldRefreshToken.userAgent,
-      isRevoked: false,
-      lastUsedAt: new Date(),
-      deviceInfo: oldRefreshToken.deviceInfo
-    };
-    
-    this.refreshTokens.set(newToken, newRefreshToken);
-    return newRefreshToken;
-  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -3111,97 +2925,6 @@ export class DatabaseStorage implements IStorage {
       totalRatings: ratings.length,
       ratingCounts
     };
-  }
-
-  // Deal approval additional methods
-  async getPendingApprovalForDeal(dealId: number): Promise<DealApproval | undefined> {
-    const pendingApprovals = await db.select()
-      .from(dealApprovals)
-      .where(and(
-        eq(dealApprovals.dealId, dealId),
-        eq(dealApprovals.status, 'pending')
-      ))
-      .orderBy(desc(dealApprovals.submittedAt))
-      .limit(1);
-    
-    return pendingApprovals.length > 0 ? pendingApprovals[0] : undefined;
-  }
-  
-  // Notification methods
-  async createNotification(notification: { userId: number, type: string, title?: string, message?: string, resourceId?: number, resourceType?: string, data?: any }): Promise<any> {
-    const newNotification = {
-      userId: notification.userId,
-      type: notification.type,
-      title: notification.title || '',
-      message: notification.message || '',
-      resourceId: notification.resourceId || null,
-      resourceType: notification.resourceType || null,
-      data: notification.data || {},
-      createdAt: new Date(),
-      read: false
-    };
-    
-    // Insert into notifications table
-    const [inserted] = await db.insert(notifications)
-      .values(newNotification)
-      .returning();
-    
-    return inserted;
-  }
-  
-  async getUserNotifications(userId: number): Promise<any[]> {
-    const userNotifications = await db.select()
-      .from(notifications)
-      .where(eq(notifications.userId, userId))
-      .orderBy(desc(notifications.createdAt));
-    
-    return userNotifications;
-  }
-  
-  async markNotificationAsRead(notificationId: number): Promise<any> {
-    const [updated] = await db.update(notifications)
-      .set({ read: true })
-      .where(eq(notifications.id, notificationId))
-      .returning();
-    
-    if (!updated) {
-      throw new Error('Notification not found');
-    }
-    
-    return updated;
-  }
-  
-  async markAllUserNotificationsAsRead(userId: number): Promise<number> {
-    const result = await db.update(notifications)
-      .set({ read: true })
-      .where(and(
-        eq(notifications.userId, userId),
-        eq(notifications.read, false)
-      ));
-    
-    return result.rowCount || 0;
-  }
-  
-  async hasUserRedeemedDeal(userId: number, dealId: number): Promise<boolean> {
-    const existingRedemptions = await db.select({ count: count() })
-      .from(dealRedemptions)
-      .where(and(
-        eq(dealRedemptions.userId, userId),
-        eq(dealRedemptions.dealId, dealId)
-      ));
-    
-    return (existingRedemptions[0]?.count || 0) > 0;
-  }
-  
-  async getUserRedemptionCountForDeal(userId: number, dealId: number): Promise<number> {
-    const result = await db.select({ count: count() })
-      .from(dealRedemptions)
-      .where(and(
-        eq(dealRedemptions.userId, userId),
-        eq(dealRedemptions.dealId, dealId)
-      ));
-    
-    return result[0]?.count || 0;
   }
 }
 

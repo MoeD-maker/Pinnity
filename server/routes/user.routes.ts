@@ -4,11 +4,6 @@ import { authenticate, checkOwnership } from "../middleware";
 import { validate } from "../middleware/validationMiddleware";
 import { userSchemas, authSchemas, ratingSchemas } from "../schemas";
 import { accountSecurityRateLimiter, apiRateLimiter } from "../middleware/rateLimit";
-import { 
-  createVersionedRoutes, 
-  versionHeadersMiddleware,
-  deprecationMiddleware
-} from "../../src/utils/routeVersioning";
 
 /**
  * User routes for profile, favorites, redemptions, and preferences

@@ -1,14 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { storage } from "../storage";
-import { authenticate, authorize, checkOwnership } from "../middleware";
-import { validate } from "../middleware/validationMiddleware";
-import { dealSchemas } from "../schemas";
-import { apiRateLimiter } from "../middleware/rateLimit";
-import { 
-  createVersionedRoutes, 
-  versionHeadersMiddleware,
-  deprecationMiddleware
-} from "../../src/utils/routeVersioning";
+import { authenticate } from "../middleware";
 import { insertDealSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -191,61 +183,26 @@ export function dealRoutes(app: Express): void {
         return res.status(404).json({ message: "Deal not found" });
       }
       
-      // Handle different user types differently
-      if (req.user?.userType === 'admin') {
-        // Read admin's decision & optional comment
-        const { status, comment } = req.body;
-        
-        // Find the existing pending approval record
-        const pending = await storage.getPendingApprovalForDeal(Number(dealId));
-        if (!pending) {
-          return res.status(404).json({ error: "No pending approval found" });
-        }
-        
-        // Update that approval entry
-        const updated = await storage.updateDealApproval(
-          pending.id,
-          status,              // "approved" or "rejected"
-          req.user.userId,     // admin's userId
-          comment              // optional admin note
-        );
-        
-        // Flip the deal's own status
-        await storage.updateDealStatus(
-          dealId,
-          status === "approved" ? "active" : "rejected"
-        );
-        
-        // Notify the vendor
-        await storage.createNotification({
-          userId: pending.submitterId,
-          type: status === "approved" ? "deal-approved" : "deal-rejected",
-          data: { dealId: dealId, comment }
-        });
-        
-        // Return the updated approval
-        return res.status(200).json(updated);
-      }
-      // For business users - create a new pending approval
-      else if (req.user?.userType === 'business') {
+      // Only the business that owns the deal or an admin can submit an approval request
+      if (req.user?.userType === 'business') {
         const business = await storage.getBusinessByUserId(req.user.userId);
         if (!business || business.id !== deal.business.id) {
           return res.status(403).json({ message: "You can only submit approval requests for your own deals" });
         }
-        
-        // Create the approval record (only business users create new pending approvals)
-        const approval = await storage.createDealApproval({
-          dealId,
-          submitterId: req.user.userId,
-          status: 'pending'
-        });
-        
-        return res.status(201).json(approval);
-      } else {
-        return res.status(403).json({ message: "Only business owners or admins can interact with approval requests" });
+      } else if (req.user?.userType !== 'admin') {
+        return res.status(403).json({ message: "Only business owners or admins can submit approval requests" });
       }
+      
+      // Create the approval record
+      const approval = await storage.createDealApproval({
+        dealId,
+        submitterId: req.user!.userId,
+        status: 'pending'
+      });
+      
+      return res.status(201).json(approval);
     } catch (error) {
-      console.error("Deal approval error:", error);
+      console.error("Create approval error:", error);
       return res.status(500).json({ message: "Internal server error" });
     }
   });
