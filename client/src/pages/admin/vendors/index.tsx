@@ -125,14 +125,40 @@ export default function VendorsPage() {
   const fetchBusinesses = async () => {
     setIsLoading(true);
     try {
-      // First try the versioned route, if that fails, fall back to the legacy route
+      // First try fetching all businesses
       let response;
+      let pendingResponse;
+      
       try {
+        // Get all businesses for the full listing
         response = await apiRequest("/api/v1/admin/businesses");
-        console.log("Successfully fetched businesses with versioned route");
+        console.log("Successfully fetched all businesses with versioned route");
+        
+        // Specifically get pending businesses to ensure we have the latest data
+        pendingResponse = await apiRequest("/api/v1/admin/businesses/pending");
+        console.log("Successfully fetched pending businesses:", pendingResponse?.length || 0);
+        
+        // If we got pending businesses, merge them with the main list
+        // This ensures we have the latest pending vendors
+        if (pendingResponse && pendingResponse.length > 0) {
+          // Map of existing business IDs to avoid duplicates
+          const businessIds = new Set(response.map((b: any) => b.id));
+          
+          // Add any pending businesses not already in the main list
+          pendingResponse.forEach((pendingBusiness: any) => {
+            if (!businessIds.has(pendingBusiness.id)) {
+              response.push(pendingBusiness);
+            }
+          });
+        }
       } catch (error) {
         console.log("Versioned route failed, falling back to legacy route");
-        response = await apiRequest("/api/admin/businesses");
+        try {
+          response = await apiRequest("/api/admin/businesses");
+          pendingResponse = await apiRequest("/api/admin/businesses/pending");
+        } catch (fallbackError) {
+          console.error("Both versioned and legacy routes failed:", fallbackError);
+        }
       }
       
       if (response) {
@@ -150,6 +176,7 @@ export default function VendorsPage() {
           description: business.description || ""
         }));
         
+        console.log(`Loaded ${formattedBusinesses.length} businesses, including ${formattedBusinesses.filter(b => b.verificationStatus === 'pending').length} pending`);
         setBusinesses(formattedBusinesses);
       } else {
         toast({
