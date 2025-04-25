@@ -70,6 +70,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 
+// Local interface for display purposes, not tied directly to the DB schema
 interface Business {
   id: number;
   businessName: string;
@@ -183,26 +184,46 @@ export default function VendorsPage() {
       }
       
       if (response) {
-        // Transform the data to match our interface if needed
-        const formattedBusinesses = response.map((business: any) => ({
-          id: business.id,
-          businessName: business.businessName,
-          businessCategory: business.businessCategory,
-          appliedDate: business.user?.created_at || new Date().toISOString(),
-          status: business.status || "new",
-          verificationStatus: business.verificationStatus,
-          email: business.user?.email || "",
-          phone: business.phone || "",
-          address: business.address || "",
-          description: business.description || ""
-        }));
-        
-        console.log(`Loaded ${formattedBusinesses.length} businesses, including ${formattedBusinesses.filter(b => b.verificationStatus === 'pending').length} pending`);
-        setBusinesses(formattedBusinesses);
+        console.log("Raw response from API:", response);
+        if (Array.isArray(response) && response.length > 0) {
+          // Transform the data to match our interface if needed
+          const formattedBusinesses = response.map((business: any) => ({
+            id: business.id,
+            businessName: business.businessName,
+            businessCategory: business.businessCategory || "Other",
+            appliedDate: business.user?.created_at || new Date().toISOString(),
+            status: business.status || "new",
+            verificationStatus: business.verificationStatus || "pending",
+            email: business.user?.email || "",
+            phone: business.phone || "",
+            address: business.address || "",
+            description: business.description || ""
+          }));
+          
+          console.log(`Loaded ${formattedBusinesses.length} businesses, including ${formattedBusinesses.filter((b: any) => b.verificationStatus === 'pending').length} pending`);
+          setBusinesses(formattedBusinesses);
+        } else if (Array.isArray(response) && response.length === 0) {
+          console.log("API returned empty array - no businesses found");
+          setBusinesses([]);
+          // Show message but don't treat as error
+          toast({
+            title: "No vendors found",
+            description: "There are currently no businesses in the system",
+            variant: "default"
+          });
+        } else {
+          console.error("API returned invalid response format:", response);
+          toast({
+            title: "Error",
+            description: "Failed to fetch businesses: Invalid response format",
+            variant: "destructive"
+          });
+        }
       } else {
+        console.error("No response from API");
         toast({
           title: "Error",
-          description: "Failed to fetch businesses",
+          description: "Failed to fetch businesses: No response from server",
           variant: "destructive"
         });
       }
@@ -267,9 +288,9 @@ export default function VendorsPage() {
     setFilteredBusinesses(filtered);
 
     // Count by status
-    setPendingCount(businesses.filter(b => b.verificationStatus === "pending").length);
-    setApprovedCount(businesses.filter(b => b.verificationStatus === "approved").length);
-    setRejectedCount(businesses.filter(b => b.verificationStatus === "rejected").length);
+    setPendingCount(businesses.filter((b: Business) => b.verificationStatus === "pending").length);
+    setApprovedCount(businesses.filter((b: Business) => b.verificationStatus === "approved").length);
+    setRejectedCount(businesses.filter((b: Business) => b.verificationStatus === "rejected").length);
   }, [businesses, searchQuery, statusFilter, categoryFilter, sortField, sortDirection]);
 
   const handleSort = (field: string) => {
