@@ -59,31 +59,29 @@ export function adminRoutes(app: Express): void {
         const totalUsers = users.length;
 
         // Ensure arrays and proper sanitization
-        const sanitizedPendingDeals = sanitizeDeals(Array.isArray(pendingDealsResult) ? pendingDealsResult : Object.values(pendingDealsResult));
-        const sanitizedPendingVendors = sanitizeBusinesses(Array.isArray(pendingBusinesses) ? pendingBusinesses : Object.values(pendingBusinesses));
+        const sanitizedPendingDeals = sanitizeDeals(Array.isArray(pendingDealsResult) ? pendingDealsResult : []);
+        const sanitizedPendingVendors = sanitizeBusinesses(Array.isArray(pendingBusinesses) ? pendingBusinesses : []);
 
         console.log(`Processed ${sanitizedPendingDeals.length} pending deals and ${sanitizedPendingVendors.length} pending vendors`);
 
-        // Prepare Response with proper array formatting
+        const recentActivity = sanitizedPendingDeals
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .slice(0, 5);
+
+        // Prepare Response with proper array formatting and ensure arrays are never null
         return res.status(200).json({
           stats: {
-            pendingDeals: pendingDealsCount,
-            activeDeals: activeDealsCount,
-            rejectedDeals: rejectedDealsCount,
-            expiredDeals: expiredDealsCount,
-            pendingVendors: pendingVendorsCount,
-            totalUsers,
-            alertCount: pendingDealsCount + pendingVendorsCount,
+            pendingDeals: pendingDealsCount || 0,
+            activeDeals: activeDealsCount || 0,
+            rejectedDeals: rejectedDealsCount || 0,
+            expiredDeals: expiredDealsCount || 0,
+            pendingVendors: pendingVendorsCount || 0,
+            totalUsers: totalUsers || 0,
+            alertCount: (pendingDealsCount || 0) + (pendingVendorsCount || 0),
           },
-          recentActivity: sanitizedPendingDeals
-            .sort(
-              (a, b) =>
-                new Date(b.createdAt).getTime() -
-                new Date(a.createdAt).getTime(),
-            )
-            .slice(0, 5),
-          pendingDeals: Array.isArray(sanitizedPendingDeals) ? sanitizedPendingDeals : [],
-          pendingVendors: Array.isArray(sanitizedPendingVendors) ? sanitizedPendingVendors : [],
+          recentActivity: recentActivity || [],
+          pendingDeals: sanitizedPendingDeals || [],
+          pendingVendors: sanitizedPendingVendors || [],
         });
       } catch (error) {
         console.error("Admin Dashboard Error:", error);
