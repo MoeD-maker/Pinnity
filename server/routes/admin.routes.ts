@@ -32,8 +32,6 @@ export function adminRoutes(app: Express): void {
       try {
         // Deals
         const pendingDealsResult = await storage.getDealsByStatus("pending");
-        const pendingDealsCount = pendingDealsResult.length;
-
         const activeDealsCount = (await storage.getDealsByStatus("active"))
           .length;
         const rejectedDealsCount = (await storage.getDealsByStatus("rejected"))
@@ -41,7 +39,7 @@ export function adminRoutes(app: Express): void {
         const expiredDealsCount = (await storage.getDealsByStatus("expired"))
           .length;
 
-        console.log(`Found ${pendingDealsCount} pending deals.`);
+        console.log(`Found ${pendingDealsResult.length} pending deals.`);
 
         // Businesses
         const businesses = await storage.getAllBusinesses();
@@ -58,30 +56,55 @@ export function adminRoutes(app: Express): void {
         const users = await storage.getAllUsers();
         const totalUsers = users.length;
 
-        // Ensure arrays and proper sanitization
-        const sanitizedPendingDeals = sanitizeDeals(Array.isArray(pendingDealsResult) ? pendingDealsResult : []);
-        const sanitizedPendingVendors = sanitizeBusinesses(Array.isArray(pendingBusinesses) ? pendingBusinesses : []);
+        // Process pending deals with business data
+        const sanitizedPendingDeals = await Promise.all(
+          pendingDealsResult.map(async (deal) => {
+            const business = await storage.getBusiness(deal.businessId);
+            return {
+              ...deal,
+              business: {
+                ...business,
+                logoUrl: business?.imageUrl
+              }
+            };
+          })
+        );
+
+        // Process pending vendors with complete business data
+        const sanitizedPendingVendors = pendingBusinesses.map(business => ({
+          ...business,
+          logoUrl: business.imageUrl
+        }));
 
         console.log(`Processed ${sanitizedPendingDeals.length} pending deals and ${sanitizedPendingVendors.length} pending vendors`);
 
-        const recentActivity = sanitizedPendingDeals
+        // Format recent activity
+        const recentDealActivity = sanitizedPendingDeals
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-          .slice(0, 5);
+          .slice(0, 5)
+          .map(deal => ({
+            id: deal.id,
+            type: 'deal_submission',
+            title: deal.title,
+            businessName: deal.business?.businessName || 'Unknown Business',
+            timestamp: deal.createdAt,
+            status: deal.status
+          }));
 
-        // Prepare Response with proper array formatting and ensure arrays are never null
+        // Return complete response
         return res.status(200).json({
           stats: {
-            pendingDeals: pendingDealsCount || 0,
-            activeDeals: activeDealsCount || 0,
-            rejectedDeals: rejectedDealsCount || 0,
-            expiredDeals: expiredDealsCount || 0,
-            pendingVendors: pendingVendorsCount || 0,
-            totalUsers: totalUsers || 0,
-            alertCount: (pendingDealsCount || 0) + (pendingVendorsCount || 0),
+            pendingDeals: pendingDealsResult.length,
+            activeDeals: activeDealsCount,
+            rejectedDeals: rejectedDealsCount,
+            expiredDeals: expiredDealsCount,
+            pendingVendors: pendingBusinesses.length,
+            totalUsers,
+            alertCount: pendingDealsResult.length + pendingBusinesses.length,
           },
-          recentActivity: recentActivity || [],
-          pendingDeals: sanitizedPendingDeals || [],
-          pendingVendors: sanitizedPendingVendors || [],
+          recentActivity: recentDealActivity,
+          pendingDeals: sanitizedPendingDeals,
+          pendingVendors: sanitizedPendingVendors,
         });
       } catch (error) {
         console.error("Admin Dashboard Error:", error);
