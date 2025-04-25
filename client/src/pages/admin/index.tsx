@@ -143,7 +143,13 @@ const AdminDashboardPage = () => {
       return;
     }
     
-    if (user.userType !== "admin") {
+    console.log("User type check:", user);
+    
+    // For debugging purposes, log full user object
+    console.log("Full user object in admin page:", JSON.stringify(user));
+    
+    // Accept both lowercase and capitalized "admin" user types
+    if (user.userType !== "admin" && user.userType !== "Admin") {
       console.log("User is not admin, redirecting to dashboard");
       toast({
         title: "Access Denied",
