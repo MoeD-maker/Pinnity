@@ -1,0 +1,93 @@
+🚨 Critical Fix Needed: Admin Dashboard is Still Showing Mock Numbers and Missing Pending Deals/Vendors
+
+---
+
+### 🛠️ Root Cause
+
+The frontend admin dashboard is still fetching data from an outdated or mock endpoint (`/admin/dashboard`) instead of the new real endpoint (`/api/v1/admin/dashboard`), which returns live pending deals and vendors.
+
+As a result:
+- ❌ Mock stats are displayed (hardcoded numbers)
+- ❌ No real pending deals or vendors are shown for approval
+- ❌ Admin actions are not possible
+
+The backend is already fixed and properly returns live sanitized data.
+
+---
+
+### ✅ What Needs To Be Fixed
+
+#### 1. Update Frontend API Call
+
+Find the frontend code that fetches dashboard data, likely in:
+
+client/src/pages/admin/index.tsx client/src/components/admin/AdminDashboard.tsx client/src/pages/admin/dashboard.tsx
+
+sql
+Copy
+Edit
+(or similar)
+
+➡️ Update the `fetch` or `axios` call from:
+
+```ts
+fetch('/admin/dashboard') // ❌ wrong
+to:
+
+ts
+Copy
+Edit
+fetch('/api/v1/admin/dashboard') // ✅ correct
+Make sure the method is GET and headers include authentication if required.
+
+2. Update How You Read API Response
+The new API structure looks like this:
+
+json
+Copy
+Edit
+{
+  "stats": {
+    "pendingDeals": number,
+    "activeDeals": number,
+    "rejectedDeals": number,
+    "expiredDeals": number,
+    "pendingVendors": number,
+    "totalUsers": number,
+    "alertCount": number
+  },
+  "recentActivity": [ 
+    {
+      "id": number,
+      "title": string,
+      "status": string,
+      "businessName": string,
+      "createdAt": timestamp
+    }
+  ]
+}
+➡️ Update your frontend to read:
+
+ts
+Copy
+Edit
+const response = await fetch('/api/v1/admin/dashboard');
+const data = await response.json();
+
+const pendingDeals = data.stats.pendingDeals;
+const pendingVendors = data.stats.pendingVendors;
+const totalUsers = data.stats.totalUsers;
+const recentActivity = data.recentActivity;
+3. Remove Any Hardcoded Mock Numbers
+If you find code like:
+
+ts
+Copy
+Edit
+const pendingDeals = 5; // ❌ hardcoded
+const pendingVendors = 8; // ❌ hardcoded
+➡️ Delete those and rely fully on the live API response values.
+
+4. Render Live Data for Approval Tables
+Wherever you render pending deals and vendors (like in an approval table or review panel), use the live recentActivity or fetch detailed deals/vendors separately if needed.
+

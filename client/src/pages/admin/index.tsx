@@ -177,15 +177,10 @@ const AdminDashboardPage = () => {
       try {
         console.log("Fetching dashboard data...");
         
-        // First try the versioned route, if that fails, fall back to the legacy route
-        let response;
-        try {
-          response = await apiRequest("/api/v1/admin/dashboard");
-          console.log("Successfully fetched dashboard data with versioned route");
-        } catch (error) {
-          console.log("Versioned route failed, falling back to legacy route");
-          response = await apiRequest("/api/admin/dashboard");
-        }
+        // Fetch from the correct versioned endpoint that returns live data
+        console.log("Fetching from API route: /api/v1/admin/dashboard");
+        const response = await apiRequest("/api/v1/admin/dashboard");
+        console.log("Successfully fetched dashboard data with versioned route");
         
         console.log("Dashboard data response:", response);
         
@@ -294,8 +289,6 @@ const AdminDashboardPage = () => {
           value={stats.pendingVendors}
           icon={<Store className="h-4 w-4" />}
           description="Vendors awaiting approval"
-          trend="up"
-          trendValue="3 today"
           action={{
             label: "View All",
             onClick: () => window.location.href = "/admin/vendors"
@@ -306,8 +299,6 @@ const AdminDashboardPage = () => {
           value={stats.pendingDeals}
           icon={<Tag className="h-4 w-4" />}
           description="Deals awaiting moderation"
-          trend="up"
-          trendValue="7 today"
           action={{
             label: "Review",
             onClick: () => window.location.href = "/admin/deals"
@@ -318,16 +309,12 @@ const AdminDashboardPage = () => {
           value={stats.activeDeals}
           icon={<CheckCircle className="h-4 w-4" />}
           description="Currently active deals"
-          trend="up"
-          trendValue="12 this week"
         />
         <StatCard
           title="Total Users"
           value={stats.totalUsers}
           icon={<Users className="h-4 w-4" />}
           description="Registered platform users"
-          trend="up"
-          trendValue="42 this month"
         />
       </div>
 
