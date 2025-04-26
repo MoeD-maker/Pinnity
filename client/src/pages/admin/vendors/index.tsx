@@ -145,6 +145,41 @@ export default function VendorsPage() {
         // Specifically get pending businesses to ensure we have the latest data
         try {
           pendingResponse = await apiRequest("/api/v1/admin/businesses/pending");
+          
+          // Apply robust array conversion to handle object with numeric keys
+          if (pendingResponse && typeof pendingResponse === 'object' && !Array.isArray(pendingResponse)) {
+            console.log("Converting pending businesses object to array:", pendingResponse);
+            
+            // Direct approach - most reliable way to convert an object with numeric keys to an array
+            const result = [];
+            let i = 0;
+            let hasNumericKeys = false;
+            
+            // First try numeric access
+            while (pendingResponse[i] !== undefined) {
+              result.push(pendingResponse[i]);
+              hasNumericKeys = true;
+              i++;
+            }
+            
+            // If we found numeric keys, use that result
+            if (hasNumericKeys && result.length > 0) {
+              console.log('Successfully converted object using numeric indexing, found:', result.length, 'pending businesses');
+              pendingResponse = result;
+            } 
+            // Otherwise try Object.values
+            else {
+              try {
+                const businessArray = Object.values(pendingResponse);
+                console.log('Converted pending businesses using Object.values():', businessArray.length, 'items');
+                pendingResponse = businessArray;
+              } catch (error) {
+                console.error('Error converting pending businesses to array:', error);
+                pendingResponse = [];
+              }
+            }
+          }
+          
           console.log("Successfully fetched pending businesses:", pendingResponse?.length || 0);
         } catch (pendingError) {
           console.error("Error fetching pending businesses:", pendingError);
@@ -173,9 +208,78 @@ export default function VendorsPage() {
           response = await apiRequest("/api/admin/businesses");
           console.log("Successfully fetched all businesses with legacy route");
           
+          // Apply array conversion to legacy response if needed
+          if (response && typeof response === 'object' && !Array.isArray(response)) {
+            console.log("Converting legacy businesses response object to array:", response);
+            
+            // Direct approach - most reliable way to convert an object with numeric keys to an array
+            const result = [];
+            let i = 0;
+            let hasNumericKeys = false;
+            
+            // First try numeric access
+            while (response[i] !== undefined) {
+              result.push(response[i]);
+              hasNumericKeys = true;
+              i++;
+            }
+            
+            // If we found numeric keys, use that result
+            if (hasNumericKeys && result.length > 0) {
+              console.log('Successfully converted legacy response using numeric indexing, found:', result.length, 'businesses');
+              response = result;
+            } 
+            // Otherwise try Object.values
+            else {
+              try {
+                const businessArray = Object.values(response);
+                console.log('Converted legacy businesses using Object.values():', businessArray.length, 'items');
+                response = businessArray;
+              } catch (error) {
+                console.error('Error converting legacy businesses to array:', error);
+                response = [];
+              }
+            }
+          }
+          
           console.log("Attempting legacy pending businesses route...");
           pendingResponse = await apiRequest("/api/admin/businesses/pending");
-          console.log("Successfully fetched pending businesses with legacy route");
+          
+          // Apply array conversion to legacy pending response if needed
+          if (pendingResponse && typeof pendingResponse === 'object' && !Array.isArray(pendingResponse)) {
+            console.log("Converting legacy pending businesses object to array:", pendingResponse);
+            
+            // Direct approach - most reliable way to convert an object with numeric keys to an array
+            const result = [];
+            let i = 0;
+            let hasNumericKeys = false;
+            
+            // First try numeric access
+            while (pendingResponse[i] !== undefined) {
+              result.push(pendingResponse[i]);
+              hasNumericKeys = true;
+              i++;
+            }
+            
+            // If we found numeric keys, use that result
+            if (hasNumericKeys && result.length > 0) {
+              console.log('Successfully converted legacy pending using numeric indexing, found:', result.length, 'businesses');
+              pendingResponse = result;
+            } 
+            // Otherwise try Object.values
+            else {
+              try {
+                const businessArray = Object.values(pendingResponse);
+                console.log('Converted legacy pending using Object.values():', businessArray.length, 'items');
+                pendingResponse = businessArray;
+              } catch (error) {
+                console.error('Error converting legacy pending to array:', error);
+                pendingResponse = [];
+              }
+            }
+          }
+          
+          console.log("Successfully fetched pending businesses with legacy route:", pendingResponse?.length || 0);
         } catch (fallbackError) {
           console.error("Both versioned and legacy routes failed:", fallbackError);
           // Set response to empty array if both approaches fail, to avoid undefined errors
@@ -185,6 +289,41 @@ export default function VendorsPage() {
       
       if (response) {
         console.log("Raw response from API:", response);
+        
+        // Apply robust array conversion to main response if needed
+        if (typeof response === 'object' && !Array.isArray(response)) {
+          console.log("Converting main response object to array:", response);
+          
+          // Direct approach - most reliable way to convert an object with numeric keys to an array
+          const result = [];
+          let i = 0;
+          let hasNumericKeys = false;
+          
+          // First try numeric access
+          while (response[i] !== undefined) {
+            result.push(response[i]);
+            hasNumericKeys = true;
+            i++;
+          }
+          
+          // If we found numeric keys, use that result
+          if (hasNumericKeys && result.length > 0) {
+            console.log('Successfully converted main response using numeric indexing, found:', result.length, 'businesses');
+            response = result;
+          } 
+          // Otherwise try Object.values
+          else {
+            try {
+              const businessArray = Object.values(response);
+              console.log('Converted main response using Object.values():', businessArray.length, 'items');
+              response = businessArray;
+            } catch (error) {
+              console.error('Error converting main response to array:', error);
+              // Don't set to empty array here, let the existing error handling work
+            }
+          }
+        }
+        
         if (Array.isArray(response) && response.length > 0) {
           // Transform the data to match our interface if needed
           const formattedBusinesses = response.map((business: any) => ({
