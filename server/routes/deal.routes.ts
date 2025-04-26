@@ -4,7 +4,7 @@ import { authenticate } from "../middleware";
 import { insertDealSchema } from "@shared/schema";
 import { z } from "zod";
 import { createVersionedRoutes, versionHeadersMiddleware, deprecationMiddleware } from "../../src/utils/routeVersioning";
-import { ensureArray, sanitizeDeals } from "../utils";
+import { ensureArray, sanitizeDeals, forceDealArray } from "../utils";
 
 /**
  * Deal routes for listing, creating, and managing deals
@@ -47,44 +47,27 @@ export function dealRoutes(app: Express): void {
     authenticate,
     async (req: Request, res: Response) => {
     try {
-      console.log(`Fetching deals with status: ${req.params.status}`);
+      console.log(`DEBUG: Getting deals with status "${req.params.status}" (versioned route)`);
       const status = req.params.status;
       
+      // Get user role for logging
+      const userRole = req.user?.userType || "unauthenticated";
+      const userId = req.user?.userId;
+      console.log(`STORAGE: Getting deals for user role: ${userRole}, userId: ${userId || "none"}`);
+      
       // Get deals with requested status
-      const deals = await storage.getDealsByStatus(status);
+      const rawDeals = await storage.getDealsByStatus(status);
       
-      console.log(`Found ${deals.length} deals with status '${status}'`);
+      // Use our robust array conversion function
+      const dealsArray = forceDealArray(rawDeals);
+      console.log(`DEBUG: Query returned ${dealsArray.length} deals with status "${status}"`);
       
-      // Use ensureArray to guarantee we're returning an array format
-      const dealsArray = ensureArray(deals);
-      console.log(`Converted deals to array format, length: ${dealsArray.length}`);
-      
-      // FORCE conversion to array using Array.from and JSON manipulation
-      // This is a last-resort attempt to fix client-side rendering issues
-      let forceArray = [];
-      try {
-        // First try spread operator
-        forceArray = [...dealsArray];
-      } catch (err) {
-        console.error('Error using spread operator:', err);
-        // Try direct JSON manipulation
-        try {
-          const jsonStr = JSON.stringify(dealsArray);
-          forceArray = JSON.parse(jsonStr);
-        } catch (err2) {
-          console.error('Error using JSON parse/stringify:', err2);
-          // Last resort - use for loop
-          for (let i = 0; i < dealsArray.length; i++) {
-            forceArray.push(dealsArray[i]);
-          }
-        }
-      }
-      
-      console.log(`Forced array length: ${forceArray.length}`);
+      // Apply sanitization to ensure clean data
+      const sanitizedDeals = sanitizeDeals(dealsArray);
+      console.log(`DEBUG: Returning ${sanitizedDeals.length} deals with status "${status}"`);
       
       // Force JSON to use array format by manually converting
-      const jsonStr = JSON.stringify(forceArray);
-      const jsonArray = JSON.parse(jsonStr);
+      const jsonStr = JSON.stringify(sanitizedDeals);
       
       // Send direct array as JSON.stringify enforcement
       return res.setHeader('Content-Type', 'application/json')
@@ -100,16 +83,31 @@ export function dealRoutes(app: Express): void {
     authenticate,
     async (req: Request, res: Response) => {
     try {
+      console.log(`DEBUG: Getting deals with status "${req.params.status}" (legacy route)`);
       const status = req.params.status;
       
+      // Get user role for logging
+      const userRole = req.user?.userType || "unauthenticated";
+      const userId = req.user?.userId;
+      console.log(`STORAGE: Getting deals for user role: ${userRole}, userId: ${userId || "none"}`);
+      
       // Get deals with requested status
-      const deals = await storage.getDealsByStatus(status);
+      const rawDeals = await storage.getDealsByStatus(status);
       
-      // Use ensureArray to guarantee we're returning an array format
-      const dealsArray = ensureArray(deals);
-      console.log(`Legacy route: Converted deals to array format, length: ${dealsArray.length}`);
+      // Use our robust array conversion function
+      const dealsArray = forceDealArray(rawDeals);
+      console.log(`DEBUG: Query returned ${dealsArray.length} deals with status "${status}"`);
       
-      return res.status(200).json(dealsArray);
+      // Apply sanitization to ensure clean data
+      const sanitizedDeals = sanitizeDeals(dealsArray);
+      console.log(`DEBUG: Returning ${sanitizedDeals.length} deals with status "${status}"`);
+      
+      // Force JSON to use array format by manually converting
+      const jsonStr = JSON.stringify(sanitizedDeals);
+      
+      // Send direct array as JSON.stringify enforcement
+      return res.setHeader('Content-Type', 'application/json')
+        .send(jsonStr);
     } catch (error) {
       console.error(`Error fetching deals by status ${req.params.status}:`, error);
       return res.status(500).json({ message: "Error fetching deals by status" });

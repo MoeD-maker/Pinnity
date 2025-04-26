@@ -12,6 +12,7 @@ import {
   sanitizeBusiness,
   sanitizeBusinesses,
   ensureArray,
+  forceDealArray,
 } from "../utils/sanitize";
 
 /**
