@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRoute, useLocation } from "wouter";
 import AdminLayout from "@/components/admin/AdminLayout";
+import DocumentVerification from "@/components/admin/DocumentVerification";
 import { 
   Store, 
   Briefcase,
@@ -494,112 +495,57 @@ export default function VendorDetailPage() {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="documents" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Verification Documents</CardTitle>
-              <CardDescription>
-                Documents submitted for business verification
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {business.documents && business.documents.length > 0 ? (
-                  business.documents.map((doc) => (
-                    <Card key={doc.id} className="overflow-hidden">
-                      <div className="flex flex-col sm:flex-row">
-                        <div className="bg-gray-100 p-6 flex items-center justify-center sm:w-1/4">
-                          <FileImage className="h-12 w-12 text-gray-400" />
-                        </div>
-                        <div className="flex flex-col p-4 sm:w-3/4">
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-semibold">{doc.name}</h3>
-                            <Badge 
-                              variant="outline" 
-                              className={`flex items-center ${getStatusColor(doc.status)}`}
-                            >
-                              {getStatusIcon(doc.status)}
-                              {doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            Uploaded on {format(new Date(doc.uploadDate), "MMMM d, yyyy")}
-                          </p>
-                          {doc.notes && (
-                            <p className="text-sm italic border-l-2 border-primary pl-2 mt-2">
-                              {doc.notes}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-2 mt-4">
-                            {/* Get the correct document URL based on the document type */}
-                            <Button variant="outline" size="sm"
-                              onClick={() => {
-                                // Get the appropriate document URL based on document type
-                                let docUrl;
-                                if (doc.name === "Business License" && business.governmentId) {
-                                  docUrl = business.governmentId;
-                                } else if (doc.name === "Government ID" && business.proofOfBusiness) {
-                                  docUrl = business.proofOfBusiness;
-                                } else if (doc.name === "Proof of Address" && business.proofOfAddress) {
-                                  docUrl = business.proofOfAddress;
-                                }
-                                
-                                // Open the document in a new tab if URL is available
-                                if (docUrl) {
-                                  window.open(docUrl, '_blank');
-                                } else {
-                                  toast({
-                                    title: "Document Not Found",
-                                    description: "The document file could not be found.",
-                                    variant: "destructive"
-                                  });
-                                }
-                              }}
-                            >
-                              View Document
-                            </Button>
-                            <Button 
-                              variant={doc.status === "verified" ? "outline" : "default"}
-                              size="sm"
-                              className={doc.status === "verified" ? "bg-green-50 text-green-600 hover:bg-green-100 border-green-200" : ""}
-                              onClick={() => {
-                                // Here we'd handle verification of a specific document
-                                // In a real app, we would probably have a separate API for this
-                                if (doc.status !== "verified") {
-                                  const updatedDocs = business.documents?.map(d => 
-                                    d.id === doc.id ? {...d, status: "verified"} : d
-                                  );
-                                  
-                                  setBusiness({
-                                    ...business,
-                                    documents: updatedDocs
-                                  });
-                                  
-                                  toast({
-                                    title: "Document Verified",
-                                    description: `${doc.name} has been verified.`
-                                  });
-                                }
-                              }}
-                            >
-                              {doc.status === "verified" ? 
-                                <><CheckCircle className="h-3 w-3 mr-1" /> Verified</> : 
-                                <><ShieldCheck className="h-3 w-3 mr-1" /> Verify</>
-                              }
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  ))
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-10">
-                    <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">No documents have been submitted</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          {business && business.documents && business.documents.length > 0 ? (
+            <DocumentVerification 
+              businessId={business.id}
+              documents={business.documents.map(doc => {
+                // Map document file paths based on document type
+                let filePath = undefined;
+                let thumbUrl = undefined;
+                
+                // Map document URLs from business fields
+                if (doc.name === "Business License" && business.governmentId) {
+                  filePath = business.governmentId;
+                  thumbUrl = business.governmentId;
+                } else if (doc.name === "Government ID" && business.proofOfBusiness) {
+                  filePath = business.proofOfBusiness;
+                  thumbUrl = business.proofOfBusiness;
+                } else if (doc.name === "Proof of Address" && business.proofOfAddress) {
+                  filePath = business.proofOfAddress;
+                  thumbUrl = business.proofOfAddress;
+                }
+                
+                return {
+                  ...doc,
+                  filePath,
+                  thumbUrl
+                };
+              })}
+              onDocumentStatusChange={(documentId, status, notes) => {
+                // Update the document status in the UI
+                if (business.documents) {
+                  const updatedDocs = business.documents.map(d => 
+                    d.id === documentId ? { ...d, status: status as any, notes: notes } : d
+                  );
+                  setBusiness({ ...business, documents: updatedDocs });
+                  
+                  toast({
+                    title: `Document ${status === "verified" ? "Verified" : "Rejected"}`,
+                    description: `The document has been ${status === "verified" ? "verified" : "rejected"}`
+                  });
+                }
+              }}
+            />
+          ) : (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center py-6">
+                  <FileText className="h-12 w-12 text-muted-foreground opacity-20 mx-auto mb-4" />
+                  <p className="text-muted-foreground">No documents have been submitted yet</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
         <TabsContent value="deals" className="mt-4">
           <Card>
