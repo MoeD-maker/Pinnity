@@ -209,7 +209,7 @@ export default function DealsPage() {
                 console.log('Converted deals array using Object.values():', dealsArray.length, 'items');
                 
                 // Additional check to ensure we don't have garbage objects
-                if (dealsArray.length > 0 && dealsArray[0] && typeof dealsArray[0] === 'object' && dealsArray[0].id) {
+                if (dealsArray.length > 0 && dealsArray[0] && typeof dealsArray[0] === 'object' && 'id' in dealsArray[0]) {
                   response = dealsArray;
                 } else {
                   console.log('Object.values() returned invalid data, trying JSON method');
