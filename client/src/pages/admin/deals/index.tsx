@@ -163,18 +163,54 @@ export default function DealsPage() {
         
         console.log('Deals API response:', response);
         
+        // If response is null or undefined, return empty array
+        if (!response) {
+          console.error('Response is null or undefined');
+          return [];
+        }
+        
         // If response is an object with numeric keys rather than an array, convert it to an array
-        if (response && typeof response === 'object' && !Array.isArray(response)) {
+        if (typeof response === 'object' && !Array.isArray(response)) {
           console.log('Converting object with numeric keys to array:', response);
+          
+          // First, check if it's an object with numeric keys (like {0: deal1, 1: deal2})
           const keys = Object.keys(response);
-          // Check if all keys are numeric
           const isNumericKeysObject = keys.length > 0 && keys.every(key => !isNaN(Number(key)));
           
           if (isNumericKeysObject) {
-            // Convert to array
-            const dealsArray = keys.map(key => response[key]);
-            console.log('Converted deals array:', dealsArray);
-            response = dealsArray;
+            // First attempt: Convert using map method
+            try {
+              const dealsArray = keys.map(key => response[key]);
+              console.log('Converted deals array (method 1):', dealsArray);
+              response = dealsArray;
+            } catch (error) {
+              console.error('Error converting object to array (method 1):', error);
+              
+              // Second attempt: Convert using Object.values
+              try {
+                const dealsArray = Object.values(response);
+                console.log('Converted deals array (method 2):', dealsArray);
+                response = dealsArray;
+              } catch (error) {
+                console.error('Error converting object to array (method 2):', error);
+                
+                // Final fallback: Try using Array.from
+                try {
+                  // @ts-ignore - Forcing conversion
+                  const dealsArray = Array.from(response);
+                  console.log('Converted deals array (method 3):', dealsArray);
+                  response = dealsArray;
+                } catch (error) {
+                  console.error('All conversion methods failed:', error);
+                  // Last resort: just return empty array to prevent UI errors
+                  return [];
+                }
+              }
+            }
+          } else if (response.pendingDeals && Array.isArray(response.pendingDeals)) {
+            // Check if this might be a wrapped response from admin dashboard
+            console.log('Found pendingDeals array property, using that instead');
+            response = response.pendingDeals;
           }
         }
         
