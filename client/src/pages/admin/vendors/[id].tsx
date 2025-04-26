@@ -68,6 +68,10 @@ interface Business {
   address: string;
   description: string;
   websiteUrl?: string;
+  // Document URLs from Cloudinary
+  governmentId?: string;
+  proofOfAddress?: string;
+  proofOfBusiness?: string;
   socialLinks?: {
     instagram?: string;
     facebook?: string;
@@ -526,7 +530,31 @@ export default function VendorDetailPage() {
                             </p>
                           )}
                           <div className="flex items-center gap-2 mt-4">
-                            <Button variant="outline" size="sm">
+                            {/* Get the correct document URL based on the document type */}
+                            <Button variant="outline" size="sm"
+                              onClick={() => {
+                                // Get the appropriate document URL based on document type
+                                let docUrl;
+                                if (doc.name === "Business License" && business.governmentId) {
+                                  docUrl = business.governmentId;
+                                } else if (doc.name === "Government ID" && business.proofOfBusiness) {
+                                  docUrl = business.proofOfBusiness;
+                                } else if (doc.name === "Proof of Address" && business.proofOfAddress) {
+                                  docUrl = business.proofOfAddress;
+                                }
+                                
+                                // Open the document in a new tab if URL is available
+                                if (docUrl) {
+                                  window.open(docUrl, '_blank');
+                                } else {
+                                  toast({
+                                    title: "Document Not Found",
+                                    description: "The document file could not be found.",
+                                    variant: "destructive"
+                                  });
+                                }
+                              }}
+                            >
                               View Document
                             </Button>
                             <Button 
