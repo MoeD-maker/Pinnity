@@ -520,40 +520,47 @@ export default function VendorDetailPage() {
                               docUrl = business.proofOfAddress;
                             }
                             
-                            return docUrl ? (
-                              <div className="w-full h-full min-h-[120px] cursor-pointer" 
-                                   onClick={() => window.open(docUrl, '_blank')}>
-                                <img 
-                                  src={docUrl} 
-                                  alt={doc.name} 
-                                  className="w-full h-full object-contain hover:opacity-90 transition-opacity"
-                                  onError={(e) => {
-                                    // Fallback to document icon if image fails to load
-                                    e.currentTarget.style.display = 'none';
-                                    e.currentTarget.parentElement?.classList.add('flex', 'items-center', 'justify-center');
-                                  }}
-                                />
-                                <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black/30 transition-opacity">
-                                  <span className="text-white text-xs bg-black/50 px-2 py-1 rounded">Click to view</span>
+                            if (docUrl) {
+                              return (
+                                <div className="w-full h-full min-h-[120px] cursor-pointer" 
+                                     onClick={() => window.open(docUrl, '_blank')}>
+                                  <img 
+                                    src={docUrl} 
+                                    alt={doc.name} 
+                                    className="w-full h-full object-contain hover:opacity-90 transition-opacity"
+                                    onError={(e) => {
+                                      // Fallback to document icon if image fails to load
+                                      e.currentTarget.style.display = 'none';
+                                      e.currentTarget.parentElement?.classList.add('flex', 'items-center', 'justify-center');
+                                    }}
+                                  />
+                                  <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black/30 transition-opacity">
+                                    <span className="text-white text-xs bg-black/50 px-2 py-1 rounded">Click to view</span>
+                                  </div>
                                 </div>
-                              </div>
-                            ) : doc.name === "Business License" ? (
-                              <div className="flex flex-col items-center">
-                                <FileText className="h-12 w-12 text-gray-400" />
-                                <span className="text-xs text-gray-500 mt-1">License</span>
-                              </div>
-                            ) : doc.name === "Government ID" ? (
-                              <div className="flex flex-col items-center">
-                                <FileText className="h-12 w-12 text-gray-400" />
-                                <span className="text-xs text-gray-500 mt-1">ID Document</span>
-                              </div>
-                            ) : (
-                              <div className="flex flex-col items-center">
-                                <FileText className="h-12 w-12 text-gray-400" />
-                                <span className="text-xs text-gray-500 mt-1">Address Proof</span>
-                              </div>
-                            )
-                            );
+                              );
+                            } else if (doc.name === "Business License") {
+                              return (
+                                <div className="flex flex-col items-center">
+                                  <FileText className="h-12 w-12 text-gray-400" />
+                                  <span className="text-xs text-gray-500 mt-1">License</span>
+                                </div>
+                              );
+                            } else if (doc.name === "Government ID") {
+                              return (
+                                <div className="flex flex-col items-center">
+                                  <FileText className="h-12 w-12 text-gray-400" />
+                                  <span className="text-xs text-gray-500 mt-1">ID Document</span>
+                                </div>
+                              );
+                            } else {
+                              return (
+                                <div className="flex flex-col items-center">
+                                  <FileText className="h-12 w-12 text-gray-400" />
+                                  <span className="text-xs text-gray-500 mt-1">Address Proof</span>
+                                </div>
+                              );
+                            }
                           })()}
                         </div>
                         <div className="flex flex-col p-4 sm:w-3/4">
