@@ -185,38 +185,67 @@ export default function DealsPage() {
           }
           // Then check if it's an object with numeric keys (like {0: deal1, 1: deal2})
           else {
-            const keys = Object.keys(response);
-            const isNumericKeysObject = keys.length > 0 && keys.every(key => !isNaN(Number(key)));
+            // Direct approach - most reliable way to convert an object with numeric keys to an array
+            const result = [];
+            let i = 0;
+            let hasNumericKeys = false;
             
-            if (isNumericKeysObject) {
-              // First attempt: Convert using map method
+            // First try numeric access
+            while (response[i] !== undefined) {
+              result.push(response[i]);
+              hasNumericKeys = true;
+              i++;
+            }
+            
+            // If we found numeric keys, use that result
+            if (hasNumericKeys && result.length > 0) {
+              console.log('Successfully converted object using numeric indexing, found:', result.length, 'items');
+              response = result;
+            } 
+            // Otherwise try Object.values()
+            else {
               try {
-                const dealsArray = keys.map(key => response[key]);
-                console.log('Converted deals array (method 1):', dealsArray);
-                response = dealsArray;
-              } catch (error) {
-                console.error('Error converting object to array (method 1):', error);
+                const dealsArray = Object.values(response);
+                console.log('Converted deals array using Object.values():', dealsArray.length, 'items');
                 
-                // Second attempt: Convert using Object.values
-                try {
-                  const dealsArray = Object.values(response);
-                  console.log('Converted deals array (method 2):', dealsArray);
+                // Additional check to ensure we don't have garbage objects
+                if (dealsArray.length > 0 && dealsArray[0] && typeof dealsArray[0] === 'object' && dealsArray[0].id) {
                   response = dealsArray;
-                } catch (error) {
-                  console.error('Error converting object to array (method 2):', error);
+                } else {
+                  console.log('Object.values() returned invalid data, trying JSON method');
                   
-                  // Final fallback: Try using Array.from
-                  try {
-                    // @ts-ignore - Forcing conversion
-                    const dealsArray = Array.from(response);
-                    console.log('Converted deals array (method 3):', dealsArray);
-                    response = dealsArray;
-                  } catch (error) {
-                    console.error('All conversion methods failed:', error);
-                    // Last resort: just return empty array to prevent UI errors
-                    return [];
+                  // JSON stringify/parse trick to force array conversion
+                  const jsonString = JSON.stringify(response);
+                  console.log('Response as JSON string (first 100 chars):', jsonString.substring(0, 100));
+                  
+                  // Force JSON re-parse
+                  const parsed = JSON.parse(jsonString);
+                  
+                  if (Array.isArray(parsed)) {
+                    console.log('JSON parsing converted to array:', parsed.length, 'items');
+                    response = parsed;
+                  } else {
+                    // Use worst-case fallback: manually loop through numeric keys
+                    console.log('Manual extraction as last resort');
+                    const manualResult = [];
+                    const keys = Object.keys(parsed).filter(key => !isNaN(Number(key)));
+                    
+                    for (const key of keys) {
+                      manualResult.push(parsed[key]);
+                    }
+                    
+                    if (manualResult.length > 0) {
+                      console.log('Manual extraction successful:', manualResult.length, 'items');
+                      response = manualResult;
+                    } else {
+                      console.error('All conversion methods failed, returning empty array');
+                      return [];
+                    }
                   }
                 }
+              } catch (error) {
+                console.error('Error during all conversion attempts:', error);
+                return [];
               }
             }
           }
