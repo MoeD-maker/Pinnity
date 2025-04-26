@@ -85,7 +85,6 @@ interface Business {
     uploadDate: string;
     notes?: string;
   }[];
-  [key: string]: any; // Allow dynamic access to properties
 }
 
 export default function VendorDetailPage() {
@@ -531,23 +530,32 @@ export default function VendorDetailPage() {
                             </p>
                           )}
                           <div className="flex items-center gap-2 mt-4">
+                            {/* Get the correct document URL based on the document type */}
                             <Button variant="outline" size="sm"
                               onClick={() => {
-                                const documentUrl = business[doc.type === "license" ? "governmentId" : 
-                                                  doc.type === "id" ? "proofOfBusiness" : "proofOfAddress"];
+                                // Get the appropriate document URL based on document type
+                                let docUrl;
+                                if (doc.name === "Business License" && business.governmentId) {
+                                  docUrl = business.governmentId;
+                                } else if (doc.name === "Government ID" && business.proofOfBusiness) {
+                                  docUrl = business.proofOfBusiness;
+                                } else if (doc.name === "Proof of Address" && business.proofOfAddress) {
+                                  docUrl = business.proofOfAddress;
+                                }
                                 
-                                if (documentUrl) {
-                                  window.open(documentUrl, '_blank');
+                                // Open the document in a new tab if URL is available
+                                if (docUrl) {
+                                  window.open(docUrl, '_blank');
                                 } else {
                                   toast({
                                     title: "Document Not Found",
-                                    description: "The document could not be viewed",
+                                    description: "The document file could not be found.",
                                     variant: "destructive"
                                   });
                                 }
                               }}
                             >
-                              <FileText className="h-3 w-3 mr-1" /> View Document
+                              View Document
                             </Button>
                             <Button 
                               variant={doc.status === "verified" ? "outline" : "default"}
