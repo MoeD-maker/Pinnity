@@ -158,6 +158,8 @@ const AdminDashboardPage = () => {
   }, [user, setLocation, toast]);
   const [stats, setStats] = useState({
     pendingVendors: 0,
+    approvedVendors: 0,
+    rejectedVendors: 0,
     pendingDeals: 0,
     activeDeals: 0,
     totalUsers: 0,
@@ -219,6 +221,8 @@ const AdminDashboardPage = () => {
           // Fallback stats to prevent UI errors
           setStats({
             pendingVendors: 0,
+            approvedVendors: 0,
+            rejectedVendors: 0,
             pendingDeals: 0,
             activeDeals: 0,
             totalUsers: 0,
@@ -297,6 +301,16 @@ const AdminDashboardPage = () => {
           }}
         />
         <StatCard
+          title="Approved Vendors"
+          value={stats.approvedVendors}
+          icon={<CheckCircle className="h-4 w-4" />}
+          description="Active vendors"
+          action={{
+            label: "View All",
+            onClick: () => window.location.href = "/admin/vendors?status=approved"
+          }}
+        />
+        <StatCard
           title="Pending Deals"
           value={stats.pendingDeals}
           icon={<Tag className="h-4 w-4" />}
@@ -312,11 +326,32 @@ const AdminDashboardPage = () => {
           icon={<CheckCircle className="h-4 w-4" />}
           description="Currently active deals"
         />
+      </div>
+      
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
         <StatCard
           title="Total Users"
           value={stats.totalUsers}
           icon={<Users className="h-4 w-4" />}
           description="Registered platform users"
+        />
+        <StatCard
+          title="Rejected Vendors"
+          value={stats.rejectedVendors}
+          icon={<XCircle className="h-4 w-4" />}
+          description="Vendors that were rejected"
+        />
+        <StatCard
+          title="Rejected Deals"
+          value={stats.rejectedDeals}
+          icon={<XCircle className="h-4 w-4" />}
+          description="Rejected deal submissions"
+        />
+        <StatCard
+          title="Expired Deals"
+          value={stats.expiredDeals}
+          icon={<Clock className="h-4 w-4" />}
+          description="Deals that have expired"
         />
       </div>
 

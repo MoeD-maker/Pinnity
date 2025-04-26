@@ -129,6 +129,8 @@ export function adminRoutes(app: Express): void {
             rejectedDeals: rejectedDealsCount,
             expiredDeals: expiredDealsCount,
             pendingVendors: pendingVendorsCount,
+            approvedVendors: approvedVendorsCount,
+            rejectedVendors: rejectedVendorsCount,
             totalUsers,
             alertCount: pendingDealsCount + pendingVendorsCount,
           },
