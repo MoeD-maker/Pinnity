@@ -57,10 +57,11 @@ export function adminRoutes(app: Express): void {
     authorize(["admin"]),
     async (_req: Request, res: Response) => {
       try {
-        // Deals - ensure we always get arrays back
-        const pendingDealsResult = ensureArray(await storage.getDealsByStatus("pending"));
+        // Deals - use our robust array conversion to fix format issues
+        const rawPendingDeals = await storage.getDealsByStatus("pending");
+        const pendingDealsResult = forceDealArray(rawPendingDeals);
         const pendingDealsCount = pendingDealsResult.length;
-        console.log(`Raw pending deals: ${JSON.stringify(pendingDealsResult).substring(0, 100)}...`);
+        console.log(`Raw pending deals count: ${pendingDealsCount}`);
 
         // Always ensure we get arrays for these counts
         const activeDealsResult = ensureArray(await storage.getDealsByStatus("active"));

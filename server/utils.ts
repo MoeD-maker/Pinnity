@@ -124,3 +124,63 @@ export function sanitizeDeal(deal: any): any {
 export function sanitizeDeals(deals: any[]): any[] {
   return deals.map(deal => sanitizeDeal(deal));
 }
+
+/**
+ * Force convert a deal object to a proper array
+ * This is specifically designed to handle the deal format issues in the admin dashboard
+ */
+export function forceDealArray(deals: any): any[] {
+  console.log('Force converting deal object to array...');
+  
+  // If already array, return it
+  if (Array.isArray(deals)) {
+    console.log(`Already an array with ${deals.length} items`);
+    return deals;
+  }
+  
+  // If null or undefined, return empty array
+  if (deals === null || deals === undefined) {
+    console.log('Null or undefined value, returning empty array');
+    return [];
+  }
+  
+  // If it's an object with numeric keys, convert to array
+  if (typeof deals === 'object') {
+    console.log('Converting object to array...');
+    
+    try {
+      // Try JSON method first (most reliable)
+      const jsonString = JSON.stringify(deals);
+      const parsed = JSON.parse(jsonString);
+      
+      if (Array.isArray(parsed)) {
+        console.log(`Successfully converted to array via JSON with ${parsed.length} items`);
+        return parsed;
+      }
+      
+      // Try Object.values
+      const valueArray = Object.values(deals);
+      console.log(`Converted to array via Object.values with ${valueArray.length} items`);
+      return valueArray;
+    } catch (error) {
+      console.error('Error during forced conversion:', error);
+      
+      // Fall back to manual extraction
+      const keys = Object.keys(deals);
+      const result = [];
+      
+      for (const key of keys) {
+        if (!isNaN(Number(key))) {
+          result.push(deals[key]);
+        }
+      }
+      
+      console.log(`Manually extracted ${result.length} items from object`);
+      return result;
+    }
+  }
+  
+  // Unknown type, return as single-element array
+  console.log('Unknown type, wrapping in array');
+  return [deals];
+}
