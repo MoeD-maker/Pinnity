@@ -22,6 +22,33 @@ export function adminRoutes(app: Express): void {
   const [vDashboardPath, lDashboardPath] =
     createVersionedRoutes("/admin/dashboard");
 
+  // Debugging route to determine exact format issues with deals
+  app.get(
+    "/api/v1/admin/debug/deal-format",
+    authenticate,
+    authorize(["admin"]),
+    async (_req: Request, res: Response) => {
+      try {
+        // Get pending deals in their raw format
+        const pendingDeals = await storage.getDealsByStatus("pending");
+        
+        // Return diagnostic information about the deals
+        return res.status(200).json({
+          pendingDealsType: typeof pendingDeals,
+          isArray: Array.isArray(pendingDeals),
+          hasLength: !!pendingDeals.length,
+          length: pendingDeals.length,
+          firstDeal: pendingDeals.length > 0 ? pendingDeals[0] : null,
+          keys: Object.keys(pendingDeals),
+          rawData: pendingDeals
+        });
+      } catch (error) {
+        console.error("Debug route error:", error);
+        return res.status(500).json({ error: "Error in debug route" });
+      }
+    }
+  );
+
   // Versioned dashboard route
   app.get(
     vDashboardPath,

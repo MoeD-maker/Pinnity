@@ -59,7 +59,17 @@ export function dealRoutes(app: Express): void {
       const dealsArray = ensureArray(deals);
       console.log(`Converted deals to array format, length: ${dealsArray.length}`);
       
-      return res.status(200).json(dealsArray);
+      // FORCE conversion to array using Array.from and JSON manipulation
+      // This is a last-resort attempt to fix client-side rendering issues
+      const forceArray = [...dealsArray];
+      console.log(`Forced array length: ${forceArray.length}`);
+      
+      // Wrap in special format that client can detect
+      return res.status(200).json({
+        _isArray: true,
+        _length: forceArray.length,
+        data: forceArray
+      });
     } catch (error) {
       console.error(`Error fetching deals by status ${req.params.status}:`, error);
       return res.status(500).json({ message: "Error fetching deals by status" });

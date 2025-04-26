@@ -169,48 +169,56 @@ export default function DealsPage() {
           return [];
         }
         
+        // Check for new special wrapped format
+        if (response._isArray && response.data && Array.isArray(response.data)) {
+          console.log('Received special wrapped array format. Length:', response._length);
+          response = response.data;
+        } 
         // If response is an object with numeric keys rather than an array, convert it to an array
-        if (typeof response === 'object' && !Array.isArray(response)) {
+        else if (typeof response === 'object' && !Array.isArray(response)) {
           console.log('Converting object with numeric keys to array:', response);
           
-          // First, check if it's an object with numeric keys (like {0: deal1, 1: deal2})
-          const keys = Object.keys(response);
-          const isNumericKeysObject = keys.length > 0 && keys.every(key => !isNaN(Number(key)));
-          
-          if (isNumericKeysObject) {
-            // First attempt: Convert using map method
-            try {
-              const dealsArray = keys.map(key => response[key]);
-              console.log('Converted deals array (method 1):', dealsArray);
-              response = dealsArray;
-            } catch (error) {
-              console.error('Error converting object to array (method 1):', error);
-              
-              // Second attempt: Convert using Object.values
+          // First, check if response has pendingDeals (from dashboard)
+          if (response.pendingDeals && Array.isArray(response.pendingDeals)) {
+            console.log('Found pendingDeals array property, using that instead');
+            response = response.pendingDeals;
+          }
+          // Then check if it's an object with numeric keys (like {0: deal1, 1: deal2})
+          else {
+            const keys = Object.keys(response);
+            const isNumericKeysObject = keys.length > 0 && keys.every(key => !isNaN(Number(key)));
+            
+            if (isNumericKeysObject) {
+              // First attempt: Convert using map method
               try {
-                const dealsArray = Object.values(response);
-                console.log('Converted deals array (method 2):', dealsArray);
+                const dealsArray = keys.map(key => response[key]);
+                console.log('Converted deals array (method 1):', dealsArray);
                 response = dealsArray;
               } catch (error) {
-                console.error('Error converting object to array (method 2):', error);
+                console.error('Error converting object to array (method 1):', error);
                 
-                // Final fallback: Try using Array.from
+                // Second attempt: Convert using Object.values
                 try {
-                  // @ts-ignore - Forcing conversion
-                  const dealsArray = Array.from(response);
-                  console.log('Converted deals array (method 3):', dealsArray);
+                  const dealsArray = Object.values(response);
+                  console.log('Converted deals array (method 2):', dealsArray);
                   response = dealsArray;
                 } catch (error) {
-                  console.error('All conversion methods failed:', error);
-                  // Last resort: just return empty array to prevent UI errors
-                  return [];
+                  console.error('Error converting object to array (method 2):', error);
+                  
+                  // Final fallback: Try using Array.from
+                  try {
+                    // @ts-ignore - Forcing conversion
+                    const dealsArray = Array.from(response);
+                    console.log('Converted deals array (method 3):', dealsArray);
+                    response = dealsArray;
+                  } catch (error) {
+                    console.error('All conversion methods failed:', error);
+                    // Last resort: just return empty array to prevent UI errors
+                    return [];
+                  }
                 }
               }
             }
-          } else if (response.pendingDeals && Array.isArray(response.pendingDeals)) {
-            // Check if this might be a wrapped response from admin dashboard
-            console.log('Found pendingDeals array property, using that instead');
-            response = response.pendingDeals;
           }
         }
         
