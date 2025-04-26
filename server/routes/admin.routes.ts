@@ -87,8 +87,20 @@ export function adminRoutes(app: Express): void {
             b.verificationStatus === "pending_verification",
         );
         const pendingVendorsCount = pendingBusinesses.length;
+        
+        // Count approved vendors
+        const approvedBusinesses = businesses.filter(
+          (b) => b.verificationStatus === "verified" || b.verificationStatus === "approved"
+        );
+        const approvedVendorsCount = approvedBusinesses.length;
+        
+        // Count rejected vendors
+        const rejectedBusinesses = businesses.filter(
+          (b) => b.verificationStatus === "rejected"
+        );
+        const rejectedVendorsCount = rejectedBusinesses.length;
 
-        console.log(`Found ${pendingVendorsCount} pending vendors.`);
+        console.log(`Found ${pendingVendorsCount} pending vendors, ${approvedVendorsCount} approved vendors, and ${rejectedVendorsCount} rejected vendors.`);
 
         // Users
         const users = await storage.getAllUsers();
