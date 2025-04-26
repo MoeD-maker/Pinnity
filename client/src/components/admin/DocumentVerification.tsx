@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,25 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { FileCheck, FileX, Clock, Download, CheckCircle, XCircle, AlertTriangle, FileText } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+
+// Add CSS for the fallback-icon class
+const documentPreviewStyles = `
+  .fallback-icon {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  .fallback-icon::after {
+    content: "";
+    display: inline-flex;
+    width: 20px;
+    height: 20px;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z'%3E%3C/path%3E%3Cpolyline points='14 2 14 8 20 8'%3E%3C/polyline%3E%3Cpath d='M16 13H8'%3E%3C/path%3E%3Cpath d='M16 17H8'%3E%3C/path%3E%3Cpath d='M10 9H8'%3E%3C/path%3E%3C/svg%3E");
+  }
+`;
 
 // Document type
 interface Document {
@@ -34,6 +53,19 @@ export default function DocumentVerification({ businessId, documents, onDocument
   const [documentFeedback, setDocumentFeedback] = useState("");
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [reviewStatus, setReviewStatus] = useState<"verified" | "rejected">("verified");
+  
+  // Add the CSS styles to the document
+  useEffect(() => {
+    // Create a style element for document previews
+    const styleEl = document.createElement('style');
+    styleEl.innerHTML = documentPreviewStyles;
+    document.head.appendChild(styleEl);
+    
+    // Clean up the style when component unmounts
+    return () => {
+      document.head.removeChild(styleEl);
+    };
+  }, []);
 
   // Mutation for updating document status
   const updateDocumentMutation = useMutation({
@@ -140,8 +172,32 @@ export default function DocumentVerification({ businessId, documents, onDocument
                   className="border rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                 >
                   <div className="flex items-start gap-3">
-                    <div className="h-10 w-10 bg-muted rounded-md flex items-center justify-center flex-shrink-0">
-                      <FileText className="h-5 w-5 text-muted-foreground" />
+                    <div className="h-14 w-14 bg-muted rounded-md flex items-center justify-center flex-shrink-0 overflow-hidden border border-gray-200">
+                      {document.filePath ? (
+                        <img 
+                          src={document.filePath} 
+                          alt={document.name}
+                          className="w-full h-full object-cover" 
+                          onError={(e) => {
+                            // Fallback to icon if image fails to load
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.parentElement?.classList.add('fallback-icon');
+                          }}
+                        />
+                      ) : document.thumbUrl ? (
+                        <img 
+                          src={document.thumbUrl} 
+                          alt={document.name}
+                          className="w-full h-full object-cover" 
+                          onError={(e) => {
+                            // Fallback to icon if image fails to load
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.parentElement?.classList.add('fallback-icon');
+                          }}
+                        />
+                      ) : (
+                        <FileText className="h-5 w-5 text-muted-foreground" />
+                      )}
                     </div>
                     <div>
                       <h3 className="font-medium text-sm">{document.name}</h3>
@@ -251,12 +307,42 @@ export default function DocumentVerification({ businessId, documents, onDocument
           <div className="py-4">
             <div className="border rounded-lg overflow-hidden bg-muted">
               {selectedDocument?.filePath ? (
-                // In a real app, this would be an actual document viewer or iframe
+                // Check if it's an image or PDF 
+                selectedDocument.filePath.match(/\.(jpe?g|png|gif|webp)$/i) ? (
+                  // For images, display an img tag
+                  <div className="aspect-[4/3] bg-muted flex items-center justify-center">
+                    <img 
+                      src={selectedDocument.filePath} 
+                      alt={selectedDocument.name}
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  </div>
+                ) : selectedDocument.filePath.match(/\.pdf$/i) ? (
+                  // For PDFs, use an iframe with PDF viewer
+                  <div className="aspect-[4/3] bg-muted flex items-center justify-center">
+                    <iframe 
+                      src={`https://docs.google.com/viewer?url=${encodeURIComponent(selectedDocument.filePath)}&embedded=true`}
+                      className="w-full h-full"
+                      title={selectedDocument.name}
+                    />
+                  </div>
+                ) : (
+                  // For other document types, try direct iframe
+                  <div className="aspect-[4/3] bg-muted flex items-center justify-center">
+                    <iframe 
+                      src={selectedDocument.filePath} 
+                      className="w-full h-full"
+                      title={selectedDocument.name}
+                    />
+                  </div>
+                )
+              ) : selectedDocument?.thumbUrl ? (
+                // If no filePath but has thumbnail
                 <div className="aspect-[4/3] bg-muted flex items-center justify-center">
-                  <iframe 
-                    src={selectedDocument.filePath} 
-                    className="w-full h-full"
-                    title={selectedDocument.name}
+                  <img 
+                    src={selectedDocument.thumbUrl} 
+                    alt={selectedDocument.name}
+                    className="max-w-full max-h-full object-contain"
                   />
                 </div>
               ) : (
@@ -340,8 +426,30 @@ export default function DocumentVerification({ businessId, documents, onDocument
           <div className="space-y-4 py-4">
             {selectedDocument && (
               <div className="flex items-start gap-3 p-3 border rounded-md">
-                <div className="h-10 w-10 bg-muted rounded-md flex items-center justify-center flex-shrink-0">
-                  <FileText className="h-5 w-5 text-muted-foreground" />
+                <div className="h-10 w-10 bg-muted rounded-md flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  {selectedDocument.filePath ? (
+                    <img 
+                      src={selectedDocument.filePath} 
+                      alt={selectedDocument.name}
+                      className="w-full h-full object-cover" 
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.parentElement?.classList.add('fallback-icon');
+                      }}
+                    />
+                  ) : selectedDocument.thumbUrl ? (
+                    <img 
+                      src={selectedDocument.thumbUrl} 
+                      alt={selectedDocument.name}
+                      className="w-full h-full object-cover" 
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.parentElement?.classList.add('fallback-icon');
+                      }}
+                    />
+                  ) : (
+                    <FileText className="h-5 w-5 text-muted-foreground" />
+                  )}
                 </div>
                 <div>
                   <h3 className="font-medium text-sm">{selectedDocument.name}</h3>
