@@ -63,9 +63,17 @@ export function adminRoutes(app: Express): void {
         console.log(`Raw pending deals: ${JSON.stringify(pendingDealsResult).substring(0, 100)}...`);
 
         // Always ensure we get arrays for these counts
-        const activeDealsCount = ensureArray(await storage.getDealsByStatus("active")).length;
-        const rejectedDealsCount = ensureArray(await storage.getDealsByStatus("rejected")).length;
-        const expiredDealsCount = ensureArray(await storage.getDealsByStatus("expired")).length;
+        const activeDealsResult = ensureArray(await storage.getDealsByStatus("active"));
+        const activeDealsCount = activeDealsResult.length;
+        console.log(`Active deals count: ${activeDealsCount}`);
+        
+        const rejectedDealsResult = ensureArray(await storage.getDealsByStatus("rejected"));
+        const rejectedDealsCount = rejectedDealsResult.length;
+        console.log(`Rejected deals count: ${rejectedDealsCount}`);
+        
+        const expiredDealsResult = ensureArray(await storage.getDealsByStatus("expired"));
+        const expiredDealsCount = expiredDealsResult.length;
+        console.log(`Expired deals count: ${expiredDealsCount}`);
 
         console.log(`Found ${pendingDealsCount} pending deals.`);
 
@@ -88,7 +96,19 @@ export function adminRoutes(app: Express): void {
         const sanitizedPendingVendors = sanitizeBusinesses(pendingBusinesses);
 
         // Prepare Response
-        return res.status(200).json({
+        // Force arrays to be actual arrays (not objects)
+        const sanitizedPendingDealsArray = [...sanitizedPendingDeals];
+        const recentDealsArray = [...sanitizedPendingDeals]
+          .sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() -
+              new Date(a.createdAt).getTime(),
+          )
+          .slice(0, 5);
+        const sanitizedPendingVendorsArray = [...sanitizedPendingVendors];
+        
+        // Use JSON.stringify to force array encoding
+        const jsonResponse = JSON.stringify({
           stats: {
             pendingDeals: pendingDealsCount,
             activeDeals: activeDealsCount,
@@ -98,16 +118,14 @@ export function adminRoutes(app: Express): void {
             totalUsers,
             alertCount: pendingDealsCount + pendingVendorsCount,
           },
-          recentActivity: sanitizedPendingDeals
-            .sort(
-              (a, b) =>
-                new Date(b.createdAt).getTime() -
-                new Date(a.createdAt).getTime(),
-            )
-            .slice(0, 5),
-          pendingDeals: sanitizedPendingDeals, // ✅ Real pending deals
-          pendingVendors: sanitizedPendingVendors, // ✅ Real pending vendors
+          recentActivity: recentDealsArray,
+          pendingDeals: sanitizedPendingDealsArray, // ✅ Real pending deals as proper array
+          pendingVendors: sanitizedPendingVendorsArray, // ✅ Real pending vendors as proper array
         });
+        
+        return res
+          .setHeader('Content-Type', 'application/json')
+          .send(jsonResponse);
       } catch (error) {
         console.error("Admin Dashboard Error:", error);
         return res

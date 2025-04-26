@@ -21,17 +21,54 @@ export function ensureArray<T>(value: any): T[] {
   
   // If it's an object with numbered keys (like {0: {...}, 1: {...}}), convert to array
   if (typeof value === 'object') {
-    // Check if it's shaped like an object with numeric keys (common API format issue)
-    const keys = Object.keys(value);
-    const isNumericKeysObject = keys.length > 0 && keys.every(key => !isNaN(Number(key)));
-    
-    if (isNumericKeysObject) {
-      // Convert object with numeric keys to array
-      return keys.map(key => value[key]);
+    try {
+      // Check if it's shaped like an object with numeric keys (common API format issue)
+      const keys = Object.keys(value);
+      const isNumericKeysObject = keys.length > 0 && keys.every(key => !isNaN(Number(key)));
+      
+      if (isNumericKeysObject) {
+        // First attempt: Convert using ordered keys
+        try {
+          const orderedKeys = keys.sort((a, b) => parseInt(a) - parseInt(b));
+          return orderedKeys.map(key => value[key]);
+        } catch (err) {
+          console.error('Error in first array conversion attempt:', err);
+          
+          // Second attempt: Use Object.values
+          try {
+            return Object.values(value);
+          } catch (err2) {
+            console.error('Error in second array conversion attempt:', err2);
+            
+            // Third attempt: Force conversion using JSON
+            try {
+              // Create a proper array JSON and parse it back
+              const jsonStr = JSON.stringify(value);
+              const jsonObj = JSON.parse(jsonStr);
+              if (typeof jsonObj === 'object' && !Array.isArray(jsonObj)) {
+                return Object.values(jsonObj);
+              }
+              return [value as T];
+            } catch (err3) {
+              console.error('All conversion attempts failed:', err3);
+              return [value as T];
+            }
+          }
+        }
+      }
+      
+      // If it's a special API wrapper format
+      if (value._isArray === true && Array.isArray(value.data)) {
+        console.log('Found special _isArray format, returning data array');
+        return value.data;
+      }
+      
+      // It's an object but not numeric keyed, wrap it in an array
+      return [value];
+    } catch (error) {
+      console.error('Error in ensureArray:', error);
+      return [value as T];
     }
-    
-    // It's an object but not numeric keyed, wrap it in an array
-    return [value];
   }
   
   // For primitive values, wrap in an array

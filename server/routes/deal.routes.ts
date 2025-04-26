@@ -61,15 +61,34 @@ export function dealRoutes(app: Express): void {
       
       // FORCE conversion to array using Array.from and JSON manipulation
       // This is a last-resort attempt to fix client-side rendering issues
-      const forceArray = [...dealsArray];
+      let forceArray = [];
+      try {
+        // First try spread operator
+        forceArray = [...dealsArray];
+      } catch (err) {
+        console.error('Error using spread operator:', err);
+        // Try direct JSON manipulation
+        try {
+          const jsonStr = JSON.stringify(dealsArray);
+          forceArray = JSON.parse(jsonStr);
+        } catch (err2) {
+          console.error('Error using JSON parse/stringify:', err2);
+          // Last resort - use for loop
+          for (let i = 0; i < dealsArray.length; i++) {
+            forceArray.push(dealsArray[i]);
+          }
+        }
+      }
+      
       console.log(`Forced array length: ${forceArray.length}`);
       
-      // Wrap in special format that client can detect
-      return res.status(200).json({
-        _isArray: true,
-        _length: forceArray.length,
-        data: forceArray
-      });
+      // Force JSON to use array format by manually converting
+      const jsonStr = JSON.stringify(forceArray);
+      const jsonArray = JSON.parse(jsonStr);
+      
+      // Send direct array as JSON.stringify enforcement
+      return res.setHeader('Content-Type', 'application/json')
+        .send(jsonStr);
     } catch (error) {
       console.error(`Error fetching deals by status ${req.params.status}:`, error);
       return res.status(500).json({ message: "Error fetching deals by status" });
