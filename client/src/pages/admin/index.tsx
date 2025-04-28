@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,7 +34,16 @@ interface StatCardProps {
   };
 }
 
-const StatCard = ({ title, value, icon, description, trend, trendValue, action }: StatCardProps) => {
+const StatCard = ({ 
+  title, 
+  value, 
+  icon, 
+  description, 
+  trend, 
+  trendValue, 
+  action, 
+  isLoading 
+}: StatCardProps & { isLoading?: boolean }) => {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -42,30 +51,40 @@ const StatCard = ({ title, value, icon, description, trend, trendValue, action }
         <div className="h-5 w-5 text-muted-foreground">{icon}</div>
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
-        {trend && (
-          <div className="flex items-center gap-1 mt-2">
-            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs ${
-              trend === "up" 
-                ? "bg-green-100 text-green-800" 
-                : trend === "down" 
-                  ? "bg-red-100 text-red-800" 
-                  : "bg-gray-100 text-gray-800"
-            }`}>
-              {trend === "up" ? "↑" : trend === "down" ? "↓" : "→"} {trendValue}
-            </span>
+        {isLoading ? (
+          <div className="flex items-center space-x-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="text-sm">Loading...</span>
           </div>
-        )}
-        {action && (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="w-full mt-4"
-            onClick={action.onClick}
-          >
-            {action.label}
-          </Button>
+        ) : (
+          <>
+            <div className="text-2xl font-bold">{value}</div>
+            {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
+            {trend && (
+              <div className="flex items-center gap-1 mt-2">
+                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs ${
+                  trend === "up" 
+                    ? "bg-green-100 text-green-800" 
+                    : trend === "down" 
+                      ? "bg-red-100 text-red-800" 
+                      : "bg-gray-100 text-gray-800"
+                }`}>
+                  {trend === "up" ? "↑" : trend === "down" ? "↓" : "→"} {trendValue}
+                </span>
+              </div>
+            )}
+            {action && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full mt-4"
+                onClick={action.onClick}
+                disabled={isLoading}
+              >
+                {action.label}
+              </Button>
+            )}
+          </>
         )}
       </CardContent>
     </Card>
@@ -209,11 +228,27 @@ const AdminDashboardPage = () => {
     enabled: !!user && user.userType === 'admin'
   });
   
+  // Define type for dashboard data
+  interface DashboardData {
+    recentActivity?: Array<{
+      id: number;
+      type: "vendor_application" | "deal_submission" | "user_registration" | "deal_redemption";
+      status: "pending" | "approved" | "rejected" | "completed";
+      title: string;
+      description: string;
+      timestamp: string;
+    }>;
+    stats?: Record<string, any>;
+  }
+
   // Process recent activity data
-  const recentActivity = React.useMemo(() => {
-    if (!dashboardData || !dashboardData.recentActivity) return [];
+  const recentActivity = useMemo(() => {
+    if (!dashboardData) return [];
     
-    return dashboardData.recentActivity.map((activity: any) => {
+    const typedDashboardData = dashboardData as DashboardData;
+    if (!typedDashboardData.recentActivity) return [];
+    
+    return typedDashboardData.recentActivity.map((activity) => {
       const timestamp = new Date(activity.timestamp);
       const now = new Date();
       const diffMs = now.getTime() - timestamp.getTime();
@@ -238,7 +273,7 @@ const AdminDashboardPage = () => {
   }, [dashboardData]);
 
   // Calculate stats based on API data
-  const stats = React.useMemo(() => {
+  const stats = useMemo(() => {
     // Initialize with default values
     const defaultStats = {
       pendingVendors: 0,
@@ -311,7 +346,7 @@ const AdminDashboardPage = () => {
   }, [vendorsData, dealsData, usersData, transactionsData, isLoadingVendors, isLoadingDeals, isLoadingUsers, isLoadingTransactions]);
 
   // Generate alerts based on stats
-  const alerts = React.useMemo(() => {
+  const alerts = useMemo(() => {
     const newAlerts = [];
     
     if (stats.pendingVendors > 0) {
@@ -361,6 +396,7 @@ const AdminDashboardPage = () => {
           value={stats.pendingVendors}
           icon={<Store className="h-4 w-4" />}
           description="Vendors awaiting approval"
+          isLoading={isLoadingVendors}
           action={{
             label: "View All",
             onClick: () => window.location.href = "/admin/vendors"
@@ -371,6 +407,7 @@ const AdminDashboardPage = () => {
           value={stats.approvedVendors}
           icon={<CheckCircle className="h-4 w-4" />}
           description="Active vendors"
+          isLoading={isLoadingVendors}
           action={{
             label: "View All",
             onClick: () => window.location.href = "/admin/vendors?status=approved"
@@ -381,6 +418,7 @@ const AdminDashboardPage = () => {
           value={stats.pendingDeals}
           icon={<Tag className="h-4 w-4" />}
           description="Deals awaiting moderation"
+          isLoading={isLoadingDeals}
           action={{
             label: "Review",
             onClick: () => window.location.href = "/admin/deals"
@@ -391,6 +429,7 @@ const AdminDashboardPage = () => {
           value={stats.activeDeals}
           icon={<CheckCircle className="h-4 w-4" />}
           description="Currently active deals"
+          isLoading={isLoadingDeals}
         />
       </div>
       
@@ -400,24 +439,28 @@ const AdminDashboardPage = () => {
           value={stats.totalUsers}
           icon={<Users className="h-4 w-4" />}
           description="Registered platform users"
+          isLoading={isLoadingUsers}
         />
         <StatCard
           title="Rejected Vendors"
           value={stats.rejectedVendors}
           icon={<XCircle className="h-4 w-4" />}
           description="Vendors that were rejected"
+          isLoading={isLoadingVendors}
         />
         <StatCard
           title="Rejected Deals"
           value={stats.rejectedDeals}
           icon={<XCircle className="h-4 w-4" />}
           description="Rejected deal submissions"
+          isLoading={isLoadingDeals}
         />
         <StatCard
-          title="Expired Deals"
-          value={stats.expiredDeals}
-          icon={<Clock className="h-4 w-4" />}
-          description="Deals that have expired"
+          title="Redemptions Today"
+          value={stats.redemptionsToday}
+          icon={<Activity className="h-4 w-4" />}
+          description="Deals redeemed today"
+          isLoading={isLoadingTransactions}
         />
       </div>
 
@@ -434,33 +477,77 @@ const AdminDashboardPage = () => {
               </TabsList>
             </div>
             <TabsContent value="activity" className="space-y-4">
-              {recentActivity.map((activity) => (
-                <ActivityCard key={activity.id} activity={activity} />
-              ))}
+              {isLoadingDashboard ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin mb-2" />
+                  <p className="text-sm text-muted-foreground">Loading activity data...</p>
+                </div>
+              ) : recentActivity.length > 0 ? (
+                recentActivity.map((activity) => (
+                  <ActivityCard key={activity.id} activity={activity as ActivityItem} />
+                ))
+              ) : (
+                <div className="flex items-center justify-center h-24 text-muted-foreground">
+                  <p>No recent activity to display</p>
+                </div>
+              )}
               <Button variant="outline" className="w-full">View All Activity</Button>
             </TabsContent>
             <TabsContent value="vendors" className="space-y-4">
-              {recentActivity
-                .filter(activity => activity.type === "vendor_application")
-                .map((activity) => (
-                  <ActivityCard key={activity.id} activity={activity} />
-                ))}
+              {isLoadingDashboard ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin mb-2" />
+                  <p className="text-sm text-muted-foreground">Loading vendor activity...</p>
+                </div>
+              ) : recentActivity.filter(activity => activity.type === "vendor_application").length > 0 ? (
+                recentActivity
+                  .filter(activity => activity.type === "vendor_application")
+                  .map((activity) => (
+                    <ActivityCard key={activity.id} activity={activity as ActivityItem} />
+                  ))
+              ) : (
+                <div className="flex items-center justify-center h-24 text-muted-foreground">
+                  <p>No vendor activity to display</p>
+                </div>
+              )}
               <Button variant="outline" className="w-full">View All Vendor Activity</Button>
             </TabsContent>
             <TabsContent value="deals" className="space-y-4">
-              {recentActivity
-                .filter(activity => activity.type === "deal_submission" || activity.type === "deal_redemption")
-                .map((activity) => (
-                  <ActivityCard key={activity.id} activity={activity} />
-                ))}
+              {isLoadingDashboard ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin mb-2" />
+                  <p className="text-sm text-muted-foreground">Loading deal activity...</p>
+                </div>
+              ) : recentActivity.filter(activity => activity.type === "deal_submission" || activity.type === "deal_redemption").length > 0 ? (
+                recentActivity
+                  .filter(activity => activity.type === "deal_submission" || activity.type === "deal_redemption")
+                  .map((activity) => (
+                    <ActivityCard key={activity.id} activity={activity as ActivityItem} />
+                  ))
+              ) : (
+                <div className="flex items-center justify-center h-24 text-muted-foreground">
+                  <p>No deal activity to display</p>
+                </div>
+              )}
               <Button variant="outline" className="w-full">View All Deal Activity</Button>
             </TabsContent>
             <TabsContent value="users" className="space-y-4">
-              {recentActivity
-                .filter(activity => activity.type === "user_registration")
-                .map((activity) => (
-                  <ActivityCard key={activity.id} activity={activity} />
-                ))}
+              {isLoadingDashboard ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin mb-2" />
+                  <p className="text-sm text-muted-foreground">Loading user activity...</p>
+                </div>
+              ) : recentActivity.filter(activity => activity.type === "user_registration").length > 0 ? (
+                recentActivity
+                  .filter(activity => activity.type === "user_registration")
+                  .map((activity) => (
+                    <ActivityCard key={activity.id} activity={activity as ActivityItem} />
+                  ))
+              ) : (
+                <div className="flex items-center justify-center h-24 text-muted-foreground">
+                  <p>No user activity to display</p>
+                </div>
+              )}
               <Button variant="outline" className="w-full">View All User Activity</Button>
             </TabsContent>
           </Tabs>
@@ -475,19 +562,28 @@ const AdminDashboardPage = () => {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {alerts.map((alert) => (
-                <div key={alert.id} className="flex gap-2 border-l-4 border-red-500 pl-4 py-2">
-                  <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
-                  <div>
-                    <h3 className="font-medium">{alert.title}</h3>
-                    <p className="text-sm text-muted-foreground">{alert.description}</p>
-                  </div>
+              {isLoadingVendors || isLoadingDeals ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin mb-2" />
+                  <p className="text-sm text-muted-foreground">Loading alerts...</p>
                 </div>
-              ))}
-              {alerts.length === 0 && (
-                <div className="flex items-center justify-center h-24 text-muted-foreground">
-                  <p>No alerts at this time</p>
-                </div>
+              ) : (
+                <>
+                  {alerts.map((alert) => (
+                    <div key={alert.id} className="flex gap-2 border-l-4 border-red-500 pl-4 py-2">
+                      <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                      <div>
+                        <h3 className="font-medium">{alert.title}</h3>
+                        <p className="text-sm text-muted-foreground">{alert.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {alerts.length === 0 && (
+                    <div className="flex items-center justify-center h-24 text-muted-foreground">
+                      <p>No alerts at this time</p>
+                    </div>
+                  )}
+                </>
               )}
               <Button variant="outline" className="w-full">
                 View All Alerts
