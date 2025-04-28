@@ -86,6 +86,9 @@ const csrfProtection = csurf({
   ignoreMethods: ['GET', 'HEAD', 'OPTIONS'], // Only protect state-changing methods
 });
 
+// Export CSRF protection middleware for use in route files
+export { csrfProtection };
+
 import { 
   sanitizeLogData, 
   shouldLogPath, 
