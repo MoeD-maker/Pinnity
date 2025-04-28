@@ -284,8 +284,28 @@ const AdminDashboardPage = () => {
 
   // Calculate stats based on API data
   const stats = useMemo(() => {
-    // Initialize with default values
+    // Initialize with default values and error states
     const defaultStats = {
+      pendingVendors: 'N/A',
+      approvedVendors: 'N/A', 
+      rejectedVendors: 'N/A',
+      pendingDeals: 'N/A',
+      activeDeals: 'N/A',
+      totalUsers: 'N/A',
+      rejectedDeals: 'N/A',
+      expiredDeals: 'N/A',
+      alertCount: 0,
+      redemptionsToday: 'N/A'
+    };
+    
+    // Return loading state for relevant fields
+    if (isLoadingVendors || isLoadingDeals || isLoadingUsers || isLoadingTransactions || isLoadingPendingBusinesses) {
+      return defaultStats;
+    }
+    
+    // Initialize numeric values
+    const numericStats = {
+      ...defaultStats,
       pendingVendors: 0,
       approvedVendors: 0, 
       rejectedVendors: 0,
@@ -294,30 +314,47 @@ const AdminDashboardPage = () => {
       totalUsers: 0,
       rejectedDeals: 0,
       expiredDeals: 0,
-      alertCount: 0,
       redemptionsToday: 0
     };
     
-    if (isLoadingVendors || isLoadingDeals || isLoadingUsers || isLoadingTransactions || isLoadingPendingBusinesses) {
-      return defaultStats;
-    }
-    
     // Use the specific pending businesses data for pending vendors count
-    if (pendingBusinessesData && Array.isArray(pendingBusinessesData)) {
-      // Console log to debug the pending vendors count
-      console.log("Pending businesses data:", pendingBusinessesData);
-      defaultStats.pendingVendors = pendingBusinessesData.length;
+    // This uses the same endpoint that the vendor management page uses
+    if (pendingBusinessesData) {
+      try {
+        // Account for both array and object formats (legacy API might return an object with numeric keys)
+        if (Array.isArray(pendingBusinessesData)) {
+          numericStats.pendingVendors = pendingBusinessesData.length;
+        } else if (pendingBusinessesData && typeof pendingBusinessesData === 'object') {
+          // Convert object format to array and count
+          const pendingBusinessesArray = Object.values(pendingBusinessesData);
+          numericStats.pendingVendors = pendingBusinessesArray.length;
+        }
+      } catch (error) {
+        console.error("Error parsing pending businesses data:", error);
+        numericStats.pendingVendors = 'Error';
+      }
     }
     
     // Process vendors data for approved and rejected vendors
-    if (vendorsData && Array.isArray(vendorsData)) {
-      defaultStats.approvedVendors = vendorsData.filter((vendor: any) => 
-        vendor.status === 'approved' && vendor.verificationStatus === 'approved'
-      ).length;
-      
-      defaultStats.rejectedVendors = vendorsData.filter((vendor: any) => 
-        vendor.status === 'rejected' || vendor.verificationStatus === 'rejected'
-      ).length;
+    if (vendorsData) {
+      try {
+        if (Array.isArray(vendorsData)) {
+          // Count vendors with status 'approved' OR verificationStatus 'verified'
+          numericStats.approvedVendors = vendorsData.filter((vendor: any) => 
+            vendor.status === 'approved' || 
+            vendor.verificationStatus === 'verified' || 
+            vendor.verificationStatus === 'approved'
+          ).length;
+          
+          numericStats.rejectedVendors = vendorsData.filter((vendor: any) => 
+            vendor.status === 'rejected' || vendor.verificationStatus === 'rejected'
+          ).length;
+        }
+      } catch (error) {
+        console.error("Error processing vendors data:", error);
+        numericStats.approvedVendors = 'Error';
+        numericStats.rejectedVendors = 'Error';
+      }
     }
     
     // Process deals data
