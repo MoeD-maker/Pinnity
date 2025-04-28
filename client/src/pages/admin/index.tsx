@@ -13,11 +13,13 @@ import {
   CheckCircle, 
   XCircle, 
   Clock, 
-  Activity 
+  Activity,
+  Loader2
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 
 interface StatCardProps {
   title: string;
@@ -156,132 +158,196 @@ const AdminDashboardPage = () => {
     
     console.log("Admin authentication successful");
   }, [user, setLocation, toast]);
-  const [stats, setStats] = useState({
-    pendingVendors: 0,
-    approvedVendors: 0,
-    rejectedVendors: 0,
-    pendingDeals: 0,
-    activeDeals: 0,
-    totalUsers: 0,
-    rejectedDeals: 0,
-    expiredDeals: 0,
-    alertCount: 0
+
+  // Fetch vendors data from API
+  const { 
+    data: vendorsData,
+    isLoading: isLoadingVendors,
+    error: vendorsError
+  } = useQuery({
+    queryKey: ['/api/v1/admin/vendors'],
+    enabled: !!user && user.userType === 'admin'
   });
 
-  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
+  // Fetch deals data from API
+  const { 
+    data: dealsData,
+    isLoading: isLoadingDeals,
+    error: dealsError
+  } = useQuery({
+    queryKey: ['/api/v1/admin/deals'],
+    enabled: !!user && user.userType === 'admin'
+  });
+
+  // Fetch transactions (redemptions) data from API
+  const { 
+    data: transactionsData,
+    isLoading: isLoadingTransactions,
+    error: transactionsError
+  } = useQuery({
+    queryKey: ['/api/v1/admin/transactions'],
+    enabled: !!user && user.userType === 'admin'
+  });
+
+  // Fetch users data from API
+  const { 
+    data: usersData,
+    isLoading: isLoadingUsers,
+    error: usersError
+  } = useQuery({
+    queryKey: ['/api/v1/admin/users'],
+    enabled: !!user && user.userType === 'admin'
+  });
+
+  // Fetch dashboard summary data (for activity feed and alerts)
+  const {
+    data: dashboardData,
+    isLoading: isLoadingDashboard,
+    error: dashboardError
+  } = useQuery({
+    queryKey: ['/api/v1/admin/dashboard'],
+    enabled: !!user && user.userType === 'admin'
+  });
+  
+  // Process recent activity data
+  const recentActivity = React.useMemo(() => {
+    if (!dashboardData || !dashboardData.recentActivity) return [];
+    
+    return dashboardData.recentActivity.map((activity: any) => {
+      const timestamp = new Date(activity.timestamp);
+      const now = new Date();
+      const diffMs = now.getTime() - timestamp.getTime();
+      const diffMinutes = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+      
+      let timeAgo;
+      if (diffMinutes < 60) {
+        timeAgo = `${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''} ago`;
+      } else if (diffHours < 24) {
+        timeAgo = `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+      } else {
+        timeAgo = `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+      }
+      
+      return {
+        ...activity,
+        timestamp: timeAgo
+      };
+    });
+  }, [dashboardData]);
+
+  // Calculate stats based on API data
+  const stats = React.useMemo(() => {
+    // Initialize with default values
+    const defaultStats = {
+      pendingVendors: 0,
+      approvedVendors: 0, 
+      rejectedVendors: 0,
+      pendingDeals: 0,
+      activeDeals: 0,
+      totalUsers: 0,
+      rejectedDeals: 0,
+      expiredDeals: 0,
+      alertCount: 0,
+      redemptionsToday: 0
+    };
+    
+    if (isLoadingVendors || isLoadingDeals || isLoadingUsers || isLoadingTransactions) {
+      return defaultStats;
+    }
+    
+    // Process vendors data
+    if (vendorsData && Array.isArray(vendorsData)) {
+      defaultStats.pendingVendors = vendorsData.filter((vendor: any) => 
+        vendor.status === 'pending' || vendor.verificationStatus === 'pending'
+      ).length;
+      
+      defaultStats.approvedVendors = vendorsData.filter((vendor: any) => 
+        vendor.status === 'approved' && vendor.verificationStatus === 'approved'
+      ).length;
+      
+      defaultStats.rejectedVendors = vendorsData.filter((vendor: any) => 
+        vendor.status === 'rejected' || vendor.verificationStatus === 'rejected'
+      ).length;
+    }
+    
+    // Process deals data
+    if (dealsData && Array.isArray(dealsData)) {
+      defaultStats.pendingDeals = dealsData.filter((deal: any) => 
+        deal.status === 'pending'
+      ).length;
+      
+      defaultStats.activeDeals = dealsData.filter((deal: any) => 
+        deal.status === 'approved' && new Date(deal.endDate) > new Date()
+      ).length;
+      
+      defaultStats.rejectedDeals = dealsData.filter((deal: any) => 
+        deal.status === 'rejected'
+      ).length;
+      
+      defaultStats.expiredDeals = dealsData.filter((deal: any) => 
+        deal.status === 'approved' && new Date(deal.endDate) <= new Date()
+      ).length;
+    }
+    
+    // Process users data
+    if (usersData && Array.isArray(usersData)) {
+      defaultStats.totalUsers = usersData.length;
+    }
+    
+    // Process transactions data for today's redemptions
+    if (transactionsData && Array.isArray(transactionsData)) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      defaultStats.redemptionsToday = transactionsData.filter((transaction: any) => {
+        const transactionDate = new Date(transaction.createdAt || transaction.timestamp);
+        return transactionDate >= today && transaction.type === 'redemption';
+      }).length;
+    }
+    
+    return defaultStats;
+  }, [vendorsData, dealsData, usersData, transactionsData, isLoadingVendors, isLoadingDeals, isLoadingUsers, isLoadingTransactions]);
 
   // Generate alerts based on stats
-  const [alerts, setAlerts] = useState<{ id: number; title: string; description: string; priority: string }[]>([]);
+  const alerts = React.useMemo(() => {
+    const newAlerts = [];
+    
+    if (stats.pendingVendors > 0) {
+      newAlerts.push({
+        id: 1,
+        title: "Vendor Verification Required",
+        description: `${stats.pendingVendors} vendors are waiting for verification`,
+        priority: stats.pendingVendors > 3 ? "high" : "medium"
+      });
+    }
+    
+    if (stats.pendingDeals > 0) {
+      newAlerts.push({
+        id: 2,
+        title: "Deal Approval Backlog",
+        description: `${stats.pendingDeals} deals are pending approval`,
+        priority: stats.pendingDeals > 5 ? "high" : "medium"
+      });
+    }
+    
+    return newAlerts;
+  }, [stats]);
 
-  // Fetch actual dashboard data from the API
+  // Show error toast if any data fetching fails
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        console.log("Fetching dashboard data...");
-        
-        // Log the exact API route being called
-        console.log("Fetching from API route: /api/v1/admin/dashboard");
-        const response = await apiRequest("/api/v1/admin/dashboard");
-        console.log("Dashboard API response:", response);
-        
-        if (response && response.stats) {
-          console.log("Setting stats from API:", response.stats);
-          setStats(response.stats);
-          
-          // Log pending deals specifically
-          if (response && response.pendingDeals) {
-            console.log("Pending deals from API:", response.pendingDeals);
-          }
-            
-          // Generate alerts based on stats
-          const newAlerts = [];
-          
-          if (response.stats.pendingVendors > 0) {
-            newAlerts.push({
-              id: 1,
-              title: "Vendor Verification Required",
-              description: `${response.stats.pendingVendors} vendors are waiting for verification`,
-              priority: response.stats.pendingVendors > 3 ? "high" : "medium"
-            });
-          }
-          
-          if (response.stats.pendingDeals > 0) {
-            newAlerts.push({
-              id: 2,
-              title: "Deal Approval Backlog",
-              description: `${response.stats.pendingDeals} deals are pending approval`,
-              priority: response.stats.pendingDeals > 5 ? "high" : "medium"
-            });
-          }
-          
-          setAlerts(newAlerts);
-        } else {
-          console.error("No stats data in response:", response);
-          
-          // Fallback stats to prevent UI errors
-          setStats({
-            pendingVendors: 0,
-            approvedVendors: 0,
-            rejectedVendors: 0,
-            pendingDeals: 0,
-            activeDeals: 0,
-            totalUsers: 0,
-            rejectedDeals: 0,
-            expiredDeals: 0,
-            alertCount: 0
-          });
-        }
-        
-        // Update recent activity from API response
-        if (response && response.recentActivity && Array.isArray(response.recentActivity)) {
-          console.log("Setting activity data:", response.recentActivity);
-          // Format timestamps for display
-          const formattedActivity = response.recentActivity.map((activity: any) => {
-            const timestamp = new Date(activity.timestamp);
-            const now = new Date();
-            const diffMs = now.getTime() - timestamp.getTime();
-            const diffMinutes = Math.floor(diffMs / 60000);
-            const diffHours = Math.floor(diffMs / 3600000);
-            const diffDays = Math.floor(diffMs / 86400000);
-            
-            let timeAgo;
-            if (diffMinutes < 60) {
-              timeAgo = `${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''} ago`;
-            } else if (diffHours < 24) {
-              timeAgo = `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
-            } else {
-              timeAgo = `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
-            }
-            
-            return {
-              ...activity,
-              timestamp: timeAgo
-            };
-          });
-          
-          setRecentActivity(formattedActivity);
-        } else {
-          console.error("No activity data in response or invalid format");
-          setRecentActivity([]);
-        }
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load dashboard data. Please try again.",
-          variant: "destructive"
-        });
-      }
-    };
-
-    fetchDashboardData();
+    const errors = [vendorsError, dealsError, transactionsError, usersError, dashboardError].filter(Boolean);
     
-    // Set up periodic refresh every 5 minutes
-    const refreshInterval = setInterval(fetchDashboardData, 5 * 60 * 1000);
-    
-    // Clean up interval on unmount
-    return () => clearInterval(refreshInterval);
-  }, []);
+    if (errors.length > 0) {
+      console.error("Error fetching dashboard data:", errors);
+      toast({
+        title: "Error",
+        description: "Failed to load some dashboard data. Please try again.",
+        variant: "destructive"
+      });
+    }
+  }, [vendorsError, dealsError, transactionsError, usersError, dashboardError, toast]);
 
   return (
     <AdminLayout>
