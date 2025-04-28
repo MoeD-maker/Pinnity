@@ -324,6 +324,8 @@ export function authRoutes(app: Express): void {
     versionHeadersMiddleware(),
     verifyCsrf, // CSRF protection for business registration
     authRateLimiter, // Apply rate limiting to business registration endpoint
+    // Note: We can't use validatePasswordStrength middleware here due to file uploads
+    // Password validation is done manually inside the route handler
     getUploadMiddleware().fields([
       { name: 'governmentId', maxCount: 1 },
       { name: 'proofOfAddress', maxCount: 1 },
@@ -449,6 +451,8 @@ export function authRoutes(app: Express): void {
     legacyBusinessRegPath,
     versionHeadersMiddleware(),
     authRateLimiter,
+    // Note: We can't use validatePasswordStrength middleware here due to file uploads
+    // Password validation is done manually inside the route handler
     getUploadMiddleware().fields([
       { name: 'governmentId', maxCount: 1 },
       { name: 'proofOfAddress', maxCount: 1 },

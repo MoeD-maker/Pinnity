@@ -196,6 +196,9 @@ export default function RedemptionDialog({
                     className="text-center font-mono text-lg"
                     maxLength={8}
                     disabled={isVerifying}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                   />
                 </div>
                 {errorMessage && (
