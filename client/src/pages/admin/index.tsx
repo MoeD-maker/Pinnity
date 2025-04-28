@@ -16,7 +16,7 @@ import {
   Activity,
   Loader2
 } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
@@ -200,7 +200,7 @@ const AdminDashboardPage = () => {
     isLoading: isLoadingVendors,
     error: vendorsError
   } = useQuery({
-    queryKey: ['/api/v1/admin/vendors'],
+    queryKey: ['/api/v1/admin/businesses'],
     enabled: !!user && user.userType === 'admin'
   });
   
@@ -243,6 +243,8 @@ const AdminDashboardPage = () => {
     queryKey: ['/api/v1/admin/users'],
     enabled: !!user && user.userType === 'admin'
   });
+  
+  // All loading states and data are fetched directly from the individual queries
 
   // Fetch dashboard summary data (for activity feed and alerts)
   const {
@@ -502,12 +504,12 @@ const AdminDashboardPage = () => {
   // Show error toast if any data fetching fails
   useEffect(() => {
     const errors = [
-      vendorsError, 
-      dealsError, 
-      transactionsError, 
-      usersError, 
-      dashboardError, 
-      pendingBusinessesError
+      vendorsError,
+      pendingBusinessesError,
+      dealsError,
+      transactionsError,
+      usersError,
+      dashboardError
     ].filter(Boolean);
     
     if (errors.length > 0) {
@@ -519,12 +521,12 @@ const AdminDashboardPage = () => {
       });
     }
   }, [
-    vendorsError, 
-    dealsError, 
-    transactionsError, 
-    usersError, 
+    vendorsError,
+    pendingBusinessesError,
+    dealsError,
+    transactionsError,
+    usersError,
     dashboardError, 
-    pendingBusinessesError, 
     toast
   ]);
 
