@@ -357,12 +357,16 @@ const AdminDashboardPage = () => {
     if (vendorsData) {
       try {
         if (Array.isArray(vendorsData)) {
-          // Count vendors with status 'approved' OR verificationStatus 'verified'
-          numericStats.approvedVendors = vendorsData.filter((vendor: any) => 
+          // Count vendors with status 'approved' OR verificationStatus 'verified' or 'approved'
+          const approvedVendors = vendorsData.filter((vendor: any) => 
             vendor.status === 'approved' || 
             vendor.verificationStatus === 'verified' || 
             vendor.verificationStatus === 'approved'
-          ).length;
+          );
+          numericStats.approvedVendors = approvedVendors.length;
+          console.log(`Dashboard: Found ${approvedVendors.length} approved vendors (including ${
+            approvedVendors.filter(v => v.verificationStatus === 'verified').length
+          } verified vendors)`);
           
           numericStats.rejectedVendors = vendorsData.filter((vendor: any) => 
             vendor.status === 'rejected' || vendor.verificationStatus === 'rejected'

@@ -52,23 +52,85 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   // Fetch pending vendors count for sidebar badge
   useEffect(() => {
     if (user?.userType === 'admin') {
-      // Use the same endpoint as the admin dashboard
-      fetch('/api/v1/admin/businesses/pending')
-        .then(response => response.json())
-        .then(data => {
-          let count = 0;
-          if (Array.isArray(data)) {
-            count = data.length;
-          } else if (data && typeof data === 'object') {
-            // Handle legacy API that might return an object with numeric keys
-            count = Object.keys(data).length;
+      // Use Promise.allSettled to handle potential failures gracefully
+      const fetchPendingVendors = async () => {
+        try {
+          // Try the versioned API endpoint first
+          const pendingResponse = await fetch('/api/v1/admin/businesses/pending');
+          if (pendingResponse.ok) {
+            const data = await pendingResponse.json();
+            let count = 0;
+            
+            // Handle array response
+            if (Array.isArray(data)) {
+              count = data.length;
+            } 
+            // Handle object with numeric keys (legacy format)
+            else if (data && typeof data === 'object') {
+              // First try direct numeric indexing
+              const numericKeysArray = [];
+              let i = 0;
+              while (data[i] !== undefined) {
+                numericKeysArray.push(data[i]);
+                i++;
+              }
+              
+              if (numericKeysArray.length > 0) {
+                count = numericKeysArray.length;
+              } else {
+                // Fallback to Object.keys or Object.values
+                count = Object.values(data).length;
+              }
+            }
+            
+            console.log(`AdminLayout: Found ${count} pending vendors`);
+            setPendingVendorsCount(count);
+            return;
           }
-          setPendingVendorsCount(count);
-        })
-        .catch(error => {
+          
+          // If versioned endpoint fails, try legacy endpoint
+          const legacyResponse = await fetch('/api/admin/businesses/pending');
+          if (legacyResponse.ok) {
+            const data = await legacyResponse.json();
+            let count = 0;
+            
+            // Handle array response
+            if (Array.isArray(data)) {
+              count = data.length;
+            } 
+            // Handle object with numeric keys (legacy format)
+            else if (data && typeof data === 'object') {
+              // First try direct numeric indexing
+              const numericKeysArray = [];
+              let i = 0;
+              while (data[i] !== undefined) {
+                numericKeysArray.push(data[i]);
+                i++;
+              }
+              
+              if (numericKeysArray.length > 0) {
+                count = numericKeysArray.length;
+              } else {
+                // Fallback to Object.keys or Object.values
+                count = Object.values(data).length;
+              }
+            }
+            
+            console.log(`AdminLayout: Found ${count} pending vendors (legacy)`)
+            setPendingVendorsCount(count);
+            return;
+          }
+          
+          // If we reach here, both endpoints failed but didn't throw
+          console.error('Both API endpoints failed but returned responses');
+          setPendingVendorsCount(0);
+        } catch (error) {
           console.error('Error fetching pending vendors count:', error);
           setPendingVendorsCount(0);
-        });
+        }
+      };
+      
+      fetchPendingVendors();
     }
   }, [user]);
   
