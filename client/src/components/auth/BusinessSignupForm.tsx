@@ -16,6 +16,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { uploadFormData } from "@/lib/api";
 import { Loader2 } from "lucide-react";
 import RegistrationStepper from "@/components/onboarding/RegistrationStepper";
+import { useCsrfProtection } from "@/hooks/useCsrfProtection";
 
 export interface BusinessSignupFormProps {
   setUserType?: (type: "individual" | "business") => void;
@@ -25,6 +26,7 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
   const [isLoading, setIsLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, feedback: "Password is required" });
   const { toast } = useToast();
+  const { isLoading: csrfLoading, isReady: csrfReady, error: csrfError, fetchWithProtection } = useCsrfProtection();
   
   const {
     register,
@@ -64,6 +66,32 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
   };
 
   const onSubmit = async (data: BusinessSignupFormValues) => {
+    // Don't proceed if CSRF is still loading or errored out
+    if (csrfLoading) {
+      toast({
+        title: "Please wait",
+        description: "Security verification in progress...",
+      });
+      return;
+    }
+    
+    if (csrfError) {
+      toast({
+        title: "Security Error",
+        description: "Unable to secure your request. Please refresh the page and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!csrfReady) {
+      toast({
+        title: "Security verification needed",
+        description: "Please wait while we secure your request...",
+      });
+      return;
+    }
+    
     setIsLoading(true);
     try {
       // Create FormData for file uploads
@@ -78,7 +106,7 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
         }
       });
       
-      // Use CSRF-protected upload with proper typing
+      // Use CSRF-protected fetch directly with FormData
       type RegistrationResponse = {
         message: string;
         userId: number;
@@ -86,7 +114,21 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
         token: string;
       };
       
-      const result = await uploadFormData<RegistrationResponse>('/api/auth/register/business', formData);
+      // Make the request with CSRF protection
+      const response = await fetchWithProtection(
+        '/api/v1/auth/register/business', 
+        {
+          method: 'POST',
+          body: formData,
+          // Don't set Content-Type for FormData - browser will set it with proper boundary
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error('Business registration failed');
+      }
+      
+      const result = await response.json() as RegistrationResponse;
       
       toast({
         title: "Business account created",

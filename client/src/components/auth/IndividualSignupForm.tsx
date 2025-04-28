@@ -92,6 +92,7 @@ export default function IndividualSignupForm() {
         '/api/v1/auth/register/individual', 
         { 
           method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
         }
       );
@@ -108,10 +109,10 @@ export default function IndividualSignupForm() {
       });
       
       // Store token in localStorage for login persistence
-      if (response.token) {
-        localStorage.setItem('token', response.token);
+      if (responseData.token) {
+        localStorage.setItem('token', responseData.token);
         // Redirect to onboarding flow
-        window.location.href = `/onboarding/individual/${response.userId}`;
+        window.location.href = `/onboarding/individual/${responseData.userId}`;
       } else {
         // Redirect to login page
         window.location.href = "/auth";
@@ -214,12 +215,17 @@ export default function IndividualSignupForm() {
       <Button 
         type="submit" 
         className="w-full bg-[#00796B] hover:bg-[#004D40]"
-        disabled={isLoading}
+        disabled={isLoading || csrfLoading || !csrfReady || !!csrfError}
       >
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
             Creating Account...
+          </>
+        ) : csrfLoading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+            Securing Connection...
           </>
         ) : (
           "Create Account"
