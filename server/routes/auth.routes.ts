@@ -21,6 +21,7 @@ import {
   createVersionedRoutes, 
   versionHeadersMiddleware
 } from "../../src/utils/routeVersioning";
+import { verifyCsrf } from "../middleware";
 
 /**
  * Authentication routes for login and registration
@@ -63,6 +64,7 @@ export function authRoutes(app: Express): void {
   app.post(
     versionedLoginPath, 
     versionHeadersMiddleware(),
+    verifyCsrf, // CSRF protection for login
     authRateLimiter, // Apply rate limiting to login endpoint
     securityRateLimiter, // Apply security rate limiting to detect brute force attacks
     validate(authSchemas.login),
@@ -199,6 +201,7 @@ export function authRoutes(app: Express): void {
   app.post(
     versionedIndividualRegPath,
     versionHeadersMiddleware(),
+    verifyCsrf, // CSRF protection for individual registration
     authRateLimiter, // Apply rate limiting to registration endpoint
     validate(authSchemas.individualRegistration),
     async (req: Request, res: Response) => {
@@ -315,6 +318,7 @@ export function authRoutes(app: Express): void {
   app.post(
     versionedBusinessRegPath,
     versionHeadersMiddleware(),
+    verifyCsrf, // CSRF protection for business registration
     authRateLimiter, // Apply rate limiting to business registration endpoint
     getUploadMiddleware().fields([
       { name: 'governmentId', maxCount: 1 },
@@ -553,6 +557,7 @@ export function authRoutes(app: Express): void {
   app.post(
     versionedPasswordResetRequestPath,
     versionHeadersMiddleware(),
+    verifyCsrf, // CSRF protection for password reset request
     authRateLimiter, // Apply rate limiting to prevent abuse
     securityRateLimiter, // Apply security rate limiting
     validate(authSchemas.passwordResetRequest),

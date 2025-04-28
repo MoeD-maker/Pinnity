@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { extractTokenFromHeader, extractTokenFromCookies, JwtPayload } from './auth';
 import { securityRateLimiter, apiRateLimiter } from './middleware/rateLimit';
 import { applyCookieSecurityHeaders } from './utils/cookieUtils';
+import { verifyCsrf } from './middleware/csrfMiddleware';
 
 // Extend Express Request interface to include user
 declare global {
@@ -200,3 +201,10 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
 export function rateLimitAPI(req: Request, res: Response, next: NextFunction) {
   return apiRateLimiter(req, res, next);
 }
+
+/**
+ * Export the CSRF protection middleware
+ * This middleware ensures that only requests with valid CSRF tokens are processed
+ * It protects against Cross-Site Request Forgery attacks
+ */
+export { verifyCsrf };
