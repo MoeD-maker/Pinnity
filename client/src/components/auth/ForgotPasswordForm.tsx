@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
+import { useCsrfProtection } from '@/hooks/useCsrfProtection';
 
 // Form validation schema
 const forgotPasswordSchema = z.object({
@@ -21,6 +22,7 @@ export function ForgotPasswordForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const { toast } = useToast();
+  const { isLoading: csrfLoading, isReady: csrfReady, error: csrfError, fetchWithProtection } = useCsrfProtection();
 
   const form = useForm<ForgotPasswordFormValues>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -30,15 +32,48 @@ export function ForgotPasswordForm() {
   });
 
   const onSubmit = async (data: ForgotPasswordFormValues) => {
+    // Don't proceed if CSRF is still loading or errored out
+    if (csrfLoading) {
+      toast({
+        title: "Please wait",
+        description: "Security verification in progress...",
+      });
+      return;
+    }
+    
+    if (csrfError) {
+      toast({
+        title: "Security Error",
+        description: "Unable to secure your request. Please refresh the page and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!csrfReady) {
+      toast({
+        title: "Security verification needed",
+        description: "Please wait while we secure your request...",
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
-      // Send request to password reset API endpoint
-      await apiRequest('/api/v1/auth/password-reset/request', {
+      // Send request to password reset API endpoint using CSRF protection
+      const response = await fetchWithProtection('/api/v1/auth/password-reset/request', {
         method: 'POST',
-        data: { email: data.email },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: data.email }),
       });
       
-      // If the request was successful (no error thrown), show success message
+      if (!response.ok) {
+        throw new Error('Password reset request failed');
+      }
+      
+      // If the request was successful, show success message
       setEmailSent(true);
       toast({
         title: 'Email Sent',
@@ -109,12 +144,17 @@ export function ForgotPasswordForm() {
             <Button 
               type="submit" 
               className="w-full mt-6 bg-[#00796B] hover:bg-[#004D40]" 
-              disabled={isSubmitting}
+              disabled={isSubmitting || csrfLoading || !csrfReady || !!csrfError}
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Sending...
+                </>
+              ) : csrfLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                  Securing Connection...
                 </>
               ) : (
                 'Reset Password'

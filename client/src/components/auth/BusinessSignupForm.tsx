@@ -339,12 +339,17 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
       <Button 
         type="submit" 
         className="w-full bg-[#00796B] hover:bg-[#004D40]"
-        disabled={isLoading}
+        disabled={isLoading || csrfLoading || !csrfReady || !!csrfError}
       >
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
             Creating Business Account...
+          </>
+        ) : csrfLoading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+            Securing Connection...
           </>
         ) : (
           "Create Business Account"
