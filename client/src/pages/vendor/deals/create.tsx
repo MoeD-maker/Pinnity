@@ -3,6 +3,7 @@ import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { useCsrfProtection } from '@/hooks/useCsrfProtection';
 import { debounce } from 'lodash';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -46,7 +47,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import ImageUploadWithCropper from '@/components/shared/ImageUploadWithCropper';
 import SimpleDealImageUploader from '@/components/shared/SimpleDealImageUploader';
-import DealPreview from '@/components/vendor/DealPreview';
+import { DealPreview } from '@/components/vendor/DealPreview';
 import CustomerDealPreview from '@/components/vendor/CustomerDealPreview';
 
 // Helper functions for form state persistence
@@ -241,6 +242,7 @@ export default function CreateDealPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [business, setBusiness] = useState<any>(null);
+  const { isLoading: csrfLoading, isReady: csrfReady, error: csrfError, fetchWithProtection } = useCsrfProtection();
   
   // Image upload related state
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -728,6 +730,32 @@ export default function CreateDealPage() {
   
   // Handle form submission
   const handleSubmit = async () => {
+    // Don't proceed if CSRF is still loading or errored out
+    if (csrfLoading) {
+      toast({
+        title: "Please wait",
+        description: "Security verification in progress...",
+      });
+      return;
+    }
+    
+    if (csrfError) {
+      toast({
+        title: "Security Error",
+        description: "Unable to secure your request. Please refresh the page and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!csrfReady) {
+      toast({
+        title: "Security verification needed",
+        description: "Please wait while we secure your request...",
+      });
+      return;
+    }
+    
     try {
       setSubmitting(true);
       
@@ -757,12 +785,20 @@ export default function CreateDealPage() {
       // Submit to API endpoint using our API client which adds auth headers
       console.log('Submitting deal:', dealData);
       
-      // Use the apiRequest helper which handles auth tokens automatically
-      // Use the newer v1 API endpoint
-      const deal = await apiRequest('/api/v1/deals', {
+      // Use CSRF protection for the request
+      const response = await fetchWithProtection('/api/v1/deals', {
         method: 'POST',
-        data: dealData
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dealData)
       });
+      
+      if (!response.ok) {
+        throw new Error('Deal creation failed. Please try again.');
+      }
+      
+      const deal = await response.json();
       
       console.log('Deal created successfully:', deal);
       
@@ -1627,9 +1663,12 @@ export default function CreateDealPage() {
           <Button
             className="bg-[#00796B] hover:bg-[#004D40]"
             onClick={handleNext}
-            disabled={submitting}
+            disabled={submitting || (currentStep === steps.length - 1 && (csrfLoading || !csrfReady || !!csrfError))}
           >
-            {submitting ? 'Processing...' : currentStep < steps.length - 1 ? 'Continue' : 'Submit Deal for Approval'}
+            {submitting ? 'Processing...' : 
+             currentStep < steps.length - 1 ? 'Continue' : 
+             csrfLoading ? 'Securing Connection...' : 
+             'Submit Deal for Approval'}
             {!submitting && currentStep < steps.length - 1 && <ChevronRight className="ml-2 h-4 w-4" />}
           </Button>
         </CardFooter>
