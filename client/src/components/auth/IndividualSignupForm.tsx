@@ -12,11 +12,13 @@ import { Link } from "wouter";
 import { Checkbox } from "@/components/ui/checkbox";
 import { apiPost } from "@/lib/api";
 import { Loader2 } from "lucide-react";
+import { useCsrfProtection } from "@/hooks/useCsrfProtection";
 
 export default function IndividualSignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, feedback: "Password is required" });
   const { toast } = useToast();
+  const { isLoading: csrfLoading, isReady: csrfReady, error: csrfError, fetchWithProtection } = useCsrfProtection();
   
   const {
     register,
@@ -49,6 +51,32 @@ export default function IndividualSignupForm() {
   };
 
   const onSubmit = async (data: IndividualSignupFormValues) => {
+    // Don't proceed if CSRF is still loading or errored out
+    if (csrfLoading) {
+      toast({
+        title: "Please wait",
+        description: "Security verification in progress...",
+      });
+      return;
+    }
+    
+    if (csrfError) {
+      toast({
+        title: "Security Error",
+        description: "Unable to secure your request. Please refresh the page and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!csrfReady) {
+      toast({
+        title: "Security verification needed",
+        description: "Please wait while we secure your request...",
+      });
+      return;
+    }
+    
     setIsLoading(true);
     try {
       // Define the expected response type
@@ -59,8 +87,20 @@ export default function IndividualSignupForm() {
         token: string;
       };
       
-      // Use CSRF-protected API call
-      const response = await apiPost<RegistrationResponse>('/api/auth/register/individual', data);
+      // Use CSRF-protected fetch directly
+      const response = await fetchWithProtection(
+        '/api/v1/auth/register/individual', 
+        { 
+          method: 'POST',
+          body: JSON.stringify(data)
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error('Registration failed');
+      }
+      
+      const responseData = await response.json() as RegistrationResponse;
       
       toast({
         title: "Account created",
