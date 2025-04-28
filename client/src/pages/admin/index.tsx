@@ -187,6 +187,16 @@ const AdminDashboardPage = () => {
     queryKey: ['/api/v1/admin/vendors'],
     enabled: !!user && user.userType === 'admin'
   });
+  
+  // Fetch pending businesses specifically from the same endpoint used by vendor management
+  const {
+    data: pendingBusinessesData,
+    isLoading: isLoadingPendingBusinesses,
+    error: pendingBusinessesError
+  } = useQuery({
+    queryKey: ['/api/v1/admin/businesses/pending'],
+    enabled: !!user && user.userType === 'admin'
+  });
 
   // Fetch deals data from API
   const { 
@@ -288,16 +298,19 @@ const AdminDashboardPage = () => {
       redemptionsToday: 0
     };
     
-    if (isLoadingVendors || isLoadingDeals || isLoadingUsers || isLoadingTransactions) {
+    if (isLoadingVendors || isLoadingDeals || isLoadingUsers || isLoadingTransactions || isLoadingPendingBusinesses) {
       return defaultStats;
     }
     
-    // Process vendors data
+    // Use the specific pending businesses data for pending vendors count
+    if (pendingBusinessesData && Array.isArray(pendingBusinessesData)) {
+      // Console log to debug the pending vendors count
+      console.log("Pending businesses data:", pendingBusinessesData);
+      defaultStats.pendingVendors = pendingBusinessesData.length;
+    }
+    
+    // Process vendors data for approved and rejected vendors
     if (vendorsData && Array.isArray(vendorsData)) {
-      defaultStats.pendingVendors = vendorsData.filter((vendor: any) => 
-        vendor.status === 'pending' || vendor.verificationStatus === 'pending'
-      ).length;
-      
       defaultStats.approvedVendors = vendorsData.filter((vendor: any) => 
         vendor.status === 'approved' && vendor.verificationStatus === 'approved'
       ).length;
@@ -343,7 +356,18 @@ const AdminDashboardPage = () => {
     }
     
     return defaultStats;
-  }, [vendorsData, dealsData, usersData, transactionsData, isLoadingVendors, isLoadingDeals, isLoadingUsers, isLoadingTransactions]);
+  }, [
+    vendorsData, 
+    dealsData, 
+    usersData, 
+    transactionsData, 
+    pendingBusinessesData,
+    isLoadingVendors, 
+    isLoadingDeals, 
+    isLoadingUsers, 
+    isLoadingTransactions,
+    isLoadingPendingBusinesses
+  ]);
 
   // Generate alerts based on stats
   const alerts = useMemo(() => {
@@ -372,7 +396,14 @@ const AdminDashboardPage = () => {
 
   // Show error toast if any data fetching fails
   useEffect(() => {
-    const errors = [vendorsError, dealsError, transactionsError, usersError, dashboardError].filter(Boolean);
+    const errors = [
+      vendorsError, 
+      dealsError, 
+      transactionsError, 
+      usersError, 
+      dashboardError, 
+      pendingBusinessesError
+    ].filter(Boolean);
     
     if (errors.length > 0) {
       console.error("Error fetching dashboard data:", errors);
@@ -382,7 +413,15 @@ const AdminDashboardPage = () => {
         variant: "destructive"
       });
     }
-  }, [vendorsError, dealsError, transactionsError, usersError, dashboardError, toast]);
+  }, [
+    vendorsError, 
+    dealsError, 
+    transactionsError, 
+    usersError, 
+    dashboardError, 
+    pendingBusinessesError, 
+    toast
+  ]);
 
   return (
     <AdminLayout>
@@ -396,7 +435,7 @@ const AdminDashboardPage = () => {
           value={stats.pendingVendors}
           icon={<Store className="h-4 w-4" />}
           description="Vendors awaiting approval"
-          isLoading={isLoadingVendors}
+          isLoading={isLoadingPendingBusinesses}
           action={{
             label: "View All",
             onClick: () => window.location.href = "/admin/vendors"
