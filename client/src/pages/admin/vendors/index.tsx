@@ -394,7 +394,15 @@ export default function VendorsPage() {
 
     // Apply status filter
     if (statusFilter !== "all") {
-      filtered = filtered.filter(business => business.verificationStatus === statusFilter);
+      if (statusFilter === "approved") {
+        // When "approved" filter is selected, include both "approved" and "verified" statuses
+        filtered = filtered.filter(business => 
+          business.verificationStatus === "approved" || 
+          business.verificationStatus === "verified"
+        );
+      } else {
+        filtered = filtered.filter(business => business.verificationStatus === statusFilter);
+      }
     }
 
     // Apply category filter
@@ -428,7 +436,11 @@ export default function VendorsPage() {
 
     // Count by status
     setPendingCount(businesses.filter((b: Business) => b.verificationStatus === "pending").length);
-    setApprovedCount(businesses.filter((b: Business) => b.verificationStatus === "approved").length);
+    setApprovedCount(
+      businesses.filter(
+        (b: Business) => b.verificationStatus === "approved" || b.verificationStatus === "verified"
+      ).length
+    );
     setRejectedCount(businesses.filter((b: Business) => b.verificationStatus === "rejected").length);
   }, [businesses, searchQuery, statusFilter, categoryFilter, sortField, sortDirection]);
 
@@ -446,6 +458,7 @@ export default function VendorsPage() {
       case "pending":
         return <Badge variant="outline" className="flex items-center gap-1 font-normal text-yellow-600 border-yellow-300 bg-yellow-50"><Clock className="h-3 w-3" /> Pending</Badge>;
       case "approved":
+      case "verified":  // Treat "verified" same as "approved"
         return <Badge variant="outline" className="flex items-center gap-1 font-normal text-green-600 border-green-300 bg-green-50"><CheckCircle className="h-3 w-3" /> Approved</Badge>;
       case "rejected":
         return <Badge variant="outline" className="flex items-center gap-1 font-normal text-red-600 border-red-300 bg-red-50"><XCircle className="h-3 w-3" /> Rejected</Badge>;
