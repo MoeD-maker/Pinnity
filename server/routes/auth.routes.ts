@@ -12,20 +12,17 @@ import {
 } from "../auth";
 import { getUploadMiddleware } from "../uploadMiddleware";
 import fs from 'fs';
+import { validate } from "../middleware/validationMiddleware";
 import { authSchemas } from "../schemas";
+import { authRateLimiter, securityRateLimiter } from "../middleware/rateLimit";
 import { setAuthCookie, clearCookie } from "../utils/cookieUtils";
 import { withCustomAge, authCookieConfig } from "../utils/cookieConfig";
 import { 
   createVersionedRoutes, 
   versionHeadersMiddleware
 } from "../../src/utils/routeVersioning";
-import { 
-  verifyCsrf, 
-  validate, 
-  authRateLimiter, 
-  securityRateLimiter,
-  validatePasswordStrength
-} from "../middleware";
+import { verifyCsrf } from "../middleware";
+import { validatePasswordStrength } from "../middleware/passwordValidationMiddleware";
 
 /**
  * Authentication routes for login and registration
@@ -208,6 +205,7 @@ export function authRoutes(app: Express): void {
     verifyCsrf, // CSRF protection for individual registration
     authRateLimiter, // Apply rate limiting to registration endpoint
     validate(authSchemas.individualRegistration),
+    validatePasswordStrength('password'), // Server-side password strength validation
     async (req: Request, res: Response) => {
       try {
         // Request is already validated by middleware
@@ -264,6 +262,7 @@ export function authRoutes(app: Express): void {
     versionHeadersMiddleware(),
     authRateLimiter,
     validate(authSchemas.individualRegistration),
+    validatePasswordStrength('password'), // Server-side password strength validation
     async (req: Request, res: Response) => {
       try {
         // Request is already validated by middleware
@@ -352,6 +351,13 @@ export function authRoutes(app: Express): void {
               path: "body",
               message: "Missing required fields"
             }]
+          });
+        }
+        
+        // Server-side password strength validation
+        if (!isStrongPassword(password)) {
+          return res.status(400).json({ 
+            message: "Password is too weak. It must be at least 8 characters long and contain both letters and numbers." 
           });
         }
 
@@ -469,6 +475,13 @@ export function authRoutes(app: Express): void {
               path: "body",
               message: "Missing required fields"
             }]
+          });
+        }
+        
+        // Server-side password strength validation
+        if (!isStrongPassword(password)) {
+          return res.status(400).json({ 
+            message: "Password is too weak. It must be at least 8 characters long and contain both letters and numbers." 
           });
         }
 
@@ -673,6 +686,7 @@ export function authRoutes(app: Express): void {
     authRateLimiter,
     securityRateLimiter,
     validate(authSchemas.passwordResetVerify),
+    validatePasswordStrength('newPassword'), // Server-side password strength validation
     async (req: Request, res: Response) => {
       try {
         const { token, newPassword } = req.body;
@@ -703,6 +717,7 @@ export function authRoutes(app: Express): void {
     authRateLimiter,
     securityRateLimiter,
     validate(authSchemas.passwordResetVerify),
+    validatePasswordStrength('newPassword'), // Server-side password strength validation
     async (req: Request, res: Response) => {
       try {
         const { token, newPassword } = req.body;
