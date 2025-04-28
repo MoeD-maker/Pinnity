@@ -2,6 +2,19 @@ import { z } from 'zod';
 import crypto from 'crypto';
 
 /**
+ * Simple password strength validator checking for minimum requirements
+ * This is used for server-side validation to prevent weak passwords
+ * even if frontend validation is bypassed
+ * 
+ * @param password The password to check
+ * @returns boolean indicating if the password meets minimum strength requirements
+ */
+export function isStrongPassword(password: string): boolean {
+  const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*]{8,}$/;
+  return passwordRegex.test(password);
+}
+
+/**
  * Extended list of common/weak passwords
  * Based on research of frequently used passwords from breaches
  */
