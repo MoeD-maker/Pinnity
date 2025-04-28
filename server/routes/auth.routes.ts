@@ -12,17 +12,20 @@ import {
 } from "../auth";
 import { getUploadMiddleware } from "../uploadMiddleware";
 import fs from 'fs';
-import { validate } from "../middleware/validationMiddleware";
 import { authSchemas } from "../schemas";
-import { authRateLimiter, securityRateLimiter } from "../middleware/rateLimit";
 import { setAuthCookie, clearCookie } from "../utils/cookieUtils";
 import { withCustomAge, authCookieConfig } from "../utils/cookieConfig";
 import { 
   createVersionedRoutes, 
   versionHeadersMiddleware
 } from "../../src/utils/routeVersioning";
-import { verifyCsrf } from "../middleware";
-import { isStrongPassword } from "../utils/passwordValidation";
+import { 
+  verifyCsrf, 
+  validate, 
+  authRateLimiter, 
+  securityRateLimiter,
+  validatePasswordStrength
+} from "../middleware";
 
 /**
  * Authentication routes for login and registration
