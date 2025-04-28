@@ -45,8 +45,32 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const [location, navigate] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [pendingVendorsCount, setPendingVendorsCount] = useState(0);
   const { user, logout } = useAuth();
   const { toast } = useToast();
+  
+  // Fetch pending vendors count for sidebar badge
+  useEffect(() => {
+    if (user?.userType === 'admin') {
+      // Use the same endpoint as the admin dashboard
+      fetch('/api/v1/admin/businesses/pending')
+        .then(response => response.json())
+        .then(data => {
+          let count = 0;
+          if (Array.isArray(data)) {
+            count = data.length;
+          } else if (data && typeof data === 'object') {
+            // Handle legacy API that might return an object with numeric keys
+            count = Object.keys(data).length;
+          }
+          setPendingVendorsCount(count);
+        })
+        .catch(error => {
+          console.error('Error fetching pending vendors count:', error);
+          setPendingVendorsCount(0);
+        });
+    }
+  }, [user]);
   
   const isCurrentPath = (path: string) => {
     if (path === "/admin" && location === "/admin") {
@@ -109,8 +133,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 >
                   <span className="mr-3">{item.icon}</span>
                   {item.name}
-                  {item.name === "Vendors" && (
-                    <Badge className="ml-auto bg-yellow-500">4</Badge>
+                  {item.name === "Vendors" && pendingVendorsCount > 0 && (
+                    <Badge className="ml-auto bg-yellow-500">{pendingVendorsCount}</Badge>
                   )}
                 </button>
               ))}
@@ -196,8 +220,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                       >
                         <span className="mr-3">{item.icon}</span>
                         {item.name}
-                        {item.name === "Vendors" && (
-                          <Badge className="ml-auto bg-yellow-500">4</Badge>
+                        {item.name === "Vendors" && pendingVendorsCount > 0 && (
+                          <Badge className="ml-auto bg-yellow-500">{pendingVendorsCount}</Badge>
                         )}
                       </button>
                     ))}

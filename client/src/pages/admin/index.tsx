@@ -34,6 +34,22 @@ interface StatCardProps {
   };
 }
 
+// Define the type for dashboard stats
+type StatValue = string | number;
+
+interface DashboardStats {
+  pendingVendors: StatValue;
+  approvedVendors: StatValue;
+  rejectedVendors: StatValue;
+  pendingDeals: StatValue;
+  activeDeals: StatValue;
+  totalUsers: StatValue;
+  rejectedDeals: StatValue;
+  expiredDeals: StatValue;
+  alertCount: number;
+  redemptionsToday: StatValue;
+}
+
 const StatCard = ({ 
   title, 
   value, 
@@ -283,9 +299,9 @@ const AdminDashboardPage = () => {
   }, [dashboardData]);
 
   // Calculate stats based on API data
-  const stats = useMemo(() => {
+  const stats: DashboardStats = useMemo(() => {
     // Initialize with default values and error states
-    const defaultStats = {
+    const defaultStats: DashboardStats = {
       pendingVendors: 'N/A',
       approvedVendors: 'N/A', 
       rejectedVendors: 'N/A',
@@ -303,9 +319,8 @@ const AdminDashboardPage = () => {
       return defaultStats;
     }
     
-    // Initialize numeric values
-    const numericStats = {
-      ...defaultStats,
+    // Initialize with numeric values
+    const numericStats: DashboardStats = {
       pendingVendors: 0,
       approvedVendors: 0, 
       rejectedVendors: 0,
@@ -314,6 +329,7 @@ const AdminDashboardPage = () => {
       totalUsers: 0,
       rejectedDeals: 0,
       expiredDeals: 0,
+      alertCount: 0,
       redemptionsToday: 0
     };
     
@@ -358,41 +374,71 @@ const AdminDashboardPage = () => {
     }
     
     // Process deals data
-    if (dealsData && Array.isArray(dealsData)) {
-      defaultStats.pendingDeals = dealsData.filter((deal: any) => 
-        deal.status === 'pending'
-      ).length;
-      
-      defaultStats.activeDeals = dealsData.filter((deal: any) => 
-        deal.status === 'approved' && new Date(deal.endDate) > new Date()
-      ).length;
-      
-      defaultStats.rejectedDeals = dealsData.filter((deal: any) => 
-        deal.status === 'rejected'
-      ).length;
-      
-      defaultStats.expiredDeals = dealsData.filter((deal: any) => 
-        deal.status === 'approved' && new Date(deal.endDate) <= new Date()
-      ).length;
+    if (dealsData) {
+      try {
+        if (Array.isArray(dealsData)) {
+          // Include deals with pending_revision status in pending count
+          numericStats.pendingDeals = dealsData.filter((deal: any) => 
+            deal.status === 'pending' || deal.status === 'pending_revision'
+          ).length;
+          
+          numericStats.activeDeals = dealsData.filter((deal: any) => 
+            deal.status === 'approved' && new Date(deal.endDate) > new Date()
+          ).length;
+          
+          numericStats.rejectedDeals = dealsData.filter((deal: any) => 
+            deal.status === 'rejected'
+          ).length;
+          
+          numericStats.expiredDeals = dealsData.filter((deal: any) => 
+            deal.status === 'approved' && new Date(deal.endDate) <= new Date()
+          ).length;
+        }
+      } catch (error) {
+        console.error("Error processing deals data:", error);
+        numericStats.pendingDeals = 'Error';
+        numericStats.activeDeals = 'Error';
+        numericStats.rejectedDeals = 'Error';
+        numericStats.expiredDeals = 'Error';
+      }
     }
     
     // Process users data
-    if (usersData && Array.isArray(usersData)) {
-      defaultStats.totalUsers = usersData.length;
+    if (usersData) {
+      try {
+        if (Array.isArray(usersData)) {
+          numericStats.totalUsers = usersData.length;
+        }
+      } catch (error) {
+        console.error("Error processing users data:", error);
+        numericStats.totalUsers = 'Error';
+      }
     }
     
     // Process transactions data for today's redemptions
-    if (transactionsData && Array.isArray(transactionsData)) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      defaultStats.redemptionsToday = transactionsData.filter((transaction: any) => {
-        const transactionDate = new Date(transaction.createdAt || transaction.timestamp);
-        return transactionDate >= today && transaction.type === 'redemption';
-      }).length;
+    if (transactionsData) {
+      try {
+        if (Array.isArray(transactionsData)) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          numericStats.redemptionsToday = transactionsData.filter((transaction: any) => {
+            try {
+              const transactionDate = new Date(transaction.createdAt || transaction.timestamp);
+              return transactionDate >= today && transaction.type === 'redemption';
+            } catch (err) {
+              // Skip invalid entries
+              return false;
+            }
+          }).length;
+        }
+      } catch (error) {
+        console.error("Error processing transaction data:", error);
+        numericStats.redemptionsToday = 'Error';
+      }
     }
     
-    return defaultStats;
+    return numericStats;
   }, [
     vendorsData, 
     dealsData, 
@@ -410,21 +456,43 @@ const AdminDashboardPage = () => {
   const alerts = useMemo(() => {
     const newAlerts = [];
     
-    if (stats.pendingVendors > 0) {
+    // Helper function to check if a stat value is a positive number
+    const isPositiveNumber = (value: StatValue): boolean => {
+      if (typeof value === 'number') {
+        return value > 0;
+      } else if (typeof value === 'string' && !isNaN(Number(value))) {
+        return Number(value) > 0;
+      }
+      return false;
+    };
+    
+    // Helper function to compare stat value with a threshold
+    const isGreaterThan = (value: StatValue, threshold: number): boolean => {
+      if (typeof value === 'number') {
+        return value > threshold;
+      } else if (typeof value === 'string' && !isNaN(Number(value))) {
+        return Number(value) > threshold;
+      }
+      return false;
+    };
+    
+    // Check for pending vendors
+    if (isPositiveNumber(stats.pendingVendors)) {
       newAlerts.push({
         id: 1,
         title: "Vendor Verification Required",
         description: `${stats.pendingVendors} vendors are waiting for verification`,
-        priority: stats.pendingVendors > 3 ? "high" : "medium"
+        priority: isGreaterThan(stats.pendingVendors, 3) ? "high" : "medium"
       });
     }
     
-    if (stats.pendingDeals > 0) {
+    // Check for pending deals
+    if (isPositiveNumber(stats.pendingDeals)) {
       newAlerts.push({
         id: 2,
         title: "Deal Approval Backlog",
         description: `${stats.pendingDeals} deals are pending approval`,
-        priority: stats.pendingDeals > 5 ? "high" : "medium"
+        priority: isGreaterThan(stats.pendingDeals, 5) ? "high" : "medium"
       });
     }
     
