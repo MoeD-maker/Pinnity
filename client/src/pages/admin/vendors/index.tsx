@@ -487,8 +487,17 @@ export default function VendorsPage() {
             <CardTitle className="text-base text-muted-foreground">Pending</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pendingCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">Awaiting verification</p>
+            {isLoading ? (
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                <span className="text-muted-foreground text-sm">Loading...</span>
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{pendingCount || 'N/A'}</div>
+                <p className="text-xs text-muted-foreground mt-1">Awaiting verification</p>
+              </>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -496,8 +505,17 @@ export default function VendorsPage() {
             <CardTitle className="text-base text-muted-foreground">Approved</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{approvedCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">Active vendors</p>
+            {isLoading ? (
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                <span className="text-muted-foreground text-sm">Loading...</span>
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{approvedCount || 'N/A'}</div>
+                <p className="text-xs text-muted-foreground mt-1">Active vendors (approved & verified)</p>
+              </>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -505,8 +523,17 @@ export default function VendorsPage() {
             <CardTitle className="text-base text-muted-foreground">Rejected</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{rejectedCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">Declined applications</p>
+            {isLoading ? (
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                <span className="text-muted-foreground text-sm">Loading...</span>
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{rejectedCount || 'N/A'}</div>
+                <p className="text-xs text-muted-foreground mt-1">Declined applications</p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
