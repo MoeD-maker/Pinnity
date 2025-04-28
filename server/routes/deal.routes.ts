@@ -1,6 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { storage } from "../storage";
-import { authenticate } from "../middleware";
+import { authenticate, verifyCsrf } from "../middleware";
 import { insertDealSchema } from "@shared/schema";
 import { z } from "zod";
 import { createVersionedRoutes, versionHeadersMiddleware, deprecationMiddleware } from "../../src/utils/routeVersioning";
@@ -135,7 +135,7 @@ export function dealRoutes(app: Express): void {
   });
 
   // Create a deal
-  app.post("/api/deals", authenticate, async (req: Request, res: Response) => {
+  app.post("/api/deals", authenticate, verifyCsrf, async (req: Request, res: Response) => {
     try {
       // Verify that the authenticated user is a business owner
       if (!req.user || req.user.userType !== 'business') {
@@ -189,7 +189,7 @@ export function dealRoutes(app: Express): void {
   });
 
   // Update a deal
-  app.put("/api/deals/:id", authenticate, async (req: Request, res: Response) => {
+  app.put("/api/deals/:id", authenticate, verifyCsrf, async (req: Request, res: Response) => {
     try {
       const dealId = parseInt(req.params.id);
       if (isNaN(dealId)) {
@@ -248,7 +248,7 @@ export function dealRoutes(app: Express): void {
   });
 
   // Create deal approval
-  app.post("/api/deals/:dealId/approval", authenticate, async (req: Request, res: Response) => {
+  app.post("/api/deals/:dealId/approval", authenticate, verifyCsrf, async (req: Request, res: Response) => {
     try {
       const dealId = parseInt(req.params.dealId);
       if (isNaN(dealId)) {
@@ -354,7 +354,7 @@ export function dealRoutes(app: Express): void {
   });
 
   // Duplicate a deal
-  app.post("/api/deals/:id/duplicate", authenticate, async (req: Request, res: Response) => {
+  app.post("/api/deals/:id/duplicate", authenticate, verifyCsrf, async (req: Request, res: Response) => {
     try {
       const dealId = parseInt(req.params.id);
       if (isNaN(dealId)) {
@@ -443,7 +443,7 @@ export function dealRoutes(app: Express): void {
   });
 
   // Verify redemption code
-  app.post("/api/deals/:dealId/verify-code", authenticate, async (req: Request, res: Response) => {
+  app.post("/api/deals/:dealId/verify-code", authenticate, verifyCsrf, async (req: Request, res: Response) => {
     try {
       const dealId = parseInt(req.params.dealId);
       if (isNaN(dealId)) {

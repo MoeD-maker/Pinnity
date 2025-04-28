@@ -665,6 +665,7 @@ export function authRoutes(app: Express): void {
   app.post(
     versionedPasswordResetVerifyPath,
     versionHeadersMiddleware(),
+    verifyCsrf, // CSRF protection for password reset verification
     authRateLimiter,
     securityRateLimiter,
     validate(authSchemas.passwordResetVerify),
@@ -725,7 +726,7 @@ export function authRoutes(app: Express): void {
   const [versionedRefreshPath, legacyRefreshPath] = createVersionedRoutes('/auth/refresh-token');
   
   // Versioned route (primary) - token refresh
-  app.post(versionedRefreshPath, versionHeadersMiddleware(), async (req: Request, res: Response) => {
+  app.post(versionedRefreshPath, versionHeadersMiddleware(), verifyCsrf, async (req: Request, res: Response) => {
     try {
       console.log('Processing token refresh request');
       
