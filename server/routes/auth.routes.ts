@@ -23,6 +23,7 @@ import {
 } from "../../src/utils/routeVersioning";
 import { verifyCsrf } from "../middleware";
 import { validatePasswordStrength } from "../middleware/passwordValidationMiddleware";
+import { isStrongPassword } from "../utils/passwordValidation";
 
 /**
  * Authentication routes for login and registration
