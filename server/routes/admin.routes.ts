@@ -1,6 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { storage } from "../storage";
-import { authenticate, authorize } from "../middleware";
+import { authenticate, authorize, verifyCsrf } from "../middleware";
 import {
   createVersionedRoutes,
   versionHeadersMiddleware,
@@ -14,6 +14,7 @@ import {
   ensureArray,
   forceDealArray,
 } from "../utils/sanitize";
+import { apiDealSchema } from "@shared/schema";
 
 /**
  * Admin routes for user and business management
@@ -987,5 +988,127 @@ export function adminRoutes(app: Express): void {
           .json({ message: "Error updating deal featured status" });
       }
     },
+  );
+
+  // Create versioned route paths for admin deals
+  const [vAdminDealsPath, lAdminDealsPath] = createVersionedRoutes("/admin/deals");
+
+  // Admin create deal - versioned route
+  app.post(
+    vAdminDealsPath,
+    versionHeadersMiddleware(),
+    authenticate,
+    authorize(["admin"]),
+    verifyCsrf,
+    async (req: Request, res: Response) => {
+      try {
+        const dealData = req.body;
+        
+        console.log("Admin creating deal:", dealData);
+        
+        // Validate deal data
+        try {
+          // Use the API deal schema
+          apiDealSchema.parse(dealData);
+        } catch (validationError) {
+          console.error("Deal validation error:", validationError);
+          return res.status(400).json({ 
+            message: "Validation error", 
+            errors: validationError instanceof Error ? validationError.message : "Unknown validation error" 
+          });
+        }
+
+        // Handle special case for manual vendor entry
+        if (dealData.businessId === -1 && dealData.otherBusinessName) {
+          // Create a temporary business for this deal
+          console.log(`Creating temporary business: ${dealData.otherBusinessName}`);
+          const tempBusiness = await storage.createTempBusiness({
+            businessName: dealData.otherBusinessName,
+            userId: req.user!.userId, // Assign to admin user
+            businessCategory: dealData.category || "Other",
+            verificationStatus: "pending"
+          });
+          
+          // Update the deal with the new business ID
+          dealData.businessId = tempBusiness.id;
+        }
+        
+        // Set initial status to active for admin-created deals
+        dealData.status = 'active';
+        
+        // Create the deal
+        const deal = await storage.createDeal(dealData);
+        
+        // No need to create approval record since admin-created deals are automatically approved
+        
+        console.log("Admin created deal successfully:", deal.id);
+        return res.status(201).json(deal);
+      } catch (error) {
+        console.error("Error admin creating deal:", error);
+        if (error instanceof Error) {
+          return res.status(400).json({ message: error.message });
+        }
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
+  // Admin create deal - legacy route
+  app.post(
+    lAdminDealsPath,
+    authenticate,
+    authorize(["admin"]),
+    verifyCsrf,
+    async (req: Request, res: Response) => {
+      try {
+        const dealData = req.body;
+        
+        console.log("Admin creating deal (legacy):", dealData);
+        
+        // Validate deal data
+        try {
+          // Use the API deal schema
+          apiDealSchema.parse(dealData);
+        } catch (validationError) {
+          console.error("Deal validation error:", validationError);
+          return res.status(400).json({ 
+            message: "Validation error", 
+            errors: validationError instanceof Error ? validationError.message : "Unknown validation error" 
+          });
+        }
+
+        // Handle special case for manual vendor entry
+        if (dealData.businessId === -1 && dealData.otherBusinessName) {
+          // Create a temporary business for this deal
+          console.log(`Creating temporary business: ${dealData.otherBusinessName}`);
+          const tempBusiness = await storage.createTempBusiness({
+            businessName: dealData.otherBusinessName,
+            userId: req.user!.userId, // Assign to admin user
+            businessCategory: dealData.category || "Other",
+            verificationStatus: "pending"
+          });
+          
+          // Update the deal with the new business ID
+          dealData.businessId = tempBusiness.id;
+        }
+        
+        // Set initial status to active for admin-created deals
+        dealData.status = 'active';
+        
+        // Create the deal
+        const deal = await storage.createDeal(dealData);
+        
+        // No need to create approval record since admin-created deals are automatically approved
+        
+        console.log("Admin created deal successfully:", deal.id);
+        return res.status(201).json(deal);
+      } catch (error) {
+        console.error("Error admin creating deal:", error);
+        if (error instanceof Error) {
+          return res.status(400).json({ message: error.message });
+        }
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
   );
 }
