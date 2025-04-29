@@ -253,13 +253,31 @@ export default function AddDealPage() {
       if (manualVendorEntry && data.otherBusinessName) {
         // Using -1 as special placeholder to indicate manual entry
         data.businessId = -1; 
+        console.log("Using manual vendor entry with name:", data.otherBusinessName);
+      } else {
+        console.log("Using existing vendor with ID:", data.businessId);
+      }
+
+      console.log("Submitting deal data:", data);
+
+      // Get a fresh CSRF token before submission
+      try {
+        await fetch('/api/csrf-token', { 
+          credentials: 'include',
+          headers: { 'Cache-Control': 'no-cache' }
+        });
+        console.log("Refreshed CSRF token before form submission");
+      } catch (csrfError) {
+        console.error("Failed to refresh CSRF token:", csrfError);
       }
 
       // Submit to API
-      await apiRequest(`/api/v1/admin/deals`, {
+      const response = await apiRequest(`/api/v1/admin/deals`, {
         method: 'POST',
         data
       });
+
+      console.log("Deal creation response:", response);
 
       toast({
         title: "Success!",
@@ -267,13 +285,23 @@ export default function AddDealPage() {
         variant: "default"
       });
 
+      // Invalidate queries to ensure admin dashboard shows the new deal
+      queryClient.invalidateQueries({ queryKey: ['admin', 'deals'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
+      
       // Navigate back to deals list
       setLocation("/admin/deals");
     } catch (error) {
       console.error("Error creating deal:", error);
+      
+      let errorMessage = "Failed to create deal. Please try again.";
+      if (error instanceof Error) {
+        errorMessage = error.message || errorMessage;
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to create deal. Please try again.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {

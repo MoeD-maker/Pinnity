@@ -208,7 +208,12 @@ export function dealRoutes(app: Express): void {
         console.log("Deal approval record created");
       }
       
-      return res.status(201).json(deal);
+      // Ensure we send a properly formatted JSON response
+      return res.status(201).json({
+        success: true,
+        deal,
+        message: "Deal created successfully"
+      });
     } catch (error) {
       console.error("Error in admin deal creation:", error);
       return res.status(500).json({ message: "Failed to create deal" });
