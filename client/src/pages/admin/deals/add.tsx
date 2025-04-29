@@ -271,63 +271,13 @@ export default function AddDealPage() {
       const authCheckData = await checkAuthResponse.json();
       console.log("Auth check response data:", authCheckData);
 
-      // Get a fresh CSRF token before submission
-      console.log("Fetching fresh CSRF token...");
-      let csrfToken = null;
-      try {
-        const csrfResponse = await fetch('/api/csrf-token', { 
-          credentials: 'include',
-          headers: { 'Cache-Control': 'no-cache' }
-        });
-        console.log("CSRF token response status:", csrfResponse.status);
-        const csrfData = await csrfResponse.json();
-        console.log("CSRF token response:", csrfData);
-        csrfToken = csrfData.csrfToken;
-      } catch (csrfError) {
-        console.error("Failed to refresh CSRF token:", csrfError);
-      }
-
-      // Create headers for direct fetch
-      const headers = new Headers();
-      headers.append('Content-Type', 'application/json');
-      if (csrfToken) {
-        headers.append('CSRF-Token', csrfToken);
-        console.log("Added CSRF token to request headers:", csrfToken);
-      }
-
-      // Try direct fetch first for better debugging
-      console.log("Making direct fetch to /api/v1/admin/deals...");
-      const directResponse = await fetch('/api/v1/admin/deals', {
+      // Use apiRequest which handles CSRF properly instead of direct fetch
+      console.log("Using apiRequest helper to submit form...");
+      const response = await apiRequest(`/api/v1/admin/deals`, {
         method: 'POST',
-        headers: headers,
-        credentials: 'include',
-        body: JSON.stringify(data)
+        data
       });
-      
-      console.log("Direct fetch response status:", directResponse.status);
-      console.log("Direct fetch response headers:", directResponse.headers);
-      
-      let responseData;
-      try {
-        const responseText = await directResponse.text();
-        console.log("Raw response text:", responseText);
-        responseData = responseText ? JSON.parse(responseText) : null;
-        console.log("Parsed response data:", responseData);
-      } catch (parseError) {
-        console.error("Error parsing response:", parseError);
-      }
-      
-      // If direct fetch fails, try with apiRequest as fallback
-      if (!directResponse.ok) {
-        console.log("Direct fetch failed, trying with apiRequest helper...");
-        const response = await apiRequest(`/api/v1/admin/deals`, {
-          method: 'POST',
-          data
-        });
-        console.log("apiRequest response:", response);
-      } else {
-        console.log("Direct fetch succeeded with response:", responseData);
-      }
+      console.log("apiRequest response:", response);
 
       toast({
         title: "Success!",
