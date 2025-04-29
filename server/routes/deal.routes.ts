@@ -232,16 +232,15 @@ export function dealRoutes(app: Express): void {
       const deal = await storage.createDeal(dealData);
       console.log(`Admin created deal: ${deal.id}`, JSON.stringify(deal, null, 2));
       
-      // Create initial approval record (for tracking purposes)
-      if (dealData.status === 'pending') {
-        console.log(`Creating approval record for deal ${deal.id}`);
-        await storage.createDealApproval({
-          dealId: deal.id,
-          submitterId: req.user.userId,
-          status: 'pending'
-        });
-        console.log("Deal approval record created");
-      }
+      // ALWAYS create an approval record for ANY deal
+      // This ensures deals show up correctly in admin and vendor dashboards
+      console.log(`Creating approval record for deal ${deal.id} with status ${dealData.status}`);
+      await storage.createDealApproval({
+        dealId: deal.id,
+        submitterId: req.user.userId,
+        status: dealData.status === 'active' ? 'approved' : dealData.status
+      });
+      console.log("Deal approval record created successfully");
       
       // Ensure we send a properly formatted JSON response
       return res.status(201).json({

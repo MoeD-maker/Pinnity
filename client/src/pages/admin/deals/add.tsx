@@ -3,7 +3,7 @@ import { z } from "zod";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
@@ -336,8 +336,15 @@ export default function AddDealPage() {
       });
 
       // Invalidate queries to ensure admin dashboard shows the new deal
-      queryClient.invalidateQueries({ queryKey: ['admin', 'deals'] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
+      try {
+        import('@/lib/queryClient').then(({ queryClient }) => {
+          queryClient.invalidateQueries({ queryKey: ['admin', 'deals'] });
+          queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
+          console.log("Successfully invalidated queries");
+        });
+      } catch (invalidateError) {
+        console.error("Failed to invalidate queries:", invalidateError);
+      }
       
       // Navigate back to deals list
       setLocation("/admin/deals");
