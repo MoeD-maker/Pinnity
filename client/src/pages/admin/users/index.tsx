@@ -76,6 +76,19 @@ function isValidDate(dateString: string): boolean {
   }
 }
 
+// Helper function to safely format dates
+function formatDate(dateString: string | undefined): string {
+  if (!dateString || !isValidDate(dateString)) {
+    return "N/A";
+  }
+  try {
+    return format(new Date(dateString), "MMM d, yyyy");
+  } catch (e) {
+    console.error("Error formatting date:", e);
+    return "N/A";
+  }
+}
+
 interface UserData {
   id: number;
   username: string;
@@ -191,9 +204,14 @@ const UserManagementPage = () => {
           ? a.email.localeCompare(b.email)
           : b.email.localeCompare(a.email);
       } else if (sortField === "created_at") {
-        return sortDirection === "asc"
-          ? new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-          : new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        // Use safe date comparison
+        try {
+          const aTime = a.created_at && isValidDate(a.created_at) ? new Date(a.created_at).getTime() : 0;
+          const bTime = b.created_at && isValidDate(b.created_at) ? new Date(b.created_at).getTime() : 0;
+          return sortDirection === "asc" ? aTime - bTime : bTime - aTime;
+        } catch (e) {
+          return 0;
+        }
       } else if (sortField === "userType") {
         return sortDirection === "asc"
           ? a.userType.localeCompare(b.userType)
@@ -513,12 +531,7 @@ const UserManagementPage = () => {
                         </TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>{getUserTypeBadge(user.userType)}</TableCell>
-                        <TableCell>
-                          {user.created_at && isValidDate(user.created_at) 
-                            ? format(new Date(user.created_at), "MMM d, yyyy") 
-                            : "N/A"
-                          }
-                        </TableCell>
+                        <TableCell>{formatDate(user.created_at)}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button 
@@ -572,7 +585,7 @@ const UserManagementPage = () => {
                           {user.firstName} {user.lastName}
                         </TableCell>
                         <TableCell>{user.email}</TableCell>
-                        <TableCell>{format(new Date(user.created_at), "MMM d, yyyy")}</TableCell>
+                        <TableCell>{formatDate(user.created_at)}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button 
@@ -625,7 +638,7 @@ const UserManagementPage = () => {
                           {user.firstName} {user.lastName}
                         </TableCell>
                         <TableCell>{user.email}</TableCell>
-                        <TableCell>{format(new Date(user.created_at), "MMM d, yyyy")}</TableCell>
+                        <TableCell>{formatDate(user.created_at)}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button 
@@ -686,7 +699,7 @@ const UserManagementPage = () => {
                           {user.firstName} {user.lastName}
                         </TableCell>
                         <TableCell>{user.email}</TableCell>
-                        <TableCell>{format(new Date(user.created_at), "MMM d, yyyy")}</TableCell>
+                        <TableCell>{formatDate(user.created_at)}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button 
@@ -784,7 +797,6 @@ const UserManagementPage = () => {
                   placeholder="Phone number"
                   value={newUserData.phone}
                   onChange={(e) => setNewUserData({...newUserData, phone: e.target.value})}
-                  required
                 />
               </div>
               
@@ -795,7 +807,6 @@ const UserManagementPage = () => {
                   placeholder="Address"
                   value={newUserData.address}
                   onChange={(e) => setNewUserData({...newUserData, address: e.target.value})}
-                  required
                 />
               </div>
               
@@ -803,7 +814,7 @@ const UserManagementPage = () => {
                 <label htmlFor="userType" className="text-sm font-medium">User Type</label>
                 <Select
                   value={newUserData.userType}
-                  onValueChange={(value) => setNewUserData({...newUserData, userType: value})}
+                  onValueChange={(value: string) => setNewUserData({...newUserData, userType: value as any})}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select user type" />
@@ -811,14 +822,15 @@ const UserManagementPage = () => {
                   <SelectContent>
                     <SelectItem value="individual">Customer</SelectItem>
                     <SelectItem value="business">Vendor</SelectItem>
-                    <SelectItem value="admin">Administrator</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
-
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddUserDialogOpen(false)}>Cancel</Button>
+              <Button variant="outline" type="button" onClick={() => setIsAddUserDialogOpen(false)}>
+                Cancel
+              </Button>
               <Button type="submit">Create User</Button>
             </DialogFooter>
           </form>
@@ -827,21 +839,20 @@ const UserManagementPage = () => {
 
       {/* Delete User Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[400px]">
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Delete User</DialogTitle>
+            <DialogTitle>Confirm Deletion</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete this user? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex items-center justify-center py-6">
-            <div className="p-3 bg-red-100 rounded-full">
-              <XCircle className="h-8 w-8 text-red-600" />
-            </div>
-          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDeleteUser}>Delete User</Button>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteUser}>
+              Delete
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
