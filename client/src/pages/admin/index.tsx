@@ -194,6 +194,13 @@ const AdminDashboardPage = () => {
     console.log("Admin authentication successful");
   }, [user, setLocation, toast]);
 
+  // Fetch function for vendors data
+  const fetchVendors = async () => {
+    const response = await fetch('/api/v1/admin/businesses');
+    if (!response.ok) throw new Error('Failed to fetch vendors');
+    return response.json();
+  };
+
   // Fetch vendors data from API
   const { 
     data: vendorsData,
@@ -201,8 +208,16 @@ const AdminDashboardPage = () => {
     error: vendorsError
   } = useQuery({
     queryKey: ['/api/v1/admin/businesses'],
+    queryFn: fetchVendors,
     enabled: !!user && user.userType === 'admin'
   });
+  
+  // Fetch function for pending businesses
+  const fetchPendingBusinesses = async () => {
+    const response = await fetch('/api/v1/admin/businesses/pending');
+    if (!response.ok) throw new Error('Failed to fetch pending businesses');
+    return response.json();
+  };
   
   // Fetch pending businesses specifically from the same endpoint used by vendor management
   const {
@@ -211,8 +226,16 @@ const AdminDashboardPage = () => {
     error: pendingBusinessesError
   } = useQuery({
     queryKey: ['/api/v1/admin/businesses/pending'],
+    queryFn: fetchPendingBusinesses,
     enabled: !!user && user.userType === 'admin'
   });
+
+  // Fetch function for deals data
+  const fetchDeals = async () => {
+    const response = await fetch('/api/v1/admin/deals');
+    if (!response.ok) throw new Error('Failed to fetch deals');
+    return response.json();
+  };
 
   // Fetch deals data from API
   const { 
@@ -221,8 +244,16 @@ const AdminDashboardPage = () => {
     error: dealsError
   } = useQuery({
     queryKey: ['/api/v1/admin/deals'],
+    queryFn: fetchDeals,
     enabled: !!user && user.userType === 'admin'
   });
+
+  // Fetch function for transactions data
+  const fetchTransactions = async () => {
+    const response = await fetch('/api/v1/admin/transactions');
+    if (!response.ok) throw new Error('Failed to fetch transactions');
+    return response.json();
+  };
 
   // Fetch transactions (redemptions) data from API
   const { 
@@ -231,8 +262,16 @@ const AdminDashboardPage = () => {
     error: transactionsError
   } = useQuery({
     queryKey: ['/api/v1/admin/transactions'],
+    queryFn: fetchTransactions,
     enabled: !!user && user.userType === 'admin'
   });
+
+  // Fetch function for users data
+  const fetchUsers = async () => {
+    const response = await fetch('/api/v1/admin/users');
+    if (!response.ok) throw new Error('Failed to fetch users');
+    return response.json();
+  };
 
   // Fetch users data from API
   const { 
@@ -241,10 +280,18 @@ const AdminDashboardPage = () => {
     error: usersError
   } = useQuery({
     queryKey: ['/api/v1/admin/users'],
+    queryFn: fetchUsers,
     enabled: !!user && user.userType === 'admin'
   });
   
   // All loading states and data are fetched directly from the individual queries
+
+  // Fetch function for dashboard data
+  const fetchDashboard = async () => {
+    const response = await fetch('/api/v1/admin/dashboard');
+    if (!response.ok) throw new Error('Failed to fetch dashboard data');
+    return response.json();
+  };
 
   // Fetch dashboard summary data (for activity feed and alerts)
   const {
@@ -253,6 +300,7 @@ const AdminDashboardPage = () => {
     error: dashboardError
   } = useQuery({
     queryKey: ['/api/v1/admin/dashboard'],
+    queryFn: fetchDashboard,
     enabled: !!user && user.userType === 'admin'
   });
   
@@ -340,39 +388,49 @@ const AdminDashboardPage = () => {
     // This ensures consistency across all dashboard components and vendor management page
     if (vendorsData) {
       try {
+        // Convert vendorsData to array if it's an object with numeric keys (legacy API format)
+        let vendorsArray: any[] = [];
+        
         if (Array.isArray(vendorsData)) {
-          // Calculate all vendor-related stats directly from the vendors data
-          // This is the same approach used in the vendor management page
-          const pendingVendors = vendorsData.filter((vendor: any) => 
-            vendor.verificationStatus === 'pending'
-          );
-          
-          const approvedVendors = vendorsData.filter((vendor: any) => 
-            vendor.verificationStatus === 'approved' || 
-            vendor.verificationStatus === 'verified'
-          );
-          
-          const rejectedVendors = vendorsData.filter((vendor: any) => 
-            vendor.verificationStatus === 'rejected'
-          );
-          
-          // Update all vendor-related stats
-          numericStats.pendingVendors = pendingVendors.length;
-          numericStats.approvedVendors = approvedVendors.length;
-          numericStats.rejectedVendors = rejectedVendors.length;
-          
-          // Log vendor counts for debugging
-          console.log(`Dashboard: Found ${pendingVendors.length} pending vendors`);
-          console.log(`Dashboard: Found ${approvedVendors.length} approved vendors (including ${
-            approvedVendors.filter(v => v.verificationStatus === 'verified').length
-          } verified vendors)`);
-          console.log(`Dashboard: Found ${rejectedVendors.length} rejected vendors`);
+          vendorsArray = vendorsData;
+        } else if (vendorsData && typeof vendorsData === 'object') {
+          // Handle object format (legacy API might return an object with numeric keys)
+          vendorsArray = Object.values(vendorsData);
+          console.log("Converted vendors object to array:", vendorsArray.length);
         } else {
-          console.error("Vendors data is not an array:", vendorsData);
+          console.error("Vendors data is not an array or object:", vendorsData);
           numericStats.pendingVendors = 'Error';
           numericStats.approvedVendors = 'Error';
           numericStats.rejectedVendors = 'Error';
+          return numericStats;
         }
+          
+        // Calculate all vendor-related stats directly from the vendors data
+        // This is the same approach used in the vendor management page
+        const pendingVendors = vendorsArray.filter((vendor: any) => 
+          vendor.verificationStatus === 'pending'
+        );
+        
+        const approvedVendors = vendorsArray.filter((vendor: any) => 
+          vendor.verificationStatus === 'approved' || 
+          vendor.verificationStatus === 'verified'
+        );
+        
+        const rejectedVendors = vendorsArray.filter((vendor: any) => 
+          vendor.verificationStatus === 'rejected'
+        );
+        
+        // Update all vendor-related stats
+        numericStats.pendingVendors = pendingVendors.length;
+        numericStats.approvedVendors = approvedVendors.length;
+        numericStats.rejectedVendors = rejectedVendors.length;
+        
+        // Log vendor counts for debugging
+        console.log(`Dashboard: Found ${pendingVendors.length} pending vendors`);
+        console.log(`Dashboard: Found ${approvedVendors.length} approved vendors (including ${
+          approvedVendors.filter(v => v.verificationStatus === 'verified').length
+        } verified vendors)`);
+        console.log(`Dashboard: Found ${rejectedVendors.length} rejected vendors`);
       } catch (error) {
         console.error("Error processing vendors data:", error);
         numericStats.pendingVendors = 'Error';
@@ -384,24 +442,46 @@ const AdminDashboardPage = () => {
     // Process deals data
     if (dealsData) {
       try {
+        // Convert dealsData to array if it's an object with numeric keys (legacy API format)
+        let dealsArray: any[] = [];
+        
         if (Array.isArray(dealsData)) {
-          // Include deals with pending_revision status in pending count
-          numericStats.pendingDeals = dealsData.filter((deal: any) => 
-            deal.status === 'pending' || deal.status === 'pending_revision'
-          ).length;
-          
-          numericStats.activeDeals = dealsData.filter((deal: any) => 
-            deal.status === 'approved' && new Date(deal.endDate) > new Date()
-          ).length;
-          
-          numericStats.rejectedDeals = dealsData.filter((deal: any) => 
-            deal.status === 'rejected'
-          ).length;
-          
-          numericStats.expiredDeals = dealsData.filter((deal: any) => 
-            deal.status === 'approved' && new Date(deal.endDate) <= new Date()
-          ).length;
+          dealsArray = dealsData;
+        } else if (dealsData && typeof dealsData === 'object') {
+          // Handle object format (legacy API might return an object with numeric keys)
+          dealsArray = Object.values(dealsData);
+          console.log("Converted deals object to array:", dealsArray.length);
+        } else {
+          console.error("Deals data is not an array or object:", dealsData);
+          numericStats.pendingDeals = 'Error';
+          numericStats.activeDeals = 'Error';
+          numericStats.rejectedDeals = 'Error';
+          numericStats.expiredDeals = 'Error';
+          return numericStats;
         }
+        
+        // Include deals with pending_revision status in pending count
+        numericStats.pendingDeals = dealsArray.filter((deal: any) => 
+          deal.status === 'pending' || deal.status === 'pending_revision'
+        ).length;
+        
+        numericStats.activeDeals = dealsArray.filter((deal: any) => 
+          deal.status === 'approved' && new Date(deal.endDate) > new Date()
+        ).length;
+        
+        numericStats.rejectedDeals = dealsArray.filter((deal: any) => 
+          deal.status === 'rejected'
+        ).length;
+        
+        numericStats.expiredDeals = dealsArray.filter((deal: any) => 
+          deal.status === 'approved' && new Date(deal.endDate) <= new Date()
+        ).length;
+        
+        // Log deal counts for debugging
+        console.log(`Dashboard: Found ${numericStats.pendingDeals} pending deals`);
+        console.log(`Dashboard: Found ${numericStats.activeDeals} active deals`);
+        console.log(`Dashboard: Found ${numericStats.rejectedDeals} rejected deals`);
+        console.log(`Dashboard: Found ${numericStats.expiredDeals} expired deals`);
       } catch (error) {
         console.error("Error processing deals data:", error);
         numericStats.pendingDeals = 'Error';
@@ -414,9 +494,23 @@ const AdminDashboardPage = () => {
     // Process users data
     if (usersData) {
       try {
+        // Convert usersData to array if it's an object with numeric keys (legacy API format)
+        let usersArray: any[] = [];
+        
         if (Array.isArray(usersData)) {
-          numericStats.totalUsers = usersData.length;
+          usersArray = usersData;
+        } else if (usersData && typeof usersData === 'object') {
+          // Handle object format (legacy API might return an object with numeric keys)
+          usersArray = Object.values(usersData);
+          console.log("Converted users object to array:", usersArray.length);
+        } else {
+          console.error("Users data is not an array or object:", usersData);
+          numericStats.totalUsers = 'Error';
+          return numericStats;
         }
+        
+        numericStats.totalUsers = usersArray.length;
+        console.log(`Dashboard: Found ${numericStats.totalUsers} total users`);
       } catch (error) {
         console.error("Error processing users data:", error);
         numericStats.totalUsers = 'Error';
@@ -426,20 +520,35 @@ const AdminDashboardPage = () => {
     // Process transactions data for today's redemptions
     if (transactionsData) {
       try {
+        // Convert transactionsData to array if it's an object with numeric keys
+        let transactionsArray: any[] = [];
+        
         if (Array.isArray(transactionsData)) {
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          
-          numericStats.redemptionsToday = transactionsData.filter((transaction: any) => {
-            try {
-              const transactionDate = new Date(transaction.createdAt || transaction.timestamp);
-              return transactionDate >= today && transaction.type === 'redemption';
-            } catch (err) {
-              // Skip invalid entries
-              return false;
-            }
-          }).length;
+          transactionsArray = transactionsData;
+        } else if (transactionsData && typeof transactionsData === 'object') {
+          // Handle object format (legacy API might return an object with numeric keys)
+          transactionsArray = Object.values(transactionsData);
+          console.log("Converted transactions object to array:", transactionsArray.length);
+        } else {
+          console.error("Transactions data is not an array or object:", transactionsData);
+          numericStats.redemptionsToday = 'Error';
+          return numericStats;
         }
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        numericStats.redemptionsToday = transactionsArray.filter((transaction: any) => {
+          try {
+            const transactionDate = new Date(transaction.createdAt || transaction.timestamp);
+            return transactionDate >= today && transaction.type === 'redemption';
+          } catch (err) {
+            // Skip invalid entries
+            return false;
+          }
+        }).length;
+        
+        console.log(`Dashboard: Found ${numericStats.redemptionsToday} redemptions today`);
       } catch (error) {
         console.error("Error processing transaction data:", error);
         numericStats.redemptionsToday = 'Error';
