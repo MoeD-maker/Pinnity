@@ -305,7 +305,7 @@ export default function AddDealPage() {
       });
       
       console.log("Direct fetch response status:", directResponse.status);
-      console.log("Direct fetch response headers:", Object.fromEntries([...directResponse.headers.entries()]));
+      console.log("Direct fetch response headers:", directResponse.headers);
       
       let responseData;
       try {

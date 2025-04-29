@@ -53,12 +53,24 @@ export async function apiRequest(
     
     let result = null;
     try {
+      // Check if the response starts with HTML doctype, which indicates an error page
+      if (text && text.trim().toLowerCase().startsWith('<!doctype')) {
+        console.error(`Received HTML instead of JSON from ${url}`);
+        throw new Error('Received HTML response instead of JSON. The server might be returning an error page.');
+      }
+      
       result = text ? JSON.parse(text) : null;
       console.log(`Parsed response from ${url}:`, result);
     } catch (err) {
       console.error(`Error parsing JSON response from ${url}:`, err);
-      console.log(`Response headers:`, Object.fromEntries([...res.headers.entries()]));
-      // For debugging only - return the raw text or a simplified valid object
+      console.log(`Response headers:`, res.headers);
+      
+      // If it's an HTML response, provide a better error message
+      if (text && text.includes('<!DOCTYPE')) {
+        throw new Error('The server returned an HTML page instead of JSON data. Please try again or contact support.');
+      }
+      
+      // For debugging only - return the raw text or a simplified valid object for non-HTML errors
       return { valid: text.includes('true'), rawResponse: text };
     }
     
@@ -86,7 +98,21 @@ export const getQueryFn: <T>(options: {
     }
 
     await throwIfResNotOk(res);
-    return await res.json();
+    
+    // Handle potential HTML responses that might cause JSON parse errors
+    const text = await res.text();
+    
+    if (text && text.trim().toLowerCase().startsWith('<!doctype')) {
+      console.error(`Received HTML instead of JSON for query: ${queryKey[0]}`);
+      throw new Error('Received HTML response instead of JSON. The server might be returning an error page.');
+    }
+    
+    try {
+      return text ? JSON.parse(text) : null;
+    } catch (err) {
+      console.error(`Error parsing JSON response from query: ${queryKey[0]}`, err);
+      throw new Error('Failed to parse server response. Please try again later.');
+    }
   };
 
 export const queryClient = new QueryClient({
