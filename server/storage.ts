@@ -55,6 +55,7 @@ export interface IStorage {
   updateBusinessVerificationStatus(id: number, status: string, feedback?: string): Promise<Business>;
   getAllBusinesses(): Promise<(Business & { user: User })[]>;
   getBusinessesByStatus(status: string): Promise<(Business & { user: User })[]>;
+  createTempBusiness(businessData: Partial<Omit<InsertBusiness, "id">>): Promise<Business>;
   
   // Business Hours methods
   getBusinessHours(businessId: number): Promise<BusinessHours[]>;
@@ -614,6 +615,35 @@ export class MemStorage implements IStorage {
     };
     this.businesses.set(id, business);
     return business;
+  }
+  
+  async createTempBusiness(businessData: Partial<Omit<InsertBusiness, "id">>): Promise<Business> {
+    // Make sure we have the minimum required fields
+    if (!businessData.businessName || !businessData.userId) {
+      throw new Error("Business name and user ID are required for creating a temporary business");
+    }
+    
+    // Set default values for missing fields
+    const tempBusinessData: Omit<InsertBusiness, "id"> = {
+      userId: businessData.userId,
+      businessName: businessData.businessName,
+      businessCategory: businessData.businessCategory || "other",
+      verificationStatus: businessData.verificationStatus || "pending",
+      address: businessData.address || "",
+      description: businessData.description || `Temporary business created for ${businessData.businessName}`,
+      // Set all other required fields with default values
+      phone: businessData.phone || "",
+      website: businessData.website || "",
+      imageUrl: businessData.imageUrl || "",
+      latitude: businessData.latitude || 0,
+      longitude: businessData.longitude || 0,
+      governmentId: businessData.governmentId || "",
+      proofOfAddress: businessData.proofOfAddress || "",
+      proofOfBusiness: businessData.proofOfBusiness || ""
+    };
+    
+    // Create the business using our private method
+    return this.createBusiness(tempBusinessData);
   }
 
   async verifyLogin(email: string, password: string): Promise<User | null> {
@@ -1850,6 +1880,36 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return business;
+  }
+  
+  async createTempBusiness(businessData: Partial<Omit<InsertBusiness, "id">>): Promise<Business> {
+    // Make sure we have the minimum required fields
+    if (!businessData.businessName || !businessData.userId) {
+      throw new Error("Business name and user ID are required for creating a temporary business");
+    }
+    
+    // Set default values for missing fields
+    const tempBusinessData: Omit<InsertBusiness, "id"> = {
+      userId: businessData.userId,
+      businessName: businessData.businessName,
+      businessCategory: businessData.businessCategory || "other",
+      verificationStatus: businessData.verificationStatus || "pending",
+      description: businessData.description || `Temporary business created for ${businessData.businessName}`,
+      address: businessData.address || "",
+      phone: businessData.phone || "",
+      website: businessData.website || "",
+      imageUrl: businessData.imageUrl || "",
+      latitude: businessData.latitude || 0,
+      longitude: businessData.longitude || 0,
+      governmentId: businessData.governmentId || "",
+      proofOfAddress: businessData.proofOfAddress || "",
+      proofOfBusiness: businessData.proofOfBusiness || ""
+    };
+    
+    console.log(`Creating temporary business for admin deal: ${tempBusinessData.businessName}`);
+    
+    // Create the business using our private method
+    return this.createBusiness(tempBusinessData);
   }
 
   async verifyLogin(email: string, password: string): Promise<User | null> {
