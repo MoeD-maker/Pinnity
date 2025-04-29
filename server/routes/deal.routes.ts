@@ -1,6 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { storage } from "../storage";
-import { authenticate, verifyCsrf } from "../middleware";
+import { authenticate, authorize, verifyCsrf } from "../middleware";
 import { insertDealSchema } from "@shared/schema";
 import { z } from "zod";
 import { createVersionedRoutes, versionHeadersMiddleware, deprecationMiddleware } from "../../src/utils/routeVersioning";
@@ -135,7 +135,7 @@ export function dealRoutes(app: Express): void {
   });
 
   // Admin-specific create deal endpoint
-  app.post("/api/v1/admin/deals", async (req: Request, res: Response) => {
+  app.post("/api/v1/admin/deals", authenticate, authorize(["admin"]), verifyCsrf, async (req: Request, res: Response) => {
     console.log("=========== ADMIN DEAL CREATION REQUEST START ===========");
     console.log("Request headers:", req.headers);
     console.log("Request method:", req.method);
@@ -145,40 +145,8 @@ export function dealRoutes(app: Express): void {
     
     try {
       console.log("Admin deal creation endpoint called");
-
-      // Authentication check - moved here for debugging
-      console.log("Checking authentication...");
-      if (!req.signedCookies.auth_token) {
-        console.error("No auth token found in request");
-        return res.status(401).json({ message: "Authentication required", error: "auth_token_missing" });
-      }
-      
-      try {
-        const user = await authenticate(req, res, () => {});
-        console.log("Authentication middleware result:", user);
-      } catch (authError) {
-        console.error("Authentication middleware error:", authError);
-        return res.status(401).json({ message: "Authentication failed", error: "auth_error" });
-      }
-      
-      // CSRF verification - moved here for debugging
-      console.log("Checking CSRF token...");
-      console.log("CSRF token from header:", req.headers['csrf-token']);
-      console.log("CSRF token from cookies:", req.signedCookies._csrf);
-      
-      try {
-        const csrfResult = await verifyCsrf(req, res, () => {});
-        console.log("CSRF middleware result:", csrfResult);
-      } catch (csrfError) {
-        console.error("CSRF middleware error:", csrfError);
-        return res.status(403).json({ message: "CSRF validation failed", error: "csrf_error" });
-      }
-      
-      // Verify that the authenticated user is an admin
-      if (!req.user || req.user.userType !== 'admin') {
-        console.error("Authorization failed: User is not an admin");
-        return res.status(403).json({ message: "Only admin accounts can access this endpoint" });
-      }
+      // Authentication and CSRF protection are now handled by middleware
+      console.log("Admin user authenticated:", req.user?.userId);
       
       console.log("Admin user verified:", req.user.userId);
       const dealData = req.body;
