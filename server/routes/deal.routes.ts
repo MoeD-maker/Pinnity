@@ -137,12 +137,17 @@ export function dealRoutes(app: Express): void {
   // Admin-specific create deal endpoint
   app.post("/api/v1/admin/deals", authenticate, verifyCsrf, async (req: Request, res: Response) => {
     try {
+      console.log("Admin deal creation endpoint called");
+      
       // Verify that the authenticated user is an admin
       if (!req.user || req.user.userType !== 'admin') {
+        console.error("Authorization failed: User is not an admin");
         return res.status(403).json({ message: "Only admin accounts can access this endpoint" });
       }
       
+      console.log("Admin user verified:", req.user.userId);
       const dealData = req.body;
+      console.log("Received deal data:", JSON.stringify(dealData, null, 2));
       
       // Handle manual business creation if businessId is -1 (special indicator for manual entry)
       if (dealData.businessId === -1 && dealData.otherBusinessName) {
@@ -152,6 +157,7 @@ export function dealRoutes(app: Express): void {
           // Create a temporary business entry
           const tempBusiness = await storage.createTempBusiness(dealData.otherBusinessName);
           if (!tempBusiness) {
+            console.error("Failed to create temporary business");
             return res.status(500).json({ message: "Failed to create temporary business" });
           }
           
@@ -162,34 +168,44 @@ export function dealRoutes(app: Express): void {
           console.error("Error creating temporary business:", error);
           return res.status(500).json({ message: "Failed to create temporary business" });
         }
+      } else {
+        console.log(`Using existing business with ID: ${dealData.businessId}`);
       }
       
       // Admin can set status directly or default to pending
       dealData.status = dealData.status || 'pending';
+      console.log(`Deal status set to: ${dealData.status}`);
       
       // Validate the deal data
       try {
+        console.log("Validating deal data...");
         // Create a modified schema without the required ID field
         const createDealSchema = insertDealSchema.omit({ id: true, createdAt: true });
         createDealSchema.parse(dealData);
+        console.log("Deal data validation successful");
       } catch (validationError) {
         if (validationError instanceof z.ZodError) {
+          console.error("Validation failed:", validationError.errors);
           return res.status(400).json({ message: "Validation error", errors: validationError.errors });
         }
+        console.error("Unknown validation error:", validationError);
         throw validationError;
       }
       
       // Create the deal
+      console.log("Attempting to create deal in storage...");
       const deal = await storage.createDeal(dealData);
-      console.log(`Admin created deal: ${deal.id}`);
+      console.log(`Admin created deal: ${deal.id}`, JSON.stringify(deal, null, 2));
       
       // Create initial approval record (for tracking purposes)
       if (dealData.status === 'pending') {
+        console.log(`Creating approval record for deal ${deal.id}`);
         await storage.createDealApproval({
           dealId: deal.id,
           submitterId: req.user.userId,
           status: 'pending'
         });
+        console.log("Deal approval record created");
       }
       
       return res.status(201).json(deal);
