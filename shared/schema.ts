@@ -49,6 +49,7 @@ export const deals = pgTable("deals", {
   discount: text("discount"),
   dealType: text("deal_type").notNull(), // "percent_off", "buy_one_get_one", "fixed_amount", etc.
   featured: boolean("featured").default(false),
+  requiresPin: boolean("requires_pin").default(true),
   redemptionCode: text("redemption_code"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   status: text("status").notNull().default("pending"), // "pending", "approved", "active", "expired", "rejected"
@@ -198,7 +199,9 @@ export const apiDealSchema = insertDealSchema
     startDate: z.string(), // Accept string dates from frontend
     endDate: z.string(),   // Accept string dates from frontend
     isRecurring: z.boolean().optional().default(false),
-    recurringDays: z.array(z.number().min(0).max(6)).optional().default([])
+    recurringDays: z.array(z.number().min(0).max(6)).optional().default([]),
+    featured: z.boolean().optional().default(false),
+    requiresPin: z.boolean().optional().default(true)
   })
   .omit({ id: true, createdAt: true, approvalDate: true, status: true });
 
