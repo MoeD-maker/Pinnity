@@ -35,7 +35,8 @@ import {
   History,
   Calendar as CalendarIcon,
   Bookmark,
-  Edit
+  Edit,
+  PlusCircle
 } from 'lucide-react';
 import { useLocation } from 'wouter';
 import ViewDetailsLink from '@/components/admin/ViewDetailsLink';
@@ -627,6 +628,10 @@ export default function DealsPage() {
           </div>
         </div>
         <div className="space-x-2">
+          <Button variant="default" onClick={() => setLocation("/admin/deals/add")}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add New Deal
+          </Button>
           <Button variant="outline">
             <Download className="mr-2 h-4 w-4" />
             Export
