@@ -135,9 +135,44 @@ export function dealRoutes(app: Express): void {
   });
 
   // Admin-specific create deal endpoint
-  app.post("/api/v1/admin/deals", authenticate, verifyCsrf, async (req: Request, res: Response) => {
+  app.post("/api/v1/admin/deals", async (req: Request, res: Response) => {
+    console.log("=========== ADMIN DEAL CREATION REQUEST START ===========");
+    console.log("Request headers:", req.headers);
+    console.log("Request method:", req.method);
+    console.log("Request URL:", req.url);
+    console.log("Request cookies:", req.cookies);
+    console.log("Request signed cookies:", req.signedCookies);
+    
     try {
       console.log("Admin deal creation endpoint called");
+
+      // Authentication check - moved here for debugging
+      console.log("Checking authentication...");
+      if (!req.signedCookies.auth_token) {
+        console.error("No auth token found in request");
+        return res.status(401).json({ message: "Authentication required", error: "auth_token_missing" });
+      }
+      
+      try {
+        const user = await authenticate(req, res, () => {});
+        console.log("Authentication middleware result:", user);
+      } catch (authError) {
+        console.error("Authentication middleware error:", authError);
+        return res.status(401).json({ message: "Authentication failed", error: "auth_error" });
+      }
+      
+      // CSRF verification - moved here for debugging
+      console.log("Checking CSRF token...");
+      console.log("CSRF token from header:", req.headers['csrf-token']);
+      console.log("CSRF token from cookies:", req.signedCookies._csrf);
+      
+      try {
+        const csrfResult = await verifyCsrf(req, res, () => {});
+        console.log("CSRF middleware result:", csrfResult);
+      } catch (csrfError) {
+        console.error("CSRF middleware error:", csrfError);
+        return res.status(403).json({ message: "CSRF validation failed", error: "csrf_error" });
+      }
       
       // Verify that the authenticated user is an admin
       if (!req.user || req.user.userType !== 'admin') {
