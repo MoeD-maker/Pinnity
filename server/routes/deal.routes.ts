@@ -134,7 +134,72 @@ export function dealRoutes(app: Express): void {
     }
   });
 
-  // Create a deal
+  // Admin-specific create deal endpoint
+  app.post("/api/v1/admin/deals", authenticate, verifyCsrf, async (req: Request, res: Response) => {
+    try {
+      // Verify that the authenticated user is an admin
+      if (!req.user || req.user.userType !== 'admin') {
+        return res.status(403).json({ message: "Only admin accounts can access this endpoint" });
+      }
+      
+      const dealData = req.body;
+      
+      // Handle manual business creation if businessId is -1 (special indicator for manual entry)
+      if (dealData.businessId === -1 && dealData.otherBusinessName) {
+        console.log(`Admin creating deal with manual business: ${dealData.otherBusinessName}`);
+        
+        try {
+          // Create a temporary business entry
+          const tempBusiness = await storage.createTempBusiness(dealData.otherBusinessName);
+          if (!tempBusiness) {
+            return res.status(500).json({ message: "Failed to create temporary business" });
+          }
+          
+          // Update the businessId with the newly created temp business
+          dealData.businessId = tempBusiness.id;
+          console.log(`Created temporary business with ID: ${tempBusiness.id}`);
+        } catch (error) {
+          console.error("Error creating temporary business:", error);
+          return res.status(500).json({ message: "Failed to create temporary business" });
+        }
+      }
+      
+      // Admin can set status directly or default to pending
+      dealData.status = dealData.status || 'pending';
+      
+      // Validate the deal data
+      try {
+        // Create a modified schema without the required ID field
+        const createDealSchema = insertDealSchema.omit({ id: true, createdAt: true });
+        createDealSchema.parse(dealData);
+      } catch (validationError) {
+        if (validationError instanceof z.ZodError) {
+          return res.status(400).json({ message: "Validation error", errors: validationError.errors });
+        }
+        throw validationError;
+      }
+      
+      // Create the deal
+      const deal = await storage.createDeal(dealData);
+      console.log(`Admin created deal: ${deal.id}`);
+      
+      // Create initial approval record (for tracking purposes)
+      if (dealData.status === 'pending') {
+        await storage.createDealApproval({
+          dealId: deal.id,
+          submitterId: req.user.userId,
+          status: 'pending'
+        });
+      }
+      
+      return res.status(201).json(deal);
+    } catch (error) {
+      console.error("Error in admin deal creation:", error);
+      return res.status(500).json({ message: "Failed to create deal" });
+    }
+  });
+
+  // Create a deal (vendor route)
   app.post("/api/deals", authenticate, verifyCsrf, async (req: Request, res: Response) => {
     try {
       // Verify that the authenticated user is a business owner
