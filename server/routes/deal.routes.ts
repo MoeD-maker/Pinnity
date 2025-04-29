@@ -146,9 +146,11 @@ export function dealRoutes(app: Express): void {
     try {
       console.log("Admin deal creation endpoint called");
       // Authentication and CSRF protection are now handled by middleware
-      console.log("Admin user authenticated:", req.user?.userId);
+      if (!req.user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       
-      console.log("Admin user verified:", req.user.userId);
+      console.log("Admin user authenticated:", req.user.userId);
       const dealData = req.body;
       console.log("Received deal data:", JSON.stringify(dealData, null, 2));
       
@@ -205,7 +207,7 @@ export function dealRoutes(app: Express): void {
       console.log(`Creating approval record for deal ${deal.id} with status ${dealData.status}`);
       await storage.createDealApproval({
         dealId: deal.id,
-        submitterId: req.user.userId,
+        submitterId: req.user.userId, // req.user is already verified above
         status: dealData.status === 'active' ? 'approved' : dealData.status
       });
       console.log("Deal approval record created successfully");

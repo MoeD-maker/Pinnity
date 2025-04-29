@@ -37,44 +37,136 @@ export async function apiRequest(
   
   console.log(`Making ${method} request to ${url}`, data);
   
+  // Advanced debugging for deal creation
+  if (url.includes('/deals') && method === 'POST') {
+    console.log('DEAL CREATION DEBUG - Starting API Request');
+    console.log('DEAL CREATION DEBUG - URL:', url);
+    console.log('DEAL CREATION DEBUG - Method:', method);
+    console.log('DEAL CREATION DEBUG - Data:', JSON.stringify(data, null, 2));
+  }
+  
   return withErrorHandling(async () => {
-    // Use fetchWithCSRF to ensure CSRF protection for all API calls
-    const res = await fetchWithCSRF(url, {
-      method,
-      body: data ? JSON.stringify(data) : undefined,
-      // Headers and credentials are handled by fetchWithCSRF
-    });
-
-    await throwIfResNotOk(res);
-    
-    // Handle empty responses
-    const text = await res.text();
-    console.log(`Raw response text from ${url}:`, text);
-    
-    let result = null;
     try {
-      // Check if the response starts with HTML doctype, which indicates an error page
-      if (text && text.trim().toLowerCase().startsWith('<!doctype')) {
-        console.error(`Received HTML instead of JSON from ${url}`);
-        throw new Error('Received HTML response instead of JSON. The server might be returning an error page.');
+      // Extra debugging for deal creation
+      if (url.includes('/deals') && method === 'POST') {
+        console.log('DEAL CREATION DEBUG - Calling fetchWithCSRF');
       }
       
-      result = text ? JSON.parse(text) : null;
-      console.log(`Parsed response from ${url}:`, result);
-    } catch (err) {
-      console.error(`Error parsing JSON response from ${url}:`, err);
-      console.log(`Response headers:`, res.headers);
+      // Use fetchWithCSRF to ensure CSRF protection for all API calls
+      const res = await fetchWithCSRF(url, {
+        method,
+        body: data ? JSON.stringify(data) : undefined,
+        // Headers and credentials are handled by fetchWithCSRF
+      });
       
-      // If it's an HTML response, provide a better error message
-      if (text && text.includes('<!DOCTYPE')) {
-        throw new Error('The server returned an HTML page instead of JSON data. Please try again or contact support.');
+      // Extra debugging for deal creation
+      if (url.includes('/deals') && method === 'POST') {
+        console.log('DEAL CREATION DEBUG - fetchWithCSRF response status:', res.status);
+        console.log('DEAL CREATION DEBUG - fetchWithCSRF response headers:', 
+          JSON.stringify(Array.from(res.headers.entries()), null, 2));
+      }
+
+      // Check response status first
+      if (!res.ok) {
+        // Extra debugging for deal creation
+        if (url.includes('/deals') && method === 'POST') {
+          console.log('DEAL CREATION DEBUG - Response not OK:', res.status, res.statusText);
+          
+          // Get the response content for debugging
+          const errorText = await res.text();
+          console.log('DEAL CREATION DEBUG - Error response body:', errorText);
+          
+          // If it's HTML, clearly indicate the error type
+          if (errorText && errorText.includes('<!DOCTYPE')) {
+            console.error('DEAL CREATION DEBUG - HTML RESPONSE RECEIVED INSTEAD OF JSON');
+            throw new Error('The API returned an HTML page instead of JSON data. This usually happens when there\'s a server configuration issue or CSRF token problem.');
+          }
+          
+          let errorData;
+          try {
+            errorData = JSON.parse(errorText);
+            console.log('DEAL CREATION DEBUG - Parsed error data:', errorData);
+          } catch (e) {
+            console.log('DEAL CREATION DEBUG - Could not parse error response as JSON');
+          }
+        }
+        
+        await throwIfResNotOk(res);
       }
       
-      // For debugging only - return the raw text or a simplified valid object for non-HTML errors
-      return { valid: text.includes('true'), rawResponse: text };
+      // Handle empty responses
+      const text = await res.text();
+      
+      // Extra debugging for deal creation
+      if (url.includes('/deals') && method === 'POST') {
+        console.log('DEAL CREATION DEBUG - Raw response text length:', text ? text.length : 0);
+        if (text && text.length < 1000) {
+          console.log('DEAL CREATION DEBUG - Raw response text:', text);
+        } else {
+          console.log('DEAL CREATION DEBUG - Raw response text (truncated):', 
+            text ? text.substring(0, 500) + '...' : 'empty');
+        }
+      } else {
+        console.log(`Raw response text from ${url}:`, 
+          text && text.length < 100 ? text : `(length: ${text ? text.length : 0})`);
+      }
+      
+      // Handle empty response
+      if (!text || text.trim() === '') {
+        console.log(`Empty response from ${url}`);
+        return null;
+      }
+      
+      let result = null;
+      try {
+        // Check if the response starts with HTML doctype, which indicates an error page
+        if (text && text.trim().toLowerCase().startsWith('<!doctype')) {
+          console.error(`Received HTML instead of JSON from ${url}`);
+          throw new Error('Received HTML response instead of JSON. The server might be returning an error page.');
+        }
+        
+        result = JSON.parse(text);
+        
+        // Extra debugging for deal creation
+        if (url.includes('/deals') && method === 'POST') {
+          console.log('DEAL CREATION DEBUG - Successfully parsed JSON response:', result);
+        } else {
+          console.log(`Parsed response from ${url}:`, result);
+        }
+      } catch (err) {
+        console.error(`Error parsing JSON response from ${url}:`, err);
+        
+        // Extra debugging for deal creation
+        if (url.includes('/deals') && method === 'POST') {
+          console.error('DEAL CREATION DEBUG - JSON PARSE ERROR:', err);
+        }
+        
+        // If it's an HTML response, provide a better error message
+        if (text && text.includes('<!DOCTYPE')) {
+          throw new Error('The server returned an HTML page instead of JSON data. This may be caused by CSRF token issues or server configuration problems.');
+        }
+        
+        // For non-JSON responses that aren't HTML
+        if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
+          // For write operations, if we get a success status but non-JSON response, it might be valid
+          if (res.status >= 200 && res.status < 300) {
+            console.log(`Non-JSON success response from ${url}, treating as success`);
+            return { success: true, rawResponse: text };
+          }
+        }
+        
+        throw new Error(`Failed to parse response from server: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      }
+      
+      return result;
+    } catch (error) {
+      // Extra debugging for deal creation
+      if (url.includes('/deals') && method === 'POST') {
+        console.error('DEAL CREATION DEBUG - REQUEST FAILED WITH ERROR:', error);
+        console.error('DEAL CREATION DEBUG - Stack trace:', error instanceof Error ? error.stack : 'No stack trace available');
+      }
+      throw error;
     }
-    
-    return result;
   }, {
     defaultMessage: `Failed to ${method.toLowerCase()} data from server`,
     silent: options?.silentError,
