@@ -317,7 +317,8 @@ const AdminDashboardPage = () => {
     };
     
     // Return loading state for relevant fields
-    if (isLoadingVendors || isLoadingDeals || isLoadingUsers || isLoadingTransactions || isLoadingPendingBusinesses) {
+    // Note: For backward compatibility, continue to check isLoadingPendingBusinesses
+    if (isLoadingVendors || isLoadingDeals || isLoadingUsers || isLoadingTransactions) {
       return defaultStats;
     }
     
@@ -335,45 +336,46 @@ const AdminDashboardPage = () => {
       redemptionsToday: 0
     };
     
-    // Use the specific pending businesses data for pending vendors count
-    // This uses the same endpoint that the vendor management page uses
-    if (pendingBusinessesData) {
-      try {
-        // Account for both array and object formats (legacy API might return an object with numeric keys)
-        if (Array.isArray(pendingBusinessesData)) {
-          numericStats.pendingVendors = pendingBusinessesData.length;
-        } else if (pendingBusinessesData && typeof pendingBusinessesData === 'object') {
-          // Convert object format to array and count
-          const pendingBusinessesArray = Object.values(pendingBusinessesData);
-          numericStats.pendingVendors = pendingBusinessesArray.length;
-        }
-      } catch (error) {
-        console.error("Error parsing pending businesses data:", error);
-        numericStats.pendingVendors = 'Error';
-      }
-    }
-    
-    // Process vendors data for approved and rejected vendors
+      // Process vendors data for ALL vendor-related stats
+    // This ensures consistency across all dashboard components and vendor management page
     if (vendorsData) {
       try {
         if (Array.isArray(vendorsData)) {
-          // Count vendors with status 'approved' OR verificationStatus 'verified' or 'approved'
-          const approvedVendors = vendorsData.filter((vendor: any) => 
-            vendor.status === 'approved' || 
-            vendor.verificationStatus === 'verified' || 
-            vendor.verificationStatus === 'approved'
+          // Calculate all vendor-related stats directly from the vendors data
+          // This is the same approach used in the vendor management page
+          const pendingVendors = vendorsData.filter((vendor: any) => 
+            vendor.verificationStatus === 'pending'
           );
+          
+          const approvedVendors = vendorsData.filter((vendor: any) => 
+            vendor.verificationStatus === 'approved' || 
+            vendor.verificationStatus === 'verified'
+          );
+          
+          const rejectedVendors = vendorsData.filter((vendor: any) => 
+            vendor.verificationStatus === 'rejected'
+          );
+          
+          // Update all vendor-related stats
+          numericStats.pendingVendors = pendingVendors.length;
           numericStats.approvedVendors = approvedVendors.length;
+          numericStats.rejectedVendors = rejectedVendors.length;
+          
+          // Log vendor counts for debugging
+          console.log(`Dashboard: Found ${pendingVendors.length} pending vendors`);
           console.log(`Dashboard: Found ${approvedVendors.length} approved vendors (including ${
             approvedVendors.filter(v => v.verificationStatus === 'verified').length
           } verified vendors)`);
-          
-          numericStats.rejectedVendors = vendorsData.filter((vendor: any) => 
-            vendor.status === 'rejected' || vendor.verificationStatus === 'rejected'
-          ).length;
+          console.log(`Dashboard: Found ${rejectedVendors.length} rejected vendors`);
+        } else {
+          console.error("Vendors data is not an array:", vendorsData);
+          numericStats.pendingVendors = 'Error';
+          numericStats.approvedVendors = 'Error';
+          numericStats.rejectedVendors = 'Error';
         }
       } catch (error) {
         console.error("Error processing vendors data:", error);
+        numericStats.pendingVendors = 'Error';
         numericStats.approvedVendors = 'Error';
         numericStats.rejectedVendors = 'Error';
       }
@@ -449,13 +451,11 @@ const AdminDashboardPage = () => {
     vendorsData, 
     dealsData, 
     usersData, 
-    transactionsData, 
-    pendingBusinessesData,
+    transactionsData,
     isLoadingVendors, 
     isLoadingDeals, 
     isLoadingUsers, 
-    isLoadingTransactions,
-    isLoadingPendingBusinesses
+    isLoadingTransactions
   ]);
 
   // Generate alerts based on stats
@@ -546,7 +546,7 @@ const AdminDashboardPage = () => {
           value={stats.pendingVendors}
           icon={<Store className="h-4 w-4" />}
           description="Vendors awaiting approval"
-          isLoading={isLoadingPendingBusinesses}
+          isLoading={isLoadingVendors}
           action={{
             label: "View All",
             onClick: () => window.location.href = "/admin/vendors"
