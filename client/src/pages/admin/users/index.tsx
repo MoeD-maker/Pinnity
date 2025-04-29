@@ -66,6 +66,16 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 
+// Helper function to check if a date string is valid
+function isValidDate(dateString: string): boolean {
+  try {
+    const date = new Date(dateString);
+    return !isNaN(date.getTime());
+  } catch (e) {
+    return false;
+  }
+}
+
 interface UserData {
   id: number;
   username: string;
@@ -113,16 +123,29 @@ const UserManagementPage = () => {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const response = await apiRequest("/api/admin/users");
-      if (response) {
-        setUsers(response);
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to fetch users",
-          variant: "destructive"
-        });
+      const response = await fetch('/api/admin/users');
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
       }
+      
+      const data = await response.json();
+      
+      // Handle different response formats (array or object with numeric keys)
+      let usersArray: UserData[];
+      
+      if (Array.isArray(data)) {
+        usersArray = data;
+        console.log("Users response is already an array:", usersArray.length);
+      } else if (data && typeof data === 'object') {
+        // Convert object to array (legacy API format)
+        usersArray = Object.values(data);
+        console.log("Converted users object to array:", usersArray.length);
+      } else {
+        console.error("Unknown users data format:", data);
+        usersArray = [];
+      }
+      
+      setUsers(usersArray);
     } catch (error) {
       console.error("Error fetching users:", error);
       toast({
@@ -212,20 +235,33 @@ const UserManagementPage = () => {
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await apiRequest("/api/admin/users", {
+      // Get CSRF token
+      const csrfResponse = await fetch('/api/csrf-token');
+      const { csrfToken } = await csrfResponse.json();
+      
+      const response = await fetch("/api/admin/users", {
         method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken
+        },
         body: JSON.stringify(newUserData)
       });
       
-      if (response) {
-        toast({
-          title: "Success",
-          description: "User created successfully"
-        });
-        setUsers([...users, response]);
-        setIsAddUserDialogOpen(false);
-        resetForm();
+      if (!response.ok) {
+        throw new Error('Failed to create user');
       }
+      
+      const newUser = await response.json();
+      
+      toast({
+        title: "Success",
+        description: "User created successfully"
+      });
+      
+      setUsers([...users, newUser]);
+      setIsAddUserDialogOpen(false);
+      resetForm();
     } catch (error) {
       console.error("Error creating user:", error);
       toast({
@@ -240,9 +276,20 @@ const UserManagementPage = () => {
     if (!selectedUserId) return;
     
     try {
-      await apiRequest(`/api/admin/users/${selectedUserId}`, {
-        method: "DELETE"
+      // Get CSRF token
+      const csrfResponse = await fetch('/api/csrf-token');
+      const { csrfToken } = await csrfResponse.json();
+      
+      const response = await fetch(`/api/admin/users/${selectedUserId}`, {
+        method: "DELETE",
+        headers: {
+          'X-CSRF-Token': csrfToken
+        }
       });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete user');
+      }
       
       toast({
         title: "Success",
@@ -466,7 +513,12 @@ const UserManagementPage = () => {
                         </TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>{getUserTypeBadge(user.userType)}</TableCell>
-                        <TableCell>{format(new Date(user.created_at), "MMM d, yyyy")}</TableCell>
+                        <TableCell>
+                          {user.created_at && isValidDate(user.created_at) 
+                            ? format(new Date(user.created_at), "MMM d, yyyy") 
+                            : "N/A"
+                          }
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button 
