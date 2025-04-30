@@ -310,13 +310,37 @@ export default function AddDealPage() {
         });
         console.log("Response headers:", headerObj);
         
+        // First check if the response was successful
+        if (!directResponse.ok) {
+          const errorText = await directResponse.text();
+          console.error("Server returned error status:", directResponse.status);
+          console.error("Error response body:", errorText.substring(0, 500));
+          
+          // Show user-friendly error
+          toast({
+            title: "Error " + directResponse.status,
+            description: `Failed to create deal: ${directResponse.statusText}`,
+            variant: "destructive"
+          });
+          
+          throw new Error(`Server returned error ${directResponse.status}: ${directResponse.statusText}`);
+        }
+        
+        // Now get the response text
         const responseText = await directResponse.text();
         console.log("Raw response text length:", responseText.length);
         
-        // Check if we got HTML instead of JSON
+        // Check if we got HTML instead of JSON (this can happen with Vite middleware issues)
         if (responseText.includes('<!DOCTYPE')) {
           console.error("Received HTML response instead of JSON!");
           console.error("First 500 chars:", responseText.substring(0, 500));
+          
+          toast({
+            title: "Server Error",
+            description: "Received HTML page instead of JSON. This suggests a server configuration issue.",
+            variant: "destructive"
+          });
+          
           throw new Error("Received HTML page instead of JSON. This suggests the bypass router is still hitting Vite middleware.");
         }
         
@@ -327,6 +351,13 @@ export default function AddDealPage() {
           console.log("Successfully parsed JSON response:", jsonData);
         } catch (parseError) {
           console.error("Failed to parse response as JSON:", parseError);
+          
+          toast({
+            title: "Data Error",
+            description: "Server returned invalid JSON response",
+            variant: "destructive"
+          });
+          
           throw new Error("Server returned invalid JSON: " + responseText.substring(0, 100));
         }
         
