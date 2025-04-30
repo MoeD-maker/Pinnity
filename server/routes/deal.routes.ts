@@ -136,6 +136,9 @@ export function dealRoutes(app: Express): void {
 
   // Admin-specific create deal endpoint
   app.post("/api/v1/admin/deals", authenticate, authorize(["admin"]), verifyCsrf, async (req: Request, res: Response) => {
+    // Set headers to prevent the response from being treated as HTML
+    res.setHeader('Content-Type', 'application/json');
+    
     console.log("=========== ADMIN DEAL CREATION REQUEST START ===========");
     console.log("Request headers:", req.headers);
     console.log("Request method:", req.method);

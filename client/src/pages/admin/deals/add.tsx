@@ -273,17 +273,99 @@ export default function AddDealPage() {
 
       // Use apiRequest which handles CSRF properly instead of direct fetch
       console.log("Using apiRequest helper to submit form...");
-      const response = await apiRequest(`/api/v1/admin/deals`, {
-        method: 'POST',
-        data
-      });
-      console.log("apiRequest response:", response);
-
-      toast({
-        title: "Success!",
-        description: "Deal has been created successfully.",
-        variant: "default"
-      });
+      try {
+        // Use a direct fetch approach for debugging purposes
+        console.log("Making direct fetch for debugging...");
+        const directHeaders = new Headers();
+        directHeaders.append('Content-Type', 'application/json');
+        
+        // Get a fresh CSRF token
+        const csrfResponse = await fetch('/api/csrf-token', { 
+          credentials: 'include',
+          headers: { 'Cache-Control': 'no-cache' }
+        });
+        const csrfData = await csrfResponse.json();
+        console.log("Got CSRF token for debugging:", csrfData.csrfToken);
+        directHeaders.append('CSRF-Token', csrfData.csrfToken);
+        
+        const directResponse = await fetch('/api/v1/admin/deals', {
+          method: 'POST',
+          headers: directHeaders,
+          credentials: 'include',
+          body: JSON.stringify(data)
+        });
+        
+        console.log("Direct fetch status:", directResponse.status);
+        console.log("Direct fetch status text:", directResponse.statusText);
+        
+        // Convert headers to a plain object for logging
+        const headerObj: Record<string, string> = {};
+        directResponse.headers.forEach((value, key) => {
+          headerObj[key] = value;
+        });
+        console.log("Direct fetch headers:", headerObj);
+        
+        const responseText = await directResponse.text();
+        console.log("Raw response text length:", responseText.length);
+        
+        // Check if we got HTML instead of JSON
+        if (responseText.includes('<!DOCTYPE')) {
+          console.error("Received HTML response instead of JSON!");
+          console.error("First 500 chars:", responseText.substring(0, 500));
+          throw new Error("Received HTML page instead of JSON. This is likely a server or CSRF configuration issue.");
+        }
+        
+        // Try to parse as JSON
+        let jsonData;
+        try {
+          jsonData = JSON.parse(responseText);
+          console.log("Successfully parsed JSON response:", jsonData);
+        } catch (parseError) {
+          console.error("Failed to parse response as JSON:", parseError);
+          throw new Error("Server returned invalid JSON: " + responseText.substring(0, 100));
+        }
+        
+        console.log("Deal created successfully:", jsonData);
+        
+        toast({
+          title: "Success!",
+          description: "Deal has been created successfully.",
+          variant: "default"
+        });
+        
+        return jsonData;
+      } catch (directError) {
+        console.error("Direct fetch approach failed:", directError);
+        
+        // Fall back to apiRequest helper as backup
+        console.log("Falling back to apiRequest helper...");
+        try {
+          const response = await apiRequest(`/api/v1/admin/deals`, {
+            method: 'POST',
+            data
+          });
+          console.log("apiRequest response:", response);
+          
+          toast({
+            title: "Success!",
+            description: "Deal has been created successfully.",
+            variant: "default"
+          });
+          
+          return response;
+        } catch (apiRequestError) {
+          console.error("apiRequest approach also failed:", apiRequestError);
+          
+          // Show error to user
+          toast({
+            title: "Error",
+            description: "Failed to create deal: " + (apiRequestError instanceof Error ? apiRequestError.message : "Unknown error"),
+            variant: "destructive"
+          });
+          
+          throw apiRequestError;
+        }
+      }
 
       // Invalidate queries to ensure admin dashboard shows the new deal
       try {
