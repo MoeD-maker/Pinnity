@@ -5,6 +5,7 @@
 
 // Export CSRF protection middleware
 export { verifyCsrf } from './csrfMiddleware';
+export { bypassCsrf } from './bypassCsrfMiddleware';
 
 // Export validation middleware
 export { validate } from './validationMiddleware';
