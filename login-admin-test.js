@@ -114,31 +114,40 @@ async function testAdminLogin() {
       // Test our bypass endpoint
       console.log('\nTesting our dedicated bypass router endpoint...');
       try {
+        const bypassHeaders = {
+          'Content-Type': 'application/json',
+          'CSRF-Token': csrfData.csrfToken,
+          'Cookie': adminCookieHeader,
+          'X-Bypass-Vite': 'true',
+          'X-Requested-With': 'xmlhttprequest',
+          'User-Agent': 'node-fetch'
+        };
+        
+        console.log('Using request headers:', JSON.stringify(bypassHeaders, null, 2));
+        
+        const bypassBodyData = {
+          businessId: 1, // Use first business as example
+          title: "Test Bypass Deal",
+          category: "Food & Drink",
+          description: "Test deal created via bypass API",
+          dealType: "percent-off",
+          discount: "15%",
+          startDate: new Date().toISOString(),
+          endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          terms: "• Standard terms apply",
+          redemptionCode: "12345",
+          featured: false
+        };
+        
         const bypassResponse = await fetch('http://localhost:5000/api/direct/admin/deals', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'CSRF-Token': csrfData.csrfToken,
-            'Cookie': adminCookieHeader,
-            'X-Bypass-Vite': 'true',
-            'X-Requested-With': 'XMLHttpRequest'
-          },
-          body: JSON.stringify({
-            businessId: 1, // Use first business as example
-            title: "Test Bypass Deal",
-            category: "Food & Drink",
-            description: "Test deal created via bypass API",
-            dealType: "percent-off",
-            discount: "15%",
-            startDate: new Date().toISOString(),
-            endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-            terms: "• Standard terms apply",
-            redemptionCode: "12345",
-            featured: false
-          })
+          headers: bypassHeaders,
+          body: JSON.stringify(bypassBodyData)
         });
         
         console.log('Bypass endpoint status:', bypassResponse.status);
+        console.log('Bypass endpoint response headers:', 
+          JSON.stringify(Object.fromEntries([...bypassResponse.headers.entries()]), null, 2));
         
         const bypassResponseText = await bypassResponse.text();
         try {
