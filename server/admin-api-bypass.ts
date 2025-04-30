@@ -2,16 +2,55 @@
  * Direct API handler for bypassing Vite middleware issues
  * This file provides direct Express routes that avoid Vite's routing interference
  */
-import express, { Request, Response } from 'express';
-import { authenticate } from './middleware/auth.middleware';
-import { authorize } from './middleware/role.middleware';
-import { verifyCsrf } from './middleware/csrf.middleware';
+import express, { Request as ExpressRequest, Response } from 'express';
+import { JwtPayload, extractTokenFromCookies } from './auth';
+import { verifyCsrf } from './middleware/index';
 import { storage } from './storage';
 import { z } from 'zod';
 import { insertDealSchema } from '@shared/schema';
 
+// Extend Express Request to include user info
+interface Request extends ExpressRequest {
+  user?: JwtPayload;
+}
+
 // Create a simple Express router
 const bypassRouter = express.Router();
+
+// Create custom middleware for authentication
+const authenticate = (req: Request, res: Response, next: Function) => {
+  // Get the JWT token from cookies
+  const payload = extractTokenFromCookies(req.cookies, req.signedCookies);
+  
+  if (!payload) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  
+  // Add user info to request
+  req.user = {
+    userId: payload.userId,
+    userType: payload.userType,
+    email: payload.email || ''
+  };
+  
+  next();
+};
+
+// Create custom middleware for authorization
+const authorize = (roles: string[]) => {
+  return (req: Request, res: Response, next: Function) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    
+    // Check if the user's role is in the allowed roles
+    if (!roles.includes(req.user.userType)) {
+      return res.status(403).json({ message: "Unauthorized access" });
+    }
+    
+    next();
+  };
+};
 
 // Admin deal creation endpoint
 bypassRouter.post(

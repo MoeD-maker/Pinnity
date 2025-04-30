@@ -5,6 +5,7 @@ import { authRoutes } from './auth.routes.fixed';
 import { userRoutes } from './user.routes.fixed';
 import { dealRoutes } from './deal.routes.fixed';
 import { businessRoutes } from './business.routes.fixed';
+import { bypassRouter } from '../admin-api-bypass';
 import { Request, Response, NextFunction } from "express";
 import { 
   deprecationMiddleware, 
@@ -52,6 +53,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   userRoutes(app);
   dealRoutes(app);
   businessRoutes(app);
+  
+  // Register direct bypass router for admin deal creation
+  // This route bypasses Vite middleware by using a custom path
+  app.use('/api/direct/admin', bypassRouter);
 
   // Create and return HTTP server
   const server = createServer(app);
