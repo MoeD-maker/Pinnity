@@ -271,13 +271,14 @@ export default function AddDealPage() {
       const authCheckData = await checkAuthResponse.json();
       console.log("Auth check response data:", authCheckData);
 
-      // Use apiRequest which handles CSRF properly instead of direct fetch
-      console.log("Using apiRequest helper to submit form...");
+      // Use our dedicated bypass router to avoid Vite middleware entirely
+      console.log("Using the dedicated bypass router for admin deal creation...");
       try {
-        // Use a direct fetch approach for debugging purposes
-        console.log("Making direct fetch for debugging...");
+        console.log("Making request to bypass router endpoint...");
         const directHeaders = new Headers();
         directHeaders.append('Content-Type', 'application/json');
+        directHeaders.append('X-Bypass-Vite', 'true');
+        directHeaders.append('X-Requested-With', 'XMLHttpRequest');
         
         // Get a fresh CSRF token
         const csrfResponse = await fetch('/api/csrf-token', { 
@@ -285,26 +286,26 @@ export default function AddDealPage() {
           headers: { 'Cache-Control': 'no-cache' }
         });
         const csrfData = await csrfResponse.json();
-        console.log("Got CSRF token for debugging:", csrfData.csrfToken);
+        console.log("Got CSRF token for auth:", csrfData.csrfToken);
         directHeaders.append('CSRF-Token', csrfData.csrfToken);
         
-        // Use a special URL with query param to help bypass Vite routing issues
-        const directResponse = await fetch('/api/v1/admin/deals?_bypass_vite=true', {
+        // Use our dedicated bypass router endpoint
+        const directResponse = await fetch('/api/direct/admin/deals', {
           method: 'POST',
           headers: directHeaders,
           credentials: 'include',
           body: JSON.stringify(data)
         });
         
-        console.log("Direct fetch status:", directResponse.status);
-        console.log("Direct fetch status text:", directResponse.statusText);
+        console.log("Bypass router response status:", directResponse.status);
+        console.log("Bypass router response status text:", directResponse.statusText);
         
         // Convert headers to a plain object for logging
         const headerObj: Record<string, string> = {};
         directResponse.headers.forEach((value, key) => {
           headerObj[key] = value;
         });
-        console.log("Direct fetch headers:", headerObj);
+        console.log("Response headers:", headerObj);
         
         const responseText = await directResponse.text();
         console.log("Raw response text length:", responseText.length);
@@ -313,7 +314,7 @@ export default function AddDealPage() {
         if (responseText.includes('<!DOCTYPE')) {
           console.error("Received HTML response instead of JSON!");
           console.error("First 500 chars:", responseText.substring(0, 500));
-          throw new Error("Received HTML page instead of JSON. This is likely a server or CSRF configuration issue.");
+          throw new Error("Received HTML page instead of JSON. This suggests the bypass router is still hitting Vite middleware.");
         }
         
         // Try to parse as JSON
@@ -335,11 +336,11 @@ export default function AddDealPage() {
         });
         
         return jsonData;
-      } catch (directError) {
-        console.error("Direct fetch approach failed:", directError);
+      } catch (bypassError) {
+        console.error("Bypass router approach failed:", bypassError);
         
         // Fall back to apiRequest helper as backup
-        console.log("Falling back to apiRequest helper...");
+        console.log("Falling back to standard API endpoint...");
         try {
           const response = await apiRequest(`/api/v1/admin/deals`, {
             method: 'POST',
