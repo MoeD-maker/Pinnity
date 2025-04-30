@@ -288,7 +288,8 @@ export default function AddDealPage() {
         console.log("Got CSRF token for debugging:", csrfData.csrfToken);
         directHeaders.append('CSRF-Token', csrfData.csrfToken);
         
-        const directResponse = await fetch('/api/v1/admin/deals', {
+        // Use a special URL with query param to help bypass Vite routing issues
+        const directResponse = await fetch('/api/v1/admin/deals?_bypass_vite=true', {
           method: 'POST',
           headers: directHeaders,
           credentials: 'include',

@@ -56,8 +56,8 @@ async function adminLogin() {
       'Cookie': getCookiesAsHeader()
     },
     body: JSON.stringify({
-      email: 'ziad@pinnity.com',
-      password: 'Pinnity123!'
+      email: 'admin@test.com',
+      password: 'admin123'
     })
   });
   

@@ -134,12 +134,33 @@ export function dealRoutes(app: Express): void {
     }
   });
 
-  // Admin-specific create deal endpoint
-  app.post("/api/v1/admin/deals", authenticate, authorize(["admin"]), verifyCsrf, async (req: Request, res: Response) => {
-    // Set headers to prevent the response from being treated as HTML
-    res.setHeader('Content-Type', 'application/json');
+  // Special workaround endpoint with query param to bypass Vite processing
+  app.post("/api/v1/admin/deals", 
+    authenticate, 
+    authorize(["admin"]), 
+    verifyCsrf, 
+    async (req: Request, res: Response) => {
+    // Force direct content type check using HTTP method
+    if (req.method === 'POST') {
+      // Ensure we're sending JSON - use direct HTTP header
+      res.setHeader('Content-Type', 'application/json');
+      // Add cache prevention headers
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      // Add API response headers to identify our response type
+      res.setHeader('X-API-Response', 'true');
+      
+      // Check if we have the bypass flag for Vite
+      if (req.query._bypass_vite || req.headers['x-bypass-vite']) {
+        console.log("Using direct bypass for Vite middleware");
+        // Additional headers that help bypass Vite
+        res.setHeader('X-Direct-API', 'true');
+      }
+    }
     
     console.log("=========== ADMIN DEAL CREATION REQUEST START ===========");
+    console.log("Request query:", req.query);
     console.log("Request headers:", req.headers);
     console.log("Request method:", req.method);
     console.log("Request URL:", req.url);

@@ -149,6 +149,18 @@ export async function fetchWithCSRF(url: string, options: RequestInit = {}): Pro
   if (csrfToken) {
     headers.set('CSRF-Token', csrfToken);
   }
+  
+  // Add X-Requested-With header to identify AJAX requests
+  // This helps some server configurations distinguish API calls from page requests
+  headers.set('X-Requested-With', 'XMLHttpRequest');
+  
+  // For specific endpoints that have issues with Vite, add a special header
+  if (url === '/api/v1/admin/deals' && options.method === 'POST') {
+    headers.set('X-Bypass-Vite', 'true');
+    
+    // Also add a referrer to mimic browser behavior
+    headers.set('Referer', window.location.origin + '/admin/deals/add');
+  }
 
   // Build final options with credentials and headers
   const finalOptions = {
