@@ -57,7 +57,7 @@ async function adminLogin() {
     },
     body: JSON.stringify({
       email: 'admin@test.com',
-      password: 'admin123'
+      password: 'Admin123!'
     })
   });
   
@@ -106,13 +106,15 @@ async function testCreateDeal() {
     };
     
     // Add referer header to mimic browser behavior
-    const createResponse = await fetch('http://localhost:5000/api/v1/admin/deals', {
+    const createResponse = await fetch('http://localhost:5000/api/v1/admin/deals?_bypass_vite=true', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'CSRF-Token': csrfToken,
         'Cookie': getCookiesAsHeader(),
-        'Referer': 'http://localhost:5000/admin/deals/add'
+        'Referer': 'http://localhost:5000/admin/deals/add',
+        'X-Bypass-Vite': 'true',
+        'X-Requested-With': 'XMLHttpRequest'
       },
       body: JSON.stringify(dealData)
     });
