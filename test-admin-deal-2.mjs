@@ -1,13 +1,41 @@
 import fetch from 'node-fetch';
+import { writeFile } from 'fs/promises';
+
+// Create storage for cookies
+const cookieJar = [];
+
+// Helper function to store cookies
+function saveCookies(cookieHeader) {
+  if (!cookieHeader) return;
+  
+  const setCookies = Array.isArray(cookieHeader) ? cookieHeader : [cookieHeader];
+  
+  for (const setCookie of setCookies) {
+    // Extract cookie name and value
+    const cookie = setCookie.split(';')[0].trim();
+    
+    if (cookie.includes('=')) {
+      cookieJar.push(cookie);
+    }
+  }
+}
+
+// Helper function to get saved cookies as a header string
+function getCookiesAsHeader() {
+  return cookieJar.join('; ');
+}
 
 // Helper function to get a CSRF token
 async function getCSRFToken() {
   const response = await fetch('http://localhost:5000/api/csrf-token', {
-    credentials: 'include',
     headers: {
+      'Cookie': getCookiesAsHeader(),
       'Cache-Control': 'no-cache'
     }
   });
+  
+  // Save any cookies
+  saveCookies(response.headers.raw()['set-cookie']);
   
   const data = await response.json();
   return data.csrfToken;
@@ -15,28 +43,35 @@ async function getCSRFToken() {
 
 // Helper function to login as admin
 async function adminLogin() {
+  // First get a CSRF token
   const csrfToken = await getCSRFToken();
+  console.log('Initial CSRF token:', csrfToken);
   
+  // Then login
   const loginResponse = await fetch('http://localhost:5000/api/v1/auth/login', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'CSRF-Token': csrfToken
+      'CSRF-Token': csrfToken,
+      'Cookie': getCookiesAsHeader()
     },
     body: JSON.stringify({
-      email: 'admin@pinnity.com',
-      password: 'Admin123!'
+      email: 'ziad@pinnity.com',
+      password: 'Pinnity123!'
     })
   });
   
-  const cookies = loginResponse.headers.get('set-cookie');
+  // Store any cookies
+  saveCookies(loginResponse.headers.raw()['set-cookie']);
+  
   console.log('Login response status:', loginResponse.status);
+  console.log('Current cookies:', cookieJar);
   
-  if (!cookies) {
-    throw new Error('No cookies returned from login');
-  }
+  // Check response to see if login worked
+  const responseText = await loginResponse.text();
+  console.log('Login response:', responseText.substring(0, 100) + (responseText.length > 100 ? '...' : ''));
   
-  return cookies;
+  return getCookiesAsHeader();
 }
 
 // Test creating a deal
@@ -45,17 +80,12 @@ async function testCreateDeal() {
     console.log('Starting admin deal creation test...');
     
     // Login to get cookies
-    const authCookies = await adminLogin();
-    console.log('Login successful, got cookies');
+    await adminLogin();
+    console.log('Login successful, got cookies:', cookieJar);
     
     // Get fresh CSRF token
-    const csrfResponse = await fetch('http://localhost:5000/api/csrf-token', {
-      headers: {
-        'Cookie': authCookies
-      }
-    });
-    const csrfData = await csrfResponse.json();
-    console.log('Got CSRF token:', csrfData.csrfToken);
+    const csrfToken = await getCSRFToken();
+    console.log('Got CSRF token for deal creation:', csrfToken);
     
     // Create a test deal
     const dealData = {
@@ -75,15 +105,20 @@ async function testCreateDeal() {
       requiresPin: true
     };
     
+    // Add referer header to mimic browser behavior
     const createResponse = await fetch('http://localhost:5000/api/v1/admin/deals', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'CSRF-Token': csrfData.csrfToken,
-        'Cookie': authCookies
+        'CSRF-Token': csrfToken,
+        'Cookie': getCookiesAsHeader(),
+        'Referer': 'http://localhost:5000/admin/deals/add'
       },
       body: JSON.stringify(dealData)
     });
+    
+    // Save any cookies
+    saveCookies(createResponse.headers.raw()['set-cookie']);
     
     console.log('Create deal response status:', createResponse.status);
     console.log('Create deal response headers:', createResponse.headers.raw());
