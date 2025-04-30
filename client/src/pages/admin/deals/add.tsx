@@ -347,7 +347,7 @@ export default function AddDealPage() {
         try {
           const response = await apiRequest(`/api/v1/admin/deals`, {
             method: 'POST',
-            body: JSON.stringify(data)
+            data: data
           });
           console.log("apiRequest response:", response);
           
