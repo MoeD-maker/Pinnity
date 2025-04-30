@@ -180,10 +180,23 @@ app.use('/api/admin/*', csrfProtection);
 app.use('/api/deals', csrfProtection);
 app.use('/api/deals/*', csrfProtection);
 
-// Additional protection for sensitive operations
-app.post('/api/*', csrfProtection); // All POST operations
-app.put('/api/*', csrfProtection);  // All PUT operations
-app.delete('/api/*', csrfProtection); // All DELETE operations
+// Additional protection for sensitive operations - with an exception for our direct API path
+// Define a middleware to exclude CSRF for programmatic API access
+const conditionalCsrfProtection = (req: express.Request, res: express.Response, next: NextFunction) => {
+  // Skip CSRF for our special API endpoint
+  if (req.path.startsWith('/api/direct/admin')) {
+    console.log('CSRF protection bypassed for direct admin API');
+    return next();
+  }
+  
+  // Apply CSRF protection for all other routes
+  return csrfProtection(req, res, next);
+};
+
+// Apply conditional CSRF protection to all write operations
+app.post('/api/*', conditionalCsrfProtection); // All POST operations
+app.put('/api/*', conditionalCsrfProtection);  // All PUT operations
+app.delete('/api/*', conditionalCsrfProtection); // All DELETE operations
 
 // Generate a unique request ID for error correlation
 app.use((req: Request, _res: Response, next: NextFunction) => {

@@ -126,6 +126,10 @@ async function testAdminLogin() {
         
         console.log('Using request headers:', JSON.stringify(bypassHeaders, null, 2));
         
+        // Fix date handling for Zod validation
+        const now = new Date();
+        const oneWeekLater = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        
         const bypassBodyData = {
           businessId: 1, // Use first business as example
           title: "Test Bypass Deal",
@@ -133,8 +137,8 @@ async function testAdminLogin() {
           description: "Test deal created via bypass API",
           dealType: "percent-off",
           discount: "15%",
-          startDate: new Date().toISOString(),
-          endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          startDate: now, // Send directly as Date object
+          endDate: oneWeekLater, // Send directly as Date object
           terms: "• Standard terms apply",
           redemptionCode: "12345",
           featured: false

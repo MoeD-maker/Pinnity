@@ -5,7 +5,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import { storage } from './storage';
 import { z } from 'zod';
-import { insertDealSchema } from '@shared/schema';
+import { insertDealSchema, apiDealSchema } from '@shared/schema';
 import { authenticate, authorize } from './middleware';
 
 // Create a simple Express router
@@ -118,10 +118,9 @@ bypassRouter.post(
       // Validate the deal data
       try {
         console.log("Validating deal data...");
-        // Create a modified schema without the required ID field
-        const createDealSchema = insertDealSchema.omit({ id: true, createdAt: true });
-        createDealSchema.parse(dealData);
-        console.log("Deal data validation successful");
+        // Use the API schema that accepts string dates for our programmatic access
+        apiDealSchema.parse(dealData);
+        console.log("Deal data validation successful with API schema");
       } catch (validationError) {
         if (validationError instanceof z.ZodError) {
           console.error("Validation failed:", validationError.errors);
