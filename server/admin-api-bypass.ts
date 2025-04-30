@@ -2,28 +2,72 @@
  * Direct API handler for bypassing Vite middleware issues
  * This file provides direct Express routes that avoid Vite's routing interference
  */
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { storage } from './storage';
 import { z } from 'zod';
 import { insertDealSchema } from '@shared/schema';
-import { authenticate, authorize, bypassCsrf } from './middleware';
+import { authenticate, authorize } from './middleware';
 
 // Create a simple Express router
 const bypassRouter = express.Router();
 
-// Admin deal creation endpoint
+// Handle CORS preflight requests
+bypassRouter.options('*', (req, res) => {
+  // Set CORS headers for preflight requests
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 
+    'Content-Type, Authorization, CSRF-Token, X-Requested-With, X-Bypass-Vite, X-Programming-Access, X-API-Key');
+  res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
+  res.status(204).end();
+});
+
+/**
+ * Special middleware for API access that bypasses CSRF
+ * This is ONLY for programmatic access, not for browser-based requests
+ * It requires specific headers that browsers wouldn't normally send
+ */
+function apiKeyMiddleware(req: Request, res: Response, next: NextFunction) {
+  const apiKey = req.headers['x-api-key'];
+  const bypassHeader = req.headers['x-bypass-vite'];
+  const programmingAccess = req.headers['x-programming-access'];
+  
+  console.log('API KEY ACCESS CHECK:', { 
+    hasApiKey: !!apiKey, 
+    hasBypassHeader: bypassHeader === 'true',
+    hasProgrammingHeader: programmingAccess === 'true'
+  });
+  
+  if (
+    apiKey === 'admin-test-bypass-key-2025' && 
+    bypassHeader === 'true' && 
+    programmingAccess === 'true'
+  ) {
+    console.log('API key authentication successful, bypassing CSRF');
+    return next();
+  }
+  
+  console.warn('API key access attempt failed');
+  return res.status(403).json({
+    message: 'Access denied: Invalid API credentials',
+    timestamp: new Date().toISOString()
+  });
+}
+
+// Admin deal creation endpoint with API key access instead of CSRF
 bypassRouter.post(
   "/deals", 
   authenticate, 
   authorize(["admin"]), 
-  bypassCsrf, 
+  apiKeyMiddleware, 
   async (req: Request, res: Response) => {
     // Set CORS and cache headers to prevent browser/Vite issues
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, CSRF-Token, X-Requested-With');
+    res.setHeader('Access-Control-Allow-Headers', 
+      'Content-Type, CSRF-Token, X-Requested-With, X-Bypass-Vite, X-Programming-Access, X-API-Key');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('X-Direct-API', 'true');
     

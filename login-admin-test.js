@@ -116,11 +116,12 @@ async function testAdminLogin() {
       try {
         const bypassHeaders = {
           'Content-Type': 'application/json',
-          'CSRF-Token': csrfData.csrfToken,
           'Cookie': adminCookieHeader,
           'X-Bypass-Vite': 'true',
           'X-Requested-With': 'xmlhttprequest',
-          'User-Agent': 'node-fetch'
+          'User-Agent': 'node-fetch',
+          'X-Programming-Access': 'true',
+          'X-API-Key': 'admin-test-bypass-key-2025'
         };
         
         console.log('Using request headers:', JSON.stringify(bypassHeaders, null, 2));

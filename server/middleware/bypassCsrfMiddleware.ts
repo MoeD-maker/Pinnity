@@ -31,9 +31,11 @@ export function bypassCsrf(req: Request, res: Response, next: NextFunction) {
   // But wrap it in a try-catch to handle any errors
   try {
     // Disable CSRF for specific testing scenarios
-    const isNodeFetch = req.headers['user-agent']?.toLowerCase().includes('node-fetch');
+    const userAgent = req.headers['user-agent'];
+    const isNodeFetch = typeof userAgent === 'string' && userAgent.toLowerCase().includes('node-fetch');
     const hasBypassHeader = req.headers['x-bypass-vite'] === 'true';
-    const isXhrRequest = req.headers['x-requested-with']?.toLowerCase() === 'xmlhttprequest';
+    const requestedWith = req.headers['x-requested-with'];
+    const isXhrRequest = typeof requestedWith === 'string' && requestedWith.toLowerCase() === 'xmlhttprequest';
     
     console.log('BYPASS CHECKS:', { 
       isNodeFetch, 
