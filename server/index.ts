@@ -180,12 +180,19 @@ app.use('/api/admin/*', csrfProtection);
 app.use('/api/deals', csrfProtection);
 app.use('/api/deals/*', csrfProtection);
 
+// Import the bypass router for direct API access
+import { bypassRouter } from './admin-api-bypass';
+
+// Mount the bypass router for direct API access
+app.use('/api/direct/admin', bypassRouter);
+console.log('Admin API bypass router mounted at /api/direct/admin');
+
 // Additional protection for sensitive operations - with an exception for our direct API path
 // Define a middleware to exclude CSRF for programmatic API access
 const conditionalCsrfProtection = (req: express.Request, res: express.Response, next: NextFunction) => {
   // Skip CSRF for our special API endpoint
   if (req.path.startsWith('/api/direct/admin')) {
-    console.log('CSRF protection bypassed for direct admin API');
+    console.log('CSRF protection bypassed for direct admin API path:', req.path);
     return next();
   }
   
