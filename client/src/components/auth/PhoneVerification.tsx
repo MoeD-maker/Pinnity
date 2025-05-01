@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { auth, RecaptchaVerifier, signInWithPhoneNumber } from '@/lib/firebase';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2, CheckCircle, AlertCircle, Phone } from 'lucide-react';
+import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult, PhoneAuthProvider } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 interface PhoneVerificationProps {
   onVerificationComplete: (phoneNumber: string, credential: any) => void;
@@ -12,275 +14,284 @@ interface PhoneVerificationProps {
   initialPhoneNumber?: string;
 }
 
+// Extend Window interface to include recaptchaVerifier property
+interface WindowWithRecaptcha extends Window {
+  recaptchaVerifier: RecaptchaVerifier;
+}
+
 export function PhoneVerification({ 
   onVerificationComplete, 
-  onCancel, 
+  onCancel,
   initialPhoneNumber = '' 
 }: PhoneVerificationProps) {
   const [phoneNumber, setPhoneNumber] = useState(initialPhoneNumber);
+  const [formattedPhoneNumber, setFormattedPhoneNumber] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
-  const [confirmationResult, setConfirmationResult] = useState<any>(null);
-  const [isSendingCode, setIsSendingCode] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [recaptchaVerified, setRecaptchaVerified] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const captchaContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  // Set up invisible reCAPTCHA
+  // Set up recaptcha when component mounts
   useEffect(() => {
-    let verifier: any = null;
-
-    try {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible',
-        'callback': () => {
-          setRecaptchaVerified(true);
-        },
-        'expired-callback': () => {
-          setRecaptchaVerified(false);
-          setError('reCAPTCHA has expired, please try again');
-        }
-      });
-      
-      verifier = window.recaptchaVerifier;
-    } catch (err) {
-      console.error('Error setting up reCAPTCHA:', err);
-      setError('Failed to set up verification. Please try again later.');
+    // If verification code has been sent, start countdown timer
+    if (codeSent && timeLeft > 0) {
+      const timerId = setTimeout(() => {
+        setTimeLeft(timeLeft - 1);
+      }, 1000);
+      return () => clearTimeout(timerId);
     }
+    
+    // Reset recaptcha when component mounts or remounts
+    if (!codeSent && captchaContainerRef.current) {
+      try {
+        // Clear any existing recaptcha instances
+        captchaContainerRef.current.innerHTML = '';
+        
+        // Create a new RecaptchaVerifier instance
+        const recaptchaVerifier = new RecaptchaVerifier(auth, captchaContainerRef.current, {
+          'size': 'normal',
+          'callback': (response: any) => {
+            // reCAPTCHA solved, allow the user to send verification code
+            setError(null);
+          },
+          'expired-callback': () => {
+            // Response expired. Ask user to solve reCAPTCHA again.
+            setError('Captcha expired. Please refresh and try again.');
+          }
+        });
 
-    return () => {
-      if (verifier) {
-        try {
-          verifier.clear();
-        } catch (err) {
-          console.error('Error clearing reCAPTCHA:', err);
-        }
+        // Make recaptcha available globally (for debugging purposes)
+        (window as unknown as WindowWithRecaptcha).recaptchaVerifier = recaptchaVerifier;
+        
+        // Render the reCAPTCHA widget
+        recaptchaVerifier.render();
+      } catch (error) {
+        console.error('Error setting up reCAPTCHA:', error);
+        setError('Failed to set up verification. Please refresh and try again.');
       }
-    };
-  }, []);
+    }
+  }, [codeSent, timeLeft]);
+  
+  // Format the phone number as the user types
+  const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Keep only digits
+    const digits = e.target.value.replace(/\D/g, '');
+    setPhoneNumber(digits);
+    
+    // Format the phone number for display
+    let formatted = digits;
+    if (digits.length > 0) {
+      // Add the country code if not present
+      if (!digits.startsWith('1')) {
+        formatted = '+1' + digits;
+      } else {
+        formatted = '+' + digits;
+      }
+    }
+    setFormattedPhoneNumber(formatted);
+  };
 
   // Send verification code
   const handleSendCode = async () => {
-    setError(null);
-    
-    if (!phoneNumber.trim()) {
+    if (!formattedPhoneNumber || formattedPhoneNumber.length < 12) {
       setError('Please enter a valid phone number');
       return;
     }
     
+    setIsLoading(true);
+    setError(null);
+    
     try {
-      setIsSendingCode(true);
-      
-      // Format phone number with international format if not already formatted
-      const formattedPhoneNumber = phoneNumber.startsWith('+') 
-        ? phoneNumber 
-        : `+${phoneNumber}`;
-      
-      // Send verification code
-      const confirmation = await signInWithPhoneNumber(
-        auth, 
-        formattedPhoneNumber, 
-        window.recaptchaVerifier
-      );
+      const recaptchaVerifier = (window as unknown as WindowWithRecaptcha).recaptchaVerifier;
+      const confirmation = await signInWithPhoneNumber(auth, formattedPhoneNumber, recaptchaVerifier);
       
       setConfirmationResult(confirmation);
+      setCodeSent(true);
+      setTimeLeft(60); // 60 seconds countdown for resending code
       
       toast({
         title: "Verification code sent",
-        description: `We've sent a code to ${formattedPhoneNumber}`,
+        description: `We've sent a verification code to ${formattedPhoneNumber}`,
       });
-    } catch (err: any) {
-      console.error('Error sending verification code:', err);
+    } catch (error: any) {
+      console.error('Error sending verification code:', error);
+      setError(error.message || 'Failed to send verification code. Please try again.');
       
-      let errorMessage = 'Failed to send verification code. Please try again.';
+      toast({
+        title: "Verification failed",
+        description: error.message || 'Failed to send verification code',
+        variant: "destructive",
+      });
       
-      if (err.code === 'auth/invalid-phone-number') {
-        errorMessage = 'The phone number format is incorrect. Please use international format (e.g. +1234567890)';
-      } else if (err.code === 'auth/too-many-requests') {
-        errorMessage = 'Too many requests. Please try again later.';
-      } else if (err.code === 'auth/captcha-check-failed') {
-        errorMessage = 'reCAPTCHA verification failed. Please try again.';
-        
-        // Reset reCAPTCHA on failure
-        try {
-          window.recaptchaVerifier.clear();
-          window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-            'size': 'invisible'
-          });
-        } catch (clearError) {
-          console.error('Error clearing reCAPTCHA:', clearError);
-        }
+      // Reset the recaptcha if there was an error
+      if (captchaContainerRef.current) {
+        captchaContainerRef.current.innerHTML = '';
+        const recaptchaVerifier = new RecaptchaVerifier(auth, captchaContainerRef.current, {
+          'size': 'normal',
+        });
+        (window as unknown as WindowWithRecaptcha).recaptchaVerifier = recaptchaVerifier;
+        recaptchaVerifier.render();
       }
-      
-      setError(errorMessage);
     } finally {
-      setIsSendingCode(false);
+      setIsLoading(false);
     }
   };
 
   // Verify the code
   const handleVerifyCode = async () => {
-    setError(null);
-    
-    if (!verificationCode.trim()) {
-      setError('Please enter the verification code');
+    if (!verificationCode || verificationCode.length !== 6) {
+      setError('Please enter a valid 6-digit verification code');
       return;
     }
     
     if (!confirmationResult) {
-      setError('Verification session expired. Please request a new code.');
+      setError('Something went wrong. Please try sending the code again.');
       return;
     }
     
+    setIsLoading(true);
+    setError(null);
+    
     try {
-      setIsVerifying(true);
+      const result = await confirmationResult.confirm(verificationCode);
+      const user = result.user;
       
-      // Confirm the verification code
-      const credential = await confirmationResult.confirm(verificationCode);
-      
-      // Call the callback with verified phone number and credentials
-      onVerificationComplete(phoneNumber, credential);
+      // Create a credential object that can be passed back
+      const credential = PhoneAuthProvider.credential(confirmationResult.verificationId, verificationCode);
       
       toast({
         title: "Phone verified",
-        description: "Your phone number has been verified successfully!",
+        description: "Your phone number has been successfully verified",
       });
-    } catch (err: any) {
-      console.error('Error verifying code:', err);
       
-      let errorMessage = 'Failed to verify code. Please check the code and try again.';
+      // Call the callback with the verified phone number and credential
+      onVerificationComplete(formattedPhoneNumber, credential);
+    } catch (error: any) {
+      console.error('Error verifying code:', error);
+      setError(error.message || 'Failed to verify code. Please try again.');
       
-      if (err.code === 'auth/invalid-verification-code') {
-        errorMessage = 'The verification code is invalid. Please enter the correct code.';
-      } else if (err.code === 'auth/code-expired') {
-        errorMessage = 'The verification code has expired. Please request a new code.';
-      }
-      
-      setError(errorMessage);
+      toast({
+        title: "Verification failed",
+        description: error.message || 'Failed to verify code',
+        variant: "destructive",
+      });
     } finally {
-      setIsVerifying(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <h3 className="text-lg font-medium">Phone Verification</h3>
-        <p className="text-sm text-muted-foreground">
-          We'll send a verification code to your phone number to verify your identity.
-        </p>
-      </div>
-
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {!confirmationResult ? (
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium" htmlFor="phone-input">
-              Phone Number
-            </label>
-            <Input
-              id="phone-input"
-              type="tel"
-              placeholder="+1234567890"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              disabled={isSendingCode}
-              className="w-full"
-            />
-            <p className="text-xs text-muted-foreground">
-              Please use international format (e.g. +1 for USA, +44 for UK)
-            </p>
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Phone className="h-5 w-5 text-primary" />
+          Phone Verification
+        </CardTitle>
+        <CardDescription>
+          {!codeSent 
+            ? "Verify your phone number to secure your account" 
+            : "Enter the verification code we sent to your phone"
+          }
+        </CardDescription>
+      </CardHeader>
+      
+      <CardContent>
+        {!codeSent ? (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="+1 (555) 123-4567"
+                value={formattedPhoneNumber}
+                onChange={handlePhoneNumberChange}
+                disabled={isLoading}
+                className="w-full"
+              />
+              {error && (
+                <p className="text-sm text-destructive flex items-center mt-1">
+                  <AlertCircle className="h-4 w-4 mr-1" /> {error}
+                </p>
+              )}
+            </div>
+            
+            <div ref={captchaContainerRef} className="flex justify-center my-4"></div>
           </div>
-          
-          {/* Invisible reCAPTCHA container */}
-          <div id="recaptcha-container"></div>
-          
-          <div className="flex space-x-2">
-            {onCancel && (
+        ) : (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="code">Verification Code</Label>
+              <Input
+                id="code"
+                type="text"
+                placeholder="123456"
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                disabled={isLoading}
+                maxLength={6}
+                className="w-full text-center text-lg tracking-widest"
+              />
+              {error && (
+                <p className="text-sm text-destructive flex items-center mt-1">
+                  <AlertCircle className="h-4 w-4 mr-1" /> {error}
+                </p>
+              )}
+            </div>
+            
+            {timeLeft > 0 ? (
+              <p className="text-sm text-muted-foreground text-center">
+                Resend code in {timeLeft} seconds
+              </p>
+            ) : (
               <Button 
-                variant="outline" 
-                onClick={onCancel}
-                disabled={isSendingCode}
-                className="flex-1"
+                variant="link" 
+                className="w-full" 
+                onClick={() => {
+                  setCodeSent(false);
+                  setConfirmationResult(null);
+                }}
+                disabled={isLoading}
               >
-                Cancel
+                Send new code
               </Button>
             )}
-            <Button
-              onClick={handleSendCode}
-              disabled={isSendingCode || !phoneNumber.trim()}
-              className={onCancel ? "flex-1" : "w-full"}
-            >
-              {isSendingCode ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                "Send Verification Code"
-              )}
-            </Button>
           </div>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium" htmlFor="code-input">
-              Verification Code
-            </label>
-            <Input
-              id="code-input"
-              type="text"
-              placeholder="Enter the 6-digit code"
-              value={verificationCode}
-              onChange={(e) => setVerificationCode(e.target.value)}
-              disabled={isVerifying}
-              maxLength={6}
-              className="w-full text-center text-lg tracking-widest"
-            />
-            <p className="text-xs text-muted-foreground">
-              Enter the 6-digit code sent to your phone
-            </p>
-          </div>
-          
-          <div className="flex space-x-2">
-            <Button
-              variant="outline"
-              onClick={() => setConfirmationResult(null)}
-              disabled={isVerifying}
-              className="flex-1"
-            >
-              Change Number
-            </Button>
-            <Button
-              onClick={handleVerifyCode}
-              disabled={isVerifying || !verificationCode.trim()}
-              className="flex-1"
-            >
-              {isVerifying ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Verifying...
-                </>
-              ) : (
-                "Verify Code"
-              )}
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
+        )}
+      </CardContent>
+      
+      <CardFooter className="flex justify-between">
+        {onCancel && (
+          <Button 
+            variant="outline" 
+            onClick={onCancel}
+            disabled={isLoading}
+          >
+            Cancel
+          </Button>
+        )}
+        
+        <Button 
+          className="ml-auto"
+          onClick={!codeSent ? handleSendCode : handleVerifyCode}
+          disabled={isLoading || (!codeSent && (!formattedPhoneNumber || formattedPhoneNumber.length < 12))}
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+              {!codeSent ? "Sending..." : "Verifying..."}
+            </>
+          ) : !codeSent ? (
+            "Send Verification Code"
+          ) : (
+            "Verify Code"
+          )}
+        </Button>
+      </CardFooter>
+    </Card>
   );
-}
-
-// For TypeScript support with the global window object
-declare global {
-  interface Window {
-    recaptchaVerifier: any;
-  }
 }

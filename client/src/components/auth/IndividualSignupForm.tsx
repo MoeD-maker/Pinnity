@@ -11,14 +11,45 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Checkbox } from "@/components/ui/checkbox";
 import { apiPost } from "@/lib/api";
-import { Loader2 } from "lucide-react";
+import { Loader2, BadgeCheck, Phone, PhoneOutgoing } from "lucide-react";
 import { useCsrfProtection } from "@/hooks/useCsrfProtection";
+import { usePhoneVerification } from "@/hooks/use-phone-verification";
+import { PhoneVerification } from "./PhoneVerification";
 
 export default function IndividualSignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, feedback: "Password is required" });
+  const [showPhoneVerification, setShowPhoneVerification] = useState(false);
   const { toast } = useToast();
   const { isLoading: csrfLoading, isReady: csrfReady, error: csrfError, fetchWithProtection } = useCsrfProtection();
+  const { 
+    isVerifying, 
+    phoneVerified, 
+    verifiedPhoneNumber, 
+    verificationCredential,
+    handleVerificationComplete,
+    resetVerification
+  } = usePhoneVerification({
+    onSuccess: (phoneNumber, verificationId) => {
+      // Set the verified phone in the form
+      setValue("phone", phoneNumber, { shouldValidate: true });
+      setValue("phoneVerified", true, { shouldValidate: true });
+      setValue("phoneVerificationId", verificationId, { shouldValidate: true });
+      setShowPhoneVerification(false);
+      
+      toast({
+        title: "Phone verified",
+        description: "Your phone number has been successfully verified",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Verification failed",
+        description: error?.message || "There was a problem verifying your phone number",
+        variant: "destructive",
+      });
+    }
+  });
   
   const {
     register,
