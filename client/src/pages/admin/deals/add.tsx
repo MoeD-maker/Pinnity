@@ -271,97 +271,15 @@ export default function AddDealPage() {
       const authCheckData = await checkAuthResponse.json();
       console.log("Auth check response data:", authCheckData);
 
-      // Use our dedicated bypass router to avoid Vite middleware entirely
-      console.log("Using the dedicated bypass router for admin deal creation...");
+      // Use the apiRequest helper which now has special handling for admin deal creation
       try {
-        console.log("Making request to bypass router endpoint...");
-        const directHeaders = new Headers();
-        directHeaders.append('Content-Type', 'application/json');
-        directHeaders.append('X-Bypass-Vite', 'true');
-        directHeaders.append('X-Requested-With', 'XMLHttpRequest');
-        
-        // Get a fresh CSRF token
-        const csrfResponse = await fetch('/api/csrf-token', { 
-          credentials: 'include',
-          headers: { 'Cache-Control': 'no-cache' }
-        });
-        const csrfData = await csrfResponse.json();
-        console.log("Got CSRF token for auth:", csrfData.csrfToken);
-        directHeaders.append('CSRF-Token', csrfData.csrfToken);
-        
-        // Use our dedicated bypass router endpoint with API key
-        directHeaders.append('X-Programming-Access', 'true');
-        directHeaders.append('X-API-Key', 'admin-test-bypass-key-2025');
-        
-        const directResponse = await fetch('/api/direct/admin/deals', {
+        console.log("Using apiRequest with integrated direct API support...");
+        const response = await apiRequest(`/api/v1/admin/deals`, {
           method: 'POST',
-          headers: directHeaders,
-          credentials: 'include',
-          body: JSON.stringify(data)
+          data: data
         });
         
-        console.log("Bypass router response status:", directResponse.status);
-        console.log("Bypass router response status text:", directResponse.statusText);
-        
-        // Convert headers to a plain object for logging
-        const headerObj: Record<string, string> = {};
-        directResponse.headers.forEach((value, key) => {
-          headerObj[key] = value;
-        });
-        console.log("Response headers:", headerObj);
-        
-        // First check if the response was successful
-        if (!directResponse.ok) {
-          const errorText = await directResponse.text();
-          console.error("Server returned error status:", directResponse.status);
-          console.error("Error response body:", errorText.substring(0, 500));
-          
-          // Show user-friendly error
-          toast({
-            title: "Error " + directResponse.status,
-            description: `Failed to create deal: ${directResponse.statusText}`,
-            variant: "destructive"
-          });
-          
-          throw new Error(`Server returned error ${directResponse.status}: ${directResponse.statusText}`);
-        }
-        
-        // Now get the response text
-        const responseText = await directResponse.text();
-        console.log("Raw response text length:", responseText.length);
-        
-        // Check if we got HTML instead of JSON (this can happen with Vite middleware issues)
-        if (responseText.includes('<!DOCTYPE')) {
-          console.error("Received HTML response instead of JSON!");
-          console.error("First 500 chars:", responseText.substring(0, 500));
-          
-          toast({
-            title: "Server Error",
-            description: "Received HTML page instead of JSON. This suggests a server configuration issue.",
-            variant: "destructive"
-          });
-          
-          throw new Error("Received HTML page instead of JSON. This suggests the bypass router is still hitting Vite middleware.");
-        }
-        
-        // Try to parse as JSON
-        let jsonData;
-        try {
-          jsonData = JSON.parse(responseText);
-          console.log("Successfully parsed JSON response:", jsonData);
-        } catch (parseError) {
-          console.error("Failed to parse response as JSON:", parseError);
-          
-          toast({
-            title: "Data Error",
-            description: "Server returned invalid JSON response",
-            variant: "destructive"
-          });
-          
-          throw new Error("Server returned invalid JSON: " + responseText.substring(0, 100));
-        }
-        
-        console.log("Deal created successfully:", jsonData);
+        console.log("Deal successfully created:", response);
         
         toast({
           title: "Success!",
@@ -369,38 +287,18 @@ export default function AddDealPage() {
           variant: "default"
         });
         
-        return jsonData;
-      } catch (bypassError) {
-        console.error("Bypass router approach failed:", bypassError);
+        return response;
+      } catch (error) {
+        console.error("Deal creation failed:", error);
         
-        // Fall back to apiRequest helper as backup
-        console.log("Falling back to standard API endpoint...");
-        try {
-          const response = await apiRequest(`/api/v1/admin/deals`, {
-            method: 'POST',
-            data: data
-          });
-          console.log("apiRequest response:", response);
-          
-          toast({
-            title: "Success!",
-            description: "Deal has been created successfully.",
-            variant: "default"
-          });
-          
-          return response;
-        } catch (apiRequestError) {
-          console.error("apiRequest approach also failed:", apiRequestError);
-          
-          // Show error to user
-          toast({
-            title: "Error",
-            description: "Failed to create deal: " + (apiRequestError instanceof Error ? apiRequestError.message : "Unknown error"),
-            variant: "destructive"
-          });
-          
-          throw apiRequestError;
-        }
+        // Show error to user
+        toast({
+          title: "Error",
+          description: "Failed to create deal: " + (error instanceof Error ? error.message : "Unknown error"),
+          variant: "destructive"
+        });
+        
+        throw error;
       }
 
       // Invalidate queries to ensure admin dashboard shows the new deal
