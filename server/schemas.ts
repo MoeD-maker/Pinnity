@@ -461,6 +461,32 @@ export const adminSchemas = {
       })
     })
   }),
+  
+  // Deal status operations
+  updateDealStatus: z.object({
+    params: z.object({
+      id: z.string().refine(val => !isNaN(parseInt(val, 10)), {
+        message: "Deal ID must be a valid number"
+      })
+    }),
+    body: z.object({
+      status: z.enum(["pending", "active", "expired", "rejected", "pending_revision"]),
+      feedback: z.string().optional().nullable()
+    })
+  }),
+  
+  // Deal approval operations
+  updateDealApproval: z.object({
+    params: z.object({
+      id: z.string().refine(val => !isNaN(parseInt(val, 10)), {
+        message: "Approval ID must be a valid number"
+      })
+    }),
+    body: z.object({
+      status: z.enum(["approved", "rejected", "pending_revision"]),
+      feedback: z.string().optional().nullable()
+    })
+  }),
 
   // Admin business operations
   createBusinessUser: z.object({
