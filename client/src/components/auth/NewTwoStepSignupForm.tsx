@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { individualSignupSchema, type IndividualSignupFormValues } from "@/lib/validation";
@@ -10,63 +10,82 @@ import { calculatePasswordStrength } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Checkbox } from "@/components/ui/checkbox";
-import { apiPost } from "@/lib/api";
-import { Loader2, BadgeCheck, Phone, Smartphone } from "lucide-react";
 import { useCsrfProtection } from "@/hooks/useCsrfProtection";
 import { usePhoneVerification } from "@/hooks/use-phone-verification";
 import { OtpVerificationForm } from "./OtpVerificationForm";
 import { auth } from "@/lib/firebase";
 import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult, PhoneAuthProvider } from "firebase/auth";
+import { Loader2, AlertCircle, Phone } from "lucide-react";
 
-interface WindowWithRecaptcha extends Window {
-  recaptchaVerifier: RecaptchaVerifier;
-}
-
-export default function IndividualSignupForm() {
+export default function NewTwoStepSignupForm() {
+  // Form states
   const [isLoading, setIsLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, feedback: "Password is required" });
-  const [showPhoneVerification, setShowPhoneVerification] = useState(false);
-  const [isOtpStep, setIsOtpStep] = useState(false);
+  
+  // OTP verification states
+  const [showOtpStep, setShowOtpStep] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
-  const [formattedPhoneNumber, setFormattedPhoneNumber] = useState("");
   const [formData, setFormData] = useState<IndividualSignupFormValues | null>(null);
+  
+  // Invisible reCAPTCHA
+  const [recaptchaInitialized, setRecaptchaInitialized] = useState(false);
+  
+  // Hooks
   const { toast } = useToast();
   const { isLoading: csrfLoading, isReady: csrfReady, error: csrfError, fetchWithProtection } = useCsrfProtection();
-  const { 
-    isVerifying, 
-    phoneVerified, 
-    verifiedPhoneNumber, 
-    verificationCredential,
-    handleVerificationComplete,
-    resetVerification
-  } = usePhoneVerification({
-    onSuccess: (phoneNumber, verificationId) => {
-      // Set the verified phone in the form
-      setValue("phone", phoneNumber, { shouldValidate: true });
-      setValue("phoneVerified", true, { shouldValidate: true });
-      setValue("phoneVerificationId", verificationId, { shouldValidate: true });
-      setShowPhoneVerification(false);
-      
-      toast({
-        title: "Phone verified",
-        description: "Your phone number has been successfully verified",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Verification failed",
-        description: error?.message || "There was a problem verifying your phone number",
-        variant: "destructive",
-      });
+
+  // Setup reCAPTCHA when component mounts
+  useEffect(() => {
+    if (!recaptchaInitialized && !showOtpStep) {
+      try {
+        // Set up invisible reCAPTCHA
+        const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+          'size': 'invisible',
+          'callback': () => {
+            console.log('reCAPTCHA verified');
+          },
+          'expired-callback': () => {
+            toast({
+              title: "reCAPTCHA expired",
+              description: "Please try again",
+              variant: "destructive"
+            });
+          }
+        });
+        
+        // Store in window for access in send code function
+        (window as any).recaptchaVerifier = verifier;
+        setRecaptchaInitialized(true);
+        
+        return () => {
+          // Clean up
+          try {
+            if ((window as any).recaptchaVerifier) {
+              (window as any).recaptchaVerifier.clear();
+            }
+          } catch (err) {
+            console.error('Error clearing reCAPTCHA:', err);
+          }
+        };
+      } catch (error) {
+        console.error('Error setting up reCAPTCHA:', error);
+        toast({
+          title: "Verification setup failed",
+          description: "Failed to set up verification. Please refresh and try again.",
+          variant: "destructive"
+        });
+      }
     }
-  });
-  
+  }, [recaptchaInitialized, showOtpStep, toast]);
+
+  // Form setup
   const {
     register,
     handleSubmit,
     watch,
     setValue,
-    formState: { errors },
+    formState: { errors, isValid },
   } = useForm<IndividualSignupFormValues>({
     resolver: zodResolver(individualSignupSchema),
     defaultValues: {
@@ -79,7 +98,6 @@ export default function IndividualSignupForm() {
       phoneVerified: false,
       phoneVerificationId: "",
       address: "",
-      // Cast to satisfy the type constraint from the zod schema
       termsAccepted: false,
     },
     mode: "onChange",
@@ -92,21 +110,24 @@ export default function IndividualSignupForm() {
   const onPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPasswordStrength(calculatePasswordStrength(e.target.value));
   };
-
-  const onSubmit = async (data: IndividualSignupFormValues) => {
-    // Require phone verification before proceeding
-    if (!data.phoneVerified) {
-      toast({
-        title: "Phone verification required",
-        description: "Please verify your phone number before registering",
-        variant: "destructive",
-      });
-      setShowPhoneVerification(true);
-      return;
-    }
+  
+  // Format phone number for Firebase (needs E.164 format)
+  const formatPhoneForFirebase = (phone: string): string => {
+    // Remove all non-digits
+    const digits = phone.replace(/\D/g, '');
     
+    // Ensure US format with country code
+    if (digits.startsWith('1')) {
+      return `+${digits}`;
+    } else {
+      return `+1${digits}`;
+    }
+  };
+
+  // Step 1: Initial signup data collection and SMS sending
+  const onFirstStepSubmit = async (data: IndividualSignupFormValues) => {
     // Don't proceed if CSRF is still loading or errored out
-    if (csrfLoading) {
+    if (csrfLoading || !csrfReady || csrfError) {
       toast({
         title: "Please wait",
         description: "Security verification in progress...",
@@ -114,24 +135,74 @@ export default function IndividualSignupForm() {
       return;
     }
     
-    if (csrfError) {
+    setIsLoading(true);
+    const formattedPhone = formatPhoneForFirebase(data.phone);
+    
+    try {
+      // Send SMS verification code
+      const recaptchaVerifier = (window as any).recaptchaVerifier;
+      
+      if (!recaptchaVerifier) {
+        throw new Error("Verification system not initialized. Please refresh the page.");
+      }
+      
+      // Store form data for the next step
+      setFormData(data);
+      setPhoneNumber(formattedPhone);
+      
+      // Send the SMS via Firebase
+      const confirmation = await signInWithPhoneNumber(auth, formattedPhone, recaptchaVerifier);
+      setConfirmationResult(confirmation);
+      
+      // Switch to OTP screen
+      setShowOtpStep(true);
+      
       toast({
-        title: "Security Error",
-        description: "Unable to secure your request. Please refresh the page and try again.",
+        title: "Verification code sent",
+        description: `We've sent a verification code to ${formattedPhone}`,
+      });
+    } catch (error: any) {
+      console.error("Error sending verification code:", error);
+      
+      toast({
+        title: "Verification failed",
+        description: error.message || "Failed to send verification code. Please try again.",
+        variant: "destructive",
+      });
+      
+      // Reset the reCAPTCHA if there was an error
+      try {
+        if ((window as any).recaptchaVerifier) {
+          (window as any).recaptchaVerifier.clear();
+        }
+        
+        // Create a new invisible reCAPTCHA
+        const newVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+          'size': 'invisible',
+        });
+        (window as any).recaptchaVerifier = newVerifier;
+        setRecaptchaInitialized(true);
+      } catch (err) {
+        console.error('Error resetting reCAPTCHA:', err);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Step 2: Handle OTP verification and final account creation
+  const handleVerificationComplete = async (phoneNumber: string, credential: any) => {
+    if (!formData) {
+      toast({
+        title: "Error",
+        description: "Form data is missing. Please try again.",
         variant: "destructive",
       });
       return;
     }
     
-    if (!csrfReady) {
-      toast({
-        title: "Security verification needed",
-        description: "Please wait while we secure your request...",
-      });
-      return;
-    }
-    
     setIsLoading(true);
+    
     try {
       // Define the expected response type
       type RegistrationResponse = {
@@ -141,18 +212,19 @@ export default function IndividualSignupForm() {
         token: string;
       };
       
-      // Add Firebase verification data if available
+      // Add Firebase verification data
       const formDataWithVerification = {
-        ...data,
-        // Include verification data if we have it
-        firebaseVerification: data.phoneVerified && verificationCredential ? {
-          phoneNumber: verifiedPhoneNumber,
-          verificationId: data.phoneVerificationId,
-          credential: verificationCredential
-        } : undefined
+        ...formData,
+        phoneVerified: true,
+        phone: phoneNumber,
+        firebaseVerification: {
+          phoneNumber,
+          verificationId: credential?.verificationId || '',
+          credential
+        }
       };
       
-      // Use CSRF-protected fetch directly
+      // Use CSRF-protected fetch
       const response = await fetchWithProtection(
         '/api/v1/auth/register/individual', 
         { 
@@ -193,9 +265,43 @@ export default function IndividualSignupForm() {
       setIsLoading(false);
     }
   };
+  
+  // Go back to the form from OTP screen
+  const handleBack = () => {
+    setShowOtpStep(false);
+    setConfirmationResult(null);
+    
+    // Reset the reCAPTCHA
+    try {
+      if ((window as any).recaptchaVerifier) {
+        (window as any).recaptchaVerifier.clear();
+      }
+      
+      const newVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible',
+      });
+      (window as any).recaptchaVerifier = newVerifier;
+      setRecaptchaInitialized(true);
+    } catch (err) {
+      console.error('Error resetting reCAPTCHA:', err);
+    }
+  };
 
+  // Render OTP verification screen
+  if (showOtpStep && confirmationResult) {
+    return (
+      <OtpVerificationForm
+        phoneNumber={phoneNumber}
+        confirmationResult={confirmationResult}
+        onVerificationComplete={handleVerificationComplete}
+        onBack={handleBack}
+      />
+    );
+  }
+
+  // Render signup form (first step)
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(onFirstStepSubmit)} className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormInput
           label="First name"
@@ -244,73 +350,30 @@ export default function IndividualSignupForm() {
           <label htmlFor="phone" className="text-sm font-medium">
             Phone number <span className="text-destructive">*</span>
           </label>
-          {phoneVerified && (
-            <div className="flex items-center text-sm text-green-600">
-              <BadgeCheck className="h-4 w-4 mr-1" />
-              Verified
-            </div>
-          )}
+          <div className="flex items-center text-xs text-muted-foreground">
+            <Phone className="h-3 w-3 mr-1" />
+            We'll send a verification code
+          </div>
         </div>
         
-        <div className="flex gap-2">
-          <div className="flex-grow space-y-1">
-            <input
-              id="phone"
-              type="tel"
-              placeholder="+1 (555) 123-4567"
-              value={verifiedPhoneNumber || watch("phone")}
-              {...register("phone")}
-              disabled={phoneVerified}
-              className="block w-full px-4 py-2 text-gray-700 bg-white border border-gray-200 rounded-md appearance-none focus:outline-none focus:border-[#00796B]"
-            />
-            {errors.phone && (
-              <p className="text-xs text-red-500">{errors.phone.message}</p>
-            )}
-          </div>
-          
-          <Button 
-            type="button"
-            variant={phoneVerified ? "outline" : "secondary"}
-            onClick={() => {
-              if (phoneVerified) {
-                // Reset verification
-                resetVerification();
-                setValue("phoneVerified", false);
-                setValue("phoneVerificationId", "");
-              } else {
-                // Show verification dialog
-                setShowPhoneVerification(true);
-              }
-            }}
-            className="whitespace-nowrap"
-          >
-            {phoneVerified ? (
-              <>
-                <Phone className="h-4 w-4 mr-2" />
-                Change
-              </>
-            ) : (
-              <>
-                <PhoneOutgoing className="h-4 w-4 mr-2" />
-                Verify
-              </>
-            )}
-          </Button>
+        <div className="space-y-1">
+          <input
+            id="phone"
+            type="tel"
+            placeholder="+1 (555) 123-4567"
+            {...register("phone")}
+            className="block w-full px-4 py-2 text-gray-700 bg-white border border-gray-200 rounded-md appearance-none focus:outline-none focus:border-[#00796B]"
+          />
+          {errors.phone && (
+            <p className="text-xs text-red-500 flex items-center">
+              <AlertCircle className="h-3 w-3 mr-1" /> {errors.phone.message}
+            </p>
+          )}
         </div>
       </div>
       
-      {/* Phone verification dialog */}
-      {showPhoneVerification && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-white rounded-lg">
-            <PhoneVerification 
-              onVerificationComplete={handleVerificationComplete}
-              onCancel={() => setShowPhoneVerification(false)}
-              initialPhoneNumber={watch("phone")}
-            />
-          </div>
-        </div>
-      )}
+      {/* Invisible reCAPTCHA container */}
+      <div id="recaptcha-container"></div>
 
       <FormInput
         label="Address"
@@ -324,8 +387,6 @@ export default function IndividualSignupForm() {
             id="terms" 
             onCheckedChange={(checked) => {
               const checkValue = checked === true;
-              const target = { name: "termsAccepted", value: checkValue };
-              // Use setValue instead of manually creating a change event
               setValue("termsAccepted", checkValue, { shouldValidate: true });
             }}
           />
@@ -346,12 +407,12 @@ export default function IndividualSignupForm() {
       <Button 
         type="submit" 
         className="w-full bg-[#00796B] hover:bg-[#004D40]"
-        disabled={isLoading || csrfLoading || !csrfReady || !!csrfError}
+        disabled={isLoading || csrfLoading || !csrfReady || !!csrfError || !isValid}
       >
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
-            Creating Account...
+            Sending verification...
           </>
         ) : csrfLoading ? (
           <>
@@ -359,7 +420,7 @@ export default function IndividualSignupForm() {
             Securing Connection...
           </>
         ) : (
-          "Create Account"
+          "Continue with phone verification"
         )}
       </Button>
     </form>
