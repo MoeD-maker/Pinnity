@@ -43,6 +43,22 @@ export async function adminDirectApiRequest(
   headers.append('X-Programming-Access', 'true');
   headers.append('X-API-Key', 'admin-test-bypass-key-2025');
   
+  // Test current authentication status
+  try {
+    const authCheckResponse = await fetch('/api/v1/auth/check', {
+      credentials: 'include'
+    });
+    console.log("Auth check response status:", authCheckResponse.status);
+    if (authCheckResponse.ok) {
+      const authData = await authCheckResponse.json();
+      console.log("Auth check data:", authData);
+    } else {
+      console.warn("Auth check failed with status:", authCheckResponse.status);
+    }
+  } catch (authCheckError) {
+    console.error("Error checking auth status:", authCheckError);
+  }
+  
   // Get a fresh CSRF token
   const csrfResponse = await fetch('/api/csrf-token', { 
     credentials: 'include',
@@ -53,7 +69,55 @@ export async function adminDirectApiRequest(
   headers.append('CSRF-Token', csrfData.csrfToken);
   
   try {
-    // Make the direct request to the bypass router endpoint
+    console.log("Making direct API request with endpoint:", `/api/v1/admin/deals`);
+    console.log("Data being sent:", JSON.stringify(data, null, 2));
+    
+    // ATTEMPT #1: Try the normal endpoint first (this worked in tests)
+    try {
+      const standardResponse = await fetch(`/api/v1/admin/deals`, {
+        method: 'POST',
+        headers: new Headers({
+          'Content-Type': 'application/json',
+          'CSRF-Token': csrfData.csrfToken,
+          'X-Requested-With': 'XMLHttpRequest'
+        }),
+        credentials: 'include',
+        body: JSON.stringify(data)
+      });
+      
+      console.log("Standard API response status:", standardResponse.status);
+      
+      // Check if it worked
+      if (standardResponse.ok) {
+        const responseText = await standardResponse.text();
+        try {
+          const result = JSON.parse(responseText);
+          console.log("Standard API request successful", result);
+          return result;
+        } catch (parseError) {
+          console.error("Failed to parse standard response as JSON:", parseError);
+          console.error("Response text:", responseText.substring(0, 500));
+          
+          // Continue to attempt #2 if HTML is received
+          if (responseText.includes('<!DOCTYPE')) {
+            console.log("Got HTML from standard endpoint, trying bypass endpoint...");
+          } else {
+            throw new Error("Standard endpoint returned invalid JSON: " + responseText.substring(0, 100));
+          }
+        }
+      } else {
+        const errorText = await standardResponse.text();
+        console.error("Standard endpoint error:", standardResponse.status);
+        console.error("Standard endpoint error response:", errorText.substring(0, 500));
+        console.log("Trying bypass endpoint after standard endpoint failed...");
+      }
+    } catch (standardError) {
+      console.warn("Standard endpoint attempt failed:", standardError);
+      console.log("Trying bypass endpoint...");
+    }
+    
+    // ATTEMPT #2: Try the bypass endpoint as a fallback
+    console.log("Making request to bypass router endpoint...");
     const response = await fetch(`/api/direct/admin/${endpoint}`, {
       method: 'POST',
       headers,
@@ -78,7 +142,48 @@ export async function adminDirectApiRequest(
     if (responseText.includes('<!DOCTYPE')) {
       console.error("Received HTML response instead of JSON!");
       console.error("First 500 chars:", responseText.substring(0, 500));
-      throw new Error("Received HTML page instead of JSON. The bypass router is still hitting Vite middleware.");
+      
+      // ATTEMPT #3: Try a completely different approach as a last resort
+      console.log("Both endpoints returned HTML. Trying one last approach with different headers...");
+      
+      const lastAttemptResponse = await fetch('/api/v1/admin/deals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'fetch',
+          'X-Bypass-Vite': 'true',
+          'X-No-Middleware': 'true',
+          'Accept': 'application/json',
+          'CSRF-Token': csrfData.csrfToken
+        },
+        credentials: 'include',
+        body: JSON.stringify(data)
+      });
+      
+      console.log("Last attempt response status:", lastAttemptResponse.status);
+      
+      if (!lastAttemptResponse.ok) {
+        const lastErrorText = await lastAttemptResponse.text();
+        console.error("Last attempt error:", lastErrorText.substring(0, 500));
+        
+        throw new Error("All API approaches failed. The server might be misconfigured or the Vite middleware is intercepting all requests.");
+      }
+      
+      const lastResponseText = await lastAttemptResponse.text();
+      
+      if (lastResponseText.includes('<!DOCTYPE')) {
+        console.error("Last attempt also returned HTML. All approaches failed.");
+        throw new Error("All API approaches failed with HTML responses. There appears to be a fundamental issue with the server configuration.");
+      }
+      
+      try {
+        const lastResult = JSON.parse(lastResponseText);
+        console.log("Last attempt successful!", lastResult);
+        return lastResult;
+      } catch (lastParseError) {
+        console.error("Failed to parse last attempt response:", lastParseError);
+        throw new Error("Server returned invalid JSON on last attempt: " + lastResponseText.substring(0, 100));
+      }
     }
     
     try {
@@ -90,7 +195,7 @@ export async function adminDirectApiRequest(
       throw new Error("Server returned invalid JSON: " + responseText.substring(0, 100));
     }
   } catch (error) {
-    console.error("Direct admin API request failed:", error);
+    console.error("All direct admin API request attempts failed:", error);
     throw error;
   }
 }
