@@ -54,7 +54,7 @@ export default function SignupForm() {
       </div>
 
       {userType === "individual" ? (
-        <IndividualSignupForm />
+        <NewTwoStepSignupForm />
       ) : (
         <BusinessSignupForm setUserType={setUserType} />
       )}
