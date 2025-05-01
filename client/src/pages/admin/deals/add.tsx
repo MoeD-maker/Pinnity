@@ -41,6 +41,7 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator } from 
 import { Switch } from "@/components/ui/switch";
 import { AlertCircle, Calendar as CalendarIcon, ArrowLeft, Save, Eye, CheckCircle2, PlusCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Toggle } from "@/components/ui/toggle";
 import AdminLayout from "@/components/admin/AdminLayout";
 
 // Categories and deal types for selection
@@ -72,6 +73,17 @@ const STANDARD_TERMS = [
   { id: "tax_and_tip_excluded", label: "Tax and gratuity not included" },
   { id: "valid_only_at_location", label: "Valid only at participating locations" },
   { id: "management_right", label: "Management reserves the right to modify or cancel at any time" }
+];
+
+// Days of week for recurring deals
+const DAYS_OF_WEEK = [
+  { value: 0, label: "Sunday" },
+  { value: 1, label: "Monday" },
+  { value: 2, label: "Tuesday" },
+  { value: 3, label: "Wednesday" },
+  { value: 4, label: "Thursday" },
+  { value: 5, label: "Friday" },
+  { value: 6, label: "Saturday" }
 ];
 
 // Interface for business/vendor
@@ -115,10 +127,22 @@ const dealSchema = z.object({
   redemptionInstructions: z.string().optional(),
   imageUrl: z.string().optional(),
   
+  // Recurring deal fields
+  isRecurring: z.boolean().default(false),
+  recurringDays: z.array(z.number().min(0).max(6)).default([]),
+  
   // New fields
   featured: z.boolean().default(false),
   requiresPin: z.boolean().default(true)
-});
+})
+// Add validation: If isRecurring is true, recurringDays must not be empty
+.refine(
+  (data) => !data.isRecurring || (data.isRecurring && data.recurringDays.length > 0),
+  {
+    message: "Please select at least one day of the week for your recurring deal",
+    path: ["recurringDays"]
+  }
+);
 
 type DealFormValues = z.infer<typeof dealSchema>;
 
@@ -182,6 +206,8 @@ export default function AddDealPage() {
       redemptionCode: "",
       redemptionInstructions: "",
       imageUrl: "",
+      isRecurring: false,
+      recurringDays: [],
       featured: false,
       requiresPin: true
     }
