@@ -937,6 +937,77 @@ export default function AddDealPage() {
                       <h3 className="text-sm font-medium mb-2">Terms Preview</h3>
                       <pre className="text-xs whitespace-pre-wrap">{previewTerms}</pre>
                     </div>
+                    
+                    {/* Recurring Deal Section */}
+                    <div className="mt-6 border rounded-lg p-4 bg-gray-50">
+                      <h3 className="font-medium text-md mb-4">Deal Availability</h3>
+                      
+                      <FormField
+                        control={form.control}
+                        name="isRecurring"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 bg-white">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">
+                                Recurring Deal
+                              </FormLabel>
+                              <FormDescription>
+                                Is this deal only available on specific days of the week?
+                              </FormDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      {form.watch("isRecurring") && (
+                        <FormField
+                          control={form.control}
+                          name="recurringDays"
+                          render={({ field }) => (
+                            <FormItem className="mt-4">
+                              <FormLabel>Available Days</FormLabel>
+                              <FormDescription>
+                                Select the days when this deal is available.
+                              </FormDescription>
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                {DAYS_OF_WEEK.map((day) => (
+                                  <Toggle
+                                    key={day.value}
+                                    pressed={field.value?.includes(day.value)}
+                                    onPressedChange={(pressed) => {
+                                      const currentDays = [...(field.value || [])];
+                                      const newDays = pressed
+                                        ? [...currentDays, day.value].sort((a, b) => a - b)
+                                        : currentDays.filter((d) => d !== day.value);
+                                      field.onChange(newDays);
+                                    }}
+                                    variant="outline"
+                                    size="sm"
+                                    className="data-[state=on]:bg-primary data-[state=on]:text-white"
+                                  >
+                                    {day.label.slice(0, 3)}
+                                  </Toggle>
+                                ))}
+                              </div>
+                              <div className="text-sm mt-2 text-muted-foreground">
+                                {field.value && field.value.length > 0 
+                                  ? `Selected: Valid every ${field.value
+                                      .map(d => DAYS_OF_WEEK.find(day => day.value === d)?.label)
+                                      .join(', ')}`
+                                  : 'No days selected'}
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+                    </div>
                   </CardContent>
                   <CardFooter className="flex justify-between">
                     <Button type="button" variant="outline" onClick={() => setCurrentTab("basics")}>
