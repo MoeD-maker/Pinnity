@@ -1492,6 +1492,12 @@ export class MemStorage implements IStorage {
       .sort((a, b) => b.submittedAt.getTime() - a.submittedAt.getTime());
   }
   
+  async getDealApprovalsByDealId(dealId: number): Promise<DealApproval[]> {
+    // This is an alias for getDealApprovalHistory but is used more explicitly 
+    // in places where we need all approvals for a deal in most recent first order
+    return this.getDealApprovalHistory(dealId);
+  }
+  
   async updateDealApproval(id: number, data: { 
     status?: string;
     reviewerId?: number;
@@ -2660,6 +2666,12 @@ export class DatabaseStorage implements IStorage {
       .from(dealApprovals)
       .where(eq(dealApprovals.dealId, dealId))
       .orderBy(desc(dealApprovals.submittedAt));
+  }
+  
+  async getDealApprovalsByDealId(dealId: number): Promise<DealApproval[]> {
+    // This is an alias for getDealApprovalHistory but named more explicitly
+    // for code clarity where we need all approvals for a deal
+    return this.getDealApprovalHistory(dealId);
   }
 
   async updateDealApproval(id: number, data: { 
