@@ -66,6 +66,8 @@ export default function IndividualSignupForm() {
       password: "",
       confirmPassword: "",
       phone: "",
+      phoneVerified: false,
+      phoneVerificationId: "",
       address: "",
       // Cast to satisfy the type constraint from the zod schema
       termsAccepted: false,
@@ -82,6 +84,17 @@ export default function IndividualSignupForm() {
   };
 
   const onSubmit = async (data: IndividualSignupFormValues) => {
+    // Require phone verification before proceeding
+    if (!data.phoneVerified) {
+      toast({
+        title: "Phone verification required",
+        description: "Please verify your phone number before registering",
+        variant: "destructive",
+      });
+      setShowPhoneVerification(true);
+      return;
+    }
+    
     // Don't proceed if CSRF is still loading or errored out
     if (csrfLoading) {
       toast({
@@ -118,13 +131,24 @@ export default function IndividualSignupForm() {
         token: string;
       };
       
+      // Add Firebase verification data if available
+      const formDataWithVerification = {
+        ...data,
+        // Include verification data if we have it
+        firebaseVerification: data.phoneVerified && verificationCredential ? {
+          phoneNumber: verifiedPhoneNumber,
+          verificationId: data.phoneVerificationId,
+          credential: verificationCredential
+        } : undefined
+      };
+      
       // Use CSRF-protected fetch directly
       const response = await fetchWithProtection(
         '/api/v1/auth/register/individual', 
         { 
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
+          body: JSON.stringify(formDataWithVerification)
         }
       );
       
@@ -205,12 +229,78 @@ export default function IndividualSignupForm() {
         error={errors.confirmPassword?.message}
       />
 
-      <FormInput
-        label="Phone number"
-        type="tel"
-        {...register("phone")}
-        error={errors.phone?.message}
-      />
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label htmlFor="phone" className="text-sm font-medium">
+            Phone number <span className="text-destructive">*</span>
+          </label>
+          {phoneVerified && (
+            <div className="flex items-center text-sm text-green-600">
+              <BadgeCheck className="h-4 w-4 mr-1" />
+              Verified
+            </div>
+          )}
+        </div>
+        
+        <div className="flex gap-2">
+          <div className="flex-grow space-y-1">
+            <input
+              id="phone"
+              type="tel"
+              placeholder="+1 (555) 123-4567"
+              value={verifiedPhoneNumber || watch("phone")}
+              {...register("phone")}
+              disabled={phoneVerified}
+              className="block w-full px-4 py-2 text-gray-700 bg-white border border-gray-200 rounded-md appearance-none focus:outline-none focus:border-[#00796B]"
+            />
+            {errors.phone && (
+              <p className="text-xs text-red-500">{errors.phone.message}</p>
+            )}
+          </div>
+          
+          <Button 
+            type="button"
+            variant={phoneVerified ? "outline" : "secondary"}
+            onClick={() => {
+              if (phoneVerified) {
+                // Reset verification
+                resetVerification();
+                setValue("phoneVerified", false);
+                setValue("phoneVerificationId", "");
+              } else {
+                // Show verification dialog
+                setShowPhoneVerification(true);
+              }
+            }}
+            className="whitespace-nowrap"
+          >
+            {phoneVerified ? (
+              <>
+                <Phone className="h-4 w-4 mr-2" />
+                Change
+              </>
+            ) : (
+              <>
+                <PhoneOutgoing className="h-4 w-4 mr-2" />
+                Verify
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+      
+      {/* Phone verification dialog */}
+      {showPhoneVerification && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white rounded-lg">
+            <PhoneVerification 
+              onVerificationComplete={handleVerificationComplete}
+              onCancel={() => setShowPhoneVerification(false)}
+              initialPhoneNumber={watch("phone")}
+            />
+          </div>
+        </div>
+      )}
 
       <FormInput
         label="Address"
