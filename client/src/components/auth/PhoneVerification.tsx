@@ -32,7 +32,6 @@ export function PhoneVerification({
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
-  const captchaContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   // Set up recaptcha when component mounts
@@ -45,30 +44,34 @@ export function PhoneVerification({
       return () => clearTimeout(timerId);
     }
     
-    // Reset recaptcha when component mounts or remounts
-    if (!codeSent && captchaContainerRef.current) {
+    // Create and clean up recaptcha verifier
+    if (!codeSent) {
       try {
-        // Clear any existing recaptcha instances
-        captchaContainerRef.current.innerHTML = '';
-        
-        // Create a new RecaptchaVerifier instance
-        const recaptchaVerifier = new RecaptchaVerifier(auth, captchaContainerRef.current, {
-          'size': 'normal',
-          'callback': (response: any) => {
-            // reCAPTCHA solved, allow the user to send verification code
+        // Set up invisible reCAPTCHA to avoid UI issues
+        const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+          'size': 'invisible',
+          'callback': () => {
+            console.log('reCAPTCHA verified');
             setError(null);
           },
           'expired-callback': () => {
-            // Response expired. Ask user to solve reCAPTCHA again.
-            setError('Captcha expired. Please refresh and try again.');
+            setError('reCAPTCHA expired. Please try again.');
           }
         });
-
-        // Make recaptcha available globally (for debugging purposes)
-        (window as unknown as WindowWithRecaptcha).recaptchaVerifier = recaptchaVerifier;
         
-        // Render the reCAPTCHA widget
-        recaptchaVerifier.render();
+        // Store in window for access in send code function
+        (window as unknown as WindowWithRecaptcha).recaptchaVerifier = verifier;
+        
+        return () => {
+          // Clean up
+          try {
+            if ((window as unknown as WindowWithRecaptcha).recaptchaVerifier) {
+              (window as unknown as WindowWithRecaptcha).recaptchaVerifier.clear();
+            }
+          } catch (err) {
+            console.error('Error clearing reCAPTCHA:', err);
+          }
+        };
       } catch (error) {
         console.error('Error setting up reCAPTCHA:', error);
         setError('Failed to set up verification. Please refresh and try again.');
@@ -127,14 +130,19 @@ export function PhoneVerification({
         variant: "destructive",
       });
       
-      // Reset the recaptcha if there was an error
-      if (captchaContainerRef.current) {
-        captchaContainerRef.current.innerHTML = '';
-        const recaptchaVerifier = new RecaptchaVerifier(auth, captchaContainerRef.current, {
-          'size': 'normal',
+      // Reset the reCAPTCHA if there was an error
+      try {
+        if ((window as unknown as WindowWithRecaptcha).recaptchaVerifier) {
+          (window as unknown as WindowWithRecaptcha).recaptchaVerifier.clear();
+        }
+        
+        // Create a new invisible reCAPTCHA
+        const newVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+          'size': 'invisible',
         });
-        (window as unknown as WindowWithRecaptcha).recaptchaVerifier = recaptchaVerifier;
-        recaptchaVerifier.render();
+        (window as unknown as WindowWithRecaptcha).recaptchaVerifier = newVerifier;
+      } catch (err) {
+        console.error('Error resetting reCAPTCHA:', err);
       }
     } finally {
       setIsLoading(false);
@@ -220,7 +228,8 @@ export function PhoneVerification({
               )}
             </div>
             
-            <div ref={captchaContainerRef} className="flex justify-center my-4"></div>
+            {/* Invisible reCAPTCHA container */}
+            <div id="recaptcha-container"></div>
           </div>
         ) : (
           <div className="space-y-4">
