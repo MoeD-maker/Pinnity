@@ -93,6 +93,7 @@ export interface IStorage {
   createDealApproval(approval: Omit<InsertDealApproval, "id" | "submittedAt">): Promise<DealApproval>;
   getDealApproval(dealId: number): Promise<DealApproval | undefined>;
   getDealApprovalHistory(dealId: number): Promise<DealApproval[]>;
+  getDealApprovalsByDealId(dealId: number): Promise<DealApproval[]>;
   updateDealApproval(id: number, data: { 
     status?: string;
     reviewerId?: number;

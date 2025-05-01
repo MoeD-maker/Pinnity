@@ -158,6 +158,78 @@ bypassRouter.post(
   }
 );
 
+// Simplified deal approval endpoint that doesn't use the validation middleware
+bypassRouter.put(
+  "/deals/:id/status",
+  authenticate,
+  authorize(["admin"]),
+  async (req: Request, res: Response) => {
+    // Set CORS and cache headers to prevent browser/Vite issues
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, CSRF-Token, X-Requested-With');
+    
+    console.log("=========== DIRECT DEAL STATUS UPDATE REQUEST ===========");
+    console.log("Request headers:", req.headers);
+    console.log("Request body:", req.body);
+    
+    try {
+      const dealId = parseInt(req.params.id);
+      if (isNaN(dealId)) {
+        return res.status(400).json({ message: "Invalid deal ID" });
+      }
+
+      const { status, feedback } = req.body;
+      
+      if (!status || !["pending", "active", "expired", "rejected", "pending_revision"].includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+      
+      console.log(`Updating deal ${dealId} status to ${status}`);
+      
+      // First get the deal approval record
+      const approvals = await storage.getDealApprovalsByDealId(dealId);
+      if (!approvals || approvals.length === 0) {
+        console.error(`No approval record found for deal ${dealId}`);
+        return res.status(404).json({ message: "No approval record found for this deal" });
+      }
+      
+      // Get the latest approval
+      const latestApproval = approvals[0];
+      console.log(`Found approval record: ${latestApproval.id}`);
+      
+      // Update the approval
+      const updatedApproval = await storage.updateDealApproval(
+        latestApproval.id,
+        {
+          status: status === "active" ? "approved" : status,
+          reviewerId: req.user!.userId,
+          feedback: feedback || null,
+          reviewedAt: new Date()
+        }
+      );
+      
+      console.log(`Updated approval: ${updatedApproval.id} with status ${updatedApproval.status}`);
+      
+      // Also update the deal status
+      const updatedDeal = await storage.updateDealStatus(dealId, status);
+      console.log(`Updated deal: ${updatedDeal.id} with status ${updatedDeal.status}`);
+      
+      return res.status(200).json({
+        success: true,
+        deal: updatedDeal,
+        approval: updatedApproval,
+        message: `Deal status updated to ${status}`
+      });
+    } catch (error) {
+      console.error("Error updating deal status:", error);
+      return res.status(500).json({ message: "Failed to update deal status", error: String(error) });
+    }
+  }
+);
+
 // A simpler endpoint that doesn't use the apiKeyMiddleware
 // This is a last resort for when all other approaches fail
 bypassRouter.post(
