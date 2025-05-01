@@ -264,12 +264,15 @@ export default function AddDealPage() {
       console.log("Complete form data to be submitted:", JSON.stringify(data, null, 2));
 
       // Format dates for the API
-      data.startDate = new Date(data.startDate).toISOString();
-      data.endDate = new Date(data.endDate).toISOString();
-      console.log("Formatted dates - start:", data.startDate, "end:", data.endDate);
+      const formattedData = {
+        ...data,
+        startDate: new Date(data.startDate).toISOString(),
+        endDate: new Date(data.endDate).toISOString()
+      };
+      console.log("Formatted dates - start:", formattedData.startDate, "end:", formattedData.endDate);
 
-      // SUPER DIRECT APPROACH
-      console.log("=== TRYING SUPER DIRECT APPROACH ===");
+      // SIMPLE ENDPOINT APPROACH
+      console.log("=== TRYING SIMPLIFIED ENDPOINT APPROACH ===");
       try {
         // Get CSRF token
         const csrfResponse = await fetch('/api/csrf-token', {
@@ -285,24 +288,69 @@ export default function AddDealPage() {
         headers.append('CSRF-Token', csrfData.csrfToken);
         headers.append('X-Requested-With', 'XMLHttpRequest');
         
-        // Make direct request to regular endpoint
-        const response = await fetch('/api/v1/admin/deals', {
+        // Use the new simplified endpoint we just created
+        console.log("Making request to simplified endpoint...");
+        const response = await fetch('/api/direct/admin/deals/simple', {
           method: 'POST',
           headers,
           credentials: 'include',
-          body: JSON.stringify(data)
+          body: JSON.stringify(formattedData)
         });
         
-        console.log("Direct API response status:", response.status);
+        console.log("Simple endpoint response status:", response.status);
         
         // Get full response text for debugging
         const responseText = await response.text();
+        console.log("Raw response text:", responseText.substring(0, 200));
         
         // Check if HTML received
         if (responseText && responseText.includes('<!DOCTYPE')) {
           console.error("Received HTML instead of JSON:");
           console.error(responseText.substring(0, 500) + "...");
-          throw new Error("Received HTML instead of JSON");
+          
+          // Try another approach with different URL format
+          console.log("=== FALLBACK: TRYING ALTERNATIVE URL FORMAT ===");
+          const fallbackResponse = await fetch('https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/api/direct/admin/deals/simple', {
+            method: 'POST',
+            headers,
+            credentials: 'include',
+            body: JSON.stringify(formattedData)
+          });
+          
+          console.log("Fallback response status:", fallbackResponse.status);
+          const fallbackText = await fallbackResponse.text();
+          
+          if (fallbackText && fallbackText.includes('<!DOCTYPE')) {
+            console.error("Fallback also returned HTML instead of JSON");
+            throw new Error("All approaches returned HTML instead of JSON");
+          }
+          
+          try {
+            const fallbackResult = JSON.parse(fallbackText);
+            console.log("Fallback approach succeeded!", fallbackResult);
+            
+            toast({
+              title: "Success!",
+              description: "Deal has been created successfully.",
+              variant: "default"
+            });
+            
+            // Invalidate queries and navigate
+            try {
+              import('@/lib/queryClient').then(({ queryClient }) => {
+                queryClient.invalidateQueries({ queryKey: ['admin', 'deals'] });
+                queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
+              });
+            } catch (error) {
+              console.error("Failed to invalidate queries:", error);
+            }
+            
+            setLocation("/admin/deals");
+            return fallbackResult;
+          } catch (fallbackParseError) {
+            console.error("Failed to parse fallback response:", fallbackParseError);
+            throw new Error("All approaches failed");
+          }
         }
         
         // Try to parse as JSON
@@ -337,7 +385,7 @@ export default function AddDealPage() {
           throw new Error("Failed to parse server response");
         }
       } catch (directError) {
-        console.error("Direct approach failed:", directError);
+        console.error("All approaches failed:", directError);
         
         // Show error to user
         toast({
