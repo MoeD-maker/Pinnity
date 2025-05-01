@@ -35,49 +35,38 @@ export default function NewTwoStepSignupForm() {
   const { toast } = useToast();
   const { isLoading: csrfLoading, isReady: csrfReady, error: csrfError, fetchWithProtection } = useCsrfProtection();
 
-  // Setup reCAPTCHA when component mounts
-  useEffect(() => {
-    if (!recaptchaInitialized && !showOtpStep) {
-      try {
-        // Set up invisible reCAPTCHA
-        const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-          'size': 'invisible',
-          'callback': () => {
-            console.log('reCAPTCHA verified');
-          },
-          'expired-callback': () => {
-            toast({
-              title: "reCAPTCHA expired",
-              description: "Please try again",
-              variant: "destructive"
-            });
-          }
-        });
-        
-        // Store in window for access in send code function
-        (window as any).recaptchaVerifier = verifier;
-        setRecaptchaInitialized(true);
-        
-        return () => {
-          // Clean up
-          try {
-            if ((window as any).recaptchaVerifier) {
-              (window as any).recaptchaVerifier.clear();
-            }
-          } catch (err) {
-            console.error('Error clearing reCAPTCHA:', err);
-          }
-        };
-      } catch (error) {
-        console.error('Error setting up reCAPTCHA:', error);
-        toast({
-          title: "Verification setup failed",
-          description: "Failed to set up verification. Please refresh and try again.",
-          variant: "destructive"
-        });
+  // We'll initialize the reCAPTCHA only when needed (just before sending SMS)
+  const initializeRecaptcha = () => {
+    try {
+      // First clean up any existing verifier
+      if ((window as any).recaptchaVerifier) {
+        try {
+          (window as any).recaptchaVerifier.clear();
+        } catch (e) {
+          console.log('Error clearing existing reCAPTCHA');
+        }
       }
+
+      // Create a new verifier
+      console.log('Initializing new reCAPTCHA verifier');
+      const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible',
+      });
+      
+      // Store the verifier for later use
+      (window as any).recaptchaVerifier = verifier;
+      setRecaptchaInitialized(true);
+      return verifier;
+    } catch (error) {
+      console.error('Error setting up reCAPTCHA:', error);
+      toast({
+        title: "Verification setup failed",
+        description: "Failed to set up verification. Please refresh and try again.",
+        variant: "destructive"
+      });
+      return null;
     }
-  }, [recaptchaInitialized, showOtpStep, toast]);
+  };
 
   // Form setup
   const {
@@ -139,16 +128,18 @@ export default function NewTwoStepSignupForm() {
     const formattedPhone = formatPhoneForFirebase(data.phone);
     
     try {
-      // Send SMS verification code
-      const recaptchaVerifier = (window as any).recaptchaVerifier;
+      // Initialize recaptcha just before sending the SMS
+      const recaptchaVerifier = initializeRecaptcha();
       
       if (!recaptchaVerifier) {
-        throw new Error("Verification system not initialized. Please refresh the page.");
+        throw new Error("Verification system failed to initialize. Please refresh the page.");
       }
       
       // Store form data for the next step
       setFormData(data);
       setPhoneNumber(formattedPhone);
+      
+      console.log('Sending verification SMS to:', formattedPhone);
       
       // Send the SMS via Firebase
       const confirmation = await signInWithPhoneNumber(auth, formattedPhone, recaptchaVerifier);
@@ -170,20 +161,11 @@ export default function NewTwoStepSignupForm() {
         variant: "destructive",
       });
       
-      // Reset the reCAPTCHA if there was an error
+      // Try to reinitialize reCAPTCHA
       try {
-        if ((window as any).recaptchaVerifier) {
-          (window as any).recaptchaVerifier.clear();
-        }
-        
-        // Create a new invisible reCAPTCHA
-        const newVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-          'size': 'invisible',
-        });
-        (window as any).recaptchaVerifier = newVerifier;
-        setRecaptchaInitialized(true);
+        initializeRecaptcha();
       } catch (err) {
-        console.error('Error resetting reCAPTCHA:', err);
+        console.error('Error reinitializing reCAPTCHA:', err);
       }
     } finally {
       setIsLoading(false);
@@ -270,20 +252,16 @@ export default function NewTwoStepSignupForm() {
   const handleBack = () => {
     setShowOtpStep(false);
     setConfirmationResult(null);
+    setRecaptchaInitialized(false);
     
-    // Reset the reCAPTCHA
+    // Let the recaptcha be initialized again when needed
     try {
       if ((window as any).recaptchaVerifier) {
         (window as any).recaptchaVerifier.clear();
+        (window as any).recaptchaVerifier = null;
       }
-      
-      const newVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible',
-      });
-      (window as any).recaptchaVerifier = newVerifier;
-      setRecaptchaInitialized(true);
     } catch (err) {
-      console.error('Error resetting reCAPTCHA:', err);
+      console.error('Error clearing reCAPTCHA:', err);
     }
   };
 
