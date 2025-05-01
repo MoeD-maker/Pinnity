@@ -263,42 +263,90 @@ export default function AddDealPage() {
 
       console.log("Complete form data to be submitted:", JSON.stringify(data, null, 2));
 
-      // Direct check of authentication
-      const checkAuthResponse = await fetch('/api/v1/auth/check', {
-        credentials: 'include'
-      });
-      console.log("Auth check response status:", checkAuthResponse.status);
-      const authCheckData = await checkAuthResponse.json();
-      console.log("Auth check response data:", authCheckData);
+      // Format dates for the API
+      data.startDate = new Date(data.startDate).toISOString();
+      data.endDate = new Date(data.endDate).toISOString();
+      console.log("Formatted dates - start:", data.startDate, "end:", data.endDate);
 
-      // Use the apiRequest helper which now has special handling for admin deal creation
+      // SUPER DIRECT APPROACH
+      console.log("=== TRYING SUPER DIRECT APPROACH ===");
       try {
-        console.log("Using apiRequest with integrated direct API support...");
-        const response = await apiRequest(`/api/v1/admin/deals`, {
+        // Get CSRF token
+        const csrfResponse = await fetch('/api/csrf-token', {
+          credentials: 'include',
+          headers: { 'Cache-Control': 'no-cache' }
+        });
+        const csrfData = await csrfResponse.json();
+        console.log("Got CSRF token:", csrfData.csrfToken);
+        
+        // Create headers
+        const headers = new Headers();
+        headers.append('Content-Type', 'application/json');
+        headers.append('CSRF-Token', csrfData.csrfToken);
+        headers.append('X-Requested-With', 'XMLHttpRequest');
+        
+        // Make direct request to regular endpoint
+        const response = await fetch('/api/v1/admin/deals', {
           method: 'POST',
-          data: data
+          headers,
+          credentials: 'include',
+          body: JSON.stringify(data)
         });
         
-        console.log("Deal successfully created:", response);
+        console.log("Direct API response status:", response.status);
         
-        toast({
-          title: "Success!",
-          description: "Deal has been created successfully.",
-          variant: "default"
-        });
+        // Get full response text for debugging
+        const responseText = await response.text();
         
-        return response;
-      } catch (error) {
-        console.error("Deal creation failed:", error);
+        // Check if HTML received
+        if (responseText && responseText.includes('<!DOCTYPE')) {
+          console.error("Received HTML instead of JSON:");
+          console.error(responseText.substring(0, 500) + "...");
+          throw new Error("Received HTML instead of JSON");
+        }
+        
+        // Try to parse as JSON
+        try {
+          const result = JSON.parse(responseText);
+          console.log("Success! Created deal:", result);
+          
+          toast({
+            title: "Success!",
+            description: "Deal has been created successfully.",
+            variant: "default"
+          });
+          
+          // Invalidate queries
+          try {
+            import('@/lib/queryClient').then(({ queryClient }) => {
+              queryClient.invalidateQueries({ queryKey: ['admin', 'deals'] });
+              queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
+              console.log("Successfully invalidated queries");
+            });
+          } catch (invalidateError) {
+            console.error("Failed to invalidate queries:", invalidateError);
+          }
+          
+          // Navigate back to deals list
+          setLocation("/admin/deals");
+          
+          return result;
+        } catch (parseError) {
+          console.error("Failed to parse response:", parseError);
+          console.error("Raw response text:", responseText);
+          throw new Error("Failed to parse server response");
+        }
+      } catch (directError) {
+        console.error("Direct approach failed:", directError);
         
         // Show error to user
         toast({
-          title: "Error",
-          description: "Failed to create deal: " + (error instanceof Error ? error.message : "Unknown error"),
+          title: "Error", 
+          description: "Failed to create deal: " + (directError instanceof Error ? directError.message : "Unknown error"),
           variant: "destructive"
         });
         
-        throw error;
+        throw directError;
       }
 
       // Invalidate queries to ensure admin dashboard shows the new deal
