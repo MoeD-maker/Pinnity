@@ -12,7 +12,7 @@ import { Link } from "wouter";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Loader2, BadgeCheck, Phone, PhoneOutgoing } from "lucide-react";
+import { Loader2, BadgeCheck } from "lucide-react";
 import { useCsrfProtection } from "@/hooks/useCsrfProtection";
 import { usePhoneVerification } from "@/hooks/use-phone-verification";
 import { PhoneVerification } from "./PhoneVerification";
@@ -21,6 +21,7 @@ export default function IndividualSignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, feedback: "Password is required" });
   const [showPhoneVerification, setShowPhoneVerification] = useState(false);
+  const [formData, setFormData] = useState<IndividualSignupFormValues | null>(null);
   const { toast } = useToast();
   const { isLoading: csrfLoading, isReady: csrfReady, error: csrfError, fetchWithProtection } = useCsrfProtection();
   const { 
@@ -29,21 +30,32 @@ export default function IndividualSignupForm() {
     verifiedPhoneNumber, 
     verificationCredential,
     handleVerificationComplete,
-    resetVerification
+    resetVerification,
+    sendVerificationCode
   } = usePhoneVerification({
-    onSuccess: (phoneNumber, verificationId) => {
-      // Set the verified phone in the form
-      setValue("phone", phoneNumber, { shouldValidate: true });
-      setValue("phoneVerified", true, { shouldValidate: true });
-      setValue("phoneVerificationId", verificationId, { shouldValidate: true });
-      setShowPhoneVerification(false);
+    onSuccess: async (phoneNumber, verificationId) => {
+      console.log("Phone verified successfully, completing registration");
       
-      toast({
-        title: "Phone verified",
-        description: "Your phone number has been successfully verified",
+      if (!formData) {
+        toast({
+          title: "Error",
+          description: "Form data is missing, please try again",
+          variant: "destructive",
+        });
+        setShowPhoneVerification(false);
+        return;
+      }
+      
+      // Continue with the registration process
+      await completeRegistration({
+        ...formData,
+        phone: phoneNumber,
+        phoneVerified: true,
+        phoneVerificationId: verificationId
       });
     },
     onError: (error) => {
+      setIsLoading(false);
       toast({
         title: "Verification failed",
         description: error?.message || "There was a problem verifying your phone number",
@@ -70,7 +82,6 @@ export default function IndividualSignupForm() {
       phoneVerified: false,
       phoneVerificationId: "",
       address: "",
-      // Cast to satisfy the type constraint from the zod schema
       termsAccepted: false,
     },
     mode: "onChange",
@@ -84,18 +95,7 @@ export default function IndividualSignupForm() {
     setPasswordStrength(calculatePasswordStrength(e.target.value));
   };
 
-  const onSubmit = async (data: IndividualSignupFormValues) => {
-    // Require phone verification before proceeding
-    if (!data.phoneVerified) {
-      toast({
-        title: "Phone verification required",
-        description: "Please verify your phone number before registering",
-        variant: "destructive",
-      });
-      setShowPhoneVerification(true);
-      return;
-    }
-    
+  const completeRegistration = async (data: IndividualSignupFormValues) => {
     // Don't proceed if CSRF is still loading or errored out
     if (csrfLoading) {
       toast({
@@ -122,7 +122,6 @@ export default function IndividualSignupForm() {
       return;
     }
     
-    setIsLoading(true);
     try {
       // Define the expected response type
       type RegistrationResponse = {
@@ -164,6 +163,9 @@ export default function IndividualSignupForm() {
         description: "Your account has been created successfully",
       });
       
+      // Hide verification modal
+      setShowPhoneVerification(false);
+      
       // Store token in localStorage for login persistence
       if (responseData.token) {
         localStorage.setItem('token', responseData.token);
@@ -181,6 +183,30 @@ export default function IndividualSignupForm() {
         variant: "destructive",
       });
     } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const onSubmit = async (data: IndividualSignupFormValues) => {
+    setIsLoading(true);
+    
+    // Store form data for later use
+    setFormData(data);
+    
+    // Start the verification process
+    try {
+      // Initiate SMS verification
+      await sendVerificationCode(data.phone);
+      
+      // Show verification dialog
+      setShowPhoneVerification(true);
+    } catch (error) {
+      console.error("Verification initiation error:", error);
+      toast({
+        title: "Verification failed",
+        description: error instanceof Error ? error.message : "There was an error sending verification code to your phone",
+        variant: "destructive",
+      });
       setIsLoading(false);
     }
   };
@@ -249,73 +275,31 @@ export default function IndividualSignupForm() {
       />
 
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="phone">
-            Phone number <span className="text-destructive">*</span>
-          </Label>
-          {phoneVerified && (
-            <div className="flex items-center text-sm text-green-600">
-              <BadgeCheck className="h-4 w-4 mr-1" />
-              Verified
-            </div>
-          )}
-        </div>
-        
-        <div className="flex gap-2">
-          <div className="flex-grow">
-            <Input
-              id="phone"
-              type="tel"
-              placeholder="+1 (555) 123-4567"
-              value={verifiedPhoneNumber || watch("phone")}
-              {...register("phone")}
-              disabled={phoneVerified}
-            />
-            {errors.phone && (
-              <p className="text-xs text-red-500 mt-1">{errors.phone.message}</p>
-            )}
-          </div>
-          
-          <Button 
-            type="button"
-            variant={phoneVerified ? "outline" : "secondary"}
-            onClick={() => {
-              if (phoneVerified) {
-                // Reset verification
-                resetVerification();
-                setValue("phoneVerified", false);
-                setValue("phoneVerificationId", "");
-              } else {
-                // Show verification dialog
-                setShowPhoneVerification(true);
-              }
-            }}
-            className="whitespace-nowrap"
-            style={{ display: "flex" }} // Force display
-          >
-            {phoneVerified ? (
-              <>
-                <Phone className="h-4 w-4 mr-2" />
-                Change
-              </>
-            ) : (
-              <>
-                <PhoneOutgoing className="h-4 w-4 mr-2" />
-                Verify
-              </>
-            )}
-          </Button>
-        </div>
+        <Label htmlFor="phone">
+          Phone number <span className="text-destructive">*</span>
+        </Label>
+        <Input
+          id="phone"
+          type="tel"
+          placeholder="+1 (555) 123-4567"
+          {...register("phone")}
+        />
+        {errors.phone && (
+          <p className="text-xs text-red-500 mt-1">{errors.phone.message}</p>
+        )}
       </div>
       
-      {/* Phone verification dialog */}
+      {/* Phone verification dialog - shows after form submission */}
       {showPhoneVerification && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="max-w-md w-full bg-white rounded-lg">
             <PhoneVerification 
               onVerificationComplete={handleVerificationComplete}
-              onCancel={() => setShowPhoneVerification(false)}
-              initialPhoneNumber={watch("phone")}
+              onCancel={() => {
+                setShowPhoneVerification(false);
+                setIsLoading(false);
+              }}
+              initialPhoneNumber={formData?.phone || ""}
             />
           </div>
         </div>
