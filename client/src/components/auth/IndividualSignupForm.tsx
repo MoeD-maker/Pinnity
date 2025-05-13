@@ -11,11 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Checkbox } from "@/components/ui/checkbox";
 import { apiPost } from "@/lib/api";
-import { Loader2, BadgeCheck, Phone, PhoneOutgoing, Smartphone } from "lucide-react";
+import { Loader2, BadgeCheck, Phone, Smartphone } from "lucide-react";
 import { useCsrfProtection } from "@/hooks/useCsrfProtection";
 import { usePhoneVerification } from "@/hooks/use-phone-verification";
 import { OtpVerificationForm } from "./OtpVerificationForm";
-import { PhoneVerification } from "./PhoneVerification";
 import { auth } from "@/lib/firebase";
 import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult, PhoneAuthProvider } from "firebase/auth";
 
