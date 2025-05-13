@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { individualSignupSchema, type IndividualSignupFormValues } from "@/lib/validation";
@@ -64,13 +64,17 @@ export default function IndividualSignupForm() {
     }
   });
   
+  // Added for debugging
+  const [formErrors, setFormErrors] = useState<string[]>([]);
+  const [formSubmitAttempts, setFormSubmitAttempts] = useState(0);
+  
   // Let's bypass the validation schema for now to debug
   const {
     register,
     handleSubmit,
     watch,
     setValue,
-    formState: { errors },
+    formState: { errors, isSubmitting, submitCount },
   } = useForm<IndividualSignupFormValues>({
     // Remove the resolver to bypass zod validation for debugging
     // resolver: zodResolver(individualSignupSchema),
@@ -88,6 +92,23 @@ export default function IndividualSignupForm() {
     },
     mode: "onChange",
   });
+  
+  // Track form state changes for debugging
+  useEffect(() => {
+    console.log("Form errors changed:", errors);
+    const errorMessages = Object.entries(errors).map(
+      ([field, error]) => `${field}: ${error?.message || 'Invalid'}`
+    );
+    setFormErrors(errorMessages);
+  }, [errors]);
+  
+  // Track submission attempts
+  useEffect(() => {
+    if (submitCount > formSubmitAttempts) {
+      setFormSubmitAttempts(submitCount);
+      console.log("Form submission attempt:", submitCount);
+    }
+  }, [submitCount, formSubmitAttempts]);
   
   // Register termsAccepted field directly to ensure it's part of the form data
   register("termsAccepted");
@@ -192,14 +213,24 @@ export default function IndividualSignupForm() {
     }
   };
 
+  // Add more verbose logging
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
+  
+  const addDebugLog = (message: string) => {
+    setDebugLogs(prev => [
+      `[${new Date().toLocaleTimeString()}] ${message}`,
+      ...prev.slice(0, 9)
+    ]);
+  };
+  
   const onSubmit = async (data: IndividualSignupFormValues) => {
-    console.log("FORM SUBMISSION DATA:", JSON.stringify(data, null, 2));
-    console.log("Terms accepted value type:", typeof data.termsAccepted);
-    console.log("Terms accepted value:", data.termsAccepted);
+    addDebugLog(`Form submitted with data: ${JSON.stringify(data, null, 2)}`);
+    addDebugLog(`Terms accepted value type: ${typeof data.termsAccepted}`);
+    addDebugLog(`Terms accepted value: ${data.termsAccepted}`);
     
     // FOR TESTING: Skip terms acceptance check and force it to true
     const isChecked = watch("termsAccepted");
-    console.log("Checkbox state from direct watch:", isChecked);
+    addDebugLog(`Checkbox state from direct watch: ${isChecked}`);
     
     // Always force termsAccepted to true for debugging
     let formDataWithForcedTerms = {
@@ -207,7 +238,7 @@ export default function IndividualSignupForm() {
       termsAccepted: true
     };
     
-    console.log("Corrected form data:", JSON.stringify(formDataWithForcedTerms, null, 2));
+    addDebugLog(`Using modified form data for submission`);
     
     // Skip terms checking for debugging
     // if (!formDataWithForcedTerms.termsAccepted) {
@@ -380,8 +411,49 @@ export default function IndividualSignupForm() {
       </div>
       
       {/* Debug output */}
-      <div className="text-xs text-gray-500 bg-gray-100 p-2 rounded">
-        Debug: Terms accepted = {watch("termsAccepted") ? "true" : "false"}
+      <div className="text-xs bg-gray-100 p-3 rounded border border-gray-300 my-4">
+        <h3 className="font-bold mb-1 text-sm">Debug Information:</h3>
+        <div className="space-y-2">
+          <div>
+            <div className="font-semibold">Form State:</div>
+            <div>Terms accepted (watched): <span className="font-mono">{String(watch("termsAccepted"))}</span></div>
+            <div>Terms accepted (type): <span className="font-mono">{typeof watch("termsAccepted")}</span></div>
+            <div>Form is submitting: <span className="font-mono">{String(isSubmitting)}</span></div>
+            <div>Submit attempts: <span className="font-mono">{formSubmitAttempts}</span></div>
+          </div>
+          
+          {formErrors.length > 0 && (
+            <div>
+              <div className="font-semibold text-red-500">Form errors:</div>
+              <ul className="list-disc pl-4 text-red-500">
+                {formErrors.map((error, index) => (
+                  <li key={index}>{error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
+          {debugLogs.length > 0 && (
+            <div>
+              <div className="font-semibold">Event Logs:</div>
+              <pre className="bg-black text-green-400 p-2 rounded text-[9px] mt-1 max-h-[100px] overflow-y-auto">
+                {debugLogs.join('\n')}
+              </pre>
+            </div>
+          )}
+          
+          <button 
+            type="button" 
+            className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+            onClick={() => {
+              addDebugLog("Manual debug log triggered");
+              setValue("termsAccepted", true, { shouldValidate: true });
+              addDebugLog(`Terms manually set to: ${watch("termsAccepted")}`);
+            }}
+          >
+            Debug: Force Terms True
+          </button>
+        </div>
       </div>
 
       <Button 
