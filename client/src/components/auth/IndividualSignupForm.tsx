@@ -68,7 +68,7 @@ export default function IndividualSignupForm() {
   const [formErrors, setFormErrors] = useState<string[]>([]);
   const [formSubmitAttempts, setFormSubmitAttempts] = useState(0);
   
-  // Let's bypass the validation schema for now to debug
+  // Restored validation schema now that we've fixed the checkbox issue
   const {
     register,
     handleSubmit,
@@ -76,8 +76,8 @@ export default function IndividualSignupForm() {
     setValue,
     formState: { errors, isSubmitting, submitCount },
   } = useForm<IndividualSignupFormValues>({
-    // Remove the resolver to bypass zod validation for debugging
-    // resolver: zodResolver(individualSignupSchema),
+    // Restored resolver for proper validation
+    resolver: zodResolver(individualSignupSchema),
     defaultValues: {
       firstName: "",
       lastName: "",
@@ -228,39 +228,30 @@ export default function IndividualSignupForm() {
     addDebugLog(`Terms accepted value type: ${typeof data.termsAccepted}`);
     addDebugLog(`Terms accepted value: ${data.termsAccepted}`);
     
-    // FOR TESTING: Skip terms acceptance check and force it to true
     const isChecked = watch("termsAccepted");
     addDebugLog(`Checkbox state from direct watch: ${isChecked}`);
     
-    // Always force termsAccepted to true for debugging
-    let formDataWithForcedTerms = {
-      ...data,
-      termsAccepted: true
-    };
-    
-    addDebugLog(`Using modified form data for submission`);
-    
-    // Skip terms checking for debugging
-    // if (!formDataWithForcedTerms.termsAccepted) {
-    //   console.log("Terms not accepted, showing error");
-    //   toast({
-    //     title: "Terms Required",
-    //     description: "You must accept the terms and conditions to continue",
-    //     variant: "destructive"
-    //   });
-    //   return;
-    // }
+    // Check that terms are accepted
+    if (!data.termsAccepted) {
+      addDebugLog("Terms not accepted, validation should block submission");
+      toast({
+        title: "Terms Required",
+        description: "You must accept the terms and conditions to continue",
+        variant: "destructive"
+      });
+      return;
+    }
     
     setIsLoading(true);
     
     // Store form data for later use
-    setFormData(formDataWithForcedTerms);
+    setFormData(data);
     
     // Start the verification process
     try {
       // Initiate SMS verification
-      console.log("Initiating SMS verification for phone:", formDataWithForcedTerms.phone);
-      await sendVerificationCode(formDataWithForcedTerms.phone);
+      addDebugLog(`Initiating SMS verification for phone: ${data.phone}`);
+      await sendVerificationCode(data.phone);
       
       // Show verification dialog
       setShowPhoneVerification(true);
@@ -382,6 +373,9 @@ export default function IndividualSignupForm() {
       </div>
 
       <div className="flex items-start space-x-3 border p-3 rounded-md bg-gray-50">
+        {/* This is the critical part - we need to bind a real input to register */}
+        <input type="hidden" {...register("termsAccepted")} />
+        
         <input
           type="checkbox"
           id="terms-checkbox"
