@@ -110,8 +110,7 @@ export default function IndividualSignupForm() {
     }
   }, [submitCount, formSubmitAttempts]);
   
-  // Register termsAccepted field directly to ensure it's part of the form data
-  register("termsAccepted");
+  // We'll use the hidden input below instead
 
   // Watch password field to calculate strength
   const password = watch("password", "");
@@ -372,34 +371,37 @@ export default function IndividualSignupForm() {
         )}
       </div>
 
-      <div className="flex items-start space-x-3 border p-3 rounded-md bg-gray-50">
-        {/* This is the critical part - we need to bind a real input to register */}
-        <input type="hidden" {...register("termsAccepted")} />
-        
-        <div className="flex items-center h-5">
-          <Checkbox
-            id="terms"
-            checked={watch("termsAccepted")}
-            onCheckedChange={(checked) =>
-              setValue("termsAccepted", checked === true, { 
-                shouldValidate: true,
-                shouldDirty: true,
-                shouldTouch: true
-              })
-            }
-          />
-        </div>
-        
-        <div className="ml-2">
-          <label 
-            htmlFor="terms" 
-            className={`${errors.termsAccepted ? "text-red-500" : "text-gray-700"} text-sm cursor-pointer font-medium`}
-          >
-            I agree to the <Link href="/terms" className="text-[#00796B] hover:text-[#004D40] underline">Terms of Service</Link> and <Link href="/privacy" className="text-[#00796B] hover:text-[#004D40] underline">Privacy Policy</Link>
-          </label>
-          {errors.termsAccepted && (
-            <p className="text-xs text-red-500 mt-1">{errors.termsAccepted.message}</p>
-          )}
+      <div className="p-3 border rounded-md bg-gray-50">
+        <div className="flex items-start space-x-2">
+          <div className="pt-0.5">
+            <Checkbox
+              id="terms"
+              checked={watch("termsAccepted")}
+              onCheckedChange={(checked) =>
+                setValue("termsAccepted", !!checked, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                })
+              }
+            />
+          </div>
+          <div>
+            <Label
+              htmlFor="terms"
+              className={`text-sm font-medium ${
+                errors.termsAccepted ? "text-red-500" : "text-gray-700"
+              }`}
+            >
+              I agree to the <Link href="/terms" className="text-[#00796B] hover:text-[#004D40] underline">Terms of Service</Link> and <Link href="/privacy" className="text-[#00796B] hover:text-[#004D40] underline">Privacy Policy</Link>
+            </Label>
+            
+            <input type="hidden" {...register("termsAccepted")} />
+            {errors.termsAccepted && (
+              <p className="text-xs text-red-500 mt-1">
+                {errors.termsAccepted.message}
+              </p>
+            )}
+          </div>
         </div>
       </div>
       
@@ -435,17 +437,7 @@ export default function IndividualSignupForm() {
             </div>
           )}
           
-          <button 
-            type="button" 
-            className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
-            onClick={() => {
-              addDebugLog("Manual debug log triggered");
-              setValue("termsAccepted", true, { shouldValidate: true });
-              addDebugLog(`Terms manually set to: ${watch("termsAccepted")}`);
-            }}
-          >
-            Debug: Force Terms True
-          </button>
+          {/* Debug button removed as requested */}
         </div>
       </div>
 
