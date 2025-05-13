@@ -319,12 +319,14 @@ export default function IndividualSignupForm() {
 
       <div className="flex items-start">
         <div className="flex items-center h-5">
+          {/* Hidden input to properly register the field with react-hook-form */}
+          <input type="hidden" {...register("termsAccepted")} />
           <Checkbox 
             id="terms" 
-            onCheckedChange={(checked) => {
-              const checkValue = checked === true;
-              setValue("termsAccepted", checkValue, { shouldValidate: true });
-            }}
+            checked={watch("termsAccepted")}
+            onCheckedChange={(checkValue) => 
+              setValue("termsAccepted", checkValue === true, { shouldValidate: true })
+            }
           />
         </div>
         <div className="ml-3 text-sm">
