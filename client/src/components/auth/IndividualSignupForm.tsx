@@ -10,7 +10,8 @@ import { calculatePasswordStrength } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Checkbox } from "@/components/ui/checkbox";
-import { apiPost } from "@/lib/api";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Loader2, BadgeCheck, Phone, PhoneOutgoing } from "lucide-react";
 import { useCsrfProtection } from "@/hooks/useCsrfProtection";
 import { usePhoneVerification } from "@/hooks/use-phone-verification";
@@ -187,25 +188,43 @@ export default function IndividualSignupForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormInput
-          label="First name"
-          {...register("firstName")}
-          error={errors.firstName?.message}
-        />
+        <div className="space-y-2">
+          <Label htmlFor="firstName">First name</Label>
+          <Input
+            id="firstName"
+            {...register("firstName")}
+            placeholder="John"
+          />
+          {errors.firstName && (
+            <p className="text-xs text-red-500">{errors.firstName.message}</p>
+          )}
+        </div>
         
-        <FormInput
-          label="Last name"
-          {...register("lastName")}
-          error={errors.lastName?.message}
-        />
+        <div className="space-y-2">
+          <Label htmlFor="lastName">Last name</Label>
+          <Input
+            id="lastName"
+            {...register("lastName")}
+            placeholder="Doe"
+          />
+          {errors.lastName && (
+            <p className="text-xs text-red-500">{errors.lastName.message}</p>
+          )}
+        </div>
       </div>
 
-      <FormInput
-        label="Email address"
-        type="email"
-        {...register("email")}
-        error={errors.email?.message}
-      />
+      <div className="space-y-2">
+        <Label htmlFor="email">Email address</Label>
+        <Input
+          id="email"
+          type="email"
+          {...register("email")}
+          placeholder="john.doe@example.com"
+        />
+        {errors.email && (
+          <p className="text-xs text-red-500">{errors.email.message}</p>
+        )}
+      </div>
 
       <div className="space-y-1">
         <PasswordInput
@@ -231,9 +250,9 @@ export default function IndividualSignupForm() {
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <label htmlFor="phone" className="text-sm font-medium">
+          <Label htmlFor="phone">
             Phone number <span className="text-destructive">*</span>
-          </label>
+          </Label>
           {phoneVerified && (
             <div className="flex items-center text-sm text-green-600">
               <BadgeCheck className="h-4 w-4 mr-1" />
@@ -243,18 +262,17 @@ export default function IndividualSignupForm() {
         </div>
         
         <div className="flex gap-2">
-          <div className="flex-grow space-y-1">
-            <input
+          <div className="flex-grow">
+            <Input
               id="phone"
               type="tel"
               placeholder="+1 (555) 123-4567"
               value={verifiedPhoneNumber || watch("phone")}
               {...register("phone")}
               disabled={phoneVerified}
-              className="block w-full px-4 py-2 text-gray-700 bg-white border border-gray-200 rounded-md appearance-none focus:outline-none focus:border-[#00796B]"
             />
             {errors.phone && (
-              <p className="text-xs text-red-500">{errors.phone.message}</p>
+              <p className="text-xs text-red-500 mt-1">{errors.phone.message}</p>
             )}
           </div>
           
@@ -273,6 +291,7 @@ export default function IndividualSignupForm() {
               }
             }}
             className="whitespace-nowrap"
+            style={{ display: "flex" }} // Force display
           >
             {phoneVerified ? (
               <>
@@ -302,11 +321,17 @@ export default function IndividualSignupForm() {
         </div>
       )}
 
-      <FormInput
-        label="Address"
-        {...register("address")}
-        error={errors.address?.message}
-      />
+      <div className="space-y-2">
+        <Label htmlFor="address">Address</Label>
+        <Input
+          id="address"
+          {...register("address")}
+          placeholder="123 Main St, Anytown, US"
+        />
+        {errors.address && (
+          <p className="text-xs text-red-500">{errors.address.message}</p>
+        )}
+      </div>
 
       <div className="flex items-start">
         <div className="flex items-center h-5">
@@ -314,8 +339,6 @@ export default function IndividualSignupForm() {
             id="terms" 
             onCheckedChange={(checked) => {
               const checkValue = checked === true;
-              const target = { name: "termsAccepted", value: checkValue };
-              // Use setValue instead of manually creating a change event
               setValue("termsAccepted", checkValue, { shouldValidate: true });
             }}
           />
