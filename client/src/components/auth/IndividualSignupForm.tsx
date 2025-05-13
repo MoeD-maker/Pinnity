@@ -86,6 +86,9 @@ export default function IndividualSignupForm() {
     },
     mode: "onChange",
   });
+  
+  // Register termsAccepted field directly to ensure it's part of the form data
+  register("termsAccepted");
 
   // Watch password field to calculate strength
   const password = watch("password", "");
@@ -188,6 +191,19 @@ export default function IndividualSignupForm() {
   };
 
   const onSubmit = async (data: IndividualSignupFormValues) => {
+    console.log("Form submission data:", data);
+    
+    // Double-check terms acceptance
+    if (!data.termsAccepted) {
+      console.log("Terms not accepted, showing error");
+      toast({
+        title: "Terms Required",
+        description: "You must accept the terms and conditions to continue",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsLoading(true);
     
     // Store form data for later use
@@ -196,6 +212,7 @@ export default function IndividualSignupForm() {
     // Start the verification process
     try {
       // Initiate SMS verification
+      console.log("Initiating SMS verification for phone:", data.phone);
       await sendVerificationCode(data.phone);
       
       // Show verification dialog
@@ -317,22 +334,26 @@ export default function IndividualSignupForm() {
         )}
       </div>
 
-      <div className="flex items-start">
-        <div className="flex items-center h-5">
-          {/* Hidden input to properly register the field with react-hook-form */}
-          <input type="hidden" {...register("termsAccepted")} />
+      <div className="flex items-start space-x-2">
+        <div className="flex items-center h-5 pt-0.5">
           <Checkbox 
             id="terms" 
             checked={watch("termsAccepted")}
-            onCheckedChange={(checkValue) => 
-              setValue("termsAccepted", checkValue === true, { shouldValidate: true })
-            }
+            onCheckedChange={(checked) => {
+              // Explicitly cast to boolean and update
+              setValue("termsAccepted", checked === true, { 
+                shouldValidate: true,
+                shouldDirty: true,
+                shouldTouch: true
+              });
+              console.log("Terms accepted value set to:", checked === true);
+            }}
           />
         </div>
-        <div className="ml-3 text-sm">
+        <div className="text-sm flex-1">
           <label 
             htmlFor="terms" 
-            className={`${errors.termsAccepted ? "text-red-500" : "text-gray-500"}`}
+            className={`${errors.termsAccepted ? "text-red-500" : "text-gray-500"} cursor-pointer`}
           >
             I agree to the <Link href="/terms" className="text-[#00796B] hover:text-[#004D40]">Terms of Service</Link> and <Link href="/privacy" className="text-[#00796B] hover:text-[#004D40]">Privacy Policy</Link>
           </label>
@@ -340,6 +361,11 @@ export default function IndividualSignupForm() {
             <p className="text-xs text-red-500 mt-1">{errors.termsAccepted.message}</p>
           )}
         </div>
+      </div>
+      
+      {/* Debug output - remove in production */}
+      <div className="text-xs text-gray-400 mt-1">
+        Terms accepted: {watch("termsAccepted") ? "Yes" : "No"}
       </div>
 
       <Button 
