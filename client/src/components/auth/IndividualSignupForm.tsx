@@ -376,24 +376,23 @@ export default function IndividualSignupForm() {
         {/* This is the critical part - we need to bind a real input to register */}
         <input type="hidden" {...register("termsAccepted")} />
         
-        <input
-          type="checkbox"
-          id="terms-checkbox"
-          className="mt-1 h-4 w-4"
-          checked={watch("termsAccepted")}
-          onChange={(e) => {
-            const isChecked = e.target.checked;
-            setValue("termsAccepted", isChecked, { 
-              shouldValidate: true,
-              shouldDirty: true,
-              shouldTouch: true 
-            });
-            console.log("Manual checkbox set to:", isChecked);
-          }}
-        />
-        <div>
+        <div className="flex items-center h-5">
+          <Checkbox
+            id="terms"
+            checked={watch("termsAccepted")}
+            onCheckedChange={(checked) =>
+              setValue("termsAccepted", checked === true, { 
+                shouldValidate: true,
+                shouldDirty: true,
+                shouldTouch: true
+              })
+            }
+          />
+        </div>
+        
+        <div className="ml-2">
           <label 
-            htmlFor="terms-checkbox" 
+            htmlFor="terms" 
             className={`${errors.termsAccepted ? "text-red-500" : "text-gray-700"} text-sm cursor-pointer font-medium`}
           >
             I agree to the <Link href="/terms" className="text-[#00796B] hover:text-[#004D40] underline">Terms of Service</Link> and <Link href="/privacy" className="text-[#00796B] hover:text-[#004D40] underline">Privacy Policy</Link>
