@@ -191,10 +191,21 @@ export default function IndividualSignupForm() {
   };
 
   const onSubmit = async (data: IndividualSignupFormValues) => {
-    console.log("Form submission data:", data);
+    console.log("FORM SUBMISSION DATA:", JSON.stringify(data, null, 2));
+    console.log("Terms accepted value type:", typeof data.termsAccepted);
+    console.log("Terms accepted value:", data.termsAccepted);
+    
+    // Handle edge case - ensure termsAccepted is an actual boolean true
+    // This is a fallback for when the validation schema doesn't handle it properly
+    let formDataWithForcedTerms = {
+      ...data,
+      termsAccepted: data.termsAccepted === true || data.termsAccepted === "true" || data.termsAccepted === 1
+    };
+    
+    console.log("Corrected form data:", JSON.stringify(formDataWithForcedTerms, null, 2));
     
     // Double-check terms acceptance
-    if (!data.termsAccepted) {
+    if (!formDataWithForcedTerms.termsAccepted) {
       console.log("Terms not accepted, showing error");
       toast({
         title: "Terms Required",
@@ -207,13 +218,13 @@ export default function IndividualSignupForm() {
     setIsLoading(true);
     
     // Store form data for later use
-    setFormData(data);
+    setFormData(formDataWithForcedTerms);
     
     // Start the verification process
     try {
       // Initiate SMS verification
-      console.log("Initiating SMS verification for phone:", data.phone);
-      await sendVerificationCode(data.phone);
+      console.log("Initiating SMS verification for phone:", formDataWithForcedTerms.phone);
+      await sendVerificationCode(formDataWithForcedTerms.phone);
       
       // Show verification dialog
       setShowPhoneVerification(true);
@@ -334,28 +345,28 @@ export default function IndividualSignupForm() {
         )}
       </div>
 
-      <div className="flex items-start space-x-2">
-        <div className="flex items-center h-5 pt-0.5">
-          <Checkbox 
-            id="terms" 
-            checked={watch("termsAccepted")}
-            onCheckedChange={(checked) => {
-              // Explicitly cast to boolean and update
-              setValue("termsAccepted", checked === true, { 
-                shouldValidate: true,
-                shouldDirty: true,
-                shouldTouch: true
-              });
-              console.log("Terms accepted value set to:", checked === true);
-            }}
-          />
-        </div>
-        <div className="text-sm flex-1">
+      <div className="flex items-start space-x-3 border p-3 rounded-md bg-gray-50">
+        <input
+          type="checkbox"
+          id="terms-checkbox"
+          className="mt-1 h-4 w-4"
+          checked={watch("termsAccepted")}
+          onChange={(e) => {
+            const isChecked = e.target.checked;
+            setValue("termsAccepted", isChecked, { 
+              shouldValidate: true,
+              shouldDirty: true,
+              shouldTouch: true 
+            });
+            console.log("Manual checkbox set to:", isChecked);
+          }}
+        />
+        <div>
           <label 
-            htmlFor="terms" 
-            className={`${errors.termsAccepted ? "text-red-500" : "text-gray-500"} cursor-pointer`}
+            htmlFor="terms-checkbox" 
+            className={`${errors.termsAccepted ? "text-red-500" : "text-gray-700"} text-sm cursor-pointer font-medium`}
           >
-            I agree to the <Link href="/terms" className="text-[#00796B] hover:text-[#004D40]">Terms of Service</Link> and <Link href="/privacy" className="text-[#00796B] hover:text-[#004D40]">Privacy Policy</Link>
+            I agree to the <Link href="/terms" className="text-[#00796B] hover:text-[#004D40] underline">Terms of Service</Link> and <Link href="/privacy" className="text-[#00796B] hover:text-[#004D40] underline">Privacy Policy</Link>
           </label>
           {errors.termsAccepted && (
             <p className="text-xs text-red-500 mt-1">{errors.termsAccepted.message}</p>
@@ -363,9 +374,9 @@ export default function IndividualSignupForm() {
         </div>
       </div>
       
-      {/* Debug output - remove in production */}
-      <div className="text-xs text-gray-400 mt-1">
-        Terms accepted: {watch("termsAccepted") ? "Yes" : "No"}
+      {/* Debug output */}
+      <div className="text-xs text-gray-500 bg-gray-100 p-2 rounded">
+        Debug: Terms accepted = {watch("termsAccepted") ? "true" : "false"}
       </div>
 
       <Button 
