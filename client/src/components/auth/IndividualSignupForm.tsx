@@ -11,25 +11,15 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Checkbox } from "@/components/ui/checkbox";
 import { apiPost } from "@/lib/api";
-import { Loader2, BadgeCheck, Phone, Smartphone } from "lucide-react";
+import { Loader2, BadgeCheck, Phone, PhoneOutgoing } from "lucide-react";
 import { useCsrfProtection } from "@/hooks/useCsrfProtection";
 import { usePhoneVerification } from "@/hooks/use-phone-verification";
-import { OtpVerificationForm } from "./OtpVerificationForm";
-import { auth } from "@/lib/firebase";
-import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult, PhoneAuthProvider } from "firebase/auth";
-
-interface WindowWithRecaptcha extends Window {
-  recaptchaVerifier: RecaptchaVerifier;
-}
+import { PhoneVerification } from "./PhoneVerification";
 
 export default function IndividualSignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, feedback: "Password is required" });
   const [showPhoneVerification, setShowPhoneVerification] = useState(false);
-  const [isOtpStep, setIsOtpStep] = useState(false);
-  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
-  const [formattedPhoneNumber, setFormattedPhoneNumber] = useState("");
-  const [formData, setFormData] = useState<IndividualSignupFormValues | null>(null);
   const { toast } = useToast();
   const { isLoading: csrfLoading, isReady: csrfReady, error: csrfError, fetchWithProtection } = useCsrfProtection();
   const { 

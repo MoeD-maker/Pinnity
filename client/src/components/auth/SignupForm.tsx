@@ -2,7 +2,6 @@ import { useState } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import IndividualSignupForm from "./IndividualSignupForm";
-import NewTwoStepSignupForm from "./NewTwoStepSignupForm";
 import BusinessSignupForm from "./BusinessSignupForm";
 import { Building, User } from "lucide-react";
 
@@ -54,7 +53,7 @@ export default function SignupForm() {
       </div>
 
       {userType === "individual" ? (
-        <NewTwoStepSignupForm />
+        <IndividualSignupForm />
       ) : (
         <BusinessSignupForm setUserType={setUserType} />
       )}
