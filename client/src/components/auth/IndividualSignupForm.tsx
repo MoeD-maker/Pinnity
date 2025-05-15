@@ -90,7 +90,7 @@ export default function IndividualSignupForm() {
       phoneVerified: false,
       phoneVerificationId: "",
       address: "",
-      termsAccepted: false,
+      // Removed termsAccepted default value as instructed
     },
     mode: "onChange",
   });
@@ -387,7 +387,7 @@ export default function IndividualSignupForm() {
               id="terms"
               checked={watch("termsAccepted")}
               onCheckedChange={(checked) =>
-                setValue("termsAccepted", checked === true, {
+                setValue("termsAccepted", !!checked, {
                   shouldValidate: true,
                   shouldDirty: true,
                 })
