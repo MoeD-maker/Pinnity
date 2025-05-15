@@ -23,10 +23,9 @@ const baseUserSchema = z.object({
   confirmPassword: z.string().min(1, "Please confirm your password"),
   phone: z.string().min(10, "Please enter a valid phone number"),
   address: z.string().min(1, "Address is required"),
-  termsAccepted: z.boolean()
-    .refine(val => val === true, {
-      message: "You must accept the terms and conditions"
-    }),
+  termsAccepted: z.literal(true, {
+    errorMap: () => ({ message: "You must accept the Terms of Service" })
+  }),
 });
 
 // Add confirmPassword validation

@@ -36,9 +36,8 @@ export default function IndividualSignupForm() {
       confirmPassword: "",
       phone: "",
       address: "",
-      // Cast to satisfy the type constraint from the zod schema
-      termsAccepted: false,
-    },
+      // Omit termsAccepted as it needs to be explicitly set by user
+    } as IndividualSignupFormValues,
     mode: "onChange",
   });
 
@@ -187,29 +186,37 @@ export default function IndividualSignupForm() {
         error={errors.address?.message}
       />
 
-      <div className="flex items-start">
-        <div className="flex items-center h-5">
-          <Checkbox 
-            id="terms" 
+      <div className="space-y-2">
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="terms"
+            checked={watch("termsAccepted") === true}
             onCheckedChange={(checked) => {
-              const checkValue = checked === true;
-              const target = { name: "termsAccepted", value: checkValue };
-              // Use setValue instead of manually creating a change event
-              setValue("termsAccepted", checkValue, { shouldValidate: true });
+              if (checked === true) {
+                setValue("termsAccepted", true as const, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                });
+              }
             }}
           />
-        </div>
-        <div className="ml-3 text-sm">
-          <label 
-            htmlFor="terms" 
-            className={`${errors.termsAccepted ? "text-red-500" : "text-gray-500"}`}
+          <label
+            htmlFor="terms"
+            className={`text-sm font-medium ${
+              errors.termsAccepted ? "text-red-500" : "text-gray-700"
+            }`}
           >
             I agree to the <Link href="/terms" className="text-[#00796B] hover:text-[#004D40]">Terms of Service</Link> and <Link href="/privacy" className="text-[#00796B] hover:text-[#004D40]">Privacy Policy</Link>
           </label>
-          {errors.termsAccepted && (
-            <p className="text-xs text-red-500 mt-1">{errors.termsAccepted.message}</p>
-          )}
         </div>
+        
+        <input type="hidden" {...register("termsAccepted")} />
+
+        {errors.termsAccepted && (
+          <p className="text-xs text-red-500">
+            {errors.termsAccepted.message}
+          </p>
+        )}
       </div>
 
       <Button 
