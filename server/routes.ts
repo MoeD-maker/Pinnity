@@ -218,7 +218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validate core user data
       if (!businessName || !businessCategory || !firstName || !lastName || 
-          !email || !password || !phone || !address || !termsAccepted) {
+          !email || !password || !phone || !address || termsAccepted !== true) {
         return res.status(400).json({ message: "Missing required fields" });
       }
 

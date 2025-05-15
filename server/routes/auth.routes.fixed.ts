@@ -292,7 +292,7 @@ export function authRoutes(app: Express): void {
         // Manual validation - can't use standard middleware due to file uploads
         // In a production app, we might create a custom middleware for file uploads + validation
         if (!businessName || !businessCategory || !firstName || !lastName || 
-            !email || !password || !phone || !address || !termsAccepted) {
+            !email || !password || !phone || !address || termsAccepted !== true) {
           return res.status(400).json({ 
             message: "Validation error",
             errors: [{
@@ -403,7 +403,7 @@ export function authRoutes(app: Express): void {
         
         // Manual validation - can't use standard middleware due to file uploads
         if (!businessName || !businessCategory || !firstName || !lastName || 
-            !email || !password || !phone || !address || !termsAccepted) {
+            !email || !password || !phone || !address || termsAccepted !== true) {
           return res.status(400).json({ 
             message: "Validation error",
             errors: [{
