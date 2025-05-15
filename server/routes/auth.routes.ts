@@ -342,7 +342,7 @@ export function authRoutes(app: Express): void {
         const password = req.body.password;
         const phone = req.body.phone;
         const address = req.body.address;
-        const termsAccepted = req.body.termsAccepted === 'true';
+        const termsAccepted = req.body.termsAccepted === true || req.body.termsAccepted === 'true';
         
         // Manual validation - can't use standard middleware due to file uploads
         // In a production app, we might create a custom middleware for file uploads + validation
@@ -469,7 +469,7 @@ export function authRoutes(app: Express): void {
         const password = req.body.password;
         const phone = req.body.phone;
         const address = req.body.address;
-        const termsAccepted = req.body.termsAccepted === 'true';
+        const termsAccepted = req.body.termsAccepted === true || req.body.termsAccepted === 'true';
         
         // Manual validation - can't use standard middleware due to file uploads
         if (!businessName || !businessCategory || !firstName || !lastName || 
