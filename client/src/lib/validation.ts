@@ -25,15 +25,10 @@ const baseUserSchema = z.object({
   phoneVerified: z.boolean().optional().default(false),
   phoneVerificationId: z.string().optional(),
   address: z.string().min(1, "Address is required"),
-  termsAccepted: z.preprocess(
-    // Convert various values to boolean (handles "true", 1, etc.)
-    val => val === true || val === "true" || val === 1,
-    // Then validate it's actually true
-    z.boolean()
-      .refine(val => val === true, {
-        message: "You must accept the terms and conditions"
-      })
-  ),
+  termsAccepted: z.boolean()
+    .refine(val => val === true, {
+      message: "You must accept the terms and conditions"
+    }),
 });
 
 // Add confirmPassword validation
