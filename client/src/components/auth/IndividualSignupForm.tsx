@@ -51,7 +51,9 @@ export default function IndividualSignupForm() {
         ...formData,
         phone: phoneNumber,
         phoneVerified: true,
-        phoneVerificationId: verificationId
+        phoneVerificationId: verificationId,
+        // Explicitly ensure termsAccepted is preserved correctly
+        termsAccepted: formData.termsAccepted
       });
     },
     onError: (error) => {
@@ -121,6 +123,11 @@ export default function IndividualSignupForm() {
   };
 
   const completeRegistration = async (data: IndividualSignupFormValues) => {
+    // Add debug logs to track termsAccepted value
+    console.log("Registration data:", data);
+    console.log("Terms accepted value:", data.termsAccepted);
+    console.log("Terms accepted type:", typeof data.termsAccepted);
+    
     // Don't proceed if CSRF is still loading or errored out
     if (csrfLoading) {
       toast({
@@ -159,6 +166,8 @@ export default function IndividualSignupForm() {
       // Add Firebase verification data if available
       const formDataWithVerification = {
         ...data,
+        // Ensure termsAccepted is properly passed (kept as-is from form data)
+        termsAccepted: data.termsAccepted, // Explicitly include to ensure it's not lost
         // Include verification data if we have it
         firebaseVerification: data.phoneVerified && verificationCredential ? {
           phoneNumber: verifiedPhoneNumber,
