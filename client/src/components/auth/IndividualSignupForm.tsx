@@ -192,12 +192,10 @@ export default function IndividualSignupForm() {
             id="terms"
             checked={watch("termsAccepted") === true}
             onCheckedChange={(checked) => {
-              if (checked === true) {
-                setValue("termsAccepted", true as const, {
-                  shouldValidate: true,
-                  shouldDirty: true,
-                });
-              }
+              setValue("termsAccepted", !!checked as any, {
+                shouldValidate: true,
+                shouldDirty: true,
+              });
             }}
           />
           <label
