@@ -1,0 +1,65 @@
+We need to apply a complete fix for the `termsAccepted` validation issue that’s still causing registration to fail, even when the Terms of Service checkbox is checked.
+
+The frontend already sends the correct boolean `true`, and Zod validation enforces it. But multiple parts of the backend and one default in the frontend still cause the error.
+
+---
+
+### 🔧 PART 1 — Fix All Affected Backend Files
+
+Apply this fix in the following files:
+
+#### ✅ In `/server/routes.ts`, `/server/routes/auth.routes.ts`, and `/server/routes/auth.routes.fixed.ts`:
+
+For **every block** where this condition appears:
+```ts
+if (!email || !password || !phone || !address || termsAccepted !== true)
+➡ Add the following normalization before the condition:
+
+ts
+Copy
+Edit
+const termsAccepted = req.body.termsAccepted === true || req.body.termsAccepted === 'true';
+This ensures termsAccepted is consistently interpreted as true, regardless of whether it’s passed as a boolean or a string.
+
+✅ Apply this in every location it’s used — not just the first occurrence. There are at least two instances in both auth.routes.ts and auth.routes.fixed.ts.
+
+🔧 PART 2 — Fix Default in BusinessSignupForm
+📍 File: client/src/components/auth/BusinessSignupForm.tsx
+
+Find and remove or replace this line:
+
+ts
+Copy
+Edit
+termsAccepted: false,
+➡ This is dangerous and can override the correct checkbox state. Replace it with proper checkbox-driven state logic using:
+
+tsx
+Copy
+Edit
+setValue("termsAccepted", !!checked, {
+  shouldValidate: true,
+  shouldDirty: true,
+});
+…and register the field using:
+
+tsx
+Copy
+Edit
+<input type="hidden" {...register("termsAccepted")} />
+✅ After Applying All Fixes
+The form will:
+
+Validate the checkbox properly using Zod
+
+Send the correct data to the backend
+
+Be accepted by the backend with no false rejections
+
+The error “You must accept Terms of Service” should no longer appear when the checkbox is checked.
+
+Please apply all changes thoroughly. This is the final fix across all layers of the app.
+
+yaml
+Copy
+Edit

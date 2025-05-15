@@ -46,8 +46,7 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
       confirmPassword: "",
       phone: "",
       address: "",
-      // This will be properly validated during form submission
-      termsAccepted: false,
+      // Terms will be set by checkbox, don't provide default that could override user input
     },
     mode: "onChange",
   });
@@ -304,11 +303,15 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
           <Checkbox 
             id="business-terms" 
             onCheckedChange={(checked) => {
-              const checkValue = checked === true;
-              // Use setValue instead of manually creating a change event
-              setValue("termsAccepted", checkValue, { shouldValidate: true });
+              // Must be exactly true to satisfy z.literal(true)
+              setValue("termsAccepted", checked === true ? true : undefined, { 
+                shouldValidate: true,
+                shouldDirty: true
+              });
             }}
           />
+          {/* Hidden input to properly submit the form data */}
+          <input type="hidden" {...register("termsAccepted")} />
         </div>
         <div className="ml-3 text-sm">
           <label 

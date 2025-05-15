@@ -214,7 +214,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const password = req.body.password;
       const phone = req.body.phone;
       const address = req.body.address;
-      const termsAccepted = req.body.termsAccepted === 'true';
+      const termsAccepted = req.body.termsAccepted === true || req.body.termsAccepted === 'true';
       
       // Validate core user data
       if (!businessName || !businessCategory || !firstName || !lastName || 
