@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { individualSignupSchema, type IndividualSignupFormValues } from "@/lib/validation";
@@ -10,75 +10,23 @@ import { calculatePasswordStrength } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Loader2, BadgeCheck } from "lucide-react";
+import { apiPost } from "@/lib/api";
+import { Loader2 } from "lucide-react";
 import { useCsrfProtection } from "@/hooks/useCsrfProtection";
-import { usePhoneVerification } from "@/hooks/use-phone-verification";
-import { PhoneVerification } from "./PhoneVerification";
 
 export default function IndividualSignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, feedback: "Password is required" });
-  const [showPhoneVerification, setShowPhoneVerification] = useState(false);
-  const [formData, setFormData] = useState<IndividualSignupFormValues | null>(null);
   const { toast } = useToast();
   const { isLoading: csrfLoading, isReady: csrfReady, error: csrfError, fetchWithProtection } = useCsrfProtection();
-  const { 
-    isVerifying, 
-    phoneVerified, 
-    verifiedPhoneNumber, 
-    verificationCredential,
-    handleVerificationComplete,
-    resetVerification,
-    sendVerificationCode
-  } = usePhoneVerification({
-    onSuccess: async (phoneNumber, verificationId) => {
-      console.log("Phone verified successfully, completing registration");
-      
-      if (!formData) {
-        toast({
-          title: "Error",
-          description: "Form data is missing, please try again",
-          variant: "destructive",
-        });
-        setShowPhoneVerification(false);
-        return;
-      }
-      
-      // Continue with the registration process
-      await completeRegistration({
-        ...formData,
-        phone: phoneNumber,
-        phoneVerified: true,
-        phoneVerificationId: verificationId,
-        // Explicitly ensure termsAccepted is preserved correctly
-        termsAccepted: formData.termsAccepted
-      });
-    },
-    onError: (error) => {
-      setIsLoading(false);
-      toast({
-        title: "Verification failed",
-        description: error?.message || "There was a problem verifying your phone number",
-        variant: "destructive",
-      });
-    }
-  });
   
-  // Added for debugging
-  const [formErrors, setFormErrors] = useState<string[]>([]);
-  const [formSubmitAttempts, setFormSubmitAttempts] = useState(0);
-  
-  // Restored validation schema now that we've fixed the checkbox issue
   const {
     register,
     handleSubmit,
     watch,
     setValue,
-    formState: { errors, isSubmitting, submitCount },
+    formState: { errors },
   } = useForm<IndividualSignupFormValues>({
-    // Restored resolver for proper validation
     resolver: zodResolver(individualSignupSchema),
     defaultValues: {
       firstName: "",
@@ -87,32 +35,12 @@ export default function IndividualSignupForm() {
       password: "",
       confirmPassword: "",
       phone: "",
-      phoneVerified: false,
-      phoneVerificationId: "",
       address: "",
-      // Removed termsAccepted default value as instructed
+      // Cast to satisfy the type constraint from the zod schema
+      termsAccepted: false,
     },
     mode: "onChange",
   });
-  
-  // Track form state changes for debugging
-  useEffect(() => {
-    console.log("Form errors changed:", errors);
-    const errorMessages = Object.entries(errors).map(
-      ([field, error]) => `${field}: ${error?.message || 'Invalid'}`
-    );
-    setFormErrors(errorMessages);
-  }, [errors]);
-  
-  // Track submission attempts
-  useEffect(() => {
-    if (submitCount > formSubmitAttempts) {
-      setFormSubmitAttempts(submitCount);
-      console.log("Form submission attempt:", submitCount);
-    }
-  }, [submitCount, formSubmitAttempts]);
-  
-  // We'll use the hidden input below instead
 
   // Watch password field to calculate strength
   const password = watch("password", "");
@@ -122,12 +50,7 @@ export default function IndividualSignupForm() {
     setPasswordStrength(calculatePasswordStrength(e.target.value));
   };
 
-  const completeRegistration = async (data: IndividualSignupFormValues) => {
-    // Add debug logs to track termsAccepted value
-    console.log("Registration data:", data);
-    console.log("Terms accepted value:", data.termsAccepted);
-    console.log("Terms accepted type:", typeof data.termsAccepted);
-    
+  const onSubmit = async (data: IndividualSignupFormValues) => {
     // Don't proceed if CSRF is still loading or errored out
     if (csrfLoading) {
       toast({
@@ -154,6 +77,7 @@ export default function IndividualSignupForm() {
       return;
     }
     
+    setIsLoading(true);
     try {
       // Define the expected response type
       type RegistrationResponse = {
@@ -163,26 +87,13 @@ export default function IndividualSignupForm() {
         token: string;
       };
       
-      // Add Firebase verification data if available
-      const formDataWithVerification = {
-        ...data,
-        // Ensure termsAccepted is properly passed (kept as-is from form data)
-        termsAccepted: data.termsAccepted, // Explicitly include to ensure it's not lost
-        // Include verification data if we have it
-        firebaseVerification: data.phoneVerified && verificationCredential ? {
-          phoneNumber: verifiedPhoneNumber,
-          verificationId: data.phoneVerificationId,
-          credential: verificationCredential
-        } : undefined
-      };
-      
       // Use CSRF-protected fetch directly
       const response = await fetchWithProtection(
         '/api/v1/auth/register/individual', 
         { 
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formDataWithVerification)
+          body: JSON.stringify(data)
         }
       );
       
@@ -196,9 +107,6 @@ export default function IndividualSignupForm() {
         title: "Account created",
         description: "Your account has been created successfully",
       });
-      
-      // Hide verification modal
-      setShowPhoneVerification(false);
       
       // Store token in localStorage for login persistence
       if (responseData.token) {
@@ -221,99 +129,28 @@ export default function IndividualSignupForm() {
     }
   };
 
-  // Add more verbose logging
-  const [debugLogs, setDebugLogs] = useState<string[]>([]);
-  
-  const addDebugLog = (message: string) => {
-    setDebugLogs(prev => [
-      `[${new Date().toLocaleTimeString()}] ${message}`,
-      ...prev.slice(0, 9)
-    ]);
-  };
-  
-  const onSubmit = async (data: IndividualSignupFormValues) => {
-    addDebugLog(`Form submitted with data: ${JSON.stringify(data, null, 2)}`);
-    addDebugLog(`Terms accepted value type: ${typeof data.termsAccepted}`);
-    addDebugLog(`Terms accepted value: ${data.termsAccepted}`);
-    
-    const isChecked = watch("termsAccepted");
-    addDebugLog(`Checkbox state from direct watch: ${isChecked}`);
-    
-    // Check that terms are accepted
-    if (!data.termsAccepted) {
-      addDebugLog("Terms not accepted, validation should block submission");
-      toast({
-        title: "Terms Required",
-        description: "You must accept the terms and conditions to continue",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setIsLoading(true);
-    
-    // Store form data for later use
-    setFormData(data);
-    
-    // Start the verification process
-    try {
-      // Initiate SMS verification
-      addDebugLog(`Initiating SMS verification for phone: ${data.phone}`);
-      await sendVerificationCode(data.phone);
-      
-      // Show verification dialog
-      setShowPhoneVerification(true);
-    } catch (error) {
-      console.error("Verification initiation error:", error);
-      toast({
-        title: "Verification failed",
-        description: error instanceof Error ? error.message : "There was an error sending verification code to your phone",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-    }
-  };
-
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="firstName">First name</Label>
-          <Input
-            id="firstName"
-            {...register("firstName")}
-            placeholder="John"
-          />
-          {errors.firstName && (
-            <p className="text-xs text-red-500">{errors.firstName.message}</p>
-          )}
-        </div>
+        <FormInput
+          label="First name"
+          {...register("firstName")}
+          error={errors.firstName?.message}
+        />
         
-        <div className="space-y-2">
-          <Label htmlFor="lastName">Last name</Label>
-          <Input
-            id="lastName"
-            {...register("lastName")}
-            placeholder="Doe"
-          />
-          {errors.lastName && (
-            <p className="text-xs text-red-500">{errors.lastName.message}</p>
-          )}
-        </div>
+        <FormInput
+          label="Last name"
+          {...register("lastName")}
+          error={errors.lastName?.message}
+        />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="email">Email address</Label>
-        <Input
-          id="email"
-          type="email"
-          {...register("email")}
-          placeholder="john.doe@example.com"
-        />
-        {errors.email && (
-          <p className="text-xs text-red-500">{errors.email.message}</p>
-        )}
-      </div>
+      <FormInput
+        label="Email address"
+        type="email"
+        {...register("email")}
+        error={errors.email?.message}
+      />
 
       <div className="space-y-1">
         <PasswordInput
@@ -337,116 +174,41 @@ export default function IndividualSignupForm() {
         error={errors.confirmPassword?.message}
       />
 
-      <div className="space-y-2">
-        <Label htmlFor="phone">
-          Phone number <span className="text-destructive">*</span>
-        </Label>
-        <Input
-          id="phone"
-          type="tel"
-          placeholder="+1 (555) 123-4567"
-          {...register("phone")}
-        />
-        {errors.phone && (
-          <p className="text-xs text-red-500 mt-1">{errors.phone.message}</p>
-        )}
-      </div>
-      
-      {/* Phone verification dialog - shows after form submission */}
-      {showPhoneVerification && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-white rounded-lg">
-            <PhoneVerification 
-              onVerificationComplete={handleVerificationComplete}
-              onCancel={() => {
-                setShowPhoneVerification(false);
-                setIsLoading(false);
-              }}
-              initialPhoneNumber={formData?.phone || ""}
-            />
-          </div>
-        </div>
-      )}
+      <FormInput
+        label="Phone number"
+        type="tel"
+        {...register("phone")}
+        error={errors.phone?.message}
+      />
 
-      <div className="space-y-2">
-        <Label htmlFor="address">Address</Label>
-        <Input
-          id="address"
-          {...register("address")}
-          placeholder="123 Main St, Anytown, US"
-        />
-        {errors.address && (
-          <p className="text-xs text-red-500">{errors.address.message}</p>
-        )}
-      </div>
+      <FormInput
+        label="Address"
+        {...register("address")}
+        error={errors.address?.message}
+      />
 
-      <div className="p-3 border rounded-md bg-gray-50">
-        <div className="flex items-start space-x-2">
-          <div className="pt-0.5">
-            <Checkbox
-              id="terms"
-              checked={watch("termsAccepted")}
-              onCheckedChange={(checked) =>
-                setValue("termsAccepted", !!checked, {
-                  shouldValidate: true,
-                  shouldDirty: true,
-                })
-              }
-            />
-          </div>
-          <div>
-            <Label
-              htmlFor="terms"
-              className={`text-sm font-medium ${
-                errors.termsAccepted ? "text-red-500" : "text-gray-700"
-              }`}
-            >
-              I agree to the <Link href="/terms" className="text-[#00796B] hover:text-[#004D40] underline">Terms of Service</Link> and <Link href="/privacy" className="text-[#00796B] hover:text-[#004D40] underline">Privacy Policy</Link>
-            </Label>
-            
-            <input type="hidden" {...register("termsAccepted")} />
-            {errors.termsAccepted && (
-              <p className="text-xs text-red-500 mt-1">
-                {errors.termsAccepted.message}
-              </p>
-            )}
-          </div>
+      <div className="flex items-start">
+        <div className="flex items-center h-5">
+          <Checkbox 
+            id="terms" 
+            onCheckedChange={(checked) => {
+              const checkValue = checked === true;
+              const target = { name: "termsAccepted", value: checkValue };
+              // Use setValue instead of manually creating a change event
+              setValue("termsAccepted", checkValue, { shouldValidate: true });
+            }}
+          />
         </div>
-      </div>
-      
-      {/* Debug output */}
-      <div className="text-xs bg-gray-100 p-3 rounded border border-gray-300 my-4">
-        <h3 className="font-bold mb-1 text-sm">Debug Information:</h3>
-        <div className="space-y-2">
-          <div>
-            <div className="font-semibold">Form State:</div>
-            <div>Terms accepted (watched): <span className="font-mono">{String(watch("termsAccepted"))}</span></div>
-            <div>Terms accepted (type): <span className="font-mono">{typeof watch("termsAccepted")}</span></div>
-            <div>Form is submitting: <span className="font-mono">{String(isSubmitting)}</span></div>
-            <div>Submit attempts: <span className="font-mono">{formSubmitAttempts}</span></div>
-          </div>
-          
-          {formErrors.length > 0 && (
-            <div>
-              <div className="font-semibold text-red-500">Form errors:</div>
-              <ul className="list-disc pl-4 text-red-500">
-                {formErrors.map((error, index) => (
-                  <li key={index}>{error}</li>
-                ))}
-              </ul>
-            </div>
+        <div className="ml-3 text-sm">
+          <label 
+            htmlFor="terms" 
+            className={`${errors.termsAccepted ? "text-red-500" : "text-gray-500"}`}
+          >
+            I agree to the <Link href="/terms" className="text-[#00796B] hover:text-[#004D40]">Terms of Service</Link> and <Link href="/privacy" className="text-[#00796B] hover:text-[#004D40]">Privacy Policy</Link>
+          </label>
+          {errors.termsAccepted && (
+            <p className="text-xs text-red-500 mt-1">{errors.termsAccepted.message}</p>
           )}
-          
-          {debugLogs.length > 0 && (
-            <div>
-              <div className="font-semibold">Event Logs:</div>
-              <pre className="bg-black text-green-400 p-2 rounded text-[9px] mt-1 max-h-[100px] overflow-y-auto">
-                {debugLogs.join('\n')}
-              </pre>
-            </div>
-          )}
-          
-          {/* Debug button removed as requested */}
         </div>
       </div>
 

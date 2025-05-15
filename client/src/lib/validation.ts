@@ -22,8 +22,6 @@ const baseUserSchema = z.object({
     .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character"),
   confirmPassword: z.string().min(1, "Please confirm your password"),
   phone: z.string().min(10, "Please enter a valid phone number"),
-  phoneVerified: z.boolean().optional().default(false),
-  phoneVerificationId: z.string().optional(),
   address: z.string().min(1, "Address is required"),
   termsAccepted: z.boolean()
     .refine(val => val === true, {

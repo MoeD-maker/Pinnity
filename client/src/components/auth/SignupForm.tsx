@@ -2,13 +2,12 @@ import { useState } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import IndividualSignupForm from "./IndividualSignupForm";
-import SimpleSignupForm from "./SimpleSignupForm"; // Import our new simple form
 import BusinessSignupForm from "./BusinessSignupForm";
 import { Building, User } from "lucide-react";
 
 export default function SignupForm() {
   const [userType, setUserType] = useState<"individual" | "business">("individual");
-  
+
   return (
     <div className="space-y-6">
       <div className="mb-6">
