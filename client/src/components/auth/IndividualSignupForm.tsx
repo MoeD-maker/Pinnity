@@ -86,6 +86,9 @@ export default function IndividualSignupForm() {
         token: string;
       };
       
+      // Log submission payload for debugging
+      console.log("SUBMISSION PAYLOAD:", data);
+      
       // Use CSRF-protected fetch directly
       const response = await fetchWithProtection(
         '/api/v1/auth/register/individual', 
@@ -192,7 +195,8 @@ export default function IndividualSignupForm() {
             id="terms"
             checked={watch("termsAccepted") === true}
             onCheckedChange={(checked) => {
-              setValue("termsAccepted", !!checked as any, {
+              // Must be exactly true to satisfy z.literal(true)
+              setValue("termsAccepted", checked === true ? true : undefined, {
                 shouldValidate: true,
                 shouldDirty: true,
               });
