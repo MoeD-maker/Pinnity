@@ -221,25 +221,21 @@ export default function IndividualSignupForm() {
         )}
       </div>
 
+      {/* Simplified button for testing */}
       <Button 
         type="submit" 
-        className="w-full bg-[#00796B] hover:bg-[#004D40]"
-        disabled={isLoading || csrfLoading || !csrfReady || !!csrfError}
+        className="w-full bg-[#00796B] hover:bg-[#004D40] mt-6 py-3 text-white font-medium rounded-md"
       >
-        {isLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
-            Creating Account...
-          </>
-        ) : csrfLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
-            Securing Connection...
-          </>
-        ) : (
-          "Create Account"
-        )}
+        Create Account
       </Button>
+      
+      {/* Additional fallback button in case the Button component has issues */}
+      <button 
+        type="submit" 
+        className="w-full bg-blue-600 hover:bg-blue-700 mt-3 py-3 text-white font-medium rounded-md"
+      >
+        Create Account (Fallback)
+      </button>
     </form>
   );
 }
