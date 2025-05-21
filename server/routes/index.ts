@@ -58,6 +58,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add test routes for debugging Terms of Service validation
   addTestRoutes(app);
   
+  // Add CSRF token generation endpoint
+  app.get('/api/csrf-token', (req, res) => {
+    // This will generate a new token using the csurf middleware
+    const token = req.csrfToken();
+    console.log('Generated new CSRF token for client');
+    return res.json({ csrfToken: token });
+  });
+  
   // Register direct bypass router for admin deal creation
   // This route bypasses Vite middleware by using a custom path
   app.use('/api/direct/admin', bypassRouter);
