@@ -303,8 +303,8 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
           <Checkbox 
             id="business-terms" 
             onCheckedChange={(checked) => {
-              // Must be exactly true to satisfy z.literal(true)
-              setValue("termsAccepted", checked === true ? true : undefined, { 
+              // For boolean validation with strict true check
+              setValue("termsAccepted", checked === true, { 
                 shouldValidate: true,
                 shouldDirty: true
               });
