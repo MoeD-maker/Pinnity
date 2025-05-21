@@ -18,7 +18,10 @@ export default function IndividualSignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, feedback: "Password is required" });
   const { toast } = useToast();
-  const { isLoading: csrfLoading, isReady: csrfReady, error: csrfError, fetchWithProtection } = useCsrfProtection();
+  const { isLoading: csrfLoading, isReady: csrfReady, error: csrfError, fetchWithProtection, refreshCsrfToken } = useCsrfProtection(true, {
+    onError: (err) => console.error("CSRF fetch error:", err),
+    refreshInterval: 300000 // Refresh token every 5 minutes
+  });
   
   const {
     register,
@@ -76,12 +79,26 @@ export default function IndividualSignupForm() {
     
     if (csrfError) {
       console.error("CSRF ERROR:", csrfError);
-      toast({
-        title: "Security Error",
-        description: "Unable to secure your request. Please refresh the page and try again.",
-        variant: "destructive",
-      });
-      return;
+      // Try to refresh the token before giving up
+      try {
+        await refreshCsrfToken();
+        console.log("CSRF token refreshed after error");
+      } catch (err) {
+        toast({
+          title: "Security Error",
+          description: "Unable to secure your request. Please refresh the page and try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
+    // Always refresh the token before submission to ensure it's not expired
+    try {
+      await refreshCsrfToken();
+      console.log("CSRF token refreshed before submission");
+    } catch (error) {
+      console.error("Failed to refresh CSRF token:", error);
     }
     
     if (!csrfReady) {
