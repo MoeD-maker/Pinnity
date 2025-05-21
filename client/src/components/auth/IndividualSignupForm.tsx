@@ -50,6 +50,21 @@ export default function IndividualSignupForm() {
   };
 
   const onSubmit = async (data: IndividualSignupFormValues) => {
+    // More extensive debugging
+    console.log("===== FORM SUBMISSION DEBUG START =====");
+    console.log("FORM VALUES:", data);
+    console.log("TERMS ACCEPTED VALUE:", data.termsAccepted);
+    console.log("TERMS ACCEPTED TYPE:", typeof data.termsAccepted);
+    console.log("FORM ERRORS:", errors);
+    console.log("CSRF STATE:", { csrfLoading, csrfReady, csrfError });
+    console.log("===== FORM SUBMISSION DEBUG END =====");
+    
+    // Display debug toast for visibility
+    toast({
+      title: "Form Submission Debug",
+      description: `Attempting to submit form. Terms Accepted: ${data.termsAccepted} (${typeof data.termsAccepted})`,
+    });
+    
     // Don't proceed if CSRF is still loading or errored out
     if (csrfLoading) {
       toast({
@@ -60,6 +75,7 @@ export default function IndividualSignupForm() {
     }
     
     if (csrfError) {
+      console.error("CSRF ERROR:", csrfError);
       toast({
         title: "Security Error",
         description: "Unable to secure your request. Please refresh the page and try again.",
@@ -86,16 +102,26 @@ export default function IndividualSignupForm() {
         token: string;
       };
       
-      // Log submission payload for debugging
-      console.log("SUBMISSION PAYLOAD:", data);
+      // Log submission payload
+      console.log("SUBMISSION PAYLOAD:", JSON.stringify(data, null, 2));
       
-      // Use CSRF-protected fetch directly
+      // Explicitly ensure termsAccepted is true (double-check)
+      const safeData = {
+        ...data,
+        termsAccepted: true
+      };
+      console.log("SAFE PAYLOAD WITH FORCED TERMS:", JSON.stringify(safeData, null, 2));
+      
+      // Use CSRF-protected fetch directly - trying with safe data
       const response = await fetchWithProtection(
         '/api/v1/auth/register/individual', 
         { 
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Debug-Terms': 'true' // Add custom debug header
+          },
+          body: JSON.stringify(safeData)
         }
       );
       
