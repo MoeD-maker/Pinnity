@@ -84,6 +84,13 @@ const csrfProtection = csurf({
     maxAge: Math.floor(csrfCookieConfig.maxAge ? csrfCookieConfig.maxAge / 1000 : 3600),
   },
   ignoreMethods: ['GET', 'HEAD', 'OPTIONS'], // Only protect state-changing methods
+  value: (req) => {
+    // Check multiple locations for the CSRF token to ensure compatibility
+    return req.headers['csrf-token'] || 
+           req.headers['x-csrf-token'] || 
+           req.headers._csrf ||
+           (req.body && req.body._csrf);
+  }
 });
 
 // Export CSRF protection middleware for use in route files

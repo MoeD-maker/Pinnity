@@ -147,7 +147,11 @@ export async function fetchWithCSRF(url: string, options: RequestInit = {}): Pro
   }
 
   if (csrfToken) {
+    // Set both header formats to ensure compatibility
     headers.set('CSRF-Token', csrfToken);
+    headers.set('X-CSRF-Token', csrfToken);
+    // Add the token as _csrf for compatibility with csurf's default configuration
+    headers.set('_csrf', csrfToken);
   }
   
   // Add X-Requested-With header to identify AJAX requests
@@ -179,8 +183,10 @@ export async function fetchWithCSRF(url: string, options: RequestInit = {}): Pro
       
       // If token is invalid or expired, try to get a new one and retry the request
       if (errorData.error === 'invalid_csrf_token' || 
+          errorData.code === 'csrf_token_invalid' ||
           errorData.message?.includes('CSRF') || 
-          errorData.message?.includes('csrf')) {
+          errorData.message?.includes('csrf') ||
+          errorData.message?.includes('security validation')) {
             
         console.log('CSRF token expired or invalid. Fetching new token...');
         csrfToken = null;
