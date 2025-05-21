@@ -6,6 +6,7 @@ import { userRoutes } from './user.routes.fixed';
 import { dealRoutes } from './deal.routes.fixed';
 import { businessRoutes } from './business.routes.fixed';
 import { bypassRouter } from '../admin-api-bypass';
+import { addTestRoutes } from '../test-terms';
 import { Request, Response, NextFunction } from "express";
 import { 
   deprecationMiddleware, 
@@ -53,6 +54,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   userRoutes(app);
   dealRoutes(app);
   businessRoutes(app);
+  
+  // Add test routes for debugging Terms of Service validation
+  addTestRoutes(app);
   
   // Register direct bypass router for admin deal creation
   // This route bypasses Vite middleware by using a custom path

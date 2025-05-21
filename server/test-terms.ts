@@ -1,7 +1,5 @@
 // Simple test file to troubleshoot Terms of Service acceptance
 import express from 'express';
-import cors from 'cors';
-import bodyParser from 'body-parser';
 
 export function addTestRoutes(app: express.Express) {
   console.log("Test terms routes have been added!");

@@ -386,6 +386,11 @@ function Router() {
     if (path === '/test-page') return <TestPage />;
     if (path === '/simple-explore') return <SimpleExplorePage />;
     if (path === '/test-login') return <TestLogin />;
+    if (path === '/test-terms') return (
+      <Suspense fallback={<LoadingFallback />}>
+        {React.createElement(require('./pages/test-terms').default)}
+      </Suspense>
+    );
     if (path === '/form-validation-demo') return (
       <Suspense fallback={<LoadingFallback />}>
         <FormValidationDemo />
