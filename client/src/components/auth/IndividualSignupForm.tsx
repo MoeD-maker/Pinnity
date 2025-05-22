@@ -175,7 +175,12 @@ export default function IndividualSignupForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form 
+      onSubmit={(e) => {
+        console.log("DIRECT FORM SUBMIT EVENT TRIGGERED");
+        return handleSubmit(onSubmit)(e);
+      }} 
+      className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormInput
           label="First name"
@@ -264,10 +269,11 @@ export default function IndividualSignupForm() {
         )}
       </div>
 
-      {/* Clean, single submit button */}
+      {/* Clean, single submit button with proper positioning */}
       <button 
         type="submit" 
         className="w-full bg-[#00796B] hover:bg-[#004D40] mt-6 py-3 text-white font-medium rounded-md"
+        onClick={() => console.log("Button clicked directly")}
       >
         Create Account
       </button>
