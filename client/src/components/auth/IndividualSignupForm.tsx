@@ -264,20 +264,12 @@ export default function IndividualSignupForm() {
         )}
       </div>
 
-      {/* Simplified button for testing */}
-      <Button 
+      {/* Clean, single submit button */}
+      <button 
         type="submit" 
         className="w-full bg-[#00796B] hover:bg-[#004D40] mt-6 py-3 text-white font-medium rounded-md"
       >
         Create Account
-      </Button>
-      
-      {/* Additional fallback button in case the Button component has issues */}
-      <button 
-        type="submit" 
-        className="w-full bg-blue-600 hover:bg-blue-700 mt-3 py-3 text-white font-medium rounded-md"
-      >
-        Create Account (Fallback)
       </button>
     </form>
   );
