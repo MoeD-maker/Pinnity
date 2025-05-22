@@ -61,9 +61,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add CSRF token generation endpoint
   app.get('/api/csrf-token', (req, res) => {
     // This will generate a new token using the csurf middleware
-    const token = req.csrfToken();
-    console.log('Generated new CSRF token for client');
-    return res.json({ csrfToken: token });
+    try {
+      const token = req.csrfToken();
+      console.log('Generated new CSRF token for client');
+      return res.json({ csrfToken: token });
+    } catch (error) {
+      console.error('Error generating CSRF token:', error);
+      return res.status(500).json({ 
+        error: 'Failed to generate CSRF token',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+  
+  // Simplified test route without CSRF protection
+  app.post('/api/bypass-test', (req, res) => {
+    console.log('BYPASS TEST ROUTE - NO CSRF PROTECTION');
+    console.log('Body:', req.body);
+    return res.json({
+      message: 'Test successful - CSRF bypassed',
+      receivedData: req.body,
+      success: true
+    });
   });
   
   // Register direct bypass router for admin deal creation
