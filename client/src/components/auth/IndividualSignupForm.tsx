@@ -122,14 +122,10 @@ export default function IndividualSignupForm() {
       // Log submission payload
       console.log("SUBMISSION PAYLOAD:", JSON.stringify(data, null, 2));
       
-      // Explicitly ensure termsAccepted is true (double-check)
-      const safeData = {
-        ...data,
-        termsAccepted: true
-      };
-      console.log("SAFE PAYLOAD WITH FORCED TERMS:", JSON.stringify(safeData, null, 2));
+      // Use the data directly from the form without overriding
+      console.log("Form data termsAccepted value:", data.termsAccepted);
       
-      // Use CSRF-protected fetch directly - trying with safe data
+      // Use CSRF-protected fetch directly with the actual form data
       const response = await fetchWithProtection(
         '/api/v1/auth/register/individual', 
         { 
@@ -138,7 +134,7 @@ export default function IndividualSignupForm() {
             'Content-Type': 'application/json',
             'X-Debug-Terms': 'true' // Add custom debug header
           },
-          body: JSON.stringify(safeData)
+          body: JSON.stringify(data)
         }
       );
       
