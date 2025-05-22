@@ -174,8 +174,19 @@ export default function IndividualSignupForm() {
     }
   };
 
+  // Add direct debugging for form submission
+  console.log("RENDER: Form is being rendered", { watch: watch() });
+  
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form 
+      onSubmit={(e) => {
+        console.log("RAW FORM SUBMIT EVENT", e);
+        return handleSubmit((data) => {
+          console.log("FORM VALIDATED SUCCESSFULLY", data);
+          return onSubmit(data);
+        })(e);
+      }} 
+      className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormInput
           label="First name"
@@ -266,6 +277,7 @@ export default function IndividualSignupForm() {
       <button
         type="submit"
         className="w-full bg-[#00796B] hover:bg-[#004D40] mt-6 py-3 text-white font-medium rounded-md"
+        onClick={() => console.log("Direct button click")}
       >
         Create Account
       </button>
