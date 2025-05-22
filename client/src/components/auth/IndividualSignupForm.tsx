@@ -53,6 +53,10 @@ export default function IndividualSignupForm() {
   };
 
   const onSubmit = async (data: IndividualSignupFormValues) => {
+    // Clear debug logging as requested
+    console.log("🚀 onSubmit triggered. Full data:", data);
+    console.log("Checkbox value at submit:", data.termsAccepted);
+    
     // More extensive debugging
     console.log("===== FORM SUBMISSION DEBUG START =====");
     console.log("FORM VALUES:", data);
