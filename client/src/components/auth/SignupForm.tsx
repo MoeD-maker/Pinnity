@@ -54,8 +54,8 @@ export default function SignupForm() {
       </div>
 
       {userType === "individual" ? (
-        // Use our simple form to test the Terms of Service checkbox
-        <SimpleSignupForm />
+        // Using the standard form now that it's fixed
+        <IndividualSignupForm />
       ) : (
         <BusinessSignupForm setUserType={setUserType} />
       )}

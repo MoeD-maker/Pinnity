@@ -175,12 +175,7 @@ export default function IndividualSignupForm() {
   };
 
   return (
-    <form 
-      onSubmit={(e) => {
-        console.log("DIRECT FORM SUBMIT EVENT TRIGGERED");
-        return handleSubmit(onSubmit)(e);
-      }} 
-      className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormInput
           label="First name"
@@ -241,14 +236,13 @@ export default function IndividualSignupForm() {
         <div className="flex items-center space-x-2">
           <Checkbox
             id="terms"
-            checked={watch("termsAccepted") === true}
-            onCheckedChange={(checked) => {
-              // For boolean validation with strict true check
+            checked={watch("termsAccepted")}
+            onCheckedChange={(checked) =>
               setValue("termsAccepted", !!checked, {
                 shouldValidate: true,
                 shouldDirty: true,
-              });
-            }}
+              })
+            }
           />
           <label
             htmlFor="terms"
@@ -263,17 +257,15 @@ export default function IndividualSignupForm() {
         <input type="hidden" {...register("termsAccepted")} />
 
         {errors.termsAccepted && (
-          <p className="text-xs text-red-500">
-            {errors.termsAccepted.message}
+          <p className="text-xs text-red-500 mt-1">
+            {errors.termsAccepted.message || "You must accept the Terms and Conditions"}
           </p>
         )}
       </div>
 
-      {/* Clean, single submit button with proper positioning */}
-      <button 
-        type="submit" 
+      <button
+        type="submit"
         className="w-full bg-[#00796B] hover:bg-[#004D40] mt-6 py-3 text-white font-medium rounded-md"
-        onClick={() => console.log("Button clicked directly")}
       >
         Create Account
       </button>

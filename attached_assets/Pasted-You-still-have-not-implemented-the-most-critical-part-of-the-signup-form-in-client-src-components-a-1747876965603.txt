@@ -1,0 +1,71 @@
+You still have not implemented the most critical part of the signup form in `client/src/components/auth/IndividualSignupForm.tsx`.
+
+I have asked multiple times, and this is now the root cause of why the form is broken and why the error about "You must accept the Terms and Conditions" still shows up — the form NEVER SUBMITS.
+
+---
+
+### ❌ THE PROBLEM
+
+1. There is **no `<form onSubmit={handleSubmit(onSubmit)}>` element** in the component.
+2. There is **no closing `</form>` tag**.
+3. The **submit button is NOT inside a form**, so it does NOTHING.
+4. As a result, **onSubmit() never runs**, validation doesn’t trigger, and the error is always visible.
+
+---
+
+### ✅ DO EXACTLY THIS
+
+Wrap the form fields in this full block:
+
+```tsx
+<form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+  {/* All input fields and checkbox go here */}
+
+  <div className="flex items-center space-x-2">
+    <Checkbox
+      id="terms"
+      checked={watch("termsAccepted")}
+      onCheckedChange={(checked) =>
+        setValue("termsAccepted", !!checked, {
+          shouldValidate: true,
+          shouldDirty: true,
+        })
+      }
+    />
+    <Label htmlFor="terms" className="text-sm font-medium leading-none">
+      I agree to the Terms of Service
+    </Label>
+  </div>
+
+  <input type="hidden" {...register("termsAccepted")} />
+
+  {errors.termsAccepted && (
+    <p className="text-xs text-red-500 mt-1">
+      {errors.termsAccepted.message || "You must accept the Terms and Conditions"}
+    </p>
+  )}
+
+  <button
+    type="submit"
+    className="btn btn-primary w-full"
+  >
+    Create Account
+  </button>
+</form>
+🚫 DO NOT
+Do not put the button outside the form
+
+Do not use multiple forms or partial wrappers
+
+Do not rely on div wrappers or proxy clicks
+
+🎯 What I Expect
+The form wraps all inputs and the submit button
+
+Clicking “Create Account” triggers onSubmit
+
+The console logs appear
+
+Validation runs
+
+The “Terms” error only shows if unchecked
