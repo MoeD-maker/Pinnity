@@ -235,7 +235,7 @@ export default function IndividualSignupForm() {
             checked={watch("termsAccepted") === true}
             onCheckedChange={(checked) => {
               // For boolean validation with strict true check
-              setValue("termsAccepted", checked === true, {
+              setValue("termsAccepted", !!checked, {
                 shouldValidate: true,
                 shouldDirty: true,
               });
