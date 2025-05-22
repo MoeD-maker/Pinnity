@@ -178,15 +178,7 @@ export default function IndividualSignupForm() {
   console.log("RENDER: Form is being rendered", { watch: watch() });
   
   return (
-    <form 
-      onSubmit={(e) => {
-        console.log("RAW FORM SUBMIT EVENT", e);
-        return handleSubmit((data) => {
-          console.log("FORM VALIDATED SUCCESSFULLY", data);
-          return onSubmit(data);
-        })(e);
-      }} 
-      className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormInput
           label="First name"
@@ -243,43 +235,44 @@ export default function IndividualSignupForm() {
         error={errors.address?.message}
       />
 
-      <div className="space-y-2">
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="terms"
-            checked={watch("termsAccepted")}
-            onCheckedChange={(checked) =>
-              setValue("termsAccepted", !!checked, {
-                shouldValidate: true,
-                shouldDirty: true,
-              })
-            }
-          />
-          <label
-            htmlFor="terms"
-            className={`text-sm font-medium ${
-              errors.termsAccepted ? "text-red-500" : "text-gray-700"
-            }`}
-          >
-            I agree to the <Link href="/terms" className="text-[#00796B] hover:text-[#004D40]">Terms of Service</Link> and <Link href="/privacy" className="text-[#00796B] hover:text-[#004D40]">Privacy Policy</Link>
-          </label>
-        </div>
-        
-        <input type="hidden" {...register("termsAccepted")} />
-
-        {errors.termsAccepted && (
-          <p className="text-xs text-red-500 mt-1">
-            {errors.termsAccepted.message || "You must accept the Terms and Conditions"}
-          </p>
-        )}
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="terms"
+          checked={watch("termsAccepted")}
+          onCheckedChange={(checked) =>
+            setValue("termsAccepted", !!checked, {
+              shouldValidate: true,
+              shouldDirty: true,
+            })
+          }
+        />
+        <label
+          htmlFor="terms"
+          className="text-sm font-medium leading-none"
+        >
+          I agree to the <Link href="/terms" className="text-[#00796B] hover:text-[#004D40]">Terms of Service</Link> and <Link href="/privacy" className="text-[#00796B] hover:text-[#004D40]">Privacy Policy</Link>
+        </label>
       </div>
+
+      <input type="hidden" {...register("termsAccepted")} />
+
+      {errors.termsAccepted && (
+        <p className="text-xs text-red-500 mt-1">
+          {errors.termsAccepted.message || "You must accept the Terms and Conditions"}
+        </p>
+      )}
 
       <button
         type="submit"
         className="w-full bg-[#00796B] hover:bg-[#004D40] mt-6 py-3 text-white font-medium rounded-md"
-        onClick={() => console.log("Direct button click")}
       >
-        Create Account
+        {isLoading ? (
+          <div className="flex items-center justify-center">
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating...
+          </div>
+        ) : (
+          "Create Account"
+        )}
       </button>
     </form>
   );
