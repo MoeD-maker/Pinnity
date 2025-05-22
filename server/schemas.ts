@@ -37,7 +37,7 @@ export const authSchemas = {
       confirmPassword: z.string().min(1, "Please confirm your password"),
       phone: z.string().min(1, { message: "Phone number is required" }),
       address: z.string().min(1, { message: "Address is required" }),
-      termsAccepted: z.literal(true, {
+      termsAccepted: z.union([z.literal(true), z.literal('true')], {
         errorMap: () => ({ message: "You must accept the terms and conditions" }),
       })
     }).refine((data) => data.password === data.confirmPassword, {
