@@ -2,7 +2,7 @@ import { useState } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import IndividualSignupForm from "./IndividualSignupForm";
-import FocusedIndividualSignupForm from "./FocusedIndividualSignupForm";
+import SimpleSignupForm from "./SimpleSignupForm";
 import BusinessSignupForm from "./BusinessSignupForm";
 import { Building, User } from "lucide-react";
 
@@ -54,8 +54,8 @@ export default function SignupForm() {
       </div>
 
       {userType === "individual" ? (
-        // Use our new focused form for testing
-        <FocusedIndividualSignupForm />
+        // Use our simple form to test the Terms of Service checkbox
+        <SimpleSignupForm />
       ) : (
         <BusinessSignupForm setUserType={setUserType} />
       )}
