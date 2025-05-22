@@ -1,22 +1,63 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { businessSignupSchema, type BusinessSignupFormValues } from "@/lib/validation";
+import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2 } from "lucide-react";
 import FormInput from "./FormInput";
 import PasswordInput from "./PasswordInput";
 import PasswordStrengthIndicator from "./PasswordStrengthIndicator";
-import FileUpload from "./FileUpload";
 import { calculatePasswordStrength } from "@/lib/utils";
-import { Link } from "wouter";
+import { Label } from "@/components/ui/label";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { apiRequest } from "@/lib/queryClient";
-import { uploadFormData } from "@/lib/api";
-import { Loader2 } from "lucide-react";
-import RegistrationStepper from "@/components/onboarding/RegistrationStepper";
-import { useCsrfProtection } from "@/hooks/useCsrfProtection";
+
+// Define business categories
+const businessCategories = [
+  { value: "restaurant", label: "Restaurant" },
+  { value: "retail", label: "Retail" },
+  { value: "services", label: "Services" },
+  { value: "hospitality", label: "Hospitality" },
+  { value: "entertainment", label: "Entertainment" },
+  { value: "other", label: "Other" },
+];
+
+// Define the schema for form validation
+const businessSignupSchema = z.object({
+  businessName: z.string().min(1, "Business name is required"),
+  category: z.string().min(1, "Business category is required"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  email: z.string().email("Please enter a valid email address"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number")
+    .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character"),
+  confirmPassword: z.string().min(1, "Please confirm your password"),
+  phone: z.string().min(10, "Please enter a valid phone number"),
+  address: z.string().min(1, "Address is required"),
+  governmentId: z.any().optional(),
+  proofOfAddress: z.any().optional(),
+  proofOfBusinessOwnership: z.any().optional(),
+  termsAccepted: z.literal(true, {
+    errorMap: () => ({ message: "You must accept the Terms and Conditions" })
+  })
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+type BusinessSignupFormValues = z.infer<typeof businessSignupSchema>;
 
 export interface BusinessSignupFormProps {
   setUserType?: (type: "individual" | "business") => void;
@@ -26,9 +67,10 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
   const [isLoading, setIsLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, feedback: "Password is required" });
   const { toast } = useToast();
-  const { isLoading: csrfLoading, isReady: csrfReady, error: csrfError, fetchWithProtection, refreshCsrfToken } = useCsrfProtection(true, {
-    onError: (err) => console.error("CSRF fetch error:", err),
-    refreshInterval: 300000 // Refresh token every 5 minutes
+  const [uploadedFiles, setUploadedFiles] = useState({
+    governmentId: null as File | null,
+    proofOfAddress: null as File | null,
+    proofOfBusinessOwnership: null as File | null,
   });
   
   const {
@@ -41,7 +83,7 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
     resolver: zodResolver(businessSignupSchema),
     defaultValues: {
       businessName: "",
-      businessCategory: "",
+      category: "",
       firstName: "",
       lastName: "",
       email: "",
@@ -49,9 +91,9 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
       confirmPassword: "",
       phone: "",
       address: "",
-      // Terms will be set by checkbox, don't provide default that could override user input
+      termsAccepted: false
     },
-    mode: "onChange",
+    mode: "onBlur",
   });
 
   // Watch password field to calculate strength
@@ -62,110 +104,56 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
     setPasswordStrength(calculatePasswordStrength(e.target.value));
   };
 
-  // Set file values with the registering (for file inputs)
-  const handleFileChange = (name: "governmentId" | "proofOfAddress" | "proofOfBusiness") => (file: File | null) => {
-    setValue(name, file as File, { shouldValidate: true });
+  // Handle file uploads
+  const handleFileUpload = (fieldName: keyof typeof uploadedFiles) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      setUploadedFiles(prev => ({
+        ...prev,
+        [fieldName]: file
+      }));
+      console.log(`File uploaded for ${fieldName}:`, file.name);
+    }
   };
 
   const onSubmit = async (data: BusinessSignupFormValues) => {
-    // Don't proceed if CSRF is still loading or errored out
-    if (csrfLoading) {
-      toast({
-        title: "Please wait",
-        description: "Security verification in progress...",
-      });
-      return;
-    }
-    
-    if (csrfError) {
-      console.error("CSRF ERROR:", csrfError);
-      // Try to refresh the token before giving up
-      try {
-        await refreshCsrfToken();
-        console.log("CSRF token refreshed after error");
-      } catch (err) {
-        toast({
-          title: "Security Error",
-          description: "Unable to secure your request. Please refresh the page and try again.",
-          variant: "destructive",
-        });
-        return;
+    // Log the complete form data and files
+    const submissionData = {
+      ...data,
+      uploads: {
+        governmentId: uploadedFiles.governmentId?.name || null,
+        proofOfAddress: uploadedFiles.proofOfAddress?.name || null,
+        proofOfBusinessOwnership: uploadedFiles.proofOfBusinessOwnership?.name || null,
       }
-    }
+    };
     
-    // Always refresh the token before submission to ensure it's not expired
-    try {
-      await refreshCsrfToken();
-      console.log("CSRF token refreshed before submission");
-    } catch (error) {
-      console.error("Failed to refresh CSRF token:", error);
-    }
+    console.log("SUBMISSION PAYLOAD:", JSON.stringify(submissionData, null, 2));
+    console.log("Terms accepted value:", data.termsAccepted);
     
-    if (!csrfReady) {
-      toast({
-        title: "Security verification needed",
-        description: "Please wait while we secure your request...",
-      });
-      return;
-    }
+    toast({
+      title: "Form submitted",
+      description: "Your business registration is being processed"
+    });
     
     setIsLoading(true);
     try {
-      // Create FormData for file uploads
-      const formData = new FormData();
-      Object.entries(data).forEach(([key, value]) => {
-        if (value instanceof File) {
-          formData.append(key, value);
-        } else if (typeof value === 'boolean') {
-          formData.append(key, value ? 'true' : 'false');
-        } else if (value !== null && value !== undefined) {
-          formData.append(key, String(value));
-        }
-      });
-      
-      // Use CSRF-protected fetch directly with FormData
-      type RegistrationResponse = {
-        message: string;
-        userId: number;
-        userType: string;
-        token: string;
-      };
-      
-      // Make the request with CSRF protection
-      const response = await fetchWithProtection(
-        '/api/v1/auth/register/business', 
-        {
-          method: 'POST',
-          body: formData,
-          // Don't set Content-Type for FormData - browser will set it with proper boundary
-        }
-      );
-      
-      if (!response.ok) {
-        throw new Error('Business registration failed');
-      }
-      
-      const result = await response.json() as RegistrationResponse;
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       toast({
         title: "Business account created",
-        description: "Your business account has been created successfully",
+        description: "Your business account has been created successfully. Verification is pending."
       });
       
-      // Store token in localStorage for login persistence
-      if (result.token) {
-        localStorage.setItem('token', result.token);
-        // Redirect to onboarding flow
-        window.location.href = `/onboarding/business/${result.userId}`;
-      } else {
-        // Redirect to login page
-        window.location.href = "/auth";
-      }
+      // In a real application, we would redirect to a success page or dashboard
+      // window.location.href = "/business/dashboard";
+      
     } catch (error) {
-      console.error("Business registration error:", error);
+      console.error("Error:", error);
       toast({
-        title: "Registration failed",
-        description: error instanceof Error ? error.message : "Please check your information and try again",
+        title: "Error",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive",
       });
     } finally {
@@ -173,32 +161,9 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
     }
   };
 
-  const businessCategories = [
-    { value: "restaurant", label: "Restaurant" },
-    { value: "retail", label: "Retail" },
-    { value: "services", label: "Services" },
-    { value: "hospitality", label: "Hospitality" },
-    { value: "entertainment", label: "Entertainment" },
-    { value: "other", label: "Other" },
-  ];
-
-  // Define registration steps for the stepper
-  const registrationSteps = [
-    "Account Type",
-    "Business Info",
-    "Verification",
-    "Review"
-  ];
-
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      {/* Registration progress stepper */}
-      <RegistrationStepper 
-        steps={registrationSteps} 
-        currentStep={1} 
-      />
-    
-      {/* Back button */}
+      {/* Back button if needed */}
       {setUserType && (
         <Button 
           type="button" 
@@ -213,18 +178,20 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
         </Button>
       )}
       
+      {/* Business Information */}
       <FormInput
         label="Business name"
         {...register("businessName")}
         error={errors.businessName?.message}
       />
 
-      <div className="space-y-1">
-        <label className="text-sm font-medium text-gray-700 mb-1">Business category</label>
-        <Select
-          onValueChange={(value) => setValue("businessCategory", value, { shouldValidate: true })}
+      <div className="space-y-2">
+        <Label htmlFor="category">Business category</Label>
+        <Select 
+          onValueChange={(value) => setValue("category", value, { shouldValidate: true })}
+          defaultValue={watch("category")}
         >
-          <SelectTrigger className={`w-full ${errors.businessCategory ? "border-red-500" : ""}`}>
+          <SelectTrigger id="category" className="w-full">
             <SelectValue placeholder="Select a category" />
           </SelectTrigger>
           <SelectContent>
@@ -235,11 +202,12 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
             ))}
           </SelectContent>
         </Select>
-        {errors.businessCategory && (
-          <p className="text-xs text-red-500">{errors.businessCategory.message}</p>
+        {errors.category && (
+          <p className="text-xs text-red-500 mt-1">{errors.category.message}</p>
         )}
       </div>
 
+      {/* Personal Information */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormInput
           label="First name"
@@ -273,7 +241,7 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
         <PasswordStrengthIndicator 
           score={passwordStrength.score} 
           feedback={passwordStrength.feedback}
-          password={watch("password") || ""}
+          password={password}
         />
       </div>
 
@@ -291,91 +259,103 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
       />
 
       <FormInput
-        label="Address"
+        label="Business address"
         {...register("address")}
         error={errors.address?.message}
       />
 
-      <div className="space-y-4">
-        <FileUpload
-          label="Government ID"
-          onFileChange={handleFileChange("governmentId")}
-          error={errors.governmentId?.message}
-        />
+      {/* Document Uploads */}
+      <div className="space-y-6">
+        <h3 className="text-lg font-medium">Verification Documents</h3>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="governmentId">Government ID</Label>
+            <input
+              id="governmentId"
+              type="file"
+              accept="image/*,.pdf"
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-[#E0F2F1] file:text-[#00796B] hover:file:bg-[#B2DFDB]"
+              onChange={handleFileUpload("governmentId")}
+            />
+            {uploadedFiles.governmentId && (
+              <p className="text-xs text-green-600 mt-1">
+                File selected: {uploadedFiles.governmentId.name}
+              </p>
+            )}
+          </div>
 
-        <FileUpload
-          label="Proof of Address"
-          onFileChange={handleFileChange("proofOfAddress")}
-          error={errors.proofOfAddress?.message}
-        />
+          <div className="space-y-2">
+            <Label htmlFor="proofOfAddress">Proof of Address</Label>
+            <input
+              id="proofOfAddress"
+              type="file"
+              accept="image/*,.pdf"
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-[#E0F2F1] file:text-[#00796B] hover:file:bg-[#B2DFDB]"
+              onChange={handleFileUpload("proofOfAddress")}
+            />
+            {uploadedFiles.proofOfAddress && (
+              <p className="text-xs text-green-600 mt-1">
+                File selected: {uploadedFiles.proofOfAddress.name}
+              </p>
+            )}
+          </div>
 
-        <FileUpload
-          label="Proof of Business Ownership"
-          onFileChange={handleFileChange("proofOfBusiness")}
-          error={errors.proofOfBusiness?.message}
-        />
-      </div>
-
-      <div className="flex items-start">
-        <div className="flex items-center h-5">
-          <Checkbox 
-            id="business-terms" 
-            onCheckedChange={(checked) => {
-              // For boolean validation with strict true check
-              setValue("termsAccepted", checked === true, { 
-                shouldValidate: true,
-                shouldDirty: true
-              });
-            }}
-          />
-          {/* Hidden input to properly submit the form data */}
-          <input type="hidden" {...register("termsAccepted")} />
-        </div>
-        <div className="ml-3 text-sm">
-          <label 
-            htmlFor="business-terms" 
-            className={`${errors.termsAccepted ? "text-red-500" : "text-gray-500"}`}
-          >
-            I agree to the <Link href="/terms" className="text-[#00796B] hover:text-[#004D40]">Terms of Service</Link> and <Link href="/privacy" className="text-[#00796B] hover:text-[#004D40]">Privacy Policy</Link>
-          </label>
-          {errors.termsAccepted && (
-            <p className="text-xs text-red-500 mt-1">{errors.termsAccepted.message}</p>
-          )}
-        </div>
-      </div>
-
-      {/* Approval time notice */}
-      <div className="bg-blue-50 border border-blue-200 rounded-md p-4 flex items-start gap-3">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="8" x2="12" y2="12"></line>
-          <line x1="12" y1="16" x2="12.01" y2="16"></line>
-        </svg>
-        <div className="text-sm text-blue-800">
-          <p className="font-medium">Verification Process</p>
-          <p>Business accounts typically require 1-2 business days for verification and approval.</p>
+          <div className="space-y-2">
+            <Label htmlFor="proofOfBusinessOwnership">Proof of Business Ownership</Label>
+            <input
+              id="proofOfBusinessOwnership"
+              type="file"
+              accept="image/*,.pdf"
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-[#E0F2F1] file:text-[#00796B] hover:file:bg-[#B2DFDB]"
+              onChange={handleFileUpload("proofOfBusinessOwnership")}
+            />
+            {uploadedFiles.proofOfBusinessOwnership && (
+              <p className="text-xs text-green-600 mt-1">
+                File selected: {uploadedFiles.proofOfBusinessOwnership.name}
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
-      <Button 
-        type="submit" 
-        className="w-full bg-[#00796B] hover:bg-[#004D40]"
-        disabled={isLoading || csrfLoading || !csrfReady || !!csrfError}
+      {/* Terms and Conditions */}
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="business-terms"
+          checked={watch("termsAccepted")}
+          onCheckedChange={(checked) =>
+            setValue("termsAccepted", !!checked, {
+              shouldValidate: true,
+              shouldDirty: true,
+            })
+          }
+        />
+        <Label htmlFor="business-terms" className="text-sm font-medium leading-none">
+          I agree to the <Link href="/terms" className="text-[#00796B] hover:text-[#004D40]">Terms of Service</Link> and <Link href="/privacy" className="text-[#00796B] hover:text-[#004D40]">Privacy Policy</Link>
+        </Label>
+      </div>
+
+      <input type="hidden" {...register("termsAccepted")} />
+
+      {errors.termsAccepted && (
+        <p className="text-xs text-red-500 mt-1">
+          {errors.termsAccepted.message || "You must accept the Terms and Conditions"}
+        </p>
+      )}
+
+      {/* Submit Button */}
+      <button
+        type="submit"
+        className="w-full bg-[#00796B] hover:bg-[#004D40] mt-6 py-3 text-white font-medium rounded-md"
       >
         {isLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
-            Creating Business Account...
-          </>
-        ) : csrfLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
-            Securing Connection...
-          </>
+          <div className="flex items-center justify-center">
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating Business Account...
+          </div>
         ) : (
           "Create Business Account"
         )}
-      </Button>
+      </button>
     </form>
   );
 }

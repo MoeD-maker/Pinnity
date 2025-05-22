@@ -1,0 +1,73 @@
+Both of my signup forms — `IndividualSignupForm.tsx` and `BusinessSignupForm.tsx` — are broken and stuck on the error “You must accept the Terms and Conditions.”
+
+The root cause is that submission logic is either:
+- Missing
+- Miswired
+- Or blocked by incorrect structure
+
+Nothing gets logged in the console. Validation does not run. Form submission fails silently.
+
+---
+
+### ❗ STOP PATCHING — REBUILD BOTH FORMS FROM SCRATCH
+
+I want you to throw away the current implementation and fully recreate the following two files:
+
+---
+
+## ✅ 1. IndividualSignupForm.tsx (for general users)
+
+Include the following fields:
+- `firstName`
+- `lastName`
+- `email`
+- `password`
+- `confirmPassword`
+- `phone`
+- `address`
+- A checkbox for **termsAccepted**, using: `z.literal(true)`
+
+Requirements:
+- Use `react-hook-form` with `zodResolver`
+- Use `<form onSubmit={handleSubmit(onSubmit)}>` wrapping all elements
+- Use `setValue("termsAccepted", !!checked)` for the checkbox
+- Use a **submit button inside the form** with `type="submit"`
+- Log the full `data` object inside `onSubmit`
+- Validate and show an error if `termsAccepted` is not true
+
+---
+
+## ✅ 2. BusinessSignupForm.tsx (for vendors)
+
+Fields to include:
+- `businessName`
+- `category` (select dropdown with: Restaurant, Retail, Services, Hospitality, Entertainment, Other)
+- `firstName`
+- `lastName`
+- `email`
+- `password`
+- `confirmPassword`
+- `phone`
+- `address`
+- Labels (or real inputs) for: Government ID, Proof of Address, Proof of Business Ownership
+- A checkbox for **termsAccepted**, using: `z.literal(true)`
+
+Requirements:
+- Same as individual form: react-hook-form + zod
+- Submit button **inside the form**
+- Terms checkbox must be registered properly with validation
+- Log the full data object
+- Optional file uploads should log filenames (can mock upload handler)
+
+---
+
+## ✅ Final Checklist for Both
+
+- Forms must submit via `handleSubmit(onSubmit)`
+- Checkbox state must be managed with `setValue` and validated with `z.literal(true)`
+- Console must show `SUBMISSION PAYLOAD: ...` when submitting
+- Submit button must be inside the form and trigger validation
+
+---
+
+Please rebuild both files completely — do NOT try to patch the old ones. Follow the above layout exactly.

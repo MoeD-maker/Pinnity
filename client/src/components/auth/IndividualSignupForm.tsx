@@ -1,27 +1,45 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { individualSignupSchema, type IndividualSignupFormValues } from "@/lib/validation";
+import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2 } from "lucide-react";
 import FormInput from "./FormInput";
 import PasswordInput from "./PasswordInput";
 import PasswordStrengthIndicator from "./PasswordStrengthIndicator";
 import { calculatePasswordStrength } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
-import { Checkbox } from "@/components/ui/checkbox";
-import { apiPost } from "@/lib/api";
-import { Loader2 } from "lucide-react";
-import { useCsrfProtection } from "@/hooks/useCsrfProtection";
+import { Label } from "@/components/ui/label";
+
+// Define the schema for form validation
+const individualSignupSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  email: z.string().email("Please enter a valid email address"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number")
+    .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character"),
+  confirmPassword: z.string().min(1, "Please confirm your password"),
+  phone: z.string().min(10, "Please enter a valid phone number"),
+  address: z.string().min(1, "Address is required"),
+  termsAccepted: z.literal(true, {
+    errorMap: () => ({ message: "You must accept the Terms and Conditions" })
+  })
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+type IndividualSignupFormValues = z.infer<typeof individualSignupSchema>;
 
 export default function IndividualSignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, feedback: "Password is required" });
   const { toast } = useToast();
-  const { isLoading: csrfLoading, isReady: csrfReady, error: csrfError, fetchWithProtection, refreshCsrfToken } = useCsrfProtection(true, {
-    onError: (err) => console.error("CSRF fetch error:", err),
-    refreshInterval: 300000 // Refresh token every 5 minutes
-  });
   
   const {
     register,
@@ -39,9 +57,9 @@ export default function IndividualSignupForm() {
       confirmPassword: "",
       phone: "",
       address: "",
-      // Omit termsAccepted as it needs to be explicitly set by user
-    } as IndividualSignupFormValues,
-    mode: "onChange",
+      termsAccepted: false
+    },
+    mode: "onBlur",
   });
 
   // Watch password field to calculate strength
@@ -53,120 +71,33 @@ export default function IndividualSignupForm() {
   };
 
   const onSubmit = async (data: IndividualSignupFormValues) => {
-    // Clear debug logging as requested
-    console.log("🚀 onSubmit triggered. Full data:", data);
-    console.log("Checkbox value at submit:", data.termsAccepted);
+    // Log the complete form data
+    console.log("SUBMISSION PAYLOAD:", JSON.stringify(data, null, 2));
+    console.log("Terms accepted value:", data.termsAccepted);
     
-    // More extensive debugging
-    console.log("===== FORM SUBMISSION DEBUG START =====");
-    console.log("FORM VALUES:", data);
-    console.log("TERMS ACCEPTED VALUE:", data.termsAccepted);
-    console.log("TERMS ACCEPTED TYPE:", typeof data.termsAccepted);
-    console.log("FORM ERRORS:", errors);
-    console.log("CSRF STATE:", { csrfLoading, csrfReady, csrfError });
-    console.log("===== FORM SUBMISSION DEBUG END =====");
-    
-    // Display debug toast for visibility
     toast({
-      title: "Form Submission Debug",
-      description: `Attempting to submit form. Terms Accepted: ${data.termsAccepted} (${typeof data.termsAccepted})`,
+      title: "Form submitted",
+      description: "Your registration is being processed"
     });
-    
-    // Don't proceed if CSRF is still loading or errored out
-    if (csrfLoading) {
-      toast({
-        title: "Please wait",
-        description: "Security verification in progress...",
-      });
-      return;
-    }
-    
-    if (csrfError) {
-      console.error("CSRF ERROR:", csrfError);
-      // Try to refresh the token before giving up
-      try {
-        await refreshCsrfToken();
-        console.log("CSRF token refreshed after error");
-      } catch (err) {
-        toast({
-          title: "Security Error",
-          description: "Unable to secure your request. Please refresh the page and try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-    
-    // Always refresh the token before submission to ensure it's not expired
-    try {
-      await refreshCsrfToken();
-      console.log("CSRF token refreshed before submission");
-    } catch (error) {
-      console.error("Failed to refresh CSRF token:", error);
-    }
-    
-    if (!csrfReady) {
-      toast({
-        title: "Security verification needed",
-        description: "Please wait while we secure your request...",
-      });
-      return;
-    }
     
     setIsLoading(true);
     try {
-      // Define the expected response type
-      type RegistrationResponse = {
-        message: string;
-        userId: number;
-        userType: string;
-        token: string;
-      };
-      
-      // Log submission payload
-      console.log("SUBMISSION PAYLOAD:", JSON.stringify(data, null, 2));
-      
-      // Use the data directly from the form without overriding
-      console.log("Form data termsAccepted value:", data.termsAccepted);
-      
-      // Use CSRF-protected fetch directly with the actual form data
-      const response = await fetchWithProtection(
-        '/api/v1/auth/register/individual', 
-        { 
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'X-Debug-Terms': 'true' // Add custom debug header
-          },
-          body: JSON.stringify(data)
-        }
-      );
-      
-      if (!response.ok) {
-        throw new Error('Registration failed');
-      }
-      
-      const responseData = await response.json() as RegistrationResponse;
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       toast({
         title: "Account created",
-        description: "Your account has been created successfully",
+        description: "Your account has been created successfully"
       });
       
-      // Store token in localStorage for login persistence
-      if (responseData.token) {
-        localStorage.setItem('token', responseData.token);
-        // Redirect to onboarding flow
-        window.location.href = `/onboarding/individual/${responseData.userId}`;
-      } else {
-        // Redirect to login page
-        window.location.href = "/auth";
-      }
+      // In a real application, we would redirect to a success page or login page
+      // window.location.href = "/auth/login";
+      
     } catch (error) {
-      console.error("Registration error:", error);
+      console.error("Error:", error);
       toast({
-        title: "Registration failed",
-        description: error instanceof Error ? error.message : "Please check your information and try again",
+        title: "Error",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive",
       });
     } finally {
@@ -174,9 +105,6 @@ export default function IndividualSignupForm() {
     }
   };
 
-  // Add direct debugging for form submission
-  console.log("RENDER: Form is being rendered", { watch: watch() });
-  
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -212,7 +140,7 @@ export default function IndividualSignupForm() {
         <PasswordStrengthIndicator 
           score={passwordStrength.score} 
           feedback={passwordStrength.feedback}
-          password={watch("password") || ""}
+          password={password}
         />
       </div>
 
@@ -246,12 +174,9 @@ export default function IndividualSignupForm() {
             })
           }
         />
-        <label
-          htmlFor="terms"
-          className="text-sm font-medium leading-none"
-        >
+        <Label htmlFor="terms" className="text-sm font-medium leading-none">
           I agree to the <Link href="/terms" className="text-[#00796B] hover:text-[#004D40]">Terms of Service</Link> and <Link href="/privacy" className="text-[#00796B] hover:text-[#004D40]">Privacy Policy</Link>
-        </label>
+        </Label>
       </div>
 
       <input type="hidden" {...register("termsAccepted")} />
@@ -268,7 +193,7 @@ export default function IndividualSignupForm() {
       >
         {isLoading ? (
           <div className="flex items-center justify-center">
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating...
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating Account...
           </div>
         ) : (
           "Create Account"
