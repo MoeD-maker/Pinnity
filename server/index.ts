@@ -76,7 +76,13 @@ import { csrfCookieConfig } from './utils/cookieConfig';
 
 // TEMPORARILY DISABLE CSRF for debugging form submission issues
 // This is NOT secure for production use!
-const dummyMiddleware = (req: any, res: any, next: any) => next();
+const dummyMiddleware = (req: any, res: any, next: any) => {
+  // Add a dummy csrfToken function to req for compatibility
+  req.csrfToken = function() {
+    return `dummy-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+  };
+  next();
+};
 
 // CSRF protection for non-GET requests - DISABLED FOR NOW
 // This is a fake implementation that just passes through without checking
