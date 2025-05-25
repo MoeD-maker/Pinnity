@@ -90,8 +90,7 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
       password: "",
       confirmPassword: "",
       phone: "",
-      address: "",
-      termsAccepted: false
+      address: ""
     },
     mode: "onBlur",
   });

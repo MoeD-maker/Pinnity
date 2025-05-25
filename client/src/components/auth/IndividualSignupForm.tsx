@@ -56,8 +56,7 @@ export default function IndividualSignupForm() {
       password: "",
       confirmPassword: "",
       phone: "",
-      address: "",
-      termsAccepted: false
+      address: ""
     },
     mode: "onBlur",
   });
