@@ -2,84 +2,57 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useToast } from "@/hooks/use-toast";
-import { Link } from "wouter";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2 } from "lucide-react";
-import FormInput from "./FormInput";
-import PasswordInput from "./PasswordInput";
-import PasswordStrengthIndicator from "./PasswordStrengthIndicator";
-import { calculatePasswordStrength } from "@/lib/utils";
-import { Label } from "@/components/ui/label";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { apiPost } from "@/lib/api";
+import { Eye, EyeOff, Upload } from "lucide-react";
 
-// Define business categories
-const businessCategories = [
-  { value: "restaurant", label: "Restaurant" },
-  { value: "retail", label: "Retail" },
-  { value: "services", label: "Services" },
-  { value: "hospitality", label: "Hospitality" },
-  { value: "entertainment", label: "Entertainment" },
-  { value: "other", label: "Other" },
-];
-
-// Define the schema for form validation
+// Schema with proper terms validation
 const businessSignupSchema = z.object({
   businessName: z.string().min(1, "Business name is required"),
   category: z.string().min(1, "Business category is required"),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Please enter a valid email address"),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number")
-    .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
   confirmPassword: z.string().min(1, "Please confirm your password"),
-  phone: z.string().min(10, "Please enter a valid phone number"),
+  phone: z.string().min(1, "Phone number is required"),
   address: z.string().min(1, "Address is required"),
-  governmentId: z.any().optional(),
-  proofOfAddress: z.any().optional(),
-  proofOfBusinessOwnership: z.any().optional(),
   termsAccepted: z.literal(true, {
     errorMap: () => ({ message: "You must accept the Terms and Conditions" })
   })
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
-  path: ["confirmPassword"],
+  path: ["confirmPassword"]
 });
 
-type BusinessSignupFormValues = z.infer<typeof businessSignupSchema>;
+type BusinessSignupData = z.infer<typeof businessSignupSchema>;
 
-export interface BusinessSignupFormProps {
-  setUserType?: (type: "individual" | "business") => void;
-}
+const businessCategories = [
+  "Restaurant",
+  "Retail", 
+  "Services",
+  "Hospitality",
+  "Entertainment",
+  "Other"
+];
 
-export default function BusinessSignupForm({ setUserType }: BusinessSignupFormProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState({ score: 0, feedback: "Password is required" });
-  const { toast } = useToast();
+function BusinessSignupForm() {
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState({
     governmentId: null as File | null,
     proofOfAddress: null as File | null,
-    proofOfBusinessOwnership: null as File | null,
+    proofOfBusiness: null as File | null
   });
-  
-  const {
-    register,
-    handleSubmit,
-    watch,
-    setValue,
-    formState: { errors },
-  } = useForm<BusinessSignupFormValues>({
+  const { toast } = useToast();
+
+  const form = useForm<BusinessSignupData>({
     resolver: zodResolver(businessSignupSchema),
     defaultValues: {
       businessName: "",
@@ -90,271 +63,352 @@ export default function BusinessSignupForm({ setUserType }: BusinessSignupFormPr
       password: "",
       confirmPassword: "",
       phone: "",
-      address: ""
-    },
-    mode: "onBlur",
+      address: "",
+      termsAccepted: false as any // Will be overridden by setValue
+    }
   });
 
-  // Watch password field to calculate strength
-  const password = watch("password", "");
-  
-  // Update password strength whenever password changes
-  const onPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPasswordStrength(calculatePasswordStrength(e.target.value));
-  };
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = form;
 
-  // Handle file uploads
-  const handleFileUpload = (fieldName: keyof typeof uploadedFiles) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (files && files.length > 0) {
-      const file = files[0];
-      setUploadedFiles(prev => ({
-        ...prev,
-        [fieldName]: file
-      }));
-      console.log(`File uploaded for ${fieldName}:`, file.name);
-    }
-  };
-
-  const onSubmit = async (data: BusinessSignupFormValues) => {
-    // Log the complete form data and files
-    const submissionData = {
-      ...data,
-      uploads: {
-        governmentId: uploadedFiles.governmentId?.name || null,
-        proofOfAddress: uploadedFiles.proofOfAddress?.name || null,
-        proofOfBusinessOwnership: uploadedFiles.proofOfBusinessOwnership?.name || null,
-      }
-    };
-    
-    console.log("SUBMISSION PAYLOAD:", JSON.stringify(submissionData, null, 2));
-    console.log("Terms accepted value:", data.termsAccepted);
-    
-    toast({
-      title: "Form submitted",
-      description: "Your business registration is being processed"
+  const onSubmit = async (data: BusinessSignupData) => {
+    console.log("SUBMISSION PAYLOAD:", data);
+    console.log("Uploaded files:", {
+      governmentId: uploadedFiles.governmentId?.name,
+      proofOfAddress: uploadedFiles.proofOfAddress?.name,
+      proofOfBusiness: uploadedFiles.proofOfBusiness?.name
     });
     
-    setIsLoading(true);
+    setIsSubmitting(true);
+    
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      toast({
-        title: "Business account created",
-        description: "Your business account has been created successfully. Verification is pending."
+      // Use direct API call to registration endpoint
+      const response = await apiPost('/api/v1/auth/register/business', {
+        businessName: data.businessName,
+        category: data.category,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        password: data.password,
+        confirmPassword: data.confirmPassword,
+        phone: data.phone,
+        address: data.address,
+        termsAccepted: true // Ensure this is explicitly true
       });
-      
-      // In a real application, we would redirect to a success page or dashboard
-      // window.location.href = "/business/dashboard";
+
+      toast({
+        title: "Business registration successful!",
+        description: "Your business account has been created and is pending verification.",
+      });
+
+      // Clear form to prevent state issues
+      form.reset();
       
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Registration error:", error);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
+        title: "Registration failed",
+        description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleTermsChange = (checked: boolean) => {
+    setValue("termsAccepted", checked as any);
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setValue("category", value);
+  };
+
+  const handleFileUpload = (fileType: keyof typeof uploadedFiles) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setUploadedFiles(prev => ({
+        ...prev,
+        [fileType]: file
+      }));
+      console.log(`${fileType} uploaded:`, file.name);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      {/* Back button if needed */}
-      {setUserType && (
-        <Button 
-          type="button" 
-          variant="ghost" 
-          onClick={() => setUserType("individual")}
-          className="mb-4 text-sm font-medium text-gray-600 hover:text-[#00796B] flex items-center gap-1.5"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
-          Back to Individual Signup
-        </Button>
-      )}
-      
-      {/* Business Information */}
-      <FormInput
-        label="Business name"
-        {...register("businessName")}
-        error={errors.businessName?.message}
-      />
-
-      <div className="space-y-2">
-        <Label htmlFor="category">Business category</Label>
-        <Select 
-          onValueChange={(value) => setValue("category", value, { shouldValidate: true })}
-          defaultValue={watch("category")}
-        >
-          <SelectTrigger id="category" className="w-full">
-            <SelectValue placeholder="Select a category" />
-          </SelectTrigger>
-          <SelectContent>
-            {businessCategories.map((category) => (
-              <SelectItem key={category.value} value={category.value}>
-                {category.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {errors.category && (
-          <p className="text-xs text-red-500 mt-1">{errors.category.message}</p>
-        )}
+    <div className="space-y-6">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold">Create Business Account</h2>
+        <p className="text-gray-600 mt-2">Join Pinnity as a vendor to offer deals</p>
       </div>
 
-      {/* Personal Information */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormInput
-          label="First name"
-          {...register("firstName")}
-          error={errors.firstName?.message}
-        />
-        
-        <FormInput
-          label="Last name"
-          {...register("lastName")}
-          error={errors.lastName?.message}
-        />
-      </div>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="businessName">Business Name</Label>
+          <Input
+            id="businessName"
+            {...register("businessName")}
+            placeholder="Enter your business name"
+          />
+          {errors.businessName && (
+            <p className="text-sm text-red-500">{errors.businessName.message}</p>
+          )}
+        </div>
 
-      <FormInput
-        label="Email address"
-        type="email"
-        {...register("email")}
-        error={errors.email?.message}
-      />
+        <div className="space-y-2">
+          <Label htmlFor="category">Business Category</Label>
+          <Select onValueChange={handleCategoryChange}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select your business category" />
+            </SelectTrigger>
+            <SelectContent>
+              {businessCategories.map((category) => (
+                <SelectItem key={category} value={category}>
+                  {category}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.category && (
+            <p className="text-sm text-red-500">{errors.category.message}</p>
+          )}
+        </div>
 
-      <div className="space-y-1">
-        <PasswordInput
-          label="Password"
-          {...register("password", {
-            onChange: onPasswordChange,
-          })}
-          error={errors.password?.message}
-        />
-        
-        <PasswordStrengthIndicator 
-          score={passwordStrength.score} 
-          feedback={passwordStrength.feedback}
-          password={password}
-        />
-      </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="firstName">First Name</Label>
+            <Input
+              id="firstName"
+              {...register("firstName")}
+              placeholder="Enter your first name"
+            />
+            {errors.firstName && (
+              <p className="text-sm text-red-500">{errors.firstName.message}</p>
+            )}
+          </div>
 
-      <PasswordInput
-        label="Confirm password"
-        {...register("confirmPassword")}
-        error={errors.confirmPassword?.message}
-      />
+          <div className="space-y-2">
+            <Label htmlFor="lastName">Last Name</Label>
+            <Input
+              id="lastName"
+              {...register("lastName")}
+              placeholder="Enter your last name"
+            />
+            {errors.lastName && (
+              <p className="text-sm text-red-500">{errors.lastName.message}</p>
+            )}
+          </div>
+        </div>
 
-      <FormInput
-        label="Phone number"
-        type="tel"
-        {...register("phone")}
-        error={errors.phone?.message}
-      />
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            {...register("email")}
+            placeholder="Enter your email"
+          />
+          {errors.email && (
+            <p className="text-sm text-red-500">{errors.email.message}</p>
+          )}
+        </div>
 
-      <FormInput
-        label="Business address"
-        {...register("address")}
-        error={errors.address?.message}
-      />
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              {...register("password")}
+              placeholder="Create a strong password"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+          {errors.password && (
+            <p className="text-sm text-red-500">{errors.password.message}</p>
+          )}
+        </div>
 
-      {/* Document Uploads */}
-      <div className="space-y-6">
-        <h3 className="text-lg font-medium">Verification Documents</h3>
-        <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="confirmPassword">Confirm Password</Label>
+          <div className="relative">
+            <Input
+              id="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              {...register("confirmPassword")}
+              placeholder="Confirm your password"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              {showConfirmPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+          {errors.confirmPassword && (
+            <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="phone">Phone Number</Label>
+          <Input
+            id="phone"
+            {...register("phone")}
+            placeholder="Enter your phone number"
+          />
+          {errors.phone && (
+            <p className="text-sm text-red-500">{errors.phone.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="address">Address</Label>
+          <Input
+            id="address"
+            {...register("address")}
+            placeholder="Enter your business address"
+          />
+          {errors.address && (
+            <p className="text-sm text-red-500">{errors.address.message}</p>
+          )}
+        </div>
+
+        {/* Document Upload Section */}
+        <div className="space-y-4 border-t pt-4">
+          <h3 className="text-lg font-semibold">Required Documents</h3>
+          
           <div className="space-y-2">
             <Label htmlFor="governmentId">Government ID</Label>
-            <input
-              id="governmentId"
-              type="file"
-              accept="image/*,.pdf"
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-[#E0F2F1] file:text-[#00796B] hover:file:bg-[#B2DFDB]"
-              onChange={handleFileUpload("governmentId")}
-            />
-            {uploadedFiles.governmentId && (
-              <p className="text-xs text-green-600 mt-1">
-                File selected: {uploadedFiles.governmentId.name}
-              </p>
-            )}
+            <div className="flex items-center space-x-2">
+              <Input
+                id="governmentId"
+                type="file"
+                accept="image/*,.pdf"
+                onChange={handleFileUpload('governmentId')}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => document.getElementById('governmentId')?.click()}
+                className="flex items-center space-x-2"
+              >
+                <Upload className="h-4 w-4" />
+                <span>Upload Government ID</span>
+              </Button>
+              {uploadedFiles.governmentId && (
+                <span className="text-sm text-green-600">
+                  ✓ {uploadedFiles.governmentId.name}
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="proofOfAddress">Proof of Address</Label>
-            <input
-              id="proofOfAddress"
-              type="file"
-              accept="image/*,.pdf"
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-[#E0F2F1] file:text-[#00796B] hover:file:bg-[#B2DFDB]"
-              onChange={handleFileUpload("proofOfAddress")}
-            />
-            {uploadedFiles.proofOfAddress && (
-              <p className="text-xs text-green-600 mt-1">
-                File selected: {uploadedFiles.proofOfAddress.name}
-              </p>
-            )}
+            <div className="flex items-center space-x-2">
+              <Input
+                id="proofOfAddress"
+                type="file"
+                accept="image/*,.pdf"
+                onChange={handleFileUpload('proofOfAddress')}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => document.getElementById('proofOfAddress')?.click()}
+                className="flex items-center space-x-2"
+              >
+                <Upload className="h-4 w-4" />
+                <span>Upload Proof of Address</span>
+              </Button>
+              {uploadedFiles.proofOfAddress && (
+                <span className="text-sm text-green-600">
+                  ✓ {uploadedFiles.proofOfAddress.name}
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="proofOfBusinessOwnership">Proof of Business Ownership</Label>
-            <input
-              id="proofOfBusinessOwnership"
-              type="file"
-              accept="image/*,.pdf"
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-[#E0F2F1] file:text-[#00796B] hover:file:bg-[#B2DFDB]"
-              onChange={handleFileUpload("proofOfBusinessOwnership")}
-            />
-            {uploadedFiles.proofOfBusinessOwnership && (
-              <p className="text-xs text-green-600 mt-1">
-                File selected: {uploadedFiles.proofOfBusinessOwnership.name}
-              </p>
-            )}
+            <Label htmlFor="proofOfBusiness">Proof of Business Ownership</Label>
+            <div className="flex items-center space-x-2">
+              <Input
+                id="proofOfBusiness"
+                type="file"
+                accept="image/*,.pdf"
+                onChange={handleFileUpload('proofOfBusiness')}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => document.getElementById('proofOfBusiness')?.click()}
+                className="flex items-center space-x-2"
+              >
+                <Upload className="h-4 w-4" />
+                <span>Upload Business License</span>
+              </Button>
+              {uploadedFiles.proofOfBusiness && (
+                <span className="text-sm text-green-600">
+                  ✓ {uploadedFiles.proofOfBusiness.name}
+                </span>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Terms and Conditions */}
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id="business-terms"
-          checked={watch("termsAccepted")}
-          onCheckedChange={(checked) =>
-            setValue("termsAccepted", !!checked, {
-              shouldValidate: true,
-              shouldDirty: true,
-            })
-          }
-        />
-        <Label htmlFor="business-terms" className="text-sm font-medium leading-none">
-          I agree to the <Link href="/terms" className="text-[#00796B] hover:text-[#004D40]">Terms of Service</Link> and <Link href="/privacy" className="text-[#00796B] hover:text-[#004D40]">Privacy Policy</Link>
-        </Label>
-      </div>
-
-      <input type="hidden" {...register("termsAccepted")} />
-
-      {errors.termsAccepted && (
-        <p className="text-xs text-red-500 mt-1">
-          {errors.termsAccepted.message || "You must accept the Terms and Conditions"}
-        </p>
-      )}
-
-      {/* Submit Button */}
-      <button
-        type="submit"
-        className="w-full bg-[#00796B] hover:bg-[#004D40] mt-6 py-3 text-white font-medium rounded-md"
-      >
-        {isLoading ? (
-          <div className="flex items-center justify-center">
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating Business Account...
+        <div className="space-y-2">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="termsAccepted"
+              onCheckedChange={handleTermsChange}
+            />
+            <Label
+              htmlFor="termsAccepted"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              I accept the{" "}
+              <a href="/terms" className="text-blue-600 hover:underline">
+                Terms and Conditions
+              </a>
+            </Label>
           </div>
-        ) : (
-          "Create Business Account"
-        )}
-      </button>
-    </form>
+          {errors.termsAccepted && (
+            <p className="text-sm text-red-500">{errors.termsAccepted.message}</p>
+          )}
+        </div>
+
+        <Button 
+          type="submit" 
+          className="w-full" 
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Creating Business Account..." : "Create Business Account"}
+        </Button>
+      </form>
+    </div>
   );
 }
+
+export default BusinessSignupForm;
