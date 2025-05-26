@@ -1925,19 +1925,7 @@ export class DatabaseStorage implements IStorage {
     return this.createBusiness(tempBusinessData);
   }
 
-  async verifyLogin(email: string, password: string): Promise<User | null> {
-    const user = await this.getUserByEmail(email);
-    
-    if (!user) {
-      return null;
-    }
-    
-    if (bcrypt.compareSync(password, user.password)) {
-      return user;
-    }
-    
-    return null;
-  }
+
 
   async updateUser(userId: number, userData: Partial<Omit<InsertUser, "id" | "password">>): Promise<User> {
     const [updatedUser] = await db.update(users)
