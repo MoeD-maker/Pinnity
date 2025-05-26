@@ -91,9 +91,11 @@ export function authRoutes(app: Express): void {
         console.time('verifyLogin');
         
         try {
+          console.log(`[${timestamp}] 🔍 Calling storage.verifyLogin now...`);
           const user = await storage.verifyLogin(normalizedEmail, password);
           console.timeEnd('verifyLogin');
-          console.log(`[${timestamp}] 📤 storage.verifyLogin returned:`, !!user);
+          console.log(`[${timestamp}] 📤 storage.verifyLogin completed and returned:`, !!user);
+          console.log(`[${timestamp}] 📊 User object type:`, typeof user);
           
           if (!user) {
             console.warn(`[${timestamp}] Failed login attempt for email: ${normalizedEmail}`);
