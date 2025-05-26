@@ -87,18 +87,26 @@ export function authRoutes(app: Express): void {
         console.log(`[${timestamp}] Normalized email for login: ${normalizedEmail}`);
         
         // Verify credentials
+        console.log(`[${timestamp}] 🚀 About to call storage.verifyLogin with email: ${normalizedEmail}`);
         console.time('verifyLogin');
-        const user = await storage.verifyLogin(normalizedEmail, password);
-        console.timeEnd('verifyLogin');
         
-        if (!user) {
-          console.warn(`[${timestamp}] Failed login attempt for email: ${normalizedEmail}`);
-          // Return a detailed error for debugging but generic message to the user
-          return res.status(401).json({ 
-            message: "Invalid email or password",
-            detail: "The credentials provided do not match our records",
-            errorCode: "INVALID_CREDENTIALS"
-          });
+        try {
+          const user = await storage.verifyLogin(normalizedEmail, password);
+          console.timeEnd('verifyLogin');
+          console.log(`[${timestamp}] 📤 storage.verifyLogin returned:`, !!user);
+          
+          if (!user) {
+            console.warn(`[${timestamp}] Failed login attempt for email: ${normalizedEmail}`);
+            // Return a detailed error for debugging but generic message to the user
+            return res.status(401).json({ 
+              message: "Invalid email or password",
+              detail: "The credentials provided do not match our records",
+              errorCode: "INVALID_CREDENTIALS"
+            });
+          }
+        } catch (error) {
+          console.error(`[${timestamp}] Error during verifyLogin:`, error);
+          return res.status(500).json({ message: "Internal server error" });
         }
         
         // Additional check for account status (if implemented)
