@@ -70,6 +70,10 @@ export default function IndividualSignupForm() {
   };
 
   const onSubmit = async (data: IndividualSignupFormValues) => {
+    // Debug logs to see what's happening
+    console.log("🚀 SUBMISSION PAYLOAD:", data);
+    console.log("termsAccepted TYPE:", typeof data.termsAccepted);
+    
     // Log the complete form data
     console.log("SUBMISSION PAYLOAD:", JSON.stringify(data, null, 2));
     console.log("Terms accepted value:", data.termsAccepted);
