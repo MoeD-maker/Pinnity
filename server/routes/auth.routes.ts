@@ -67,8 +67,8 @@ export function authRoutes(app: Express): void {
     versionedLoginPath, 
     versionHeadersMiddleware(),
     verifyCsrf, // CSRF protection for login
-    authRateLimiter, // Apply rate limiting to login endpoint
-    securityRateLimiter, // Apply security rate limiting to detect brute force attacks
+    // authRateLimiter, // Apply rate limiting to login endpoint (temporarily disabled)
+    // securityRateLimiter, // Apply security rate limiting to detect brute force attacks (temporarily disabled)
     validate(authSchemas.login),
     async (req: Request, res: Response) => {
       try {
