@@ -63,11 +63,16 @@ export default function IndividualSignupForm() {
 
   // Watch password field to calculate strength
   const password = watch("password", "");
+  const confirmPassword = watch("confirmPassword", "");
   
   // Update password strength whenever password changes
   const onPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPasswordStrength(calculatePasswordStrength(e.target.value));
   };
+
+  // Check if passwords match in real-time
+  const passwordsMatch = password && confirmPassword && password === confirmPassword;
+  const showPasswordMismatch = confirmPassword && password !== confirmPassword;
 
   const onSubmit = async (data: IndividualSignupFormValues) => {
     // Debug logs to see what's happening
@@ -147,11 +152,25 @@ export default function IndividualSignupForm() {
         />
       </div>
 
-      <PasswordInput
-        label="Confirm password"
-        {...register("confirmPassword")}
-        error={errors.confirmPassword?.message}
-      />
+      <div className="space-y-1">
+        <PasswordInput
+          label="Confirm password"
+          {...register("confirmPassword")}
+          error={errors.confirmPassword?.message}
+        />
+        {showPasswordMismatch && (
+          <p className="text-sm text-red-600 flex items-center gap-1">
+            <span className="text-red-500">✗</span>
+            Passwords don't match
+          </p>
+        )}
+        {passwordsMatch && (
+          <p className="text-sm text-green-600 flex items-center gap-1">
+            <span className="text-green-500">✓</span>
+            Passwords match
+          </p>
+        )}
+      </div>
 
       <FormInput
         label="Phone number"
