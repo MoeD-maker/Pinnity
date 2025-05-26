@@ -521,6 +521,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         userType: string;
       };
 
+      console.log(`[${timestamp}] Login response received:`, response);
+      console.log(`[${timestamp}] Response userId:`, response?.userId);
+      console.log(`[${timestamp}] Response userType:`, response?.userType);
+
       if (response && response.userId) {
         console.log(`[${timestamp}] Login successful, user ID: ${response.userId}, type: ${response.userType}`);
         
