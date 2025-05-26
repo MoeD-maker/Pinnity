@@ -1925,7 +1925,35 @@ export class DatabaseStorage implements IStorage {
     return this.createBusiness(tempBusinessData);
   }
 
-
+  async verifyLogin(email: string, password: string): Promise<User | null> {
+    // Enhanced login verification with better error logging
+    console.log(`📩 Login attempt for:`, email);
+    
+    // Get user with case-insensitive email lookup
+    const user = await this.getUserByEmail(email);
+    console.log(`👤 User found:`, !!user);
+    
+    if (!user) {
+      console.log(`Login failed: No user found with email ${email}`);
+      return null;
+    }
+    
+    // Log user details for debugging
+    console.log(`👥 User type:`, user.userType);
+    console.log(`🔍 User ID:`, user.id);
+    
+    // Use bcrypt to safely compare passwords
+    const passwordMatch = bcrypt.compareSync(password, user.password);
+    console.log(`🔐 Password match:`, passwordMatch);
+    
+    if (passwordMatch) {
+      console.log(`Login successful for user ID: ${user.id}, email: ${email}`);
+      return user;
+    } else {
+      console.log(`Login failed: Invalid password for email ${email}`);
+      return null;
+    }
+  }
 
   async updateUser(userId: number, userData: Partial<Omit<InsertUser, "id" | "password">>): Promise<User> {
     const [updatedUser] = await db.update(users)
