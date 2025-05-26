@@ -166,11 +166,16 @@ export function authRoutes(app: Express): void {
         // Request is already validated by middleware
         const { email, password, rememberMe } = req.body;
         
+        // Normalize email to lowercase for consistency
+        const normalizedEmail = email.toLowerCase().trim();
+        console.log(`🚀 LEGACY: About to call storage.verifyLogin with email: ${normalizedEmail}`);
+        
         // Verify credentials
-        const user = await storage.verifyLogin(email, password);
+        const user = await storage.verifyLogin(normalizedEmail, password);
+        console.log(`📤 LEGACY: storage.verifyLogin returned:`, !!user);
         
         if (!user) {
-          console.warn(`Failed login attempt for email: ${email}`);
+          console.warn(`Failed login attempt for email: ${normalizedEmail}`);
           return res.status(401).json({ message: "Invalid email or password" });
         }
         
