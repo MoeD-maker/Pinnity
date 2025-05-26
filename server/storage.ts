@@ -2336,9 +2336,10 @@ export class DatabaseStorage implements IStorage {
     
     // Apply role-based filtering
     if (userRole === 'individual') {
-      // For customers, only return approved or active deals
+      // For customers, only return approved or active deals that haven't expired
+      const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
       query = query.where(
-        sql`${deals.status} = 'approved' OR ${deals.status} = 'active'`
+        sql`(${deals.status} = 'approved' OR ${deals.status} = 'active') AND ${deals.endDate} >= ${currentDate}`
       );
     } else if (userRole === 'business' && userId) {
       // For business users, return all their own deals but filter others
@@ -2436,9 +2437,10 @@ export class DatabaseStorage implements IStorage {
     
     // Apply role-based filtering (same logic as getDeals)
     if (userRole === 'individual') {
-      // For customers, only return approved or active deals
+      // For customers, only return approved or active deals that haven't expired
+      const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
       query = query.where(
-        sql`(${deals.status} = 'approved' OR ${deals.status} = 'active')`
+        sql`(${deals.status} = 'approved' OR ${deals.status} = 'active') AND ${deals.endDate} >= ${currentDate}`
       );
     } else if (userRole === 'business' && userId) {
       // For business users, return all their own deals but filter others
