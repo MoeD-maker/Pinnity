@@ -913,4 +913,32 @@ export function authRoutes(app: Express): void {
       return res.status(500).json({ message: 'Internal server error' });
     }
   });
+
+  // Phone verification endpoint
+  const [versionedVerifyPhonePath, legacyVerifyPhonePath] = createVersionedRoutes('/auth/verify-phone');
+  
+  app.post(versionedVerifyPhonePath, versionHeadersMiddleware(), async (req: Request, res: Response) => {
+    try {
+      const { phoneNumber } = req.body;
+      
+      if (!phoneNumber) {
+        return res.status(400).json({ message: 'Phone number is required' });
+      }
+      
+      // Find user by phone number and mark as phone verified
+      const user = await storage.getUserByPhone(phoneNumber);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Update user to mark phone as verified
+      await storage.updateUser(user.id, { phoneVerified: true });
+      console.log(`Phone verified for user ${user.id} (${phoneNumber})`);
+      
+      return res.status(200).json({ message: 'Phone verified successfully' });
+    } catch (error) {
+      console.error('Error verifying phone:', error);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  });
 }

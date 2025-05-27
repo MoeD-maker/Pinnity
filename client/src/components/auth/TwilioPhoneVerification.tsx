@@ -98,6 +98,19 @@ export function TwilioPhoneVerification({
           title: "Verification successful!",
           description: "Your phone number has been verified",
         });
+        
+        // Update backend to mark user as phone verified
+        try {
+          await fetch('/api/v1/auth/verify-phone', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phoneNumber })
+          });
+          console.log('Backend phone verification status updated');
+        } catch (error) {
+          console.error('Failed to update backend phone verification:', error);
+        }
+        
         onVerificationComplete(true);
       } else {
         console.log('Verification failed, showing error toast');
