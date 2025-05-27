@@ -34,6 +34,27 @@ export function authRoutes(app: Express): void {
   
   // Versioned route (primary)
   app.post(versionedLogoutPath, versionHeadersMiddleware(), (req: Request, res: Response) => {
+    app.post('/auth/verify-phone', async (req: Request, res: Response) => {
+      try {
+        const { phoneNumber } = req.body;
+        if (!phoneNumber) {
+          return res.status(400).json({ message: "Missing phone number" });
+        }
+
+        const user = await storage.getUserByPhone(phoneNumber);
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+
+        await storage.updateUser(user.id, { phoneVerified: true });
+        console.log(`✅ Phone verified for user ${user.id} (${user.phone})`);
+
+        return res.status(200).json({ message: "Phone verified successfully" });
+      } catch (error) {
+        console.error("Error verifying phone:", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    });
     try {
       console.log('Processing logout request');
       // Use the helper function to clear the auth cookie
