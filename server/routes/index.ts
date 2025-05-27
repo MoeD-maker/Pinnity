@@ -5,6 +5,7 @@ import { authRoutes } from './auth.routes.fixed';
 import { userRoutes } from './user.routes.fixed';
 import { dealRoutes } from './deal.routes.fixed';
 import { businessRoutes } from './business.routes.fixed';
+import smsRoutes from './sms.routes';
 import { bypassRouter } from '../admin-api-bypass';
 import { addTestRoutes } from '../test-terms';
 import { Request, Response, NextFunction } from "express";
@@ -54,6 +55,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   userRoutes(app);
   dealRoutes(app);
   businessRoutes(app);
+  
+  // Register SMS routes
+  app.use('/api/sms', smsRoutes);
   
   // Add test routes for debugging Terms of Service validation
   addTestRoutes(app);
