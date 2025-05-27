@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { apiPost } from "@/lib/api";
 import { Eye, EyeOff } from "lucide-react";
 import TwilioPhoneVerification from "./TwilioPhoneVerification";
@@ -38,6 +39,7 @@ function IndividualSignupForm() {
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
   const [currentStep, setCurrentStep] = useState<'form' | 'phone' | 'complete'>('form');
   const { toast } = useToast();
+  const { refreshToken } = useAuth();
   const [, setLocation] = useLocation();
 
   const form = useForm<IndividualSignupData>({
@@ -94,6 +96,9 @@ function IndividualSignupForm() {
         title: "Registration successful!",
         description: "Your account has been created with verified phone number.",
       });
+
+      // Refresh authentication state to ensure the app recognizes you're logged in
+      await refreshToken();
 
       // Redirect to home page after successful registration
       setTimeout(() => {
