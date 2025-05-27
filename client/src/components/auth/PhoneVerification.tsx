@@ -25,6 +25,7 @@ export function PhoneVerification({
   const [isLoading, setIsLoading] = useState(false);
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
+  const [recaptchaId] = useState(() => `recaptcha-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
   const { toast } = useToast();
 
   // Countdown timer for resend
@@ -35,12 +36,19 @@ export function PhoneVerification({
     }
   }, [timeLeft]);
 
-  // Cleanup on unmount
+  // Cleanup on unmount and step changes
   useEffect(() => {
     return () => {
       cleanupRecaptcha();
     };
   }, []);
+
+  // Reset reCAPTCHA when component resets to phone step
+  useEffect(() => {
+    if (step === 'phone') {
+      cleanupRecaptcha();
+    }
+  }, [step]);
 
   const handleSendCode = async () => {
     if (!phoneNumber || phoneNumber.length < 10) {
@@ -59,8 +67,8 @@ export function PhoneVerification({
       const formattedPhone = formatPhoneNumber(phoneNumber);
       console.log('Sending SMS to:', formattedPhone);
 
-      // Initialize reCAPTCHA
-      const recaptchaVerifier = initializeRecaptcha('recaptcha-container');
+      // Initialize reCAPTCHA with unique ID
+      const recaptchaVerifier = initializeRecaptcha(recaptchaId);
       
       // Send SMS
       const confirmation = await sendSMSVerification(formattedPhone, recaptchaVerifier);
@@ -186,7 +194,7 @@ export function PhoneVerification({
         </Button>
 
         {/* Hidden reCAPTCHA container */}
-        <div id="recaptcha-container" className="hidden"></div>
+        <div id={recaptchaId} className="hidden"></div>
       </div>
     );
   }
