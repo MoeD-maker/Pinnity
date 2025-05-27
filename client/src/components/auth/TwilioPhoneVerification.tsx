@@ -88,15 +88,19 @@ export function TwilioPhoneVerification({
     setIsLoading(true);
 
     try {
+      console.log('About to verify SMS code:', verificationCode, 'for phone:', phoneNumber);
       const isValid = await verifySMSCode(phoneNumber, verificationCode);
+      console.log('SMS verification result:', isValid);
       
       if (isValid) {
+        console.log('Verification successful, calling onVerificationComplete(true)');
         toast({
           title: "Verification successful!",
           description: "Your phone number has been verified",
         });
         onVerificationComplete(true);
       } else {
+        console.log('Verification failed, showing error toast');
         toast({
           title: "Invalid code",
           description: "The verification code is incorrect or expired",
