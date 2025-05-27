@@ -1,6 +1,11 @@
 import twilio from 'twilio';
 
 // Initialize Twilio client
+console.log('Initializing Twilio with credentials...');
+console.log('Account SID:', process.env.TWILIO_ACCOUNT_SID ? 'Present' : 'Missing');
+console.log('Auth Token:', process.env.TWILIO_AUTH_TOKEN ? 'Present' : 'Missing');
+console.log('Phone Number:', process.env.TWILIO_PHONE_NUMBER ? 'Present' : 'Missing');
+
 const client = twilio(
   process.env.TWILIO_ACCOUNT_SID,
   process.env.TWILIO_AUTH_TOKEN

@@ -40,16 +40,18 @@ router.post('/send', async (req, res) => {
       formattedPhone = phoneNumber.startsWith('1') ? `+${phoneNumber}` : `+1${phoneNumber}`;
     }
 
+    console.log('Attempting to send SMS to:', formattedPhone);
     const success = await sendSMSVerification(formattedPhone);
+    console.log('SMS send result:', success);
     
     if (success) {
-      res.json({
+      return res.status(200).json({
         success: true,
         message: 'Verification code sent successfully',
         phoneNumber: formattedPhone
       });
     } else {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Failed to send verification code'
       });
