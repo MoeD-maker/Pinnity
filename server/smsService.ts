@@ -76,6 +76,12 @@ export function verifySMSCode(phoneNumber: string, code: string): boolean {
     return false;
   }
 
+  // Check if code has already been used
+  if (stored.code.startsWith('USED_')) {
+    console.log('Verification code already used for phone:', phoneNumber);
+    return false;
+  }
+
   // Check if code matches (convert both to strings and trim)
   const inputCode = String(code).trim();
   const storedCode = String(stored.code).trim();
@@ -87,9 +93,16 @@ export function verifySMSCode(phoneNumber: string, code: string): boolean {
     return false;
   }
 
-  // Code is valid, remove it from storage
-  verificationCodes.delete(phoneNumber);
+  // Code is valid, mark it as used but don't delete immediately to prevent double-submission issues
+  stored.code = 'USED_' + stored.code; // Mark as used
   console.log('Verification successful for phone:', phoneNumber);
+  
+  // Delete after a short delay to prevent double submissions
+  setTimeout(() => {
+    verificationCodes.delete(phoneNumber);
+    console.log('Cleaned up used verification code for:', phoneNumber);
+  }, 5000); // 5 second delay
+  
   return true;
 }
 
