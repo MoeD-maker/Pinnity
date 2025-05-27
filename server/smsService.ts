@@ -57,12 +57,17 @@ export async function sendSMSVerification(phoneNumber: string): Promise<boolean>
  * @returns boolean - true if code is valid
  */
 export function verifySMSCode(phoneNumber: string, code: string): boolean {
+  console.log('Verifying code:', code, 'for phone:', phoneNumber);
+  console.log('Stored codes:', Array.from(verificationCodes.entries()));
+  
   const stored = verificationCodes.get(phoneNumber);
   
   if (!stored) {
     console.log('No verification code found for phone:', phoneNumber);
     return false;
   }
+
+  console.log('Found stored code:', stored.code, 'expires at:', new Date(stored.expiresAt));
 
   // Check if code has expired
   if (Date.now() > stored.expiresAt) {
@@ -71,9 +76,14 @@ export function verifySMSCode(phoneNumber: string, code: string): boolean {
     return false;
   }
 
-  // Check if code matches
-  if (stored.code !== code) {
-    console.log('Invalid verification code for phone:', phoneNumber);
+  // Check if code matches (convert both to strings and trim)
+  const inputCode = String(code).trim();
+  const storedCode = String(stored.code).trim();
+  
+  console.log('Comparing codes - Input:', inputCode, 'Stored:', storedCode);
+  
+  if (storedCode !== inputCode) {
+    console.log('Invalid verification code for phone:', phoneNumber, 'Expected:', storedCode, 'Got:', inputCode);
     return false;
   }
 
