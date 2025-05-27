@@ -7,10 +7,12 @@ import { apiPost } from './api';
  */
 export async function sendSMSVerification(phoneNumber: string): Promise<boolean> {
   try {
+    console.log('Sending SMS request for phone:', phoneNumber);
     const response = await apiPost('/api/sms/send', {
-      phoneNumber: phoneNumber
+      phoneNumber: phoneNumber.trim()
     }) as { success: boolean };
 
+    console.log('SMS response:', response);
     return response.success;
   } catch (error) {
     console.error('SMS sending error:', error);

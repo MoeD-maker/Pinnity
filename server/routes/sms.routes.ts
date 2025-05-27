@@ -20,6 +20,17 @@ const verifySMSSchema = z.object({
  */
 router.post('/send', async (req, res) => {
   try {
+    console.log('SMS send request received');
+    console.log('Raw body:', req.body);
+    console.log('Body type:', typeof req.body);
+    
+    if (!req.body || typeof req.body !== 'object') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid request body format'
+      });
+    }
+    
     const { phoneNumber } = sendSMSSchema.parse(req.body);
     
     // Format phone number to E.164 format if needed
@@ -52,10 +63,16 @@ router.post('/send', async (req, res) => {
         message: 'Invalid phone number format',
         errors: error.errors
       });
+    } else if (error instanceof SyntaxError) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid request format'
+      });
     } else {
       res.status(500).json({
         success: false,
-        message: 'Internal server error'
+        message: 'Internal server error',
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   }
