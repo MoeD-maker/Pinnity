@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { apiPost } from "@/lib/api";
 import { Eye, EyeOff, Upload } from "lucide-react";
+import PhoneVerification from "./PhoneVerification";
 
 // Schema with proper terms validation
 const businessSignupSchema = z.object({

@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiPost } from "@/lib/api";
 import { Eye, EyeOff } from "lucide-react";
+import PhoneVerification from "./PhoneVerification";
 
 // Schema with proper terms validation
 const individualSignupSchema = z.object({
@@ -33,6 +34,8 @@ function IndividualSignupForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [currentStep, setCurrentStep] = useState<'form' | 'phone' | 'complete'>('form');
   const { toast } = useToast();
 
   const form = useForm<IndividualSignupData>({
@@ -54,6 +57,21 @@ function IndividualSignupForm() {
   const onSubmit = async (data: IndividualSignupData) => {
     console.log("SUBMISSION PAYLOAD:", data);
     
+    if (currentStep === 'form') {
+      // First step: validate form and move to phone verification
+      setCurrentStep('phone');
+      return;
+    }
+    
+    if (currentStep === 'phone' && !isPhoneVerified) {
+      toast({
+        title: "Phone verification required",
+        description: "Please verify your phone number before continuing.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
@@ -66,14 +84,17 @@ function IndividualSignupForm() {
         confirmPassword: data.confirmPassword,
         phone: data.phone,
         address: data.address,
-        termsAccepted: true // Ensure this is explicitly true
+        termsAccepted: true,
+        phoneVerified: isPhoneVerified
       });
 
       toast({
         title: "Registration successful!",
-        description: "Your account has been created. You can now log in.",
+        description: "Your account has been created with verified phone number.",
       });
 
+      setCurrentStep('complete');
+      
       // Clear form to prevent state issues
       form.reset();
       
@@ -92,6 +113,70 @@ function IndividualSignupForm() {
   const handleTermsChange = (checked: boolean) => {
     setValue("termsAccepted", checked as any);
   };
+
+  const handlePhoneVerification = (verified: boolean) => {
+    setIsPhoneVerified(verified);
+    if (verified) {
+      // Auto-proceed to final submission after phone verification
+      handleSubmit(onSubmit)();
+    }
+  };
+
+  const handlePhoneChange = (phone: string) => {
+    setValue("phone", phone);
+  };
+
+  if (currentStep === 'phone') {
+    return (
+      <div className="space-y-6">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold">Verify Your Phone</h2>
+          <p className="text-gray-600 mt-2">We'll send a verification code to confirm your number</p>
+        </div>
+
+        <PhoneVerification
+          phoneNumber={watch("phone")}
+          onVerificationComplete={handlePhoneVerification}
+          onPhoneChange={handlePhoneChange}
+          disabled={isSubmitting}
+        />
+
+        <Button 
+          type="button"
+          variant="outline"
+          className="w-full"
+          onClick={() => setCurrentStep('form')}
+          disabled={isSubmitting}
+        >
+          Back to Form
+        </Button>
+      </div>
+    );
+  }
+
+  if (currentStep === 'complete') {
+    return (
+      <div className="space-y-6 text-center">
+        <div className="text-green-600">
+          <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h2 className="text-2xl font-bold text-green-600">Account Created Successfully!</h2>
+        <p className="text-gray-600">Your phone number has been verified. You can now log in to your account.</p>
+        <Button 
+          onClick={() => {
+            setCurrentStep('form');
+            setIsPhoneVerified(false);
+            form.reset();
+          }}
+          className="w-full"
+        >
+          Create Another Account
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -246,7 +331,7 @@ function IndividualSignupForm() {
           className="w-full" 
           disabled={isSubmitting}
         >
-          {isSubmitting ? "Creating Account..." : "Create Account"}
+          {isSubmitting ? "Processing..." : "Continue to Phone Verification"}
         </Button>
       </form>
     </div>
