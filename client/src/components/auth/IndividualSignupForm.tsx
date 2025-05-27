@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiPost } from "@/lib/api";
 import { Eye, EyeOff } from "lucide-react";
-import PhoneVerification from "./PhoneVerification";
+import TwilioPhoneVerification from "./TwilioPhoneVerification";
 
 // Schema with proper terms validation
 const individualSignupSchema = z.object({
@@ -134,7 +134,7 @@ function IndividualSignupForm() {
           <p className="text-gray-600 mt-2">We'll send a verification code to confirm your number</p>
         </div>
 
-        <PhoneVerification
+        <TwilioPhoneVerification
           phoneNumber={watch("phone")}
           onVerificationComplete={handlePhoneVerification}
           onPhoneChange={handlePhoneChange}

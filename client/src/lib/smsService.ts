@@ -9,7 +9,7 @@ export async function sendSMSVerification(phoneNumber: string): Promise<boolean>
   try {
     const response = await apiPost('/api/sms/send', {
       phoneNumber: phoneNumber
-    });
+    }) as { success: boolean };
 
     return response.success;
   } catch (error) {
@@ -29,7 +29,7 @@ export async function verifySMSCode(phoneNumber: string, code: string): Promise<
     const response = await apiPost('/api/sms/verify', {
       phoneNumber: phoneNumber,
       code: code
-    });
+    }) as { success: boolean };
 
     return response.success;
   } catch (error) {

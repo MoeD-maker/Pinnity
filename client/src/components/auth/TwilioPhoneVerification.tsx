@@ -13,7 +13,7 @@ interface PhoneVerificationProps {
   disabled?: boolean;
 }
 
-export function PhoneVerification({ 
+export function TwilioPhoneVerification({ 
   phoneNumber, 
   onVerificationComplete, 
   onPhoneChange,
@@ -33,20 +33,6 @@ export function PhoneVerification({
     }
   }, [timeLeft]);
 
-  // Cleanup on unmount and step changes
-  useEffect(() => {
-    return () => {
-      cleanupRecaptcha();
-    };
-  }, []);
-
-  // Reset reCAPTCHA when component resets to phone step
-  useEffect(() => {
-    if (step === 'phone') {
-      cleanupRecaptcha();
-    }
-  }, [step]);
-
   const handleSendCode = async () => {
     if (!phoneNumber || phoneNumber.length < 10) {
       toast({
@@ -60,40 +46,28 @@ export function PhoneVerification({
     setIsLoading(true);
     
     try {
-      // Format phone number to E.164 format
-      const formattedPhone = formatPhoneNumber(phoneNumber);
-      console.log('Sending SMS to:', formattedPhone);
+      console.log('Sending SMS to:', phoneNumber);
 
-      // Initialize reCAPTCHA with unique ID
-      const recaptchaVerifier = initializeRecaptcha(recaptchaId);
+      // Send SMS using Twilio
+      const success = await sendSMSVerification(phoneNumber);
       
-      // Send SMS
-      const confirmation = await sendSMSVerification(formattedPhone, recaptchaVerifier);
-      setConfirmationResult(confirmation);
-      setStep('code');
-      setTimeLeft(60); // 60 second cooldown
+      if (success) {
+        setStep('code');
+        setTimeLeft(60); // 60 second cooldown
 
-      toast({
-        title: "Code sent!",
-        description: `Verification code sent to ${formattedPhone}`,
-      });
+        toast({
+          title: "Code sent!",
+          description: `Verification code sent to ${formatPhoneForDisplay(phoneNumber)}`,
+        });
+      } else {
+        throw new Error('Failed to send SMS');
+      }
     } catch (error) {
       console.error('SMS sending error:', error);
       
-      let errorMessage = "Failed to send verification code";
-      if (error instanceof Error) {
-        if (error.message.includes('quota')) {
-          errorMessage = "SMS quota exceeded. Please try again later.";
-        } else if (error.message.includes('invalid')) {
-          errorMessage = "Invalid phone number format";
-        } else if (error.message.includes('captcha')) {
-          errorMessage = "Please complete the security verification";
-        }
-      }
-
       toast({
         title: "SMS Error",
-        description: errorMessage,
+        description: "Failed to send verification code. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -102,10 +76,10 @@ export function PhoneVerification({
   };
 
   const handleVerifyCode = async () => {
-    if (!confirmationResult || !verificationCode || verificationCode.length !== 6) {
+    if (verificationCode.length !== 6) {
       toast({
         title: "Invalid code",
-        description: "Please enter the 6-digit verification code",
+        description: "Please enter the complete 6-digit code",
         variant: "destructive",
       });
       return;
@@ -114,18 +88,18 @@ export function PhoneVerification({
     setIsLoading(true);
 
     try {
-      const isValid = await verifySMSCode(confirmationResult, verificationCode);
+      const isValid = await verifySMSCode(phoneNumber, verificationCode);
       
       if (isValid) {
         toast({
-          title: "Phone verified!",
-          description: "Your phone number has been successfully verified",
+          title: "Verification successful!",
+          description: "Your phone number has been verified",
         });
         onVerificationComplete(true);
       } else {
         toast({
           title: "Invalid code",
-          description: "The verification code is incorrect. Please try again.",
+          description: "The verification code is incorrect or expired",
           variant: "destructive",
         });
       }
@@ -133,7 +107,7 @@ export function PhoneVerification({
       console.error('Verification error:', error);
       toast({
         title: "Verification failed",
-        description: "Invalid verification code. Please try again.",
+        description: "Failed to verify code. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -141,21 +115,23 @@ export function PhoneVerification({
     }
   };
 
-  const handleResendCode = () => {
-    setStep('phone');
+  const handleResendCode = async () => {
+    if (timeLeft > 0) return;
+    
     setVerificationCode('');
-    setConfirmationResult(null);
-    cleanupRecaptcha();
+    await handleSendCode();
   };
 
+  const handlePhoneNumberChange = (value: string) => {
+    // Allow only digits, spaces, parentheses, and hyphens
+    const cleaned = value.replace(/[^\d\s\(\)\-\+]/g, '');
+    onPhoneChange?.(cleaned);
+  };
+
+  // Phone number input step
   if (step === 'phone') {
     return (
       <div className="space-y-4">
-        <div className="flex items-center space-x-2 text-sm text-gray-600">
-          <Phone className="h-4 w-4" />
-          <span>Phone verification required for account security</span>
-        </div>
-        
         <div className="space-y-2">
           <Label htmlFor="phone">Phone Number</Label>
           <Input
@@ -163,13 +139,13 @@ export function PhoneVerification({
             type="tel"
             placeholder="+1 (555) 123-4567"
             value={phoneNumber}
-            onChange={(e) => onPhoneChange?.(e.target.value)}
+            onChange={(e) => handlePhoneNumberChange(e.target.value)}
             disabled={disabled || isLoading}
-            className="pl-12"
+            className="text-lg"
           />
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Phone className="h-4 w-4 text-gray-400" />
-          </div>
+          <p className="text-sm text-gray-600">
+            We'll send a verification code to this number
+          </p>
         </div>
 
         <Button 
@@ -189,18 +165,16 @@ export function PhoneVerification({
             </>
           )}
         </Button>
-
-        {/* Hidden reCAPTCHA container */}
-        <div id={recaptchaId} className="hidden"></div>
       </div>
     );
   }
 
+  // Verification code input step
   return (
     <div className="space-y-4">
       <div className="flex items-center space-x-2 text-sm text-gray-600">
         <Shield className="h-4 w-4" />
-        <span>Enter the 6-digit code sent to {formatPhoneNumber(phoneNumber)}</span>
+        <span>Enter the 6-digit code sent to {formatPhoneForDisplay(phoneNumber)}</span>
       </div>
 
       <div className="space-y-2">
@@ -217,39 +191,40 @@ export function PhoneVerification({
         />
       </div>
 
-      <div className="flex space-x-2">
-        <Button 
-          onClick={handleVerifyCode}
-          disabled={disabled || isLoading || verificationCode.length !== 6}
-          className="flex-1"
+      <Button 
+        onClick={handleVerifyCode}
+        disabled={disabled || isLoading || verificationCode.length !== 6}
+        className="w-full"
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Verifying...
+          </>
+        ) : (
+          "Verify Code"
+        )}
+      </Button>
+
+      <div className="flex items-center justify-between text-sm">
+        <Button
+          variant="ghost"
+          onClick={() => setStep('phone')}
+          disabled={disabled || isLoading}
         >
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Verifying...
-            </>
-          ) : (
-            <>
-              <Shield className="mr-2 h-4 w-4" />
-              Verify Code
-            </>
-          )}
+          Change Phone Number
         </Button>
 
-        <Button 
-          variant="outline"
+        <Button
+          variant="ghost"
           onClick={handleResendCode}
-          disabled={disabled || timeLeft > 0}
-          className="flex-1"
+          disabled={disabled || isLoading || timeLeft > 0}
         >
-          {timeLeft > 0 ? `Resend (${timeLeft}s)` : 'Resend Code'}
+          {timeLeft > 0 ? `Resend in ${timeLeft}s` : 'Resend Code'}
         </Button>
       </div>
-
-      {/* Hidden reCAPTCHA container */}
-      <div id="recaptcha-container" className="hidden"></div>
     </div>
   );
 }
 
-export default PhoneVerification;
+export default TwilioPhoneVerification;
