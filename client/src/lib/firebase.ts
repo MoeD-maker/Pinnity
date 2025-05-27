@@ -23,10 +23,23 @@ let recaptchaVerifier: RecaptchaVerifier | null = null;
  * @param containerId - ID of the container element for reCAPTCHA
  */
 export function initializeRecaptcha(containerId: string): RecaptchaVerifier {
+  // Clear any existing verifier first
   if (recaptchaVerifier) {
-    recaptchaVerifier.clear();
+    try {
+      recaptchaVerifier.clear();
+    } catch (e) {
+      console.log('Previous reCAPTCHA already cleared');
+    }
+    recaptchaVerifier = null;
   }
   
+  // Clear the container element completely
+  const container = document.getElementById(containerId);
+  if (container) {
+    container.innerHTML = '';
+  }
+  
+  // Create a new verifier
   recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
     size: 'invisible',
     callback: () => {
@@ -91,8 +104,18 @@ export async function verifySMSCode(
  */
 export function cleanupRecaptcha(): void {
   if (recaptchaVerifier) {
-    recaptchaVerifier.clear();
+    try {
+      recaptchaVerifier.clear();
+    } catch (e) {
+      console.log('reCAPTCHA already cleared');
+    }
     recaptchaVerifier = null;
+  }
+  
+  // Also clear any remaining reCAPTCHA DOM elements
+  const container = document.getElementById('recaptcha-container');
+  if (container) {
+    container.innerHTML = '';
   }
 }
 
