@@ -8,7 +8,7 @@ import { apiPost } from './api';
 export async function sendSMSVerification(phoneNumber: string): Promise<boolean> {
   try {
     console.log('Sending SMS request for phone:', phoneNumber);
-    const response = await apiPost('/api/sms/send', {
+    const response = await apiPost('/api/v1/sms/send', {
       phoneNumber: phoneNumber.trim()
     }) as { success: boolean };
 
@@ -28,7 +28,7 @@ export async function sendSMSVerification(phoneNumber: string): Promise<boolean>
  */
 export async function verifySMSCode(phoneNumber: string, code: string): Promise<boolean> {
   try {
-    const response = await apiPost('/api/sms/verify', {
+    const response = await apiPost('/api/v1/sms/verify', {
       phoneNumber: phoneNumber,
       code: code
     }) as { success: boolean };

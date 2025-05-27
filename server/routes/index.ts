@@ -56,8 +56,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   dealRoutes(app);
   businessRoutes(app);
   
-  // Register SMS routes
-  app.use('/api/sms', smsRoutes);
+  // Register SMS routes with versioning
+  app.use('/api/v1/sms', smsRoutes);
   
   // Add test routes for debugging Terms of Service validation
   addTestRoutes(app);
