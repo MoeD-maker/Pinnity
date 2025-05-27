@@ -110,7 +110,11 @@ export function TwilioPhoneVerification({
         } catch (error) {
           console.error('Failed to update backend phone verification:', error);
         }
-        
+        await fetch('/auth/verify-phone', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phoneNumber })
+        });
         onVerificationComplete(true);
       } else {
         console.log('Verification failed, showing error toast');

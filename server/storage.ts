@@ -22,6 +22,7 @@ export interface IStorage {
   // User methods
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByPhone(phone: string): Promise<User | undefined>;
   getUserWithBusiness(userId: number): Promise<(User & { business?: Business }) | undefined>;
   createIndividualUser(user: Omit<InsertUser, "userType" | "username">): Promise<User>;
   createBusinessUser(user: Omit<InsertUser, "userType" | "username">, business: Omit<InsertBusiness, "userId">): Promise<User & { business: Business }>;
@@ -532,6 +533,15 @@ export class MemStorage implements IStorage {
     return Array.from(this.users.values()).find(
       (user) => user.email.toLowerCase() === normalizedEmail,
     );
+  }
+
+  async getUserByPhone(phone: string): Promise<User | undefined> {
+    // Clean phone number for lookup (remove spaces, dashes, etc.)
+    const cleanPhone = phone.replace(/\D/g, '');
+    return Array.from(this.users.values()).find((user) => {
+      const userCleanPhone = user.phone.replace(/\D/g, '');
+      return userCleanPhone === cleanPhone;
+    });
   }
 
   async getUserWithBusiness(userId: number): Promise<(User & { business?: Business }) | undefined> {
@@ -1814,6 +1824,18 @@ export class DatabaseStorage implements IStorage {
     // Use SQL LOWER function for case-insensitive comparison
     const [user] = await db.select().from(users).where(
       sql`LOWER(${users.email}) = LOWER(${normalizedEmail})`
+    );
+    
+    return user || undefined;
+  }
+
+  async getUserByPhone(phone: string): Promise<User | undefined> {
+    // Clean phone number for lookup (remove spaces, dashes, etc.)
+    const cleanPhone = phone.replace(/\D/g, '');
+    
+    // Look up user by phone number
+    const [user] = await db.select().from(users).where(
+      sql`REPLACE(REPLACE(REPLACE(${users.phone}, '-', ''), ' ', ''), '+', '') = ${cleanPhone}`
     );
     
     return user || undefined;
