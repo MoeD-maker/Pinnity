@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,6 +38,7 @@ function IndividualSignupForm() {
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
   const [currentStep, setCurrentStep] = useState<'form' | 'phone' | 'complete'>('form');
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const form = useForm<IndividualSignupData>({
     resolver: zodResolver(individualSignupSchema),
@@ -93,10 +95,10 @@ function IndividualSignupForm() {
         description: "Your account has been created with verified phone number.",
       });
 
-      setCurrentStep('complete');
-      
-      // Clear form to prevent state issues
-      form.reset();
+      // Redirect to home page after successful registration
+      setTimeout(() => {
+        setLocation('/');
+      }, 1500); // Small delay to show the success message
       
     } catch (error) {
       console.error("Registration error:", error);
