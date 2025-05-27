@@ -53,6 +53,7 @@ function BusinessSignupForm() {
     proofOfBusiness: null as File | null
   });
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const form = useForm<BusinessSignupData>({
     resolver: zodResolver(businessSignupSchema),
@@ -102,8 +103,10 @@ function BusinessSignupForm() {
         description: "Your business account has been created and is pending verification.",
       });
 
-      // Clear form to prevent state issues
-      form.reset();
+      // Redirect to home page after successful registration
+      setTimeout(() => {
+        setLocation('/');
+      }, 1500); // Small delay to show the success message
       
     } catch (error) {
       console.error("Registration error:", error);
