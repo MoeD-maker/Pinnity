@@ -17,29 +17,32 @@ export const auth = getAuth(app);
 
 // SMS verification utilities
 let recaptchaVerifier: RecaptchaVerifier | null = null;
+let recaptchaInitialized = false;
 
 /**
  * Initialize reCAPTCHA verifier for SMS authentication
  * @param containerId - ID of the container element for reCAPTCHA
  */
 export function initializeRecaptcha(containerId: string): RecaptchaVerifier {
-  // Clear any existing verifier first
-  if (recaptchaVerifier) {
-    try {
-      recaptchaVerifier.clear();
-    } catch (e) {
-      console.log('Previous reCAPTCHA already cleared');
+  // Force complete cleanup
+  cleanupRecaptcha();
+  
+  // Wait for cleanup to complete
+  setTimeout(() => {
+    // Remove any existing containers with this ID
+    const existingContainer = document.getElementById(containerId);
+    if (existingContainer) {
+      existingContainer.remove();
     }
-    recaptchaVerifier = null;
-  }
+    
+    // Create a completely new container
+    const newContainer = document.createElement('div');
+    newContainer.id = containerId;
+    newContainer.className = 'hidden';
+    document.body.appendChild(newContainer);
+  }, 50);
   
-  // Clear the container element completely
-  const container = document.getElementById(containerId);
-  if (container) {
-    container.innerHTML = '';
-  }
-  
-  // Create a new verifier
+  // Create a new verifier after cleanup
   recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
     size: 'invisible',
     callback: () => {
@@ -50,6 +53,7 @@ export function initializeRecaptcha(containerId: string): RecaptchaVerifier {
     }
   });
   
+  recaptchaInitialized = true;
   return recaptchaVerifier;
 }
 
