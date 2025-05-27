@@ -28,11 +28,13 @@ export async function sendSMSVerification(phoneNumber: string): Promise<boolean>
  */
 export async function verifySMSCode(phoneNumber: string, code: string): Promise<boolean> {
   try {
+    console.log('Client: Sending verification request for phone:', phoneNumber, 'code:', code);
     const response = await apiPost('/api/v1/sms/verify', {
       phoneNumber: phoneNumber,
       code: code
     }) as { success: boolean };
 
+    console.log('Client: Verification response received:', response);
     return response.success;
   } catch (error) {
     console.error('SMS verification error:', error);
