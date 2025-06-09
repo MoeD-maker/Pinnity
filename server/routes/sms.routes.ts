@@ -4,6 +4,8 @@ import { z } from 'zod';
 
 const router = Router();
 
+// Remove the alias routes - they were creating incorrect double paths
+
 // Validation schemas
 const sendSMSSchema = z.object({
   phoneNumber: z.string().min(10, 'Phone number must be at least 10 digits')
