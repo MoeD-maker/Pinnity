@@ -114,11 +114,16 @@ export function verifySMSCode(phoneNumber: string, code: string): boolean {
   stored.expiresAt = Date.now() + (30 * 1000);
   console.log('Verification successful for phone:', phoneNumber, 'Original code:', originalCode);
   
-  // Clean up used codes after grace period
+  // Clean up used codes after grace period to prevent memory leaks
+  // But don't delete immediately to handle legitimate duplicate requests
   setTimeout(() => {
-    verificationCodes.delete(phoneNumber);
-    console.log('Cleaned up used verification code for:', phoneNumber);
-  }, 30000); // 30 second grace period
+    const currentStored = verificationCodes.get(phoneNumber);
+    // Only delete if it's still the same used code
+    if (currentStored && currentStored.code.startsWith('USED_')) {
+      verificationCodes.delete(phoneNumber);
+      console.log('Cleaned up used verification code for:', phoneNumber);
+    }
+  }, 60000); // 60 second grace period
   
   return true;
 }

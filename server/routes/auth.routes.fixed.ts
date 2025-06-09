@@ -76,6 +76,12 @@ export function authRoutes(app: Express): void {
           return res.status(401).json({ message: "Invalid email or password" });
         }
         
+        // Check if phone verification is required
+        console.log("Login user phoneVerified:", user.phoneVerified);
+        if (!user.phoneVerified) {
+          return res.status(403).json({ message: "Phone verification required" });
+        }
+        
         // Generate JWT token
         const token = generateToken(user);
         
@@ -127,6 +133,12 @@ export function authRoutes(app: Express): void {
         if (!user) {
           console.warn(`Failed login attempt for email: ${email}`);
           return res.status(401).json({ message: "Invalid email or password" });
+        }
+        
+        // Check if phone verification is required
+        console.log("Login user phoneVerified:", user.phoneVerified);
+        if (!user.phoneVerified) {
+          return res.status(403).json({ message: "Phone verification required" });
         }
         
         // Generate JWT token
