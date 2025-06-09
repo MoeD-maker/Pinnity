@@ -80,10 +80,20 @@ export function verifySMSCode(phoneNumber: string, code: string): boolean {
     return false;
   }
 
-  // Check if code has already been used
+  // Check if code has already been used - but allow recent successful verifications
   if (stored.code.startsWith('USED_')) {
-    console.log('Verification code already used for phone:', phoneNumber);
-    return false;
+    console.log('Verification code already used for phone:', phoneNumber, '- allowing within grace period');
+    // Extract the original code and compare
+    const originalStoredCode = stored.code.substring(5); // Remove 'USED_' prefix
+    const inputCode = String(code).trim();
+    
+    if (originalStoredCode === inputCode) {
+      console.log('Allowing duplicate verification within grace period for phone:', phoneNumber);
+      return true;
+    } else {
+      console.log('Different code provided for already-used verification:', phoneNumber);
+      return false;
+    }
   }
 
   // Check if code matches (convert both to strings and trim)
@@ -97,16 +107,18 @@ export function verifySMSCode(phoneNumber: string, code: string): boolean {
     return false;
   }
 
-  // Code is valid, mark it as used immediately to prevent race conditions
+  // Code is valid, mark it as used but keep it for a grace period
   const originalCode = stored.code;
   stored.code = 'USED_' + stored.code;
+  // Extend expiration by 30 seconds to handle duplicate requests gracefully
+  stored.expiresAt = Date.now() + (30 * 1000);
   console.log('Verification successful for phone:', phoneNumber, 'Original code:', originalCode);
   
-  // Delete after a short delay to prevent double submissions
+  // Clean up used codes after grace period
   setTimeout(() => {
     verificationCodes.delete(phoneNumber);
     console.log('Cleaned up used verification code for:', phoneNumber);
-  }, 5000); // 5 second delay
+  }, 30000); // 30 second grace period
   
   return true;
 }

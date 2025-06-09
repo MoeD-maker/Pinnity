@@ -1,0 +1,79 @@
+Our app currently uses Twilio SMS verification, but the backend is missing the required endpoints. Please implement the following routes exactly as described, and confirm they are registered and reachable by the frontend.
+
+---
+
+### 📁 FILE TO CREATE OR MODIFY:
+`server/routes/sms.routes.ts`
+
+---
+
+### ✅ 1. Add this route to send an SMS code:
+
+```ts
+app.post('/api/v1/sms/send', async (req: Request, res: Response) => {
+  const { phoneNumber } = req.body;
+  if (!phoneNumber) return res.status(400).json({ success: false, message: "Missing phone number" });
+
+  try {
+    const twilio = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    await twilio.verify.v2.services(process.env.TWILIO_SERVICE_SID)
+      .verifications
+      .create({ to: phoneNumber, channel: 'sms' });
+
+    console.log(`📤 Sent verification code to ${phoneNumber}`);
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("Twilio send error:", error);
+    return res.status(500).json({ success: false, message: "Failed to send code" });
+  }
+});
+✅ 2. Add this route to verify the submitted code:
+ts
+Copy
+Edit
+app.post('/api/v1/sms/verify', async (req: Request, res: Response) => {
+  const { phoneNumber, code } = req.body;
+  if (!phoneNumber || !code) {
+    return res.status(400).json({ success: false, message: "Missing data" });
+  }
+
+  try {
+    const twilio = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    const result = await twilio.verify.v2.services(process.env.TWILIO_SERVICE_SID)
+      .verificationChecks
+      .create({ to: phoneNumber, code });
+
+    console.log(`✅ Code verification for ${phoneNumber}: ${result.status}`);
+    return res.json({ success: result.status === 'approved' });
+  } catch (error) {
+    console.error("Twilio verify error:", error);
+    return res.status(500).json({ success: false, message: "Verification failed" });
+  }
+});
+🧩 3. Make sure this file is registered in your main Express server setup:
+Check server/index.ts or wherever express() is set up and confirm:
+
+ts
+Copy
+Edit
+import smsRoutes from './routes/sms.routes';
+smsRoutes(app);
+If not, add it.
+
+✅ 4. .env File MUST include:
+ini
+Copy
+Edit
+TWILIO_ACCOUNT_SID=your_sid_here
+TWILIO_AUTH_TOKEN=your_auth_token
+TWILIO_SERVICE_SID=your_verify_service_sid
+Use getRequiredEnv helpers if applicable.
+
+✅ 5. Confirm the following:
+Frontend calls to /api/v1/sms/send and /api/v1/sms/verify return valid success values.
+
+Console logs display verification session status.
+
+Codes are rejected properly if invalid or expired.
+
+Only add these routes if they are not already implemented. If they already exist, do not overwrite — just confirm correct behavior and log that it was already present.
