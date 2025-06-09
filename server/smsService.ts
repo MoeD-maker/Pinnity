@@ -61,13 +61,13 @@ export async function sendSMSVerification(phoneNumber: string): Promise<boolean>
  * @returns boolean - true if code is valid
  */
 export function verifySMSCode(phoneNumber: string, code: string): boolean {
-  console.log('Verifying code:', code, 'for phone:', phoneNumber);
-  console.log('Stored codes:', Array.from(verificationCodes.entries()));
+  console.log('📱 SMS verification attempt for phone:', phoneNumber, 'with code:', code);
+  console.log('📋 Currently stored codes:', Array.from(verificationCodes.entries()));
   
   const stored = verificationCodes.get(phoneNumber);
   
   if (!stored) {
-    console.log('No verification code found for phone:', phoneNumber);
+    console.warn('⚠️ No verification code found for phone:', phoneNumber);
     return false;
   }
 
@@ -112,7 +112,7 @@ export function verifySMSCode(phoneNumber: string, code: string): boolean {
   stored.code = 'USED_' + stored.code;
   // Extend expiration by 30 seconds to handle duplicate requests gracefully
   stored.expiresAt = Date.now() + (30 * 1000);
-  console.log('Verification successful for phone:', phoneNumber, 'Original code:', originalCode);
+  console.log('✅ SMS verification successful for phone:', phoneNumber, 'Original code:', originalCode);
   
   // Clean up used codes after grace period to prevent memory leaks
   // But don't delete immediately to handle legitimate duplicate requests

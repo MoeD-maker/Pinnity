@@ -76,9 +76,13 @@ export function authRoutes(app: Express): void {
           return res.status(401).json({ message: "Invalid email or password" });
         }
         
+        // Add debugging logs for user authentication
+        console.log("Login attempt for:", user?.email || "[unknown email]");
+        console.log("User phoneVerified status:", user?.phoneVerified);
+        
         // Check if phone verification is required
-        console.log("Login user phoneVerified:", user.phoneVerified);
         if (!user.phoneVerified) {
+          console.log("Blocking login — phone not verified for:", user?.email);
           return res.status(403).json({ message: "Phone verification required" });
         }
         
@@ -135,9 +139,13 @@ export function authRoutes(app: Express): void {
           return res.status(401).json({ message: "Invalid email or password" });
         }
         
+        // Add debugging logs for user authentication (legacy route)
+        console.log("Login attempt for (legacy):", user?.email || "[unknown email]");
+        console.log("User phoneVerified status (legacy):", user?.phoneVerified);
+        
         // Check if phone verification is required
-        console.log("Login user phoneVerified:", user.phoneVerified);
         if (!user.phoneVerified) {
+          console.log("Blocking login (legacy) — phone not verified for:", user?.email);
           return res.status(403).json({ message: "Phone verification required" });
         }
         
