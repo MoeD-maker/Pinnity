@@ -195,13 +195,15 @@ export function authRoutes(app: Express): void {
         const { confirmPassword, termsAccepted, ...userData } = req.body;
         
         // After validation middleware, these fields are guaranteed to exist
+        console.log("Creating user with phoneVerified:", userData.phoneVerified);
         const userToCreate = {
           firstName: userData.firstName,
           lastName: userData.lastName,
           email: userData.email,
           password: userData.password,
           phone: userData.phone,
-          address: userData.address
+          address: userData.address,
+          phoneVerified: userData.phoneVerified === true
         };
         
         // Create the user
@@ -245,13 +247,15 @@ export function authRoutes(app: Express): void {
         const { confirmPassword, termsAccepted, ...userData } = req.body;
         
         // After validation middleware, these fields are guaranteed to exist
+        console.log("Creating user with phoneVerified (legacy):", userData.phoneVerified);
         const userToCreate = {
           firstName: userData.firstName,
           lastName: userData.lastName,
           email: userData.email,
           password: userData.password,
           phone: userData.phone,
-          address: userData.address
+          address: userData.address,
+          phoneVerified: userData.phoneVerified === true
         };
         
         // Create the user
