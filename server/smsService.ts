@@ -31,9 +31,10 @@ export async function sendSMSVerification(phoneNumber: string): Promise<boolean>
     // Generate verification code
     const code = generateVerificationCode();
     
-    // Store code with 10 minute expiration
+    // Store code with 10 minute expiration BEFORE sending SMS
     const expiresAt = Date.now() + (10 * 60 * 1000);
     verificationCodes.set(phoneNumber, { code, expiresAt });
+    console.log(`Stored verification code ${code} for ${phoneNumber}, expires at ${new Date(expiresAt)}`);
 
     // Send SMS via Twilio
     const message = await client.messages.create({
@@ -43,9 +44,12 @@ export async function sendSMSVerification(phoneNumber: string): Promise<boolean>
     });
 
     console.log('SMS sent successfully:', message.sid);
+    console.log(`Code ${code} is ready for verification for ${phoneNumber}`);
     return true;
   } catch (error) {
     console.error('Error sending SMS:', error);
+    // Clean up stored code if SMS sending failed
+    verificationCodes.delete(phoneNumber);
     return false;
   }
 }
@@ -93,9 +97,10 @@ export function verifySMSCode(phoneNumber: string, code: string): boolean {
     return false;
   }
 
-  // Code is valid, mark it as used but don't delete immediately to prevent double-submission issues
-  stored.code = 'USED_' + stored.code; // Mark as used
-  console.log('Verification successful for phone:', phoneNumber);
+  // Code is valid, mark it as used immediately to prevent race conditions
+  const originalCode = stored.code;
+  stored.code = 'USED_' + stored.code;
+  console.log('Verification successful for phone:', phoneNumber, 'Original code:', originalCode);
   
   // Delete after a short delay to prevent double submissions
   setTimeout(() => {
