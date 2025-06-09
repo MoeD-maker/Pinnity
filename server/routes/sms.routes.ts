@@ -99,6 +99,22 @@ router.post('/verify', async (req, res) => {
     const isValid = verifySMSCode(formattedPhone, code);
     
     if (isValid) {
+      // SMS code is valid, now update the user's phone verification status in database
+      try {
+        const { storage } = await import('../storage');
+        const user = await storage.getUserByPhone(formattedPhone);
+        
+        if (user) {
+          await storage.updateUser(user.id, { phoneVerified: true });
+          console.log(`✅ Phone verified for user ${user.id} (${user.email}) - ${formattedPhone}`);
+        } else {
+          console.warn(`⚠️ No user found for phone: ${formattedPhone}`);
+        }
+      } catch (error) {
+        console.error('Error updating phone verification status:', error);
+        // Continue with success response even if DB update fails - SMS was verified
+      }
+      
       res.json({
         success: true,
         message: 'Phone number verified successfully'
