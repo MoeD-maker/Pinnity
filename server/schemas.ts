@@ -37,6 +37,7 @@ export const authSchemas = {
       confirmPassword: z.string().min(1, "Please confirm your password"),
       phone: z.string().min(1, { message: "Phone number is required" }),
       address: z.string().min(1, { message: "Address is required" }),
+      phoneVerified: z.boolean().optional(),
       termsAccepted: z.preprocess(
         // Convert any truthy string value to boolean true
         (val) => {

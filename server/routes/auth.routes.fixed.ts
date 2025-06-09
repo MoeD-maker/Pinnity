@@ -195,6 +195,7 @@ export function authRoutes(app: Express): void {
         const { confirmPassword, termsAccepted, ...userData } = req.body;
         
         // After validation middleware, these fields are guaranteed to exist
+        console.log("Raw req.body after validation:", JSON.stringify(req.body, null, 2));
         console.log("Creating user with phoneVerified:", userData.phoneVerified);
         const userToCreate = {
           firstName: userData.firstName,
