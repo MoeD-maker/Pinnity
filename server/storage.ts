@@ -1865,17 +1865,22 @@ export class DatabaseStorage implements IStorage {
     console.log(`🔧 Creating individual user with email: ${userData.email}`);
     console.log(`🔑 Password length during signup: ${userData.password.length}`);
     console.log(`🔑 Password preview during signup: ${userData.password.substring(0, 5)}***`);
+    console.log(`📱 Phone verified status: ${userData.phoneVerified}`);
     
     const hashedPassword = hashPassword(userData.password);
     console.log(`🔒 Generated hash preview: ${hashedPassword.substring(0, 10)}***`);
     
+    const dataToInsert = {
+      ...userData,
+      username,
+      userType: "individual",
+      password: hashedPassword
+    };
+    
+    console.log(`💾 Data being inserted to DB:`, JSON.stringify(dataToInsert, null, 2));
+    
     const [user] = await db.insert(users)
-      .values({
-        ...userData,
-        username,
-        userType: "individual",
-        password: hashedPassword
-      })
+      .values(dataToInsert)
       .returning();
     
     console.log(`✅ User created successfully with ID: ${user.id}`);
