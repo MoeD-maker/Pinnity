@@ -1859,16 +1859,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createIndividualUser(userData: Omit<InsertUser, "userType" | "username">): Promise<User> {
-    // Generate username from email
-    const username = userData.email.split('@')[0];
+    // Check if email already exists
+    const existingUser = await this.getUserByEmail(userData.email);
+    if (existingUser) {
+      throw new Error("Email already registered");
+    }
+    
+    // Generate unique username from email with timestamp
+    const username = `${userData.email.split('@')[0]}-${Date.now()}`;
     
     console.log(`🔧 Creating individual user with email: ${userData.email}`);
-    console.log(`🔑 Password length during signup: ${userData.password.length}`);
-    console.log(`🔑 Password preview during signup: ${userData.password.substring(0, 5)}***`);
+    console.log(`👤 Generated unique username: ${username}`);
     console.log(`📱 Phone verified status: ${userData.phoneVerified}`);
     
     const hashedPassword = hashPassword(userData.password);
-    console.log(`🔒 Generated hash preview: ${hashedPassword.substring(0, 10)}***`);
     
     const dataToInsert = {
       ...userData,
@@ -1876,8 +1880,6 @@ export class DatabaseStorage implements IStorage {
       userType: "individual",
       password: hashedPassword
     };
-    
-    console.log(`💾 Data being inserted to DB:`, JSON.stringify(dataToInsert, null, 2));
     
     const [user] = await db.insert(users)
       .values(dataToInsert)
