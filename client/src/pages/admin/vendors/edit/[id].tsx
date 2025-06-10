@@ -100,7 +100,7 @@ export default function VendorEditPage() {
     
     try {
       // Fetch business data from API
-      const response = await apiRequest(`/api/business/${params.id}`);
+      const response = await apiRequest(`/api/v1/admin/businesses/${params.id}`);
       
       if (response) {
         // Transform API response to match form structure
@@ -137,7 +137,7 @@ export default function VendorEditPage() {
     
     try {
       // Submit updated data to API
-      await apiRequest(`/api/business/${params.id}`, {
+      await apiRequest(`/api/v1/admin/businesses/${params.id}`, {
         method: "PUT",
         data
       });

@@ -222,6 +222,65 @@ export function adminRoutes(app: Express): void {
     },
   );
 
+  // GET individual business - versioned route
+  app.get(
+    "/api/v1/admin/businesses/:id",
+    versionHeadersMiddleware(),
+    authenticate,
+    authorize(["admin"]),
+    async (req: Request, res: Response) => {
+      try {
+        const businessId = parseInt(req.params.id);
+        if (isNaN(businessId)) {
+          return res.status(400).json({ error: "Invalid business ID" });
+        }
+
+        const business = await storage.getBusiness(businessId);
+        if (!business) {
+          return res.status(404).json({ error: "Business not found" });
+        }
+
+        return res.status(200).json(sanitizeBusiness(business));
+      } catch (err) {
+        console.error("Admin Business Fetch Error:", err);
+        return res.status(500).json({ error: "Unable to fetch business." });
+      }
+    },
+  );
+
+  // PUT update business - versioned route
+  app.put(
+    "/api/v1/admin/businesses/:id",
+    versionHeadersMiddleware(),
+    authenticate,
+    authorize(["admin"]),
+    async (req: Request, res: Response) => {
+      try {
+        const businessId = parseInt(req.params.id);
+        if (isNaN(businessId)) {
+          return res.status(400).json({ error: "Invalid business ID" });
+        }
+
+        const updateData = req.body.data || req.body;
+        
+        // Validate required fields
+        if (!updateData.businessName || !updateData.businessCategory) {
+          return res.status(400).json({ error: "Business name and category are required" });
+        }
+
+        const updatedBusiness = await storage.updateBusiness(businessId, updateData);
+        if (!updatedBusiness) {
+          return res.status(404).json({ error: "Business not found" });
+        }
+
+        return res.status(200).json(sanitizeBusiness(updatedBusiness));
+      } catch (err) {
+        console.error("Admin Business Update Error:", err);
+        return res.status(500).json({ error: "Unable to update business." });
+      }
+    },
+  );
+
   // Create versioned route paths
   const [vUsersPath, lUsersPath] = createVersionedRoutes("/admin/users");
 
