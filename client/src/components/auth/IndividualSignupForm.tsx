@@ -137,19 +137,28 @@ function IndividualSignupForm() {
         console.log("Verified saved user ID:", userIdFromStorage);
       }
 
-      // Refresh authentication state to ensure the app recognizes you're logged in
-      console.log("About to call refreshToken()...");
+      // Instead of using refreshToken(), directly verify the authentication by checking the user
+      console.log("Verifying authentication after registration...");
       try {
-        const refreshSuccess = await refreshToken();
-        console.log("Token refresh result:", refreshSuccess);
+        // Try to fetch the user data to verify authentication worked
+        const userResponse = await fetch(`/api/v1/user/${responseData.userId}`, {
+          credentials: 'include', // Include cookies
+        });
         
-        if (!refreshSuccess) {
-          console.error("refreshToken() returned false");
-          throw new Error("Authentication failed after registration");
+        if (userResponse.ok) {
+          console.log("Authentication verified successfully");
+          // Trigger auth context refresh to update the UI state
+          const authEvent = new CustomEvent('authStateChange', { 
+            detail: { authenticated: true, userId: responseData.userId } 
+          });
+          window.dispatchEvent(authEvent);
+        } else {
+          console.error("User verification failed with status:", userResponse.status);
+          throw new Error("Authentication verification failed after registration");
         }
-      } catch (refreshError: any) {
-        console.error("refreshToken() threw an error:", refreshError);
-        throw new Error(`Authentication failed: ${refreshError?.message || 'Unknown error'}`);
+      } catch (verifyError: any) {
+        console.error("Authentication verification threw an error:", verifyError);
+        throw new Error(`Authentication verification failed: ${verifyError?.message || 'Unknown error'}`);
       }
 
       console.log("Authentication successful, showing success toast");
