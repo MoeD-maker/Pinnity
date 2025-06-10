@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -58,21 +58,47 @@ function IndividualSignupForm() {
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = form;
 
+  // Auto-submit when phone verification completes
+  useEffect(() => {
+    if (currentStep === 'complete' && isPhoneVerified) {
+      console.log("=== USEEFFECT TRIGGERED SUBMISSION ===");
+      console.log("Current step:", currentStep);
+      console.log("Phone verified:", isPhoneVerified);
+      handleSubmit(onSubmit)();
+    }
+  }, [currentStep, isPhoneVerified]);
+
   const onSubmit = async (data: IndividualSignupData) => {
-    console.log("SUBMISSION PAYLOAD:", data);
+    console.log("=== ONSUBMIT CALLED ===");
+    console.log("Current step:", currentStep);
+    console.log("Phone verified:", isPhoneVerified);
+    console.log("Submission payload:", data);
     
     if (currentStep === 'form' && !isPhoneVerified) {
+      console.log("Moving to phone verification step");
       // First step: validate form and move to phone verification
       setCurrentStep('phone');
       return;
     }
     
     if (currentStep === 'phone' && !isPhoneVerified) {
+      console.log("Blocking submission - phone not verified");
       toast({
         title: "Phone verification required",
         description: "Please verify your phone number before continuing.",
         variant: "destructive",
       });
+      return;
+    }
+    
+    // Handle the completion step - this is when phone is verified and we're ready to submit
+    if (currentStep === 'complete' && isPhoneVerified) {
+      console.log("Proceeding with final registration submission...");
+    } else if (currentStep === 'complete' && !isPhoneVerified) {
+      console.log("Error: Complete step reached but phone not verified");
+      return;
+    } else {
+      console.log("Unhandled submission state - currentStep:", currentStep, "phoneVerified:", isPhoneVerified);
       return;
     }
     
@@ -122,10 +148,15 @@ function IndividualSignupForm() {
   };
 
   const handlePhoneVerification = (verified: boolean) => {
+    console.log("=== PHONE VERIFICATION CALLBACK ===");
+    console.log("Phone verification result:", verified);
+    console.log("Current step before:", currentStep);
+    console.log("Phone verified before:", isPhoneVerified);
+    
     setIsPhoneVerified(verified);
     if (verified) {
-      // Auto-proceed to final submission after phone verification
-      handleSubmit(onSubmit)();
+      console.log("Phone verified successfully, proceeding to complete step");
+      setCurrentStep('complete');
     }
   };
 
