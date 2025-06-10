@@ -487,14 +487,6 @@ function Router() {
         )}
       </Route>
       
-      <Route path="/admin/vendors">
-        {(params) => (
-          <Suspense fallback={<LoadingFallback />}>
-            <AuthenticatedRoute component={AdminVendors} params={params} />
-          </Suspense>
-        )}
-      </Route>
-      
       <Route path="/admin/vendors/edit/:id">
         {(params) => (
           <Suspense fallback={<LoadingFallback />}>
@@ -507,6 +499,14 @@ function Router() {
         {(params) => (
           <Suspense fallback={<LoadingFallback />}>
             <AuthenticatedRoute component={AdminVendorDetail} params={params} />
+          </Suspense>
+        )}
+      </Route>
+      
+      <Route path="/admin/vendors">
+        {(params) => (
+          <Suspense fallback={<LoadingFallback />}>
+            <AuthenticatedRoute component={AdminVendors} params={params} />
           </Suspense>
         )}
       </Route>
