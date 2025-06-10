@@ -61,7 +61,7 @@ function IndividualSignupForm() {
   const onSubmit = async (data: IndividualSignupData) => {
     console.log("SUBMISSION PAYLOAD:", data);
     
-    if (currentStep === 'form') {
+    if (currentStep === 'form' && !isPhoneVerified) {
       // First step: validate form and move to phone verification
       setCurrentStep('phone');
       return;
