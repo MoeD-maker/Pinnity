@@ -124,19 +124,31 @@ function IndividualSignupForm() {
 
       console.log("Registration response:", response);
 
+      // Save user data immediately to localStorage before calling refreshToken
+      if (response.userId && response.userType) {
+        console.log("Saving user data to localStorage:", response.userId, response.userType);
+        // Import saveUserData function
+        const { saveUserData } = await import('../../utils/userUtils');
+        saveUserData(response.userId.toString(), response.userType);
+      }
+
       // Refresh authentication state to ensure the app recognizes you're logged in
+      console.log("About to call refreshToken()...");
       const refreshSuccess = await refreshToken();
-      console.log("Token refresh success:", refreshSuccess);
+      console.log("Token refresh result:", refreshSuccess);
 
       if (refreshSuccess) {
+        console.log("Authentication successful, showing success toast");
         toast({
           title: "Registration successful!",
           description: "Redirecting to homepage...",
         });
 
         // Immediate redirect to home page after successful registration
+        console.log("Redirecting to homepage...");
         setLocation('/');
       } else {
+        console.error("refreshToken() returned false - authentication failed");
         throw new Error("Authentication failed after registration");
       }
       
