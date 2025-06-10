@@ -125,34 +125,44 @@ function IndividualSignupForm() {
       console.log("Registration response:", response);
 
       // Save user data immediately to localStorage before calling refreshToken
-      if (response.userId && response.userType) {
-        console.log("Saving user data to localStorage:", response.userId, response.userType);
+      const responseData = response as { userId: number; userType: string; message: string };
+      if (responseData.userId && responseData.userType) {
+        console.log("Saving user data to localStorage:", responseData.userId, responseData.userType);
         // Import saveUserData function
         const { saveUserData } = await import('../../utils/userUtils');
-        saveUserData(response.userId.toString(), response.userType);
+        saveUserData(responseData.userId.toString(), responseData.userType);
+        
+        // Verify the data was saved
+        const userIdFromStorage = localStorage.getItem('pinnity_user_id');
+        console.log("Verified saved user ID:", userIdFromStorage);
       }
 
       // Refresh authentication state to ensure the app recognizes you're logged in
       console.log("About to call refreshToken()...");
-      const refreshSuccess = await refreshToken();
-      console.log("Token refresh result:", refreshSuccess);
-
-      if (refreshSuccess) {
-        console.log("Authentication successful, showing success toast");
-        toast({
-          title: "Registration successful!",
-          description: "Redirecting to homepage...",
-        });
-
-        // Immediate redirect to home page after successful registration
-        console.log("Redirecting to homepage...");
-        setLocation('/');
-      } else {
-        console.error("refreshToken() returned false - authentication failed");
-        throw new Error("Authentication failed after registration");
+      try {
+        const refreshSuccess = await refreshToken();
+        console.log("Token refresh result:", refreshSuccess);
+        
+        if (!refreshSuccess) {
+          console.error("refreshToken() returned false");
+          throw new Error("Authentication failed after registration");
+        }
+      } catch (refreshError: any) {
+        console.error("refreshToken() threw an error:", refreshError);
+        throw new Error(`Authentication failed: ${refreshError?.message || 'Unknown error'}`);
       }
+
+      console.log("Authentication successful, showing success toast");
+      toast({
+        title: "Registration successful!",
+        description: "Redirecting to homepage...",
+      });
+
+      // Immediate redirect to home page after successful registration
+      console.log("Redirecting to homepage...");
+      setLocation('/');
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Registration error:", error);
       toast({
         title: "Registration failed",
