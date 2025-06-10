@@ -182,34 +182,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Token refresh function - used for both automatic and manual refresh
   const refreshToken = useCallback(async (): Promise<boolean> => {
-    if (!getUserId()) {
+    const userId = getUserId();
+    if (!userId) {
       return false;
     }
     
     try {
       console.log('Refreshing authentication token...');
       
-      // Use new API endpoint with versioning
-      const response = await apiRequest('/api/v1/auth/refresh', {
-        method: 'POST'
-      }) as {
-        userId: number;
-        userType: string;
-        message: string;
-      };
-      
-      if (response && response.userId) {
-        // Update the user information
-        saveUserData(response.userId.toString(), response.userType);
+      // First try to use the refresh endpoint (for normal token refresh)
+      try {
+        const response = await apiRequest('/api/v1/auth/refresh', {
+          method: 'POST'
+        }) as {
+          userId: number;
+          userType: string;
+          message: string;
+        };
         
-        // Fetch complete user data if needed
-        if (!user || user.id !== response.userId) {
-          const userData = await apiRequest(`/api/v1/user/${response.userId}`);
-          setUser(userData);
+        if (response && response.userId) {
+          // Update the user information
+          saveUserData(response.userId.toString(), response.userType);
+          
+          // Fetch complete user data if needed
+          if (!user || user.id !== response.userId) {
+            const userData = await apiRequest(`/api/v1/user/${response.userId}`);
+            setUser(userData);
+          }
+          
+          console.log('Token refresh successful');
+          return true;
         }
+      } catch (refreshError) {
+        // If refresh endpoint fails (e.g., no refresh token after registration), 
+        // try to fetch user data directly using the access token
+        console.log('Refresh endpoint failed, trying direct user fetch:', refreshError);
         
-        console.log('Token refresh successful');
-        return true;
+        if ((refreshError as any)?.status === 401) {
+          try {
+            // Try to fetch user data directly using the access token
+            const userData = await apiRequest(`/api/v1/user/${userId}`);
+            if (userData) {
+              setUser(userData);
+              saveUserData(userData.id.toString(), userData.userType);
+              console.log('User data fetched successfully using access token');
+              return true;
+            }
+          } catch (userFetchError) {
+            console.log('User fetch also failed:', userFetchError);
+            throw refreshError; // Re-throw the original refresh error
+          }
+        } else {
+          throw refreshError; // Re-throw non-401 errors
+        }
       }
       
       return false;

@@ -1,7 +1,7 @@
 import type { Express, Request, Response, CookieOptions } from "express";
 import { storage } from "../storage";
 import { z } from "zod";
-import { generateToken } from "../auth";
+import { generateToken, generateRefreshToken } from "../auth";
 import { getUploadMiddleware } from "../uploadMiddleware";
 import fs from 'fs';
 import { validate } from "../middleware/validationMiddleware";
@@ -209,7 +209,7 @@ export function authRoutes(app: Express): void {
         // Create the user
         const user = await storage.createIndividualUser(userToCreate);
         
-        // Generate JWT token
+        // Generate JWT token (access token only for now)
         const token = generateToken(user);
         
         // Set secure HTTP-only cookie with the token using cookie config utilities
