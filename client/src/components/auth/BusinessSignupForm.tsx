@@ -272,6 +272,15 @@ function BusinessSignupForm() {
               )}
             </Button>
           </div>
+          <div className="text-xs text-gray-600 space-y-1">
+            <p className="font-medium">Password requirements:</p>
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>Minimum 8 characters</li>
+              <li>Must contain at least one letter (A-Z or a-z)</li>
+              <li>Must contain at least one number (0-9)</li>
+              <li>Can include special characters (!@#$%^&*)</li>
+            </ul>
+          </div>
           {errors.password && (
             <p className="text-sm text-red-500">{errors.password.message}</p>
           )}
