@@ -84,19 +84,51 @@ function BusinessSignupForm() {
     setIsSubmitting(true);
     
     try {
-      // Use direct API call to registration endpoint
-      const response = await apiPost('/api/v1/auth/register/business', {
-        businessName: data.businessName,
-        category: data.category,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        password: data.password,
-        confirmPassword: data.confirmPassword,
-        phone: data.phone,
-        address: data.address,
-        termsAccepted: true // Ensure this is explicitly true
+      // Create FormData for multipart form submission
+      const formData = new FormData();
+      formData.append('businessName', data.businessName);
+      formData.append('businessCategory', data.category); // Backend expects 'businessCategory'
+      formData.append('firstName', data.firstName);
+      formData.append('lastName', data.lastName);
+      formData.append('email', data.email);
+      formData.append('password', data.password);
+      formData.append('phone', data.phone);
+      formData.append('address', data.address);
+      formData.append('termsAccepted', 'true');
+      
+      // Add uploaded files
+      if (uploadedFiles.governmentId) {
+        formData.append('governmentId', uploadedFiles.governmentId);
+      }
+      if (uploadedFiles.proofOfAddress) {
+        formData.append('proofOfAddress', uploadedFiles.proofOfAddress);
+      }
+      if (uploadedFiles.proofOfBusiness) {
+        formData.append('proofOfBusiness', uploadedFiles.proofOfBusiness);
+      }
+
+      // Get CSRF token for the request
+      const csrfResponse = await fetch('/api/csrf-token', {
+        credentials: 'include'
       });
+      const { csrfToken } = await csrfResponse.json();
+
+      // Use fetch directly for FormData submission
+      const response = await fetch('/api/v1/auth/register/business', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'X-CSRF-Token': csrfToken
+        },
+        body: formData // Don't set Content-Type header for FormData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Registration failed');
+      }
+
+      const result = await response.json();
 
       toast({
         title: "Business registration successful!",
