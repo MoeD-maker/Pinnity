@@ -105,7 +105,11 @@ function IndividualSignupForm() {
     setIsSubmitting(true);
     
     try {
-      // Use direct API call to registration endpoint
+      console.log("=== STARTING REGISTRATION ===");
+      console.log("Phone verified status:", isPhoneVerified);
+      console.log("Form data:", data);
+
+      // Registration API call
       const response = await apiPost('/api/v1/auth/register/individual', {
         firstName: data.firstName,
         lastName: data.lastName,
@@ -118,16 +122,23 @@ function IndividualSignupForm() {
         phoneVerified: isPhoneVerified
       });
 
+      console.log("Registration response:", response);
+
       // Refresh authentication state to ensure the app recognizes you're logged in
-      await refreshToken();
+      const refreshSuccess = await refreshToken();
+      console.log("Token refresh success:", refreshSuccess);
 
-      toast({
-        title: "Registration successful!",
-        description: "Redirecting to homepage...",
-      });
+      if (refreshSuccess) {
+        toast({
+          title: "Registration successful!",
+          description: "Redirecting to homepage...",
+        });
 
-      // Immediate redirect to home page after successful registration
-      setLocation('/');
+        // Immediate redirect to home page after successful registration
+        setLocation('/');
+      } else {
+        throw new Error("Authentication failed after registration");
+      }
       
     } catch (error) {
       console.error("Registration error:", error);
