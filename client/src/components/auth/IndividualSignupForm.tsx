@@ -118,18 +118,16 @@ function IndividualSignupForm() {
         phoneVerified: isPhoneVerified
       });
 
-      toast({
-        title: "Registration successful!",
-        description: "Your account has been created with verified phone number.",
-      });
-
       // Refresh authentication state to ensure the app recognizes you're logged in
       await refreshToken();
 
-      // Redirect to home page after successful registration
-      setTimeout(() => {
-        setLocation('/');
-      }, 1500); // Small delay to show the success message
+      toast({
+        title: "Registration successful!",
+        description: "Redirecting to homepage...",
+      });
+
+      // Immediate redirect to home page after successful registration
+      setLocation('/');
       
     } catch (error) {
       console.error("Registration error:", error);
