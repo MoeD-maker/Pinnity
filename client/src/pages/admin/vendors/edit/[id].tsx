@@ -61,7 +61,7 @@ const BUSINESS_CATEGORIES = [
   "Other"
 ];
 
-export default function VendorEditPage() {
+export default function AdminVendorEdit() {
   const [, params] = useRoute("/admin/vendors/edit/:id");
   const [, navigate] = useLocation();
   const [isLoading, setIsLoading] = useState(true);
