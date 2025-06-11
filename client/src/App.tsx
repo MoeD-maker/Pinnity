@@ -425,6 +425,13 @@ function Router() {
           </Suspense>
         )}
       </Route>
+      <Route path="/debug-cache">
+        {(params) => (
+          <Suspense fallback={<LoadingFallback />}>
+            <DebugCache />
+          </Suspense>
+        )}
+      </Route>
       
       {/* Protected routes */}
       <Route path="/">
