@@ -744,7 +744,7 @@ export default function VendorsPage() {
                           variant="ghost" 
                           size="sm"
                           className="h-8 w-8 p-0"
-                          onClick={() => navigate(`/admin/vendors/${business.id}/edit`)}
+                          onClick={() => navigate(`/admin/vendors/edit/${business.id}`)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
