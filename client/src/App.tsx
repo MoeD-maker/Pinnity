@@ -24,6 +24,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { WifiOff, Wifi, X } from "lucide-react";
 import { AuthTransition } from "@/components/auth/AuthTransition";
 import { AnimatePresence } from "framer-motion";
+import "@/utils/clearCache"; // Clear all caches on app load
 
 // Debug logs
 console.log("App.tsx module loading");
