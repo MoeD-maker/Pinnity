@@ -71,7 +71,15 @@ const UserDetailPage = () => {
   const fetchUser = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/admin/users/${userId}`);
+      const response = await fetch(`/api/v1/admin/users/${userId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+      
       if (!response.ok) {
         throw new Error('Failed to fetch user');
       }
@@ -98,14 +106,18 @@ const UserDetailPage = () => {
     setIsSaving(true);
     try {
       // Get CSRF token
-      const csrfResponse = await fetch('/api/csrf-token');
+      const csrfResponse = await fetch('/api/csrf-token', {
+        credentials: 'include'
+      });
       const { csrfToken } = await csrfResponse.json();
       
-      const response = await fetch(`/api/admin/users/${userId}`, {
+      const response = await fetch(`/api/v1/admin/users/${userId}`, {
         method: "PUT",
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken
+          'X-CSRF-Token': csrfToken,
+          'Accept': 'application/json'
         },
         body: JSON.stringify({
           firstName: editedUser.firstName,
