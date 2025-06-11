@@ -16,7 +16,7 @@ import {
 } from "@shared/schema";
 import bcrypt from 'bcryptjs';
 import { db } from './db';
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { eq, and, desc, sql, inArray } from 'drizzle-orm';
 
 export interface IStorage {
   // User methods
@@ -148,6 +148,7 @@ export class MemStorage implements IStorage {
   private businessHours: Map<number, BusinessHours>;
   private businessSocial: Map<number, BusinessSocial>;
   private businessDocuments: Map<number, BusinessDocument>;
+
   
   // Rating collection
   private redemptionRatings: Map<number, RedemptionRating>;
@@ -169,6 +170,7 @@ export class MemStorage implements IStorage {
   private currentBusinessSocialId: number;
   private currentBusinessDocumentId: number;
   private currentRedemptionRatingId: number;
+  private currentDealFavoriteId: number;
 
   constructor() {
     this.users = new Map();
@@ -991,6 +993,77 @@ export class MemStorage implements IStorage {
     
     this.businesses.set(id, updatedBusiness);
     return updatedBusiness;
+  }
+
+  async deleteBusiness(id: number): Promise<boolean> {
+    const business = await this.getBusiness(id);
+    if (!business) {
+      return false;
+    }
+
+    // Remove all related data
+    this.businesses.delete(business.id);
+    
+    // Remove related business hours
+    for (const [id, hours] of this.businessHours.entries()) {
+      if (hours.businessId === business.id) {
+        this.businessHours.delete(id);
+      }
+    }
+    
+    // Remove related social links
+    for (const [id, social] of this.businessSocial.entries()) {
+      if (social.businessId === business.id) {
+        this.businessSocial.delete(id);
+      }
+    }
+    
+    // Remove related documents
+    for (const [id, doc] of this.businessDocuments.entries()) {
+      if (doc.businessId === business.id) {
+        this.businessDocuments.delete(id);
+      }
+    }
+    
+    // Remove related deals
+    for (const [id, deal] of this.deals.entries()) {
+      if (deal.businessId === business.id) {
+        this.deals.delete(id);
+        
+        // Remove related approvals
+        for (const [approvalId, approval] of this.dealApprovals.entries()) {
+          if (approval.dealId === id) {
+            this.dealApprovals.delete(approvalId);
+          }
+        }
+        
+        // Remove related redemptions
+        for (const [redemptionId, redemption] of this.dealRedemptions.entries()) {
+          if (redemption.dealId === id) {
+            this.dealRedemptions.delete(redemptionId);
+          }
+        }
+        
+        // Remove related favorites
+        for (const [favoriteId, favorite] of this.dealFavorites.entries()) {
+          if (favorite.dealId === id) {
+            this.dealFavorites.delete(favoriteId);
+          }
+        }
+        
+        // Remove related ratings
+        for (const [ratingId, rating] of this.redemptionRatings.entries()) {
+          if (rating.dealId === id) {
+            this.redemptionRatings.delete(ratingId);
+          }
+        }
+      }
+    }
+    
+    // Remove the associated user account
+    this.users.delete(business.userId);
+    
+    return true;
   }
   
   // Business Hours methods
@@ -2133,6 +2206,65 @@ export class DatabaseStorage implements IStorage {
     }
     
     return updatedBusiness;
+  }
+
+  async deleteBusiness(id: number): Promise<boolean> {
+    return await db.transaction(async (tx) => {
+      // Get the business first to check if it exists and get the user ID
+      const [business] = await tx.select().from(businesses).where(eq(businesses.id, id));
+      if (!business) {
+        return false;
+      }
+
+      // Delete all related data in the correct order (child tables first)
+      
+      // Delete redemption ratings for deals belonging to this business
+      await tx.delete(redemptionRatings).where(
+        inArray(redemptionRatings.dealId, 
+          tx.select({ id: deals.id }).from(deals).where(eq(deals.businessId, id))
+        )
+      );
+
+      // Delete deal redemptions for deals belonging to this business
+      await tx.delete(dealRedemptions).where(
+        inArray(dealRedemptions.dealId, 
+          tx.select({ id: deals.id }).from(deals).where(eq(deals.businessId, id))
+        )
+      );
+
+      // Delete deal favorites for deals belonging to this business
+      await tx.delete(dealFavorites).where(
+        inArray(dealFavorites.dealId, 
+          tx.select({ id: deals.id }).from(deals).where(eq(deals.businessId, id))
+        )
+      );
+
+      // Delete deal approvals for deals belonging to this business
+      await tx.delete(dealApprovals).where(
+        inArray(dealApprovals.dealId, 
+          tx.select({ id: deals.id }).from(deals).where(eq(deals.businessId, id))
+        )
+      );
+
+      // Delete deals belonging to this business
+      await tx.delete(deals).where(eq(deals.businessId, id));
+
+      // Delete business-specific data
+      await tx.delete(businessDocuments).where(eq(businessDocuments.businessId, id));
+      await tx.delete(businessSocial).where(eq(businessSocial.businessId, id));
+      await tx.delete(businessHours).where(eq(businessHours.businessId, id));
+
+      // Delete the business itself
+      await tx.delete(businesses).where(eq(businesses.id, id));
+
+      // Delete the associated user account and their related data
+      await tx.delete(userNotificationPreferences).where(eq(userNotificationPreferences.userId, business.userId));
+      await tx.delete(refreshTokens).where(eq(refreshTokens.userId, business.userId));
+      await tx.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, business.userId));
+      await tx.delete(users).where(eq(users.id, business.userId));
+
+      return true;
+    });
   }
 
   async getBusinessHours(businessId: number): Promise<BusinessHours[]> {
