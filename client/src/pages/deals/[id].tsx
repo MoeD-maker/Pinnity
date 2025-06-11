@@ -308,7 +308,7 @@ export default function DealDetailPage() {
             <div>
               <CardTitle className="text-2xl md:text-3xl">{deal.title}</CardTitle>
               <CardDescription className="text-base mt-1">
-                {deal.business?.businessName || "Unknown Business"}
+                {deal.business?.businessName && deal.business.businessName}
               </CardDescription>
             </div>
             {deal.discount && (

@@ -26,7 +26,7 @@ function sanitizeDeals(deals: (Deal & { business?: Business })[]): any[] {
       endDate: deal.endDate || new Date(),
       status: deal.status || 'pending',
       businessId: deal.businessId,
-      businessName: deal.business?.businessName || 'Unknown Business',
+      businessName: deal.business?.businessName,
       dealType: deal.dealType || '',
       discount: deal.discount || '',
       terms: deal.terms || '',

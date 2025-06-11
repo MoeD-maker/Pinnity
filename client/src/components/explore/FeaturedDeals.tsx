@@ -344,7 +344,9 @@ export default function FeaturedDeals({
             </div>
             <CardContent className="p-3">
               <h3 className="font-semibold text-base line-clamp-1">{deal.title}</h3>
-              <p className="text-xs text-muted-foreground mb-2">{deal.business?.businessName || 'Unknown Business'}</p>
+              {deal.business?.businessName && (
+                <p className="text-xs text-muted-foreground mb-2">{deal.business.businessName}</p>
+              )}
               <p className="text-sm line-clamp-2">{deal.description}</p>
             </CardContent>
             <CardFooter className="p-3 pt-0">

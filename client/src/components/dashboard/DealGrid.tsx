@@ -125,7 +125,7 @@ function DealCard({ deal, onSelect, isCached = false }: DealCardProps) {
   
   // Get business name safely
   const safeBusiness = deal?.business || {};
-  const safeBusinessName = safeBusiness?.businessName || 'Unknown Business';
+  const safeBusinessName = safeBusiness?.businessName;
   
   // Get formatted expiration text
   const expirationText = getExpirationText(deal);

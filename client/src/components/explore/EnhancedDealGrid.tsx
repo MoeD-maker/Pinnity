@@ -333,9 +333,11 @@ function DealCard({
               <h3 className={`font-semibold ${isLarge ? 'text-lg sm:text-xl' : 'text-base sm:text-lg'} line-clamp-1`}>
                 {deal.title}
               </h3>
-              <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">
-                {deal.business?.businessName || 'Unknown Business'}
-              </p>
+              {deal.business?.businessName && (
+                <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">
+                  {deal.business.businessName}
+                </p>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -719,7 +721,9 @@ function SwipeableDealCards({ deals, onSelect }: { deals: DealWithBusiness[], on
             
             <CardHeader className="p-4">
               <h2 className="text-xl font-bold">{currentDeal.title}</h2>
-              <p className="text-muted-foreground">{currentDeal.business?.businessName || 'Unknown Business'}</p>
+              {currentDeal.business?.businessName && (
+                <p className="text-muted-foreground">{currentDeal.business.businessName}</p>
+              )}
             </CardHeader>
             
             <CardContent className="p-4 pt-0">
