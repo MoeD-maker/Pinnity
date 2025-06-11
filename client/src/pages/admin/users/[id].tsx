@@ -72,14 +72,7 @@ const UserDetailPage = () => {
     setIsLoading(true);
     try {
       console.log(`Fetching user with ID: ${userId}`);
-      const response = await fetch(`/api/v1/admin/users/${userId}`, {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await fetch(`/api/v1/admin/users/${userId}`);
       
       console.log(`Response status: ${response.status}`);
       
@@ -112,18 +105,14 @@ const UserDetailPage = () => {
     setIsSaving(true);
     try {
       // Get CSRF token
-      const csrfResponse = await fetch('/api/csrf-token', {
-        credentials: 'include'
-      });
+      const csrfResponse = await fetch('/api/csrf-token');
       const { csrfToken } = await csrfResponse.json();
       
       const response = await fetch(`/api/v1/admin/users/${userId}`, {
         method: "PUT",
-        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken,
-          'Accept': 'application/json'
+          'X-CSRF-Token': csrfToken
         },
         body: JSON.stringify({
           firstName: editedUser.firstName,
