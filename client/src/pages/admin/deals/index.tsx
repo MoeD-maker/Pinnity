@@ -274,7 +274,7 @@ export default function DealsPage() {
           // Make sure business is defined
           business: deal.business || {
             id: deal.businessId || 0,
-            businessName: 'Unknown Business'
+            businessName: undefined
           }
         }));
         

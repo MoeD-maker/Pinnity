@@ -139,7 +139,6 @@ export default function FeaturedDeals({
     const validDeals = allDeals.filter(deal => 
       deal.business && 
       deal.business.businessName && 
-      deal.business.businessName !== 'Unknown Business' &&
       deal.business.businessName.trim() !== ''
     );
     return validDeals.slice(0, limit);
