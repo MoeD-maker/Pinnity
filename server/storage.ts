@@ -170,7 +170,7 @@ export class MemStorage implements IStorage {
   private currentBusinessSocialId: number;
   private currentBusinessDocumentId: number;
   private currentRedemptionRatingId: number;
-  private currentDealFavoriteId: number;
+
 
   constructor() {
     this.users = new Map();
@@ -453,6 +453,7 @@ export class MemStorage implements IStorage {
       username,
       password: hashedPassword,
       userType: "individual",
+      phoneVerified: userData.phoneVerified ?? false,
       created_at: new Date().toISOString(),
     };
     
@@ -477,6 +478,7 @@ export class MemStorage implements IStorage {
       username,
       password: hashedPassword,
       userType: "business",
+      phoneVerified: userData.phoneVerified ?? false,
       created_at: new Date().toISOString(),
     };
     
@@ -1045,9 +1047,9 @@ export class MemStorage implements IStorage {
         }
         
         // Remove related favorites
-        for (const [favoriteId, favorite] of this.dealFavorites.entries()) {
+        for (const [favoriteId, favorite] of this.userFavorites.entries()) {
           if (favorite.dealId === id) {
-            this.dealFavorites.delete(favoriteId);
+            this.userFavorites.delete(favoriteId);
           }
         }
         
@@ -2232,9 +2234,9 @@ export class DatabaseStorage implements IStorage {
         )
       );
 
-      // Delete deal favorites for deals belonging to this business
-      await tx.delete(dealFavorites).where(
-        inArray(dealFavorites.dealId, 
+      // Delete user favorites for deals belonging to this business
+      await tx.delete(userFavorites).where(
+        inArray(userFavorites.dealId, 
           tx.select({ id: deals.id }).from(deals).where(eq(deals.businessId, id))
         )
       );
