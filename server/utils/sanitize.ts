@@ -9,10 +9,15 @@ export function sanitizeDeal(deal: any): any {
   // Extract base business data if available
   const business = deal.business || {};
   
+  // Production mode: Only return deals with complete business data
+  if (!business.businessName || business.businessName.trim() === '') {
+    return null; // Exclude deals without proper business data
+  }
+  
   // Create business info with fallbacks for undefined values
   const businessInfo = {
     id: business.id || 0,
-    businessName: business.businessName || "Unknown Business",
+    businessName: business.businessName,
     verificationStatus: business.verificationStatus || "pending",
     imageUrl: business.imageUrl || null,
     logoUrl: business.imageUrl || null, // For backward compatibility
@@ -50,7 +55,7 @@ export function sanitizeDeals(deals: any[]): any[] {
     return [];
   }
   
-  return deals.map(deal => sanitizeDeal(deal));
+  return deals.map(deal => sanitizeDeal(deal)).filter(deal => deal !== null);
 }
 
 /**

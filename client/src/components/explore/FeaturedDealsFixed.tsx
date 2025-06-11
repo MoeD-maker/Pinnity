@@ -129,7 +129,14 @@ export default function FeaturedDeals({
   // Get just the first X featured deals
   const featuredDeals = React.useMemo(() => {
     if (!allDeals || !Array.isArray(allDeals)) return [];
-    return allDeals.slice(0, limit);
+    // Filter out deals with missing or incomplete business data for clean production state
+    const validDeals = allDeals.filter(deal => 
+      deal.business && 
+      deal.business.businessName && 
+      deal.business.businessName !== 'Unknown Business' &&
+      deal.business.businessName.trim() !== ''
+    );
+    return validDeals.slice(0, limit);
   }, [allDeals, limit]);
 
   // Handle refresh click with proper event handling
