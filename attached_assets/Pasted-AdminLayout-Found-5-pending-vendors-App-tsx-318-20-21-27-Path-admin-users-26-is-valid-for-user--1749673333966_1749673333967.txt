@@ -1,0 +1,35 @@
+AdminLayout: Found 5 pending vendors
+App.tsx:318 [20:21:27] Path /admin/users/26 is valid for user, proceeding to render
+App.tsx:372 Current route location: /admin/users
+App.tsx:285 [20:21:30] Route evaluation: authState=authenticated, path=/admin/users
+AuthContext.tsx:74 [20:21:30] Computing redirect: user=admin, path=/admin/users
+AuthContext.tsx:144 [20:21:30] No redirection needed for admin on /admin/users
+index.tsx:151 Users response is already an array: 20
+AdminLayout.tsx:86 AdminLayout: Found 5 pending vendors
+App.tsx:318 [20:21:30] Path /admin/users is valid for user, proceeding to render
+App.tsx:372 Current route location: /admin/users/2
+App.tsx:285 [20:21:43] Route evaluation: authState=authenticated, path=/admin/users/2
+AuthContext.tsx:74 [20:21:43] Computing redirect: user=admin, path=/admin/users/2
+AuthContext.tsx:144 [20:21:43] No redirection needed for admin on /admin/users/2
+AdminLayout.tsx:86 AdminLayout: Found 5 pending vendors
+App.tsx:318 [20:21:43] Path /admin/users/2 is valid for user, proceeding to render
+App.tsx:372 Current route location: /admin/users
+App.tsx:285 [20:21:44] Route evaluation: authState=authenticated, path=/admin/users
+AuthContext.tsx:74 [20:21:44] Computing redirect: user=admin, path=/admin/users
+AuthContext.tsx:144 [20:21:44] No redirection needed for admin on /admin/users
+index.tsx:151 Users response is already an array: 20
+App.tsx:318 [20:21:44] Path /admin/users is valid for user, proceeding to render
+AdminLayout.tsx:86 AdminLayout: Found 5 pending vendors
+App.tsx:372 Current route location: /admin/users/38
+App.tsx:285 [20:21:49] Route evaluation: authState=authenticated, path=/admin/users/38
+AuthContext.tsx:74 [20:21:49] Computing redirect: user=admin, path=/admin/users/38
+AuthContext.tsx:144 [20:21:49] No redirection needed for admin on /admin/users/38
+AdminLayout.tsx:86 AdminLayout: Found 5 pending vendors
+App.tsx:318 [20:21:49] Path /admin/users/38 is valid for user, proceeding to render
+App.tsx:372 Current route location: /admin/users
+App.tsx:285 [20:21:51] Route evaluation: authState=authenticated, path=/admin/users
+AuthContext.tsx:74 [20:21:51] Computing redirect: user=admin, path=/admin/users
+AuthContext.tsx:144 [20:21:51] No redirection needed for admin on /admin/users
+index.tsx:151 Users response is already an array: 20
+AdminLayout.tsx:86 AdminLayout: Found 5 pending vendors
+App.tsx:318 [20:21:51] Path /admin/users is valid for user, proceeding to render

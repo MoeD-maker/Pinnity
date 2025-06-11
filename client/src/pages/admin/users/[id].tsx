@@ -62,9 +62,19 @@ const UserDetailPage = () => {
   // Form state for editing
   const [editedUser, setEditedUser] = useState<UserData | null>(null);
 
+  // Debug logging
+  console.log("UserDetailPage rendered");
+  console.log("Route match:", match);
+  console.log("User ID:", userId);
+
   useEffect(() => {
+    console.log("UserDetailPage useEffect triggered");
+    console.log("Current userId:", userId);
     if (userId) {
+      console.log("Calling fetchUser for userId:", userId);
       fetchUser();
+    } else {
+      console.log("No userId found, not fetching user");
     }
   }, [userId]);
 
