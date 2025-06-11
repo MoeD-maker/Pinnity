@@ -182,6 +182,13 @@ export default function FeaturedDeals({
   if (!featuredDeals || featuredDeals.length === 0) {
     return null;
   }
+
+  // Filter out deals without business names
+  const validDeals = featuredDeals.filter(deal => deal.business?.businessName);
+  
+  if (validDeals.length === 0) {
+    return null;
+  }
   
   return (
     <div className="space-y-4 mb-8">
@@ -211,7 +218,7 @@ export default function FeaturedDeals({
       />
       
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {featuredDeals.map(deal => (
+        {validDeals.map(deal => (
           <Card 
             key={deal.id} 
             className="overflow-hidden transition-all hover:shadow-md cursor-pointer border-2 border-primary/20 relative"
