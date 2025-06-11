@@ -117,21 +117,15 @@ export default function FeaturedDeals({
         
         const data = await response.json();
         
-        console.log('Featured deals API response:', data);
-        
         if (data && typeof data === 'object') {
           // Handle both array and object responses
           if (Array.isArray(data)) {
-            console.log('Returning array data:', data);
             return data;
           } else {
             // Convert object with numeric keys to array
-            const arrayData = Object.values(data);
-            console.log('Converted object to array:', arrayData);
-            return arrayData;
+            return Object.values(data);
           }
         }
-        console.log('Returning empty array');
         return [];
       } catch (error) {
         console.error('Error fetching featured deals:', error);

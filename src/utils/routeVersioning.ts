@@ -168,8 +168,8 @@ export function versionHeadersMiddleware(version: APIVersion = CURRENT_VERSION) 
     // Modify the json method to include version info
     const originalJson = res.json;
     res.json = function(body: any): Response {
-      // Skip version injection for error responses
-      if (body && body.apiVersion === undefined && res.statusCode < 400) {
+      // Skip version injection for error responses and arrays
+      if (body && body.apiVersion === undefined && res.statusCode < 400 && !Array.isArray(body)) {
         body = {
           ...body,
           apiVersion: versionInfo.version

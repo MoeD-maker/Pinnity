@@ -1,0 +1,88 @@
+AuthContext.tsx:323 [19:11:15] Stored user ID: Not found
+AuthContext.tsx:447 [19:11:15] No user ID found in storage, user is not logged in
+AuthContext.tsx:461 [19:11:17] Auth status check completed
+LoginForm.tsx:46 Login form submission with: Object
+AuthContext.tsx:485 [19:11:26] Fetching CSRF token before login...
+AuthContext.tsx:514 [19:11:26] CSRF token obtained successfully: Yes
+api.ts:30 CSRF token reset - will fetch a new token on next request
+AuthContext.tsx:534 [19:11:26] Attempting login with credentials for email: mohamad.diab@hotmail.com...
+api.ts:74 Fetching CSRF token (attempt 1/3)...
+api.ts:106 CSRF token obtained successfully
+AuthContext.tsx:549 [19:11:26] Login response received: Object
+AuthContext.tsx:550 [19:11:26] Response userId: 38
+AuthContext.tsx:551 [19:11:26] Response userType: individual
+AuthContext.tsx:554 [19:11:26] Login successful, user ID: 38, type: individual
+AuthContext.tsx:564 [19:11:26] Fetching complete user data...
+queryClient.ts:214 Making GET request to /api/v1/user/38 undefined
+queryClient.ts:292 Raw response text from /api/v1/user/38: (length: 298)
+queryClient.ts:316 Parsed response from /api/v1/user/38: Object
+AuthContext.tsx:567 [19:11:26] User data received: Successfully
+AuthContext.tsx:580 [19:11:26] Token refresh timer scheduled after login
+AuthContext.tsx:603 [19:11:26] Preparing redirection after login...
+AuthContext.tsx:616 [19:11:26] Setting redirect path to /
+LoginForm.tsx:51 Login successful, not showing success toast
+AuthContext.tsx:304 [19:11:30] Checking authentication status...
+AuthContext.tsx:308 [19:11:30] Fetching CSRF token...
+AuthContext.tsx:311 [19:11:30] CSRF token obtained for session: Yes
+AuthContext.tsx:323 [19:11:30] Stored user ID: Present
+AuthContext.tsx:388 [19:11:30] Attempting to fetch user data with ID: 38
+queryClient.ts:214 Making GET request to /api/v1/user/38 undefined
+queryClient.ts:292 Raw response text from /api/v1/user/38: (length: 298)
+queryClient.ts:316 Parsed response from /api/v1/user/38: Object
+AuthContext.tsx:399 [19:11:30] User data received successfully
+AuthContext.tsx:74 [19:11:30] Computing redirect: user=individual, path=/auth
+AuthContext.tsx:106 [19:11:30] Authenticated individual on /auth, redirecting to /
+AuthContext.tsx:414 [19:11:30] Setting redirect path from /auth to /
+AuthContext.tsx:430 [19:11:30] Token refresh timer scheduled
+AuthContext.tsx:304 [19:11:30] Checking authentication status...
+AuthContext.tsx:308 [19:11:30] Fetching CSRF token...
+AuthContext.tsx:311 [19:11:30] CSRF token obtained for session: Yes
+AuthContext.tsx:323 [19:11:30] Stored user ID: Present
+AuthContext.tsx:354 [19:11:30] Using cached user data to prevent excessive requests
+AuthContext.tsx:358 [19:11:30] Using cached user data
+AuthContext.tsx:74 [19:11:30] Computing redirect: user=individual, path=/auth
+AuthContext.tsx:106 [19:11:30] Authenticated individual on /auth, redirecting to /
+AuthContext.tsx:367 [19:11:30] Setting redirect path from /auth to / (using cache)
+AuthContext.tsx:377 [19:11:30] Token refresh timer scheduled (using cached data)
+AuthContext.tsx:623 [19:11:26] Executing redirect to /
+App.tsx:371 Current route location: /
+2AuthContext.tsx:461 [19:11:31] Auth status check completed
+AuthContext.tsx:630 [19:11:26] Redirection completed, returning to authenticated state
+App.tsx:284 [19:11:31] Route evaluation: authState=authenticated, path=/
+AuthContext.tsx:74 [19:11:31] Computing redirect: user=individual, path=/
+App.tsx:317 [19:11:31] Path / is valid for user, proceeding to render
+queryClient.ts:214 Making GET request to /api/v1/deals/featured?limit=3 undefined
+dashboard.tsx:104 Fetching all deals for dashboard...
+queryClient.ts:292 Raw response text from /api/v1/deals/featured?limit=3: {"apiVersion":"1.0.0"}
+queryClient.ts:316 Parsed response from /api/v1/deals/featured?limit=3: Object
+react-jsx-dev-runtime.development.js:87  Warning: Each child in a list should have a unique "key" prop.
+
+Check the render method of `FeaturedDeals`. See https://reactjs.org/link/warning-keys for more information.
+    at _c (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/components/ui/card.tsx:20:11)
+    at FeaturedDeals (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/components/dashboard/FeaturedDeals.tsx:166:3)
+    at div
+    at div
+    at Dashboard (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/pages/dashboard.tsx:72:41)
+    at div
+    at div
+    at main
+    at div
+    at div
+    at MainLayout (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/components/layout/MainLayout.tsx:52:38)
+    at PresenceChild (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js?v=1df7f71d:121:24)
+    at AnimatePresence (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js?v=1df7f71d:210:26)
+    at AuthenticatedRoute (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/App.tsx?v=nMP48Rp6EBviHpv3EvxWQ:270:42)
+    at Route (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=1df7f71d:323:16)
+    at Switch (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=1df7f71d:379:17)
+    at Router (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/App.tsx?v=nMP48Rp6EBviHpv3EvxWQ:387:22)
+    at div
+    at Provider (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-GZH67F7E.js?v=1df7f71d:38:15)
+    at Provider (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-MSSVGQUS.js?v=1df7f71d:28:15)
+    at CollectionProvider (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-MSSVGQUS.js?v=1df7f71d:89:13)
+    at ToastProvider (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-toast.js?v=1df7f71d:59:5)
+    at AuthProvider (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/contexts/AuthContext.tsx:80:32)
+    at QueryClientProvider (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=1df7f71d:2805:3)
+    at App (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/App.tsx?v=nMP48Rp6EBviHpv3EvxWQ:894:3)
+printWarning @ react-jsx-dev-runtime.development.js:87
+dashboard.tsx:114 Received deals data: ObjectapiVersion: "1.0.0"[[Prototype]]: Object
+dashboard.tsx:118 Converting object to array format for dashboard
