@@ -72,7 +72,7 @@ export default function ExplorePage() {
   
   // Fetch all deals
   const { data: deals = [], isLoading, error, refetch: refetchDeals } = useQuery({
-    queryKey: ['/api/v1/deals'],
+    queryKey: ['/api/v1/deals', { timestamp: Date.now() }],
     queryFn: async () => {
       try {
         // Use the raw fetch instead of apiRequest to access headers

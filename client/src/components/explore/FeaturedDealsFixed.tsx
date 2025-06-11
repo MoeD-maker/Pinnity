@@ -92,7 +92,7 @@ export default function FeaturedDeals({
   
   // Get featured deals directly from the dedicated featured endpoint with proper limit parameter
   const { data: allDeals, isLoading, error, refetch } = useQuery({
-    queryKey: ['/api/v1/deals/featured', { limit }],
+    queryKey: ['/api/v1/deals/featured', { limit, timestamp: Date.now() }],
     queryFn: async () => {
       try {
         // Use the raw fetch instead of apiRequest to access headers

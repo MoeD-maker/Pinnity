@@ -25,6 +25,7 @@ import { WifiOff, Wifi, X } from "lucide-react";
 import { AuthTransition } from "@/components/auth/AuthTransition";
 import { AnimatePresence } from "framer-motion";
 import "@/utils/clearCache"; // Clear all caches on app load
+import "@/utils/forceClearCache"; // Force cache clearing utility
 
 // Debug logs
 console.log("App.tsx module loading");
@@ -37,6 +38,7 @@ const Explore = lazy(() => import("@/pages/enhanced-explore"));
 const Map = lazy(() => import("@/pages/map"));
 const DealDetails = lazy(() => import("@/pages/deals/[id]"));
 const FormValidationDemo = lazy(() => import("@/pages/FormValidationDemo"));
+const DebugCache = lazy(() => import("@/pages/debug-cache"));
 
 // Admin pages
 const AdminDashboard = lazy(() => import("@/pages/admin"));
