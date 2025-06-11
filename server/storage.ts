@@ -204,12 +204,21 @@ export class MemStorage implements IStorage {
     this.currentBusinessDocumentId = 1;
     this.currentRedemptionRatingId = 1;
     
+    // ONE-TIME RESET: Clear any lingering in-memory deals to ensure clean production state
+    this.deals.clear();
+    console.log("Storage initialized with clean deal state for production deployment");
+    
     // Populate with sample data
     this.initializeSampleData();
   }
 
   // Initialize with sample data
   private async initializeSampleData() {
+    // PRODUCTION MODE: No sample data initialization
+    // All data will be created through authentic user registration and admin processes
+    console.log("Storage initialized in production mode - no sample data created");
+    return;
+    
     // Create some sample users, businesses, and deals if no data exists
     if (this.users.size === 0) {
       // Create test accounts for customer, admin, and vendor
@@ -381,144 +390,9 @@ export class MemStorage implements IStorage {
         verificationStatus: "verified"
       });
       
-      // Create sample deals
-      // Expired deals
-      await this.createDeal({
-        businessId: cafeBusiness.id,
-        title: "50% Off Your First Coffee",
-        description: "New customers get 50% off any coffee drink!",
-        category: "Food & Drink",
-        imageUrl: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-        startDate: new Date("2023-01-01"),
-        endDate: new Date("2023-12-31"),
-        terms: "Valid for first-time customers only. Cannot be combined with other offers.",
-        discount: "50%",
-        dealType: "percent_off",
-        featured: true,
-        redemptionCode: "COFFEE50"
-      });
-      
-      await this.createDeal({
-        businessId: restaurantBusiness.id,
-        title: "Free Appetizer with Entrée Purchase",
-        description: "Enjoy a complimentary appetizer when you order any entrée!",
-        category: "Food & Drink",
-        imageUrl: "https://images.unsplash.com/photo-1609167830220-7164aa360951?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8NXx8YXBwZXRpemVyfGVufDB8fDB8fA%3D%3D&w=1000&q=80",
-        startDate: new Date("2023-01-01"),
-        endDate: new Date("2023-12-31"),
-        terms: "Valid for dine-in only. One appetizer per table. Max value $12.",
-        discount: "Free appetizer",
-        dealType: "free_item",
-        featured: true,
-        redemptionCode: "FREEAPP"
-      });
-      
-      // Future-dated deals
-      await this.createDeal({
-        businessId: cafeBusiness.id,
-        title: "Buy One, Get One Free Coffee",
-        description: "Purchase any coffee and get a second one free of equal or lesser value!",
-        category: "Food & Drink",
-        imageUrl: "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30), // 30 days in the future
-        terms: "Valid any day from 2pm-5pm. Cannot be combined with other offers.",
-        discount: "BOGO",
-        dealType: "bogo",
-        featured: true,
-        redemptionCode: "BOGO2024"
-      });
-      
-      await this.createDeal({
-        businessId: restaurantBusiness.id,
-        title: "20% Off Weekday Lunch",
-        description: "Enjoy 20% off your entire lunch bill Monday through Friday!",
-        category: "Food & Drink",
-        imageUrl: "https://images.unsplash.com/photo-1600891964599-f61ba0e24092?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 45), // 45 days in the future
-        terms: "Valid Monday-Friday from 11am-2pm. Not valid on holidays. Maximum discount $25.",
-        discount: "20%",
-        dealType: "percent_off",
-        featured: false,
-        redemptionCode: "LUNCH20"
-      });
-      
-      await this.createDeal({
-        businessId: retailBusiness.id,
-        title: "Summer Sale: 30% Off All Swimwear",
-        description: "Get ready for summer with 30% off our entire swimwear collection!",
-        category: "Retail",
-        imageUrl: "https://images.unsplash.com/photo-1560774358-d727658f457c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14), // 14 days in the future
-        terms: "Cannot be combined with other promotions. Sale applies to regular-priced items only.",
-        discount: "30%",
-        dealType: "percent_off",
-        featured: true,
-        redemptionCode: "SWIM30"
-      });
-      
-      await this.createDeal({
-        businessId: spaBusiness.id,
-        title: "Spa Day Package: 15% Off",
-        description: "Treat yourself to our deluxe spa package including massage, facial, and pedicure!",
-        category: "Health & Beauty",
-        imageUrl: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 60), // 60 days in the future
-        terms: "Appointment required. 24-hour cancellation notice required. Gratuity not included.",
-        discount: "15%",
-        dealType: "percent_off",
-        featured: false,
-        redemptionCode: "SPAPKG15"
-      });
-      
-      await this.createDeal({
-        businessId: retailBusiness.id,
-        title: "Buy One, Get One 50% Off",
-        description: "Purchase any full-priced item and get a second item of equal or lesser value at 50% off!",
-        category: "Retail",
-        imageUrl: "https://images.unsplash.com/photo-1556740738-b6a63e27c4df?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8cmV0YWlsfGVufDB8fDB8fA%3D%3D&w=1000&q=80",
-        startDate: new Date("2023-01-01"),
-        endDate: new Date("2023-12-31"),
-        terms: "Excludes sale items and accessories. Cannot be combined with other promotions.",
-        discount: "50% off second item",
-        dealType: "buy_one_get_one",
-        featured: false,
-        redemptionCode: "BOGO50"
-      });
-      
-      await this.createDeal({
-        businessId: spaBusiness.id,
-        title: "$20 Off Massage Services",
-        description: "Enjoy $20 off any 60-minute or longer massage therapy session!",
-        category: "Health & Beauty",
-        imageUrl: "https://images.unsplash.com/photo-1600334129128-685c5582fd35?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8bWFzc2FnZXxlbnwwfHwwfHw%3D&w=1000&q=80",
-        startDate: new Date("2023-01-01"),
-        endDate: new Date("2023-12-31"),
-        terms: "Appointment required. Not valid with other discounts. Gratuity not included.",
-        discount: "$20 off",
-        dealType: "fixed_amount",
-        featured: true,
-        redemptionCode: "RELAX20"
-      });
-      
-      // Create sample notification preferences
-      await this.createUserNotificationPreferences({
-        userId: user1.id,
-        emailNotifications: true,
-        pushNotifications: true,
-        dealAlerts: true,
-        weeklyNewsletter: false
-      });
-      
-      // Add sample favorites
-      await this.addUserFavorite(user1.id, 1);
-      await this.addUserFavorite(user1.id, 3);
-      
-      // Add sample redemption
-      await this.createRedemption(user1.id, 2);
+      // NO SAMPLE DEALS - Production deployment requires clean deal state
+      // Businesses can create their own authentic deals through the vendor dashboard
+      console.log("Sample data initialized without deals - clean production state");
     }
   }
 
