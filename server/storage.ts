@@ -57,6 +57,7 @@ export interface IStorage {
   getAllBusinesses(): Promise<(Business & { user: User })[]>;
   getBusinessesByStatus(status: string): Promise<(Business & { user: User })[]>;
   createTempBusiness(businessData: Partial<Omit<InsertBusiness, "id">>): Promise<Business>;
+  deleteBusiness(id: number): Promise<boolean>;
   
   // Business Hours methods
   getBusinessHours(businessId: number): Promise<BusinessHours[]>;

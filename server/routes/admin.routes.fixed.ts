@@ -1033,4 +1033,77 @@ export function adminRoutes(app: Express): void {
       }
     }
   );
+
+  // Delete business (versioned and legacy routes)
+  const [vDeleteBusinessPath, lDeleteBusinessPath] = createVersionedRoutes('/admin/businesses/:id');
+  
+  app.delete(vDeleteBusinessPath,
+    versionHeadersMiddleware(),
+    authenticate,
+    authorize(['admin']),
+    async (req: Request, res: Response) => {
+      try {
+        const businessId = parseInt(req.params.id);
+        if (isNaN(businessId)) {
+          return res.status(400).json({ error: "Invalid business ID" });
+        }
+
+        // Check if business exists first
+        const business = await storage.getBusiness(businessId);
+        if (!business) {
+          return res.status(404).json({ error: "Business not found" });
+        }
+
+        // Delete the business (this should cascade and delete all related data)
+        const success = await storage.deleteBusiness(businessId);
+        if (!success) {
+          return res.status(500).json({ error: "Failed to delete business" });
+        }
+
+        return res.status(200).json({ 
+          message: "Business deleted successfully",
+          deletedBusinessId: businessId,
+          deletedBusinessName: business.businessName
+        });
+      } catch (err) {
+        console.error("Admin Business Delete Error:", err);
+        return res.status(500).json({ error: "Unable to delete business." });
+      }
+    }
+  );
+
+  app.delete(lDeleteBusinessPath,
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate,
+    authorize(['admin']),
+    async (req: Request, res: Response) => {
+      try {
+        const businessId = parseInt(req.params.id);
+        if (isNaN(businessId)) {
+          return res.status(400).json({ error: "Invalid business ID" });
+        }
+
+        // Check if business exists first
+        const business = await storage.getBusiness(businessId);
+        if (!business) {
+          return res.status(404).json({ error: "Business not found" });
+        }
+
+        // Delete the business (this should cascade and delete all related data)
+        const success = await storage.deleteBusiness(businessId);
+        if (!success) {
+          return res.status(500).json({ error: "Failed to delete business" });
+        }
+
+        return res.status(200).json({ 
+          message: "Business deleted successfully",
+          deletedBusinessId: businessId,
+          deletedBusinessName: business.businessName
+        });
+      } catch (err) {
+        console.error("Admin Business Delete Error (legacy):", err);
+        return res.status(500).json({ error: "Unable to delete business." });
+      }
+    }
+  );
 }

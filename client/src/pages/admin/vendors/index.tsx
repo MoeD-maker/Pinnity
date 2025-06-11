@@ -98,6 +98,8 @@ export default function VendorsPage() {
   const [approvedCount, setApprovedCount] = useState(0);
   const [rejectedCount, setRejectedCount] = useState(0);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [businessToDelete, setBusinessToDelete] = useState<Business | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [selectedBusinessId, setSelectedBusinessId] = useState<number | null>(null);
   const { toast } = useToast();
 
@@ -469,6 +471,47 @@ export default function VendorsPage() {
     }
   };
 
+  const handleDeleteBusiness = async () => {
+    if (!businessToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await apiRequest(`/api/v1/admin/businesses/${businessToDelete.id}`, {
+        method: 'DELETE'
+      });
+
+      // Remove the business from the local state
+      setBusinesses(prev => prev.filter(b => b.id !== businessToDelete.id));
+      setFilteredBusinesses(prev => prev.filter(b => b.id !== businessToDelete.id));
+      
+      // Update counts
+      if (businessToDelete.verificationStatus === 'pending') {
+        setPendingCount(prev => prev - 1);
+      } else if (businessToDelete.verificationStatus === 'approved' || businessToDelete.verificationStatus === 'verified') {
+        setApprovedCount(prev => prev - 1);
+      } else if (businessToDelete.verificationStatus === 'rejected') {
+        setRejectedCount(prev => prev - 1);
+      }
+
+      toast({
+        title: "Business Deleted",
+        description: `${businessToDelete.businessName} has been permanently deleted.`,
+      });
+
+      setIsDeleteDialogOpen(false);
+      setBusinessToDelete(null);
+    } catch (error) {
+      console.error('Error deleting business:', error);
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete the business. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="flex items-center justify-between mb-6">
@@ -748,6 +791,17 @@ export default function VendorsPage() {
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => {
+                            setBusinessToDelete(business);
+                            setIsDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -802,6 +856,48 @@ export default function VendorsPage() {
           </Card>
         ))}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Vendor</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to permanently delete "{businessToDelete?.businessName}"? 
+              This action cannot be undone and will remove all associated data including deals, documents, and user accounts.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsDeleteDialogOpen(false);
+                setBusinessToDelete(null);
+              }}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteBusiness}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Permanently
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }
