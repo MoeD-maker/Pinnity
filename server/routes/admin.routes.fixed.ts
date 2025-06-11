@@ -413,6 +413,63 @@ export function adminRoutes(app: Express): void {
     }
   );
 
+  // Get individual user (versioned and legacy routes)
+  const [vGetUserPath, lGetUserPath] = createVersionedRoutes('/admin/users/:id');
+  
+  app.get(vGetUserPath, 
+    versionHeadersMiddleware(),
+    authenticate, 
+    authorize(['admin']), 
+    async (req: Request, res: Response) => {
+      try {
+        const userId = parseInt(req.params.id);
+        if (isNaN(userId)) {
+          return res.status(400).json({ message: "Invalid user ID" });
+        }
+        
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+        
+        // Filter out sensitive data
+        const { password, ...sanitizedUser } = user;
+        
+        return res.status(200).json(sanitizedUser);
+      } catch (error) {
+        console.error("Get user error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
+  app.get(lGetUserPath, 
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate, 
+    authorize(['admin']), 
+    async (req: Request, res: Response) => {
+      try {
+        const userId = parseInt(req.params.id);
+        if (isNaN(userId)) {
+          return res.status(400).json({ message: "Invalid user ID" });
+        }
+        
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+        
+        // Filter out sensitive data
+        const { password, ...sanitizedUser } = user;
+        
+        return res.status(200).json(sanitizedUser);
+      } catch (error) {
+        console.error("Get user error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
   // Update user (versioned and legacy routes)
   const [vUpdateUserPath, lUpdateUserPath] = createVersionedRoutes('/admin/users/:id');
   
