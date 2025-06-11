@@ -117,7 +117,10 @@ export default function SurpriseDeals({
           <Card 
             key={deal.id} 
             className="overflow-hidden transition-all hover:shadow-md cursor-pointer"
-            onClick={() => onSelect(deal.id)}
+            onClick={() => {
+              if (!deal?.id) return;
+              onSelect(deal.id);
+            }}
           >
             <div className="aspect-video relative overflow-hidden">
               <img 

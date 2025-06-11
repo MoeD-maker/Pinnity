@@ -136,9 +136,12 @@ export default function FeaturedDeals({
   const featuredDeals = React.useMemo(() => {
     if (!allDeals || !Array.isArray(allDeals)) return [];
     // Filter out deals with missing or incomplete business data for clean production state
-    const validDeals = allDeals.filter(deal => 
-      deal.business && 
-      deal.business.businessName && 
+    const validDeals = allDeals.filter(deal =>
+      deal &&
+      deal.id &&
+      deal.title &&
+      deal.business &&
+      deal.business.businessName &&
       deal.business.businessName.trim() !== ''
     );
     return validDeals.slice(0, limit);
@@ -181,13 +184,6 @@ export default function FeaturedDeals({
   if (!featuredDeals || featuredDeals.length === 0) {
     return null;
   }
-
-  // Filter out deals without business names
-  const validDeals = featuredDeals.filter(deal => deal.business?.businessName);
-  
-  if (validDeals.length === 0) {
-    return null;
-  }
   
   return (
     <div className="space-y-4 mb-8">
@@ -217,11 +213,14 @@ export default function FeaturedDeals({
       />
       
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {validDeals.map(deal => (
+        {featuredDeals.map(deal => (
           <Card 
             key={deal.id} 
             className="overflow-hidden transition-all hover:shadow-md cursor-pointer border-2 border-primary/20 relative"
-            onClick={() => onSelect(deal.id)}
+            onClick={() => {
+              if (!deal?.id) return; // Prevents navigating to /api/v1/deals/undefined
+              onSelect(deal.id);
+            }}
           >
             <div className="aspect-video relative overflow-hidden">
               <img 
@@ -229,9 +228,11 @@ export default function FeaturedDeals({
                 alt={deal.title}
                 className="w-full h-full object-cover transition-transform hover:scale-105"
               />
-              <div className="absolute top-2 left-2">
-                <FeaturedDealFavoriteButton dealId={deal.id} />
-              </div>
+              {deal.id && (
+                <div className="absolute top-2 left-2">
+                  <FeaturedDealFavoriteButton dealId={deal.id} />
+                </div>
+              )}
               
               {/* Featured badge */}
               <div className="absolute top-2 right-2">
