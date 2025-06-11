@@ -218,6 +218,182 @@ export class MemStorage implements IStorage {
     // All data will be created through authentic user registration and admin processes
     console.log("Storage initialized in production mode - no sample data created");
     return;
+    
+    // Create some sample users, businesses, and deals if no data exists
+    if (this.users.size === 0) {
+      // Create test accounts for customer, admin, and vendor
+      
+      // 1. Customer test account
+      const customerUser = await this.createIndividualUser({
+        firstName: "Customer",
+        lastName: "User",
+        email: "customer@test.com",
+        password: "Customer123!",
+        phone: "555-123-4567",
+        address: "100 User Ave, Anytown, USA",
+      });
+      
+      // 2. Admin test account
+      const adminUser = await this.createIndividualUser({
+        firstName: "Admin",
+        lastName: "User",
+        email: "admin@test.com",
+        password: "Admin123!",
+        phone: "555-987-6543",
+        address: "200 Admin Blvd, Anytown, USA",
+      });
+      // Update user type to admin
+      this.users.set(adminUser.id, {
+        ...adminUser,
+        userType: "admin"
+      });
+      
+      // 3. Vendor test account
+      const vendorUser = await this.createBusinessUser(
+        {
+          firstName: "Vendor",
+          lastName: "User",
+          email: "vendor@test.com",
+          password: "Vendor123!",
+          phone: "555-456-7890",
+          address: "300 Business St, Anytown, USA",
+        },
+        {
+          businessName: "Test Vendor Business",
+          businessCategory: "retail",
+          description: "A test vendor business for demonstration purposes",
+          address: "300 Business St, Anytown, USA",
+          latitude: 37.7841,
+          longitude: -122.4077,
+          phone: "555-456-7890",
+          website: "www.testvendor.com",
+          imageUrl: "https://images.unsplash.com/photo-1556740738-b6a63e27c4df?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80",
+          governmentId: "placeholder",
+          proofOfAddress: "placeholder",
+          proofOfBusiness: "placeholder",
+          verificationStatus: "verified"
+        }
+      );
+      
+      // Create a sample individual user
+      const user1 = await this.createIndividualUser({
+        firstName: "John",
+        lastName: "Doe",
+        email: "john@example.com",
+        password: "Password123!",
+        phone: "123-456-7890",
+        address: "123 Main St, Anytown, USA"
+      });
+      
+      // Create some sample businesses
+      const cafeUser = await this.createIndividualUser({
+        firstName: "Cafe",
+        lastName: "Owner",
+        email: "cafe@example.com",
+        password: "Password123!",
+        phone: "123-456-7891",
+        address: "456 Oak St, Anytown, USA"
+      });
+      
+      const cafeBusiness = await this.createBusiness({
+        userId: cafeUser.id,
+        businessName: "Morning Brew Café",
+        businessCategory: "restaurant",
+        description: "A cozy café serving fresh coffee and pastries",
+        address: "456 Oak St, Anytown, USA",
+        latitude: 37.7749,
+        longitude: -122.4194,
+        phone: "555-123-4567",
+        website: "www.morningbrewcafe.com",
+        imageUrl: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8M3x8Y2FmZXxlbnwwfHwwfHw%3D&w=1000&q=80",
+        governmentId: "placeholder",
+        proofOfAddress: "placeholder",
+        proofOfBusiness: "placeholder",
+        verificationStatus: "verified"
+      });
+      
+      const restaurantUser = await this.createIndividualUser({
+        firstName: "Restaurant",
+        lastName: "Owner",
+        email: "restaurant@example.com",
+        password: "Password123!",
+        phone: "123-456-7892",
+        address: "789 Pine St, Anytown, USA"
+      });
+      
+      const restaurantBusiness = await this.createBusiness({
+        userId: restaurantUser.id,
+        businessName: "Bistro Delight",
+        businessCategory: "restaurant",
+        description: "Fine dining with a modern twist",
+        address: "789 Pine St, Anytown, USA",
+        latitude: 37.7739,
+        longitude: -122.4114,
+        phone: "555-789-1234",
+        website: "www.bistrodelight.com",
+        imageUrl: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8cmVzdGF1cmFudHxlbnwwfHwwfHw%3D&w=1000&q=80",
+        governmentId: "placeholder",
+        proofOfAddress: "placeholder",
+        proofOfBusiness: "placeholder",
+        verificationStatus: "verified"
+      });
+      
+      const retailUser = await this.createIndividualUser({
+        firstName: "Retail",
+        lastName: "Owner",
+        email: "retail@example.com",
+        password: "Password123!",
+        phone: "123-456-7893",
+        address: "321 Maple St, Anytown, USA"
+      });
+      
+      const retailBusiness = await this.createBusiness({
+        userId: retailUser.id,
+        businessName: "Urban Threads",
+        businessCategory: "retail",
+        description: "Trendy clothing and accessories for all occasions",
+        address: "321 Maple St, Anytown, USA",
+        latitude: 37.7729,
+        longitude: -122.4134,
+        phone: "555-456-7890",
+        website: "www.urbanthreads.com",
+        imageUrl: "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8cmV0YWlsfGVufDB8fDB8fA%3D%3D&w=1000&q=80",
+        governmentId: "placeholder",
+        proofOfAddress: "placeholder",
+        proofOfBusiness: "placeholder",
+        verificationStatus: "verified"
+      });
+      
+      const spaUser = await this.createIndividualUser({
+        firstName: "Spa",
+        lastName: "Owner",
+        email: "spa@example.com",
+        password: "Password123!",
+        phone: "123-456-7894",
+        address: "654 Elm St, Anytown, USA"
+      });
+      
+      const spaBusiness = await this.createBusiness({
+        userId: spaUser.id,
+        businessName: "Tranquil Retreat Spa",
+        businessCategory: "services",
+        description: "A peaceful oasis offering massage and skincare services",
+        address: "654 Elm St, Anytown, USA",
+        latitude: 37.7719,
+        longitude: -122.4154,
+        phone: "555-987-6543",
+        website: "www.tranquilretreat.com",
+        imageUrl: "https://images.unsplash.com/photo-1610021684503-6b00aa5f5059?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8c3BhfGVufDB8fDB8fA%3D%3D&w=1000&q=80",
+        governmentId: "placeholder",
+        proofOfAddress: "placeholder",
+        proofOfBusiness: "placeholder",
+        verificationStatus: "verified"
+      });
+      
+      // NO SAMPLE DEALS - Production deployment requires clean deal state
+      // Businesses can create their own authentic deals through the vendor dashboard
+      console.log("Sample data initialized without deals - clean production state");
+    }
   }
 
   // User methods
