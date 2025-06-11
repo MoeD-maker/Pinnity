@@ -93,6 +93,8 @@ export default function FeaturedDeals({
   // Get featured deals directly from the dedicated featured endpoint with proper limit parameter
   const { data: allDeals, isLoading, error, refetch } = useQuery({
     queryKey: ['/api/v1/deals/featured', { limit, timestamp: Date.now() }],
+    staleTime: 0,
+    cacheTime: 0,
     queryFn: async () => {
       try {
         // Use the raw fetch instead of apiRequest to access headers
@@ -115,15 +117,21 @@ export default function FeaturedDeals({
         
         const data = await response.json();
         
+        console.log('Featured deals API response:', data);
+        
         if (data && typeof data === 'object') {
           // Handle both array and object responses
           if (Array.isArray(data)) {
+            console.log('Returning array data:', data);
             return data;
           } else {
             // Convert object with numeric keys to array
-            return Object.values(data);
+            const arrayData = Object.values(data);
+            console.log('Converted object to array:', arrayData);
+            return arrayData;
           }
         }
+        console.log('Returning empty array');
         return [];
       } catch (error) {
         console.error('Error fetching featured deals:', error);
