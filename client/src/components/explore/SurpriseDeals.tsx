@@ -140,7 +140,10 @@ export default function SurpriseDeals({
               <Button 
                 variant="secondary" 
                 className="w-full" 
-                onClick={() => onSelect(deal.id)}
+                onClick={() => {
+                  if (!deal?.id) return;
+                  onSelect(deal.id);
+                }}
               >
                 View Deal
               </Button>

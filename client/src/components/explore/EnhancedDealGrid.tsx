@@ -743,7 +743,10 @@ function SwipeableDealCards({ deals, onSelect }: { deals: DealWithBusiness[], on
             </CardContent>
             
             <CardFooter className="p-4 pt-0">
-              <Button onClick={() => onSelect(currentDeal.id)} className="w-full">
+              <Button onClick={() => {
+                if (!currentDeal?.id) return;
+                onSelect(currentDeal.id);
+              }} className="w-full">
                 View Details
               </Button>
             </CardFooter>

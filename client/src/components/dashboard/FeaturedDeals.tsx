@@ -287,7 +287,10 @@ export default function FeaturedDeals({
           <Card 
             key={deal.id} 
             className="overflow-hidden transition-all hover:shadow-lg cursor-pointer border-2 border-emerald-200 relative group bg-white"
-            onClick={() => onSelect(deal.id)}
+            onClick={() => {
+              if (!deal?.id) return;
+              onSelect(deal.id);
+            }}
           >
             <div className="aspect-video relative overflow-hidden">
               {/* Gradient overlay on image */}
@@ -299,9 +302,11 @@ export default function FeaturedDeals({
                 className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500"
               />
               
-              <div className="absolute top-2 left-2">
-                <FeaturedDealFavoriteButton dealId={deal.id} />
-              </div>
+              {deal.id && (
+                <div className="absolute top-2 left-2">
+                  <FeaturedDealFavoriteButton dealId={deal.id} />
+                </div>
+              )}
               
               {/* Featured badge in top right corner */}
               <div className="absolute top-0 right-0 z-20">

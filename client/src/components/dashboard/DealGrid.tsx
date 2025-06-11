@@ -159,7 +159,10 @@ function DealCard({ deal, onSelect, isCached = false }: DealCardProps) {
     <Card 
       ref={ref} 
       className="overflow-hidden transition-all hover:shadow-md cursor-pointer w-full"
-      onClick={onSelect}
+      onClick={() => {
+        if (!deal?.id) return;
+        onSelect();
+      }}
     >
       {inView ? (
         <div className="aspect-video relative overflow-hidden">
