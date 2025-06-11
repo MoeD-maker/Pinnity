@@ -339,10 +339,12 @@ export default function FeaturedDeals({
               <h3 className="font-bold text-lg md:text-xl text-emerald-700 line-clamp-1 group-hover:text-emerald-600 transition-colors">
                 {deal.title}
               </h3>
-              <p className="text-xs text-muted-foreground mb-2 flex items-center">
-                <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1"></span>
-                {deal.business?.businessName || 'Unknown Business'}
-              </p>
+              {deal.business?.businessName && (
+                <p className="text-xs text-muted-foreground mb-2 flex items-center">
+                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1"></span>
+                  {deal.business.businessName}
+                </p>
+              )}
               <p className="text-sm line-clamp-2 text-gray-600">{deal.description}</p>
             </CardContent>
             <CardFooter className="p-4 pt-0">

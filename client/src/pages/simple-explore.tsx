@@ -70,9 +70,11 @@ export default function SimpleExplorePage() {
                   <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
                     {deal.category}
                   </span>
-                  <p className="text-sm text-gray-500">
-                    {deal.business?.businessName || 'Unknown Business'}
-                  </p>
+                  {deal.business?.businessName && (
+                    <p className="text-sm text-gray-500">
+                      {deal.business.businessName}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
