@@ -97,8 +97,14 @@ export default function FeaturedDeals({
       try {
         // Use the raw fetch instead of apiRequest to access headers
         // Pass the limit parameter to the API
-        const url = `/api/v1/deals/featured?limit=${limit}`;
-        const response = await fetch(url);
+        const url = `/api/v1/deals/featured?limit=${limit}&_t=${Date.now()}`;
+        const response = await fetch(url, {
+          cache: 'no-cache',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
         
         // Check cache status from response headers
         const cacheControl = response.headers.get('Cache-Control');

@@ -76,7 +76,13 @@ export default function ExplorePage() {
     queryFn: async () => {
       try {
         // Use the raw fetch instead of apiRequest to access headers
-        const response = await fetch('/api/v1/deals');
+        const response = await fetch(`/api/v1/deals?_t=${Date.now()}`, {
+          cache: 'no-cache',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
         
         // Check if response is from cache using centralized utility
         const cacheStatus = getCacheStatusFromResponse(response);
