@@ -71,6 +71,7 @@ const UserDetailPage = () => {
   const fetchUser = async () => {
     setIsLoading(true);
     try {
+      console.log(`Fetching user with ID: ${userId}`);
       const response = await fetch(`/api/v1/admin/users/${userId}`, {
         method: 'GET',
         credentials: 'include',
@@ -80,18 +81,23 @@ const UserDetailPage = () => {
         }
       });
       
+      console.log(`Response status: ${response.status}`);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch user');
+        const errorText = await response.text();
+        console.error(`API Error: ${response.status} - ${errorText}`);
+        throw new Error(`Failed to fetch user: ${response.status}`);
       }
       
       const userData = await response.json();
+      console.log("User data received:", userData);
       setUser(userData);
       setEditedUser(userData);
     } catch (error) {
       console.error("Error fetching user:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch user details",
+        description: `Failed to fetch user details: ${error.message}`,
         variant: "destructive"
       });
       navigate("/admin/users");
