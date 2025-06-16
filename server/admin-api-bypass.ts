@@ -317,4 +317,40 @@ bypassRouter.post(
 );
 
 // Export the router for use in the main server
+// Add deals endpoint to bypass Vite middleware issues
+bypassRouter.get(
+  "/deals",
+  authenticate,
+  authorize(["admin"]),
+  async (req: Request, res: Response) => {
+    console.log("BYPASS DEALS ENDPOINT: Processing GET /api/direct/admin/deals");
+    
+    try {
+      const deals = await storage.getDeals();
+      console.log(`BYPASS DEALS ENDPOINT: Found ${deals.length} deals`);
+      
+      // Get business info for each deal
+      const dealsWithBusiness = await Promise.all(
+        deals.map(async (deal) => {
+          const business = await storage.getBusiness(deal.businessId);
+          return {
+            ...deal,
+            business: business ? {
+              id: business.id,
+              businessName: business.businessName,
+              businessCategory: business.businessCategory
+            } : null
+          };
+        })
+      );
+      
+      console.log("BYPASS DEALS ENDPOINT: Returning JSON response");
+      return res.status(200).json(dealsWithBusiness);
+    } catch (error) {
+      console.error("Bypass deals endpoint error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
+
 export { bypassRouter };
