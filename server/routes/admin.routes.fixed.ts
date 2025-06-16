@@ -933,6 +933,17 @@ export function adminRoutes(app: Express): void {
     }
   );
 
+  // Test endpoint to verify route registration
+  app.get('/api/v1/admin/test-deals',
+    versionHeadersMiddleware(),
+    authenticate,
+    authorize(['admin']),
+    async (_req: Request, res: Response) => {
+      console.log("TEST DEALS ENDPOINT: Successfully reached");
+      return res.status(200).json({ message: "Test endpoint working", deals: [] });
+    }
+  );
+
   // Get all deals (versioned and legacy routes)
   const [vDealsPath, lDealsPath] = createVersionedRoutes('/admin/deals');
   
@@ -942,7 +953,9 @@ export function adminRoutes(app: Express): void {
     authorize(['admin']),
     async (_req: Request, res: Response) => {
       try {
+        console.log("ADMIN DEALS ENDPOINT: Processing GET /api/v1/admin/deals");
         const deals = await storage.getDeals();
+        console.log(`ADMIN DEALS ENDPOINT: Found ${deals.length} deals`);
         
         // Get business info for each deal
         const dealsWithBusiness = await Promise.all(
@@ -959,6 +972,7 @@ export function adminRoutes(app: Express): void {
           })
         );
         
+        console.log("ADMIN DEALS ENDPOINT: Returning JSON response");
         return res.status(200).json(dealsWithBusiness);
       } catch (error) {
         console.error("Get admin deals error:", error);
