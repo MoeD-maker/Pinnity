@@ -3,7 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { sendSMSVerification, verifySMSCode, formatPhoneForDisplay } from "@/lib/smsService";
+import { 
+  initializeRecaptcha, cleanupRecaptcha, 
+  formatPhoneNumber, sendSMSVerification, 
+  verifySMSCode 
+} from "@/lib/smsService";
 import { Loader2, Phone, Shield } from "lucide-react";
 
 interface PhoneVerificationProps {
@@ -23,6 +27,8 @@ export function PhoneVerification({
   const [verificationCode, setVerificationCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
+  const [confirmationResult, setConfirmationResult] = useState<any>(null);
+  const recaptchaId = useId() || "recaptcha-container";
   const { toast } = useToast();
 
   // Countdown timer for resend
@@ -57,7 +63,7 @@ export function PhoneVerification({
 
         toast({
           title: "Code sent!",
-          description: `Verification code sent to ${formatPhoneForDisplay(phoneNumber)}`,
+          description: `Verification code sent to ${formatPhoneNumber(phoneNumber)}`,
         });
       } else {
         throw new Error('Failed to send SMS');
@@ -180,7 +186,7 @@ export function PhoneVerification({
     <div className="space-y-4">
       <div className="flex items-center space-x-2 text-sm text-gray-600">
         <Shield className="h-4 w-4" />
-        <span>Enter the 6-digit code sent to {formatPhoneForDisplay(phoneNumber)}</span>
+        <span>Enter the 6-digit code sent to {formatPhoneNumber(phoneNumber)}</span>
       </div>
 
       <div className="space-y-2">

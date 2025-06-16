@@ -61,3 +61,29 @@ export function formatPhoneForDisplay(phoneNumber: string): string {
   // For international numbers, just add spacing
   return phoneNumber;
 }
+
+/**
+ * Format phone number for API calls (alias for formatPhoneForDisplay)
+ * @param phoneNumber - Phone number string
+ * @returns Formatted phone number
+ */
+export function formatPhoneNumber(phoneNumber: string): string {
+  return formatPhoneForDisplay(phoneNumber);
+}
+
+/**
+ * Initialize reCAPTCHA (stub function for backend SMS approach)
+ * @param containerId - DOM element ID for reCAPTCHA container
+ * @returns Empty object (not used in backend approach)
+ */
+export function initializeRecaptcha(containerId: string): any {
+  console.log('reCAPTCHA initialization skipped - using backend SMS verification');
+  return {};
+}
+
+/**
+ * Cleanup reCAPTCHA (stub function for backend SMS approach)
+ */
+export function cleanupRecaptcha(): void {
+  console.log('reCAPTCHA cleanup skipped - using backend SMS verification');
+}
