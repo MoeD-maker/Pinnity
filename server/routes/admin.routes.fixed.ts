@@ -933,6 +933,71 @@ export function adminRoutes(app: Express): void {
     }
   );
 
+  // Get all deals (versioned and legacy routes)
+  const [vDealsPath, lDealsPath] = createVersionedRoutes('/admin/deals');
+  
+  app.get(vDealsPath,
+    versionHeadersMiddleware(),
+    authenticate,
+    authorize(['admin']),
+    async (_req: Request, res: Response) => {
+      try {
+        const deals = await storage.getDeals();
+        
+        // Get business info for each deal
+        const dealsWithBusiness = await Promise.all(
+          deals.map(async (deal) => {
+            const business = await storage.getBusiness(deal.businessId);
+            return {
+              ...deal,
+              business: business ? {
+                id: business.id,
+                businessName: business.businessName,
+                businessCategory: business.businessCategory
+              } : null
+            };
+          })
+        );
+        
+        return res.status(200).json(dealsWithBusiness);
+      } catch (error) {
+        console.error("Get admin deals error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
+  app.get(lDealsPath,
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate,
+    authorize(['admin']),
+    async (_req: Request, res: Response) => {
+      try {
+        const deals = await storage.getDeals();
+        
+        // Get business info for each deal
+        const dealsWithBusiness = await Promise.all(
+          deals.map(async (deal) => {
+            const business = await storage.getBusiness(deal.businessId);
+            return {
+              ...deal,
+              business: business ? {
+                id: business.id,
+                businessName: business.businessName,
+                businessCategory: business.businessCategory
+              } : null
+            };
+          })
+        );
+        
+        return res.status(200).json(dealsWithBusiness);
+      } catch (error) {
+        console.error("Get admin deals error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
   // Get all transactions/redemptions (versioned and legacy routes)
   const [vTransactionsPath, lTransactionsPath] = createVersionedRoutes('/admin/transactions');
   
