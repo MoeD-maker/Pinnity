@@ -111,6 +111,7 @@ export interface IStorage {
   // Deal redemption methods
   getUserRedemptions(userId: number): Promise<(DealRedemption & { deal: Deal & { business: Business } })[]>;
   getDealRedemptions(dealId: number): Promise<DealRedemption[]>;
+  getAllRedemptions(): Promise<DealRedemption[]>;
   createRedemption(userId: number, dealId: number): Promise<DealRedemption>;
   updateRedemptionStatus(id: number, status: string): Promise<DealRedemption>;
   verifyRedemptionCode(dealId: number, code: string): Promise<boolean>;
@@ -2785,6 +2786,10 @@ export class DatabaseStorage implements IStorage {
     return await db.select()
       .from(dealRedemptions)
       .where(eq(dealRedemptions.dealId, dealId));
+  }
+
+  async getAllRedemptions(): Promise<DealRedemption[]> {
+    return await db.select().from(dealRedemptions);
   }
   
   async hasUserRedeemedDeal(userId: number, dealId: number): Promise<boolean> {

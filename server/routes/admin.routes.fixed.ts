@@ -933,6 +933,61 @@ export function adminRoutes(app: Express): void {
     }
   );
 
+  // Get all transactions/redemptions (versioned and legacy routes)
+  const [vTransactionsPath, lTransactionsPath] = createVersionedRoutes('/admin/transactions');
+  
+  app.get(vTransactionsPath,
+    versionHeadersMiddleware(),
+    authenticate,
+    authorize(['admin']),
+    async (_req: Request, res: Response) => {
+      try {
+        const redemptions = await storage.getAllRedemptions();
+        
+        // Map redemptions to transaction format for dashboard
+        const transactions = redemptions.map(redemption => ({
+          id: redemption.id,
+          userId: redemption.userId,
+          dealId: redemption.dealId,
+          status: redemption.status,
+          redeemedAt: redemption.redeemedAt,
+          type: 'redemption'
+        }));
+        
+        return res.status(200).json(transactions);
+      } catch (error) {
+        console.error("Get transactions error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
+  app.get(lTransactionsPath,
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate,
+    authorize(['admin']),
+    async (_req: Request, res: Response) => {
+      try {
+        const redemptions = await storage.getAllRedemptions();
+        
+        // Map redemptions to transaction format for dashboard
+        const transactions = redemptions.map(redemption => ({
+          id: redemption.id,
+          userId: redemption.userId,
+          dealId: redemption.dealId,
+          status: redemption.status,
+          redeemedAt: redemption.redeemedAt,
+          type: 'redemption'
+        }));
+        
+        return res.status(200).json(transactions);
+      } catch (error) {
+        console.error("Get transactions error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
   // Get deals by status (versioned and legacy routes)
   const [vDealsByStatusPath, lDealsByStatusPath] = createVersionedRoutes('/deals/status/:status');
   

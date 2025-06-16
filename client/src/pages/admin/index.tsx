@@ -614,8 +614,28 @@ const AdminDashboardPage = () => {
     return newAlerts;
   }, [stats]);
 
-  // Show error toast if any data fetching fails
+  // Show error toast if any data fetching fails with detailed logging
   useEffect(() => {
+    // Log each error individually to identify which endpoint is failing
+    if (vendorsError) {
+      console.error("VENDORS API ERROR (/api/v1/admin/businesses):", vendorsError);
+    }
+    if (pendingBusinessesError) {
+      console.error("PENDING BUSINESSES API ERROR (/api/v1/admin/businesses/pending):", pendingBusinessesError);
+    }
+    if (dealsError) {
+      console.error("DEALS API ERROR (/api/v1/admin/deals):", dealsError);
+    }
+    if (transactionsError) {
+      console.error("TRANSACTIONS API ERROR (/api/v1/admin/transactions):", transactionsError);
+    }
+    if (usersError) {
+      console.error("USERS API ERROR (/api/v1/admin/users):", usersError);
+    }
+    if (dashboardError) {
+      console.error("DASHBOARD API ERROR (/api/v1/admin/dashboard):", dashboardError);
+    }
+    
     const errors = [
       vendorsError,
       pendingBusinessesError,
@@ -626,7 +646,8 @@ const AdminDashboardPage = () => {
     ].filter(Boolean);
     
     if (errors.length > 0) {
-      console.error("Error fetching dashboard data:", errors);
+      console.error("Total failed API endpoints:", errors.length);
+      console.error("All errors:", errors);
       toast({
         title: "Error",
         description: "Failed to load some dashboard data. Please try again.",
