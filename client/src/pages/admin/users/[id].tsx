@@ -51,8 +51,8 @@ interface UserData {
 
 const UserDetailPage = () => {
   const [, navigate] = useLocation();
-  const [match] = useRoute("/admin/users/:id");
-  const userId = match?.id;
+  const [match, params] = useRoute("/admin/users/:id");
+  const userId = params?.id;
   const [user, setUser] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
