@@ -617,6 +617,13 @@ const AdminDashboardPage = () => {
   // Show error toast if any data fetching fails with detailed logging
   useEffect(() => {
     // Log each error individually to identify which endpoint is failing
+    console.log("vendorsError:", vendorsError);
+    console.log("pendingBusinessesError:", pendingBusinessesError);
+    console.log("dealsError:", dealsError);
+    console.log("transactionsError:", transactionsError);
+    console.log("usersError:", usersError);
+    console.log("dashboardError:", dashboardError);
+    
     if (vendorsError) {
       console.error("VENDORS API ERROR (/api/v1/admin/businesses):", vendorsError);
     }
