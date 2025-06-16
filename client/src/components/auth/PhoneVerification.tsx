@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,20 +33,6 @@ export function PhoneVerification({
     }
   }, [timeLeft]);
 
-  // Cleanup on unmount and step changes
-  useEffect(() => {
-    return () => {
-      cleanupRecaptcha();
-    };
-  }, []);
-
-  // Reset reCAPTCHA when component resets to phone step
-  useEffect(() => {
-    if (step === 'phone') {
-      cleanupRecaptcha();
-    }
-  }, [step]);
-
   const handleSendCode = async () => {
     if (!phoneNumber || phoneNumber.length < 10) {
       toast({
@@ -60,23 +46,22 @@ export function PhoneVerification({
     setIsLoading(true);
     
     try {
-      // Format phone number to E.164 format
-      const formattedPhone = formatPhoneNumber(phoneNumber);
-      console.log('Sending SMS to:', formattedPhone);
-
-      // Initialize reCAPTCHA with unique ID
-      const recaptchaVerifier = initializeRecaptcha(recaptchaId);
+      console.log('Sending SMS to:', phoneNumber);
       
-      // Send SMS
-      const confirmation = await sendSMSVerification(formattedPhone, recaptchaVerifier);
-      setConfirmationResult(confirmation);
-      setStep('code');
-      setTimeLeft(60); // 60 second cooldown
+      // Send SMS using backend API
+      const success = await sendSMSVerification(phoneNumber);
+      
+      if (success) {
+        setStep('code');
+        setTimeLeft(60); // 60 second cooldown
 
-      toast({
-        title: "Code sent!",
-        description: `Verification code sent to ${formattedPhone}`,
-      });
+        toast({
+          title: "Code sent!",
+          description: `Verification code sent to ${formatPhoneForDisplay(phoneNumber)}`,
+        });
+      } else {
+        throw new Error('Failed to send SMS');
+      }
     } catch (error) {
       console.error('SMS sending error:', error);
       
@@ -86,8 +71,6 @@ export function PhoneVerification({
           errorMessage = "SMS quota exceeded. Please try again later.";
         } else if (error.message.includes('invalid')) {
           errorMessage = "Invalid phone number format";
-        } else if (error.message.includes('captcha')) {
-          errorMessage = "Please complete the security verification";
         }
       }
 
@@ -102,7 +85,7 @@ export function PhoneVerification({
   };
 
   const handleVerifyCode = async () => {
-    if (!confirmationResult || !verificationCode || verificationCode.length !== 6) {
+    if (!verificationCode || verificationCode.length !== 6) {
       toast({
         title: "Invalid code",
         description: "Please enter the 6-digit verification code",
@@ -114,7 +97,7 @@ export function PhoneVerification({
     setIsLoading(true);
 
     try {
-      const isValid = await verifySMSCode(confirmationResult, verificationCode);
+      const isValid = await verifySMSCode(phoneNumber, verificationCode);
       
       if (isValid) {
         toast({
@@ -144,8 +127,6 @@ export function PhoneVerification({
   const handleResendCode = () => {
     setStep('phone');
     setVerificationCode('');
-    setConfirmationResult(null);
-    cleanupRecaptcha();
   };
 
   if (step === 'phone') {
@@ -190,8 +171,7 @@ export function PhoneVerification({
           )}
         </Button>
 
-        {/* Hidden reCAPTCHA container */}
-        <div id={recaptchaId} className="hidden"></div>
+
       </div>
     );
   }
@@ -200,7 +180,7 @@ export function PhoneVerification({
     <div className="space-y-4">
       <div className="flex items-center space-x-2 text-sm text-gray-600">
         <Shield className="h-4 w-4" />
-        <span>Enter the 6-digit code sent to {formatPhoneNumber(phoneNumber)}</span>
+        <span>Enter the 6-digit code sent to {formatPhoneForDisplay(phoneNumber)}</span>
       </div>
 
       <div className="space-y-2">
@@ -245,9 +225,6 @@ export function PhoneVerification({
           {timeLeft > 0 ? `Resend (${timeLeft}s)` : 'Resend Code'}
         </Button>
       </div>
-
-      {/* Hidden reCAPTCHA container */}
-      <div id="recaptcha-container" className="hidden"></div>
     </div>
   );
 }
