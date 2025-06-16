@@ -1500,6 +1500,10 @@ export class MemStorage implements IStorage {
     return Array.from(this.dealRedemptions.values())
       .filter(redemption => redemption.dealId === dealId);
   }
+
+  async getAllRedemptions(): Promise<DealRedemption[]> {
+    return Array.from(this.dealRedemptions.values());
+  }
   
   async verifyRedemptionCode(dealId: number, code: string): Promise<boolean> {
     const deal = this.deals.get(dealId);

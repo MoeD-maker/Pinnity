@@ -945,7 +945,7 @@ export function adminRoutes(app: Express): void {
         const redemptions = await storage.getAllRedemptions();
         
         // Map redemptions to transaction format for dashboard
-        const transactions = redemptions.map(redemption => ({
+        const transactions = redemptions.map((redemption: any) => ({
           id: redemption.id,
           userId: redemption.userId,
           dealId: redemption.dealId,
@@ -971,7 +971,7 @@ export function adminRoutes(app: Express): void {
         const redemptions = await storage.getAllRedemptions();
         
         // Map redemptions to transaction format for dashboard
-        const transactions = redemptions.map(redemption => ({
+        const transactions = redemptions.map((redemption: any) => ({
           id: redemption.id,
           userId: redemption.userId,
           dealId: redemption.dealId,
