@@ -2452,7 +2452,7 @@ export class DatabaseStorage implements IStorage {
         ...row.deals,
         business: {
           ...row.businesses,
-          logoUrl: row.businesses.imageUrl || undefined
+          logoUrl: row.businesses.imageUrl ?? undefined
         }
       }));
     } else if (userRole === 'business' && userId) {
@@ -2471,7 +2471,7 @@ export class DatabaseStorage implements IStorage {
           ...row.deals,
           business: {
             ...row.businesses,
-            logoUrl: row.businesses.imageUrl || undefined
+            logoUrl: row.businesses.imageUrl ?? undefined
           }
         }));
       } else {
@@ -2487,7 +2487,7 @@ export class DatabaseStorage implements IStorage {
           ...row.deals,
           business: {
             ...row.businesses,
-            logoUrl: row.businesses.imageUrl || undefined
+            logoUrl: row.businesses.imageUrl ?? undefined
           }
         }));
       }
@@ -2511,7 +2511,7 @@ export class DatabaseStorage implements IStorage {
       ...row.deals,
       business: {
         ...row.businesses,
-        logoUrl: row.businesses.imageUrl || undefined
+        logoUrl: row.businesses.imageUrl ?? undefined
       }
     }));
   }
@@ -2531,7 +2531,7 @@ export class DatabaseStorage implements IStorage {
       business: {
         ...result[0].businesses,
         // Ensure logoUrl exists for front-end compatibility
-        logoUrl: result[0].businesses.imageUrl
+        logoUrl: result[0].businesses.imageUrl ?? undefined
       }
     };
   }
@@ -2556,9 +2556,12 @@ export class DatabaseStorage implements IStorage {
       .where(eq(deals.businessId, businessId));
     
     // Return deals with the business object included
-    return dealsData.map(deal => ({
+    return dealsData.map((deal: any) => ({
       ...deal,
-      business: enhancedBusiness
+      business: {
+        ...enhancedBusiness,
+        logoUrl: enhancedBusiness.imageUrl ?? undefined
+      }
     }));
   }
 
@@ -2603,17 +2606,22 @@ export class DatabaseStorage implements IStorage {
     }
     // For admins (default), return all featured deals without filtering
     
-    // For admin role or if query wasn't rebuilt, use default featured query
-    if (!query || userRole === 'admin') {
-      query = db.select()
+    // Execute final query based on role
+    if (userRole === 'admin' || !query) {
+      const result = await db.select()
         .from(deals)
         .innerJoin(businesses, eq(deals.businessId, businesses.id))
         .where(eq(deals.featured, true))
         .orderBy(desc(deals.createdAt))
         .limit(limit);
-    } else {
-      // Query was already built, just add ordering
-      query = query.orderBy(desc(deals.createdAt)).limit(limit);
+      
+      return result.map((row: any) => ({
+        ...row.deals,
+        business: {
+          ...row.businesses,
+          logoUrl: row.businesses.imageUrl ?? undefined
+        }
+      }));
     }
     
     // Execute the query
@@ -2628,12 +2636,11 @@ export class DatabaseStorage implements IStorage {
     
     console.log(`STORAGE: Returning featured deals with status distribution: ${JSON.stringify(statusCounts)}`);
     
-    return result.map(row => ({
+    return result.map((row: any) => ({
       ...row.deals,
       business: {
         ...row.businesses,
-        // Ensure logoUrl exists for front-end compatibility
-        logoUrl: row.businesses.imageUrl || undefined
+        logoUrl: row.businesses.imageUrl ?? undefined
       }
     }));
   }
@@ -2831,7 +2838,7 @@ export class DatabaseStorage implements IStorage {
       business: {
         ...row.businesses,
         // Ensure logoUrl exists for front-end compatibility
-        logoUrl: row.businesses.imageUrl || undefined
+        logoUrl: row.businesses.imageUrl ?? undefined
       }
     }));
     
