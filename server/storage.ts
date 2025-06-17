@@ -489,6 +489,13 @@ export class MemStorage implements IStorage {
       id: businessId,
       userId,
       verificationStatus: businessData.verificationStatus || "pending",
+      phone: businessData.phone ?? null,
+      address: businessData.address ?? null,
+      imageUrl: businessData.imageUrl ?? null,
+      description: businessData.description ?? null,
+      latitude: businessData.latitude ?? null,
+      longitude: businessData.longitude ?? null,
+      website: businessData.website ?? null,
     };
     
     this.users.set(userId, user);
@@ -503,6 +510,13 @@ export class MemStorage implements IStorage {
     const business: Business = {
       ...businessData,
       id,
+      phone: businessData.phone ?? null,
+      address: businessData.address ?? null,
+      imageUrl: businessData.imageUrl ?? null,
+      description: businessData.description ?? null,
+      latitude: businessData.latitude ?? null,
+      longitude: businessData.longitude ?? null,
+      website: businessData.website ?? null,
     };
     this.businesses.set(id, business);
     return business;
@@ -799,6 +813,8 @@ export class MemStorage implements IStorage {
       id: userId,
       ...userData,
       password: hashPassword(password),
+      phoneVerified: userData.phoneVerified ?? false,
+      created_at: userData.created_at ?? new Date().toISOString(),
     };
     
     this.users.set(user.id, user);
