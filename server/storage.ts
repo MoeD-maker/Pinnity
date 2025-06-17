@@ -1477,7 +1477,7 @@ export class MemStorage implements IStorage {
         business: {
           ...business,
           // Ensure logoUrl exists for front-end compatibility
-          logoUrl: business.imageUrl
+          logoUrl: business.imageUrl ?? undefined
         }
       };
     }));
@@ -2452,7 +2452,7 @@ export class DatabaseStorage implements IStorage {
         ...row.deals,
         business: {
           ...row.businesses,
-          logoUrl: row.businesses.imageUrl || undefined
+          logoUrl: row.businesses.imageUrl ?? undefined
         }
       }));
     } else if (userRole === 'business' && userId) {
@@ -2471,7 +2471,7 @@ export class DatabaseStorage implements IStorage {
           ...row.deals,
           business: {
             ...row.businesses,
-            logoUrl: row.businesses.imageUrl || undefined
+            logoUrl: row.businesses.imageUrl ?? undefined
           }
         }));
       } else {
@@ -2487,7 +2487,7 @@ export class DatabaseStorage implements IStorage {
           ...row.deals,
           business: {
             ...row.businesses,
-            logoUrl: row.businesses.imageUrl || undefined
+            logoUrl: row.businesses.imageUrl ?? undefined
           }
         }));
       }
@@ -2511,7 +2511,7 @@ export class DatabaseStorage implements IStorage {
       ...row.deals,
       business: {
         ...row.businesses,
-        logoUrl: row.businesses.imageUrl || undefined
+        logoUrl: row.businesses.imageUrl ?? undefined
       }
     }));
   }
@@ -2576,7 +2576,10 @@ export class DatabaseStorage implements IStorage {
       // For customers, only return approved or active deals that haven't expired
       const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
       query = query.where(
-        sql`(${deals.status} = 'approved' OR ${deals.status} = 'active') AND ${deals.endDate} >= ${currentDate}`
+        and(
+          or(eq(deals.status, 'approved'), eq(deals.status, 'active')),
+          gte(deals.endDate, currentDate)
+        )
       );
     } else if (userRole === 'business' && userId) {
       // For business users, return all their own deals but filter others
@@ -2584,12 +2587,15 @@ export class DatabaseStorage implements IStorage {
       if (businessData) {
         const businessId = businessData.id;
         query = query.where(
-          sql`(${deals.businessId} = ${businessId}) OR (${deals.status} = 'approved' OR ${deals.status} = 'active')`
+          or(
+            eq(deals.businessId, businessId),
+            or(eq(deals.status, 'approved'), eq(deals.status, 'active'))
+          )
         );
       } else {
         // If no business found, default to approved/active only
         query = query.where(
-          sql`(${deals.status} = 'approved' OR ${deals.status} = 'active')`
+          or(eq(deals.status, 'approved'), eq(deals.status, 'active'))
         );
       }
     }
@@ -2615,7 +2621,7 @@ export class DatabaseStorage implements IStorage {
       business: {
         ...row.businesses,
         // Ensure logoUrl exists for front-end compatibility
-        logoUrl: row.businesses.imageUrl || undefined
+        logoUrl: row.businesses.imageUrl ?? undefined
       }
     }));
   }
@@ -2777,7 +2783,7 @@ export class DatabaseStorage implements IStorage {
     
     // For debugging - log all possible deals
     const allDeals = await db.select().from(deals);
-    const statusCounts = {};
+    const statusCounts: Record<string, number> = {};
     allDeals.forEach(deal => {
       statusCounts[deal.status] = (statusCounts[deal.status] || 0) + 1;
     });
@@ -2813,7 +2819,7 @@ export class DatabaseStorage implements IStorage {
       business: {
         ...row.businesses,
         // Ensure logoUrl exists for front-end compatibility
-        logoUrl: row.businesses.imageUrl || undefined
+        logoUrl: row.businesses.imageUrl ?? undefined
       }
     }));
     
