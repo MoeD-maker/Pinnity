@@ -134,6 +134,8 @@ type IndividualPreferencesType = typeof defaultIndividualPreferences;
   };
 
 type BusinessPreferencesType = typeof defaultBusinessPreferences;
+
+interface Hours { open: string; close: string; closed: boolean }
   
   // Initialize the business preferences state with default or externally provided values
   const [internalBusinessPreferences, setInternalBusinessPreferences]
@@ -775,27 +777,29 @@ type BusinessPreferencesType = typeof defaultBusinessPreferences;
       </p>
       
       <div className="space-y-4">
-        {Object.entries(businessPreferences.businessHours).map(([day, hours]) => (
+        {Object.entries(businessPreferences.businessHours).map(([day, hours]) => {
+          const h = hours as Hours;
+          return (
           <div key={day} className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:gap-4 items-center">
             <div className="font-medium capitalize sm:col-span-1">{day}</div>
             
             <div className="flex items-center gap-2 sm:col-span-3">
               <Switch
                 id={`${day}-closed`}
-                checked={!(hours as any).closed}
+                checked={!h.closed}
                 onCheckedChange={(checked) => handleBusinessHoursChange(day, 'closed', !checked)}
               />
               
-              <div className={`flex flex-1 items-center gap-3 ${(hours as any).closed ? 'opacity-50' : ''}`}>
+              <div className={`flex flex-1 items-center gap-3 ${h.closed ? 'opacity-50' : ''}`}>
                 <div className="flex-1 grid grid-cols-2 gap-2">
                   <div>
                     <Label htmlFor={`${day}-open`}>Open</Label>
                     <select
                       id={`${day}-open`}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#00796B] focus:ring-[#00796B] sm:text-sm"
-                      value={(hours as any).open}
+                      value={h.open}
                       onChange={(e) => handleBusinessHoursChange(day, 'open', e.target.value)}
-                      disabled={(hours as any).closed}
+                      disabled={h.closed}
                     >
                       {Array.from({ length: 24 }).map((_, i) => {
                         const hour = i.toString().padStart(2, '0');
@@ -813,9 +817,9 @@ type BusinessPreferencesType = typeof defaultBusinessPreferences;
                     <select
                       id={`${day}-close`}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#00796B] focus:ring-[#00796B] sm:text-sm"
-                      value={(hours as any).close}
+                      value={h.close}
                       onChange={(e) => handleBusinessHoursChange(day, 'close', e.target.value)}
-                      disabled={(hours as any).closed}
+                      disabled={h.closed}
                     >
                       {Array.from({ length: 24 }).map((_, i) => {
                         const hour = i.toString().padStart(2, '0');
@@ -829,13 +833,14 @@ type BusinessPreferencesType = typeof defaultBusinessPreferences;
                   </div>
                 </div>
                 
-                {(hours as any).closed && (
+                {h.closed && (
                   <span className="text-sm text-gray-500 whitespace-nowrap">Closed</span>
                 )}
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
