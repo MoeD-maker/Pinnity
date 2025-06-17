@@ -1574,6 +1574,18 @@ export class MemStorage implements IStorage {
     
     return deal.redemptionCode === code;
   }
+
+  async hasUserRedeemedDeal(userId: number, dealId: number): Promise<boolean> {
+    return Array.from(this.dealRedemptions.values()).some(
+      redemption => redemption.userId === userId && redemption.dealId === dealId
+    );
+  }
+
+  async getUserRedemptionCountForDeal(userId: number, dealId: number): Promise<number> {
+    return Array.from(this.dealRedemptions.values()).filter(
+      redemption => redemption.userId === userId && redemption.dealId === dealId
+    ).length;
+  }
   
   // User favorites methods
   async getUserFavorites(userId: number): Promise<(UserFavorite & { deal: Deal & { business: Business } })[]> {
@@ -3201,6 +3213,29 @@ export class DatabaseStorage implements IStorage {
     }
     
     return result;
+  }
+
+  async hasUserRedeemedDeal(userId: number, dealId: number): Promise<boolean> {
+    const [redemption] = await db.select()
+      .from(dealRedemptions)
+      .where(and(
+        eq(dealRedemptions.userId, userId),
+        eq(dealRedemptions.dealId, dealId)
+      ))
+      .limit(1);
+    
+    return !!redemption;
+  }
+
+  async getUserRedemptionCountForDeal(userId: number, dealId: number): Promise<number> {
+    const [result] = await db.select({ count: count() })
+      .from(dealRedemptions)
+      .where(and(
+        eq(dealRedemptions.userId, userId),
+        eq(dealRedemptions.dealId, dealId)
+      ));
+    
+    return result?.count || 0;
   }
 
   async getBusinessRatings(businessId: number): Promise<RedemptionRating[]> {
