@@ -508,15 +508,21 @@ export class MemStorage implements IStorage {
   private async createBusiness(businessData: Omit<InsertBusiness, "id">): Promise<Business> {
     const id = this.currentBusinessId++;
     const business: Business = {
-      ...businessData,
       id,
-      phone: businessData.phone ?? null,
-      address: businessData.address ?? null,
-      imageUrl: businessData.imageUrl ?? null,
-      description: businessData.description ?? null,
-      latitude: businessData.latitude ?? null,
-      longitude: businessData.longitude ?? null,
-      website: businessData.website ?? null,
+      userId: businessData.userId,
+      businessName: businessData.businessName,
+      businessCategory: businessData.businessCategory,
+      governmentId: businessData.governmentId,
+      proofOfAddress: businessData.proofOfAddress,
+      proofOfBusiness: businessData.proofOfBusiness,
+      verificationStatus: businessData.verificationStatus ?? "pending",
+      phone: businessData.phone || null,
+      address: businessData.address || null,
+      imageUrl: businessData.imageUrl || null,
+      description: businessData.description || null,
+      latitude: businessData.latitude || null,
+      longitude: businessData.longitude || null,
+      website: businessData.website || null,
     };
     this.businesses.set(id, business);
     return business;
@@ -1008,7 +1014,6 @@ export class MemStorage implements IStorage {
     const updatedBusiness: Business = {
       ...business,
       verificationStatus: status,
-      verificationFeedback: feedback || business.verificationFeedback,
     };
     
     this.businesses.set(id, updatedBusiness);
@@ -1101,8 +1106,12 @@ export class MemStorage implements IStorage {
     
     const id = this.currentBusinessHoursId++;
     const businessHours: BusinessHours = {
-      ...businessHoursData,
       id,
+      businessId: businessHoursData.businessId,
+      dayOfWeek: businessHoursData.dayOfWeek,
+      openTime: businessHoursData.openTime ?? null,
+      closeTime: businessHoursData.closeTime ?? null,
+      isClosed: businessHoursData.isClosed ?? null,
     };
     
     this.businessHours.set(id, businessHours);
@@ -1147,8 +1156,11 @@ export class MemStorage implements IStorage {
     
     const id = this.currentBusinessSocialId++;
     const socialLink: BusinessSocial = {
-      ...socialLinkData,
       id,
+      businessId: socialLinkData.businessId,
+      platform: socialLinkData.platform,
+      url: socialLinkData.url,
+      username: socialLinkData.username ?? null,
     };
     
     this.businessSocial.set(id, socialLink);
@@ -3043,13 +3055,13 @@ export class DatabaseStorage implements IStorage {
   async createRedemptionRating(redemptionId: number, userId: number, dealId: number, businessId: number, ratingData: RatingData): Promise<RedemptionRating> {
     const [addedRating] = await db.insert(redemptionRatings)
       .values({
+        redemptionId,
         userId,
         dealId,
         businessId,
         rating: ratingData.rating,
         comment: ratingData.comment || null,
         anonymous: ratingData.anonymous || false,
-        createdAt: new Date()
       })
       .returning();
     
