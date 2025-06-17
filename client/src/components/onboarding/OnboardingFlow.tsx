@@ -679,7 +679,7 @@ type BusinessPreferencesType = typeof defaultBusinessPreferences;
             onClick={() => handleCategoryToggle(category)}
           >
             <Checkbox 
-              checked={isSelected}
+              checked={Boolean(isSelected)}
               onCheckedChange={() => handleCategoryToggle(category)}
               className="data-[state=checked]:bg-[#00796B] data-[state=checked]:border-[#00796B]"
             />
@@ -782,20 +782,20 @@ type BusinessPreferencesType = typeof defaultBusinessPreferences;
             <div className="flex items-center gap-2 sm:col-span-3">
               <Switch
                 id={`${day}-closed`}
-                checked={!hours.closed}
+                checked={!(hours as any).closed}
                 onCheckedChange={(checked) => handleBusinessHoursChange(day, 'closed', !checked)}
               />
               
-              <div className={`flex flex-1 items-center gap-3 ${hours.closed ? 'opacity-50' : ''}`}>
+              <div className={`flex flex-1 items-center gap-3 ${(hours as any).closed ? 'opacity-50' : ''}`}>
                 <div className="flex-1 grid grid-cols-2 gap-2">
                   <div>
                     <Label htmlFor={`${day}-open`}>Open</Label>
                     <select
                       id={`${day}-open`}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#00796B] focus:ring-[#00796B] sm:text-sm"
-                      value={hours.open}
+                      value={(hours as any).open}
                       onChange={(e) => handleBusinessHoursChange(day, 'open', e.target.value)}
-                      disabled={hours.closed}
+                      disabled={(hours as any).closed}
                     >
                       {Array.from({ length: 24 }).map((_, i) => {
                         const hour = i.toString().padStart(2, '0');
@@ -813,9 +813,9 @@ type BusinessPreferencesType = typeof defaultBusinessPreferences;
                     <select
                       id={`${day}-close`}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#00796B] focus:ring-[#00796B] sm:text-sm"
-                      value={hours.close}
+                      value={(hours as any).close}
                       onChange={(e) => handleBusinessHoursChange(day, 'close', e.target.value)}
-                      disabled={hours.closed}
+                      disabled={(hours as any).closed}
                     >
                       {Array.from({ length: 24 }).map((_, i) => {
                         const hour = i.toString().padStart(2, '0');
@@ -829,7 +829,7 @@ type BusinessPreferencesType = typeof defaultBusinessPreferences;
                   </div>
                 </div>
                 
-                {hours.closed && (
+                {(hours as any).closed && (
                   <span className="text-sm text-gray-500 whitespace-nowrap">Closed</span>
                 )}
               </div>
@@ -860,7 +860,7 @@ type BusinessPreferencesType = typeof defaultBusinessPreferences;
             onClick={() => handleOfferingToggle(offering)}
           >
             <Checkbox 
-              checked={isSelected}
+              checked={Boolean(isSelected)}
               onCheckedChange={() => handleOfferingToggle(offering)}
               className="data-[state=checked]:bg-[#00796B] data-[state=checked]:border-[#00796B]"
             />
@@ -905,7 +905,7 @@ type BusinessPreferencesType = typeof defaultBusinessPreferences;
                   onClick={() => handleDemographicToggle(group)}
                 >
                   <Checkbox 
-                    checked={isSelected}
+                    checked={Boolean(isSelected)}
                     onCheckedChange={() => handleDemographicToggle(group)}
                     className="data-[state=checked]:bg-[#00796B] data-[state=checked]:border-[#00796B]"
                   />
