@@ -702,6 +702,7 @@ export class MemStorage implements IStorage {
       token: token,
       expiresAt: expiresAt,
       isRevoked: false,
+      revokedAt: null,
       createdAt: new Date(),
       lastUsedAt: null,
       ipAddress: clientInfo?.ipAddress || null,
@@ -3026,15 +3027,12 @@ export class DatabaseStorage implements IStorage {
   async createRedemptionRating(redemptionId: number, userId: number, dealId: number, businessId: number, ratingData: RatingData): Promise<RedemptionRating> {
     const [addedRating] = await db.insert(redemptionRatings)
       .values({
-        redemptionId,
         userId,
         dealId,
         businessId,
         rating: ratingData.rating,
-        comment: ratingData.comment,
-        experienceQuality: ratingData.experienceQuality,
-        valueForMoney: ratingData.valueForMoney,
-        wouldRecommend: ratingData.wouldRecommend,
+        comment: ratingData.comment || null,
+        anonymous: ratingData.anonymous || false,
         createdAt: new Date()
       })
       .returning();
@@ -3106,6 +3104,60 @@ export class DatabaseStorage implements IStorage {
       totalRatings: ratings.length,
       ratingCounts
     };
+  }
+
+  // Refresh token methods
+  async createRefreshToken(userId: number, token: string, expiresAt: Date, clientInfo?: { ipAddress?: string, userAgent?: string, deviceInfo?: string }): Promise<RefreshToken> {
+    const [refreshToken] = await db
+      .insert(refreshTokens)
+      .values({
+        userId,
+        token,
+        expiresAt,
+        ipAddress: clientInfo?.ipAddress || null,
+        userAgent: clientInfo?.userAgent || null,
+        deviceInfo: clientInfo?.deviceInfo || null
+      })
+      .returning();
+    return refreshToken;
+  }
+
+  async getRefreshToken(token: string): Promise<RefreshToken | undefined> {
+    const [refreshToken] = await db
+      .select()
+      .from(refreshTokens)
+      .where(eq(refreshTokens.token, token));
+    return refreshToken || undefined;
+  }
+
+  async revokeRefreshToken(token: string): Promise<boolean> {
+    const result = await db
+      .update(refreshTokens)
+      .set({ isRevoked: true, revokedAt: new Date() })
+      .where(eq(refreshTokens.token, token));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async revokeAllUserRefreshTokens(userId: number): Promise<number> {
+    const result = await db
+      .update(refreshTokens)
+      .set({ isRevoked: true, revokedAt: new Date() })
+      .where(eq(refreshTokens.userId, userId));
+    return result.rowCount || 0;
+  }
+
+  async rotateRefreshToken(oldToken: string, newToken: string, expiresAt: Date): Promise<RefreshToken | null> {
+    // Revoke old token
+    await this.revokeRefreshToken(oldToken);
+    
+    // Get user ID from old token
+    const oldTokenData = await this.getRefreshToken(oldToken);
+    if (!oldTokenData) {
+      return null;
+    }
+
+    // Create new token
+    return await this.createRefreshToken(oldTokenData.userId, newToken, expiresAt);
   }
 }
 
