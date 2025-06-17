@@ -13,9 +13,7 @@ export default defineConfig({
       'client/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'server/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
     ],
-    typecheck: {
-      tsconfig: './tsconfig.json'
-    }
+
   },
   resolve: {
     alias: {
