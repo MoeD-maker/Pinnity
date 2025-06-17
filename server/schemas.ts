@@ -161,6 +161,15 @@ export const userSchemas = {
     })
   }),
 
+  // User ratings
+  getUserRatings: z.object({
+    params: z.object({
+      userId: z.string().refine(val => !isNaN(parseInt(val, 10)), {
+        message: "User ID must be a valid number"
+      })
+    })
+  }),
+
   // Notification preferences
   getNotificationPreferences: z.object({
     params: z.object({

@@ -54,6 +54,7 @@ export const deals = pgTable("deals", {
   redemptionCode: text("redemption_code"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   status: text("status").notNull().default("pending"), // "pending", "approved", "active", "expired", "rejected"
+  rejectionReason: text("rejection_reason"), // Reason for rejection when status is "rejected"
   approvalDate: timestamp("approval_date"),
   maxRedemptionsPerUser: integer("max_redemptions_per_user").default(1),
   totalRedemptionsLimit: integer("total_redemptions_limit"),
