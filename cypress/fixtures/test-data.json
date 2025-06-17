@@ -1,0 +1,41 @@
+{
+  "users": {
+    "individual": {
+      "email": "test@user.com",
+      "password": "Test123!",
+      "phone": "+1234567890",
+      "firstName": "John",
+      "lastName": "Doe"
+    },
+    "business": {
+      "email": "vendor@test.com",
+      "password": "Vendor123!",
+      "phone": "+1234567891",
+      "businessName": "Test Business LLC",
+      "ownerName": "Jane Smith"
+    },
+    "admin": {
+      "email": "admin@test.com",
+      "password": "Admin123!",
+      "phone": "+1234567892"
+    }
+  },
+  "deals": {
+    "coffee": {
+      "title": "20% Off Coffee Drinks",
+      "description": "Get 20% off all coffee drinks during happy hour",
+      "category": "food",
+      "originalPrice": "5.00",
+      "discountedPrice": "4.00",
+      "quantity": "100",
+      "startDate": "2025-01-01",
+      "endDate": "2025-12-31",
+      "terms": "Valid during business hours only. Cannot be combined with other offers."
+    }
+  },
+  "redemptionCodes": {
+    "valid": "123456",
+    "expired": "EXPIRED123",
+    "invalid": "999999"
+  }
+}
