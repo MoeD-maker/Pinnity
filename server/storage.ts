@@ -16,7 +16,7 @@ import {
 } from "@shared/schema";
 import bcrypt from 'bcryptjs';
 import { db } from './db';
-import { eq, and, desc, sql, inArray } from 'drizzle-orm';
+import { eq, and, or, desc, asc, sql, inArray, gte, lte, count, ne, isNull, isNotNull } from 'drizzle-orm';
 
 export interface IStorage {
   // User methods
@@ -2574,35 +2574,47 @@ export class DatabaseStorage implements IStorage {
     // Apply role-based filtering (same logic as getDeals)
     if (userRole === 'individual') {
       // For customers, only return approved or active deals that haven't expired
-      const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-      query = query.where(
-        and(
-          or(eq(deals.status, 'approved'), eq(deals.status, 'active')),
-          gte(deals.endDate, currentDate)
-        )
-      );
+      const currentDate = new Date();
+      const statusCondition = or(eq(deals.status, 'approved'), eq(deals.status, 'active'));
+      const dateCondition = gte(deals.endDate, currentDate);
+      query = db.select()
+        .from(deals)
+        .innerJoin(businesses, eq(deals.businessId, businesses.id))
+        .where(and(eq(deals.featured, true), statusCondition, dateCondition));
     } else if (userRole === 'business' && userId) {
       // For business users, return all their own deals but filter others
       const businessData = await this.getBusinessByUserId(userId);
       if (businessData) {
         const businessId = businessData.id;
-        query = query.where(
-          or(
-            eq(deals.businessId, businessId),
-            or(eq(deals.status, 'approved'), eq(deals.status, 'active'))
-          )
-        );
+        const businessCondition = eq(deals.businessId, businessId);
+        const statusCondition = or(eq(deals.status, 'approved'), eq(deals.status, 'active'));
+        query = db.select()
+          .from(deals)
+          .innerJoin(businesses, eq(deals.businessId, businesses.id))
+          .where(and(eq(deals.featured, true), or(businessCondition, statusCondition)));
       } else {
         // If no business found, default to approved/active only
-        query = query.where(
-          or(eq(deals.status, 'approved'), eq(deals.status, 'active'))
-        );
+        const statusCondition = or(eq(deals.status, 'approved'), eq(deals.status, 'active'));
+        query = db.select()
+          .from(deals)
+          .innerJoin(businesses, eq(deals.businessId, businesses.id))
+          .where(and(eq(deals.featured, true), statusCondition));
       }
     }
     // For admins (default), return all featured deals without filtering
     
-    // Apply ordering and limit
-    query = query.orderBy(desc(deals.createdAt)).limit(limit);
+    // For admin role or if query wasn't rebuilt, use default featured query
+    if (!query || userRole === 'admin') {
+      query = db.select()
+        .from(deals)
+        .innerJoin(businesses, eq(deals.businessId, businesses.id))
+        .where(eq(deals.featured, true))
+        .orderBy(desc(deals.createdAt))
+        .limit(limit);
+    } else {
+      // Query was already built, just add ordering
+      query = query.orderBy(desc(deals.createdAt)).limit(limit);
+    }
     
     // Execute the query
     const result = await query;
