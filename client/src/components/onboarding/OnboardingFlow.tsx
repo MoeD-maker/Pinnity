@@ -58,6 +58,7 @@ export default function OnboardingFlow({
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const [restoringSession, setRestoringSession] = useState(Boolean(externalRestoringSession));
+  const [showInactivityModal, setShowInactivityModal] = useState(false);
 
   // Initialize default preferences
   const defaultIndividualPreferences = {
