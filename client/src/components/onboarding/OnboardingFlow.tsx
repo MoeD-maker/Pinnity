@@ -1030,7 +1030,7 @@ interface Hours { open: string; close: string; closed: boolean }
       return (
         <div className="flex items-center gap-2 p-2 bg-red-100 text-red-700 text-sm rounded-md mb-4">
           <ShieldAlert className="h-4 w-4" />
-          <span>Security error: {csrfError}</span>
+          <span>Security error: {csrfError.message}</span>
           <Button 
             variant="outline" 
             size="sm" 
