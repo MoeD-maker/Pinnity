@@ -115,6 +115,8 @@ export interface IStorage {
   createRedemption(userId: number, dealId: number): Promise<DealRedemption>;
   updateRedemptionStatus(id: number, status: string): Promise<DealRedemption>;
   verifyRedemptionCode(dealId: number, code: string): Promise<boolean>;
+  hasUserRedeemedDeal(userId: number, dealId: number): Promise<boolean>;
+  getUserRedemptionCountForDeal(userId: number, dealId: number): Promise<number>;
   
   // Notification preferences methods
   getUserNotificationPreferences(userId: number): Promise<UserNotificationPreferences | undefined>;
