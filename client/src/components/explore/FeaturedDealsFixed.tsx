@@ -94,7 +94,7 @@ export default function FeaturedDeals({
   const { data: allDeals, isLoading, error, refetch } = useQuery({
     queryKey: ['/api/v1/deals/featured', { limit, timestamp: Date.now() }],
     staleTime: 0,
-    cacheTime: 0,
+    gcTime: 0,
     queryFn: async () => {
       try {
         // Use the raw fetch instead of apiRequest to access headers

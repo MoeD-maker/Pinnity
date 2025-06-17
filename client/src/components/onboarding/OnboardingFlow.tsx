@@ -135,6 +135,12 @@ export default function OnboardingFlow({
     externalBusinessPreferences || defaultBusinessPreferences
   );
 
+  // Create aliases to use throughout the component
+  const individualPreferences = externalIndividualPreferences || internalIndividualPreferences;
+  const setIndividualPreferences = externalSetIndividualPreferences || setInternalIndividualPreferences;
+  const businessPreferences = externalBusinessPreferences || internalBusinessPreferences;
+  const setBusinessPreferences = externalSetBusinessPreferences || setInternalBusinessPreferences;
+
   // Define steps for each user type
   const individualSteps = [
     "Interests",

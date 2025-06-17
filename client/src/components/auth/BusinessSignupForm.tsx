@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Dispatch, SetStateAction } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,6 +12,10 @@ import { useToast } from "@/hooks/use-toast";
 import { apiPost } from "@/lib/api";
 import { Eye, EyeOff, Upload } from "lucide-react";
 import TwilioPhoneVerification from "./TwilioPhoneVerification";
+
+interface BusinessSignupFormProps {
+  setUserType?: Dispatch<SetStateAction<"business" | "individual">>;
+}
 
 // Schema with proper terms validation
 const businessSignupSchema = z.object({
@@ -43,7 +47,7 @@ const businessCategories = [
   "Other"
 ];
 
-function BusinessSignupForm() {
+function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
