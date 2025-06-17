@@ -90,13 +90,12 @@ export default function OnboardingFlow({
     }
   };
 
-  // Tell TS exactly what your defaults look like:
-  type IndividualPreferences = typeof defaultIndividualPreferences;
+// Derive TS types from our defaults
+type IndividualPreferencesType = typeof defaultIndividualPreferences;
   
   // Initialize the state with the default or externally provided values
-  const [internalIndividualPreferences, setInternalIndividualPreferences] = useState<IndividualPreferences>(
-    externalIndividualPreferences || defaultIndividualPreferences
-  );
+  const [internalIndividualPreferences, setInternalIndividualPreferences]
+    = useState<IndividualPreferencesType>(externalIndividualPreferences || defaultIndividualPreferences);
   
   // Default business preferences
   const defaultBusinessPreferences = {
@@ -134,13 +133,11 @@ export default function OnboardingFlow({
     }
   };
 
-  // Tell TS exactly what your business defaults look like:
-  type BusinessPreferences = typeof defaultBusinessPreferences;
+type BusinessPreferencesType = typeof defaultBusinessPreferences;
   
   // Initialize the business preferences state with default or externally provided values
-  const [internalBusinessPreferences, setInternalBusinessPreferences] = useState<BusinessPreferences>(
-    externalBusinessPreferences || defaultBusinessPreferences
-  );
+  const [internalBusinessPreferences, setInternalBusinessPreferences]
+    = useState<BusinessPreferencesType>(externalBusinessPreferences || defaultBusinessPreferences);
 
   // Create aliases to use throughout the component
   const individualPreferences = externalIndividualPreferences || internalIndividualPreferences;
