@@ -1699,8 +1699,15 @@ export class MemStorage implements IStorage {
     const id = this.currentUserNotificationPreferencesId++;
     
     const preferences: UserNotificationPreferences = {
-      ...preferencesData,
       id,
+      userId: preferencesData.userId,
+      emailNotifications: preferencesData.emailNotifications ?? null,
+      pushNotifications: preferencesData.pushNotifications ?? null,
+      dealAlerts: preferencesData.dealAlerts ?? null,
+      expiringDealReminders: preferencesData.expiringDealReminders ?? null,
+      expiringDealReminderHours: preferencesData.expiringDealReminderHours ?? null,
+      weeklyNewsletter: preferencesData.weeklyNewsletter ?? null,
+      locationSharing: preferencesData.locationSharing ?? null,
     };
     
     this.userNotificationPreferences.set(id, preferences);
@@ -2261,8 +2268,7 @@ export class DatabaseStorage implements IStorage {
   async updateBusinessVerificationStatus(id: number, status: string, feedback?: string): Promise<Business> {
     const [updatedBusiness] = await db.update(businesses)
       .set({ 
-        verificationStatus: status,
-        verificationFeedback: feedback 
+        verificationStatus: status
       })
       .where(eq(businesses.id, id))
       .returning();
@@ -2431,37 +2437,66 @@ export class DatabaseStorage implements IStorage {
   async getDeals(userRole: string = 'individual', userId?: number): Promise<(Deal & { business: Business & { logoUrl?: string } })[]> {
     console.log(`STORAGE: Getting deals for user role: ${userRole}, userId: ${userId || 'none'}`);
     
-    // Build the base query
-    let query = db.select()
-      .from(deals)
-      .innerJoin(businesses, eq(deals.businessId, businesses.id));
-    
-    // Apply role-based filtering
+    // Apply role-based filtering and execute query
     if (userRole === 'individual') {
       // For customers, only return approved or active deals that haven't expired
       const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-      query = query.where(
-        sql`(${deals.status} = 'approved' OR ${deals.status} = 'active') AND ${deals.endDate} >= ${currentDate}`
-      );
+      const result = await db.select()
+        .from(deals)
+        .innerJoin(businesses, eq(deals.businessId, businesses.id))
+        .where(
+          sql`(${deals.status} = 'approved' OR ${deals.status} = 'active') AND ${deals.endDate} >= ${currentDate}`
+        );
+      
+      return result.map(row => ({
+        ...row.deals,
+        business: {
+          ...row.businesses,
+          logoUrl: row.businesses.imageUrl
+        }
+      }));
     } else if (userRole === 'business' && userId) {
       // For business users, return all their own deals but filter others
       const businessData = await this.getBusinessByUserId(userId);
       if (businessData) {
         const businessId = businessData.id;
-        query = query.where(
-          sql`(${deals.businessId} = ${businessId}) OR (${deals.status} = 'approved' OR ${deals.status} = 'active')`
-        );
+        const result = await db.select()
+          .from(deals)
+          .innerJoin(businesses, eq(deals.businessId, businesses.id))
+          .where(
+            sql`(${deals.businessId} = ${businessId}) OR (${deals.status} = 'approved' OR ${deals.status} = 'active')`
+          );
+          
+        return result.map(row => ({
+          ...row.deals,
+          business: {
+            ...row.businesses,
+            logoUrl: row.businesses.imageUrl
+          }
+        }));
       } else {
         // If no business found, default to approved/active only
-        query = query.where(
-          sql`${deals.status} = 'approved' OR ${deals.status} = 'active'`
-        );
+        const result = await db.select()
+          .from(deals)
+          .innerJoin(businesses, eq(deals.businessId, businesses.id))
+          .where(
+            sql`${deals.status} = 'approved' OR ${deals.status} = 'active'`
+          );
+          
+        return result.map(row => ({
+          ...row.deals,
+          business: {
+            ...row.businesses,
+            logoUrl: row.businesses.imageUrl
+          }
+        }));
       }
     }
-    // For admins (default), return all deals without filtering
     
-    // Execute the query and format results
-    const result = await query;
+    // For admins (default), return all deals without filtering
+    const result = await db.select()
+      .from(deals)
+      .innerJoin(businesses, eq(deals.businessId, businesses.id));
     
     // Log the status distribution
     const statuses = result.map(row => row.deals.status);
@@ -2665,15 +2700,28 @@ export class DatabaseStorage implements IStorage {
     
     const [newDeal] = await db.insert(deals)
       .values({
-        ...originalDeal,
-        id: undefined, // Let the database assign a new ID
-        startDate,
-        endDate,
+        businessId: originalDeal.businessId,
         title: `${originalDeal.title} (Copy)`,
-        createdAt: new Date(),
+        description: originalDeal.description,
+        category: originalDeal.category,
+        imageUrl: originalDeal.imageUrl,
+        startDate: startDate!,
+        endDate: endDate!,
+        terms: originalDeal.terms,
+        discount: originalDeal.discount,
+        dealType: originalDeal.dealType,
+        featured: originalDeal.featured,
+        requiresPin: originalDeal.requiresPin,
+        redemptionCode: originalDeal.redemptionCode,
+        status: "pending",
+        maxRedemptionsPerUser: originalDeal.maxRedemptionsPerUser,
+        totalRedemptionsLimit: originalDeal.totalRedemptionsLimit,
+        redemptionInstructions: originalDeal.redemptionInstructions,
         viewCount: 0,
+        saveCount: 0,
         redemptionCount: 0,
-        savedCount: 0
+        isRecurring: originalDeal.isRecurring,
+        recurringDays: originalDeal.recurringDays
       })
       .returning();
     
@@ -3011,7 +3059,6 @@ export class DatabaseStorage implements IStorage {
         userId,
         dealId,
         status: "redeemed",
-        redemptionCode: Math.random().toString(36).substring(2, 10).toUpperCase(),
         redeemedAt: new Date()
       })
       .returning();
@@ -3056,12 +3103,13 @@ export class DatabaseStorage implements IStorage {
       const [newPreferences] = await db.insert(userNotificationPreferences)
         .values({
           userId,
-          dealAlerts: preferencesData.dealAlerts ?? false,
-          expiringDeals: preferencesData.expiringDeals ?? false,
-          newBusinesses: preferencesData.newBusinesses ?? false,
-          specialPromotions: preferencesData.specialPromotions ?? false,
-          emailNotifications: preferencesData.emailNotifications ?? false,
-          pushNotifications: preferencesData.pushNotifications ?? false
+          dealAlerts: preferencesData.dealAlerts ?? null,
+          emailNotifications: preferencesData.emailNotifications ?? null,
+          pushNotifications: preferencesData.pushNotifications ?? null,
+          expiringDealReminders: preferencesData.expiringDealReminders ?? null,
+          expiringDealReminderHours: preferencesData.expiringDealReminderHours ?? null,
+          weeklyNewsletter: preferencesData.weeklyNewsletter ?? null,
+          locationSharing: preferencesData.locationSharing ?? null
         })
         .returning();
       
