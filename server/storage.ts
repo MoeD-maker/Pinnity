@@ -2448,11 +2448,11 @@ export class DatabaseStorage implements IStorage {
           sql`(${deals.status} = 'approved' OR ${deals.status} = 'active') AND ${deals.endDate} >= ${currentDate}`
         );
       
-      return result.map(row => ({
+      return result.map((row: any) => ({
         ...row.deals,
         business: {
           ...row.businesses,
-          logoUrl: row.businesses.imageUrl
+          logoUrl: row.businesses.imageUrl || undefined
         }
       }));
     } else if (userRole === 'business' && userId) {
@@ -2471,7 +2471,7 @@ export class DatabaseStorage implements IStorage {
           ...row.deals,
           business: {
             ...row.businesses,
-            logoUrl: row.businesses.imageUrl
+            logoUrl: row.businesses.imageUrl || undefined
           }
         }));
       } else {
@@ -2487,7 +2487,7 @@ export class DatabaseStorage implements IStorage {
           ...row.deals,
           business: {
             ...row.businesses,
-            logoUrl: row.businesses.imageUrl
+            logoUrl: row.businesses.imageUrl || undefined
           }
         }));
       }
@@ -2499,20 +2499,19 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(businesses, eq(deals.businessId, businesses.id));
     
     // Log the status distribution
-    const statuses = result.map(row => row.deals.status);
-    const statusCounts = statuses.reduce((acc, curr) => {
+    const statuses = result.map((row: any) => row.deals.status);
+    const statusCounts = statuses.reduce((acc: any, curr: any) => {
       acc[curr] = (acc[curr] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
     
     console.log(`STORAGE: Returning deals with status distribution: ${JSON.stringify(statusCounts)}`);
     
-    return result.map(row => ({
+    return result.map((row: any) => ({
       ...row.deals,
       business: {
         ...row.businesses,
-        // Ensure logoUrl exists for front-end compatibility
-        logoUrl: row.businesses.imageUrl
+        logoUrl: row.businesses.imageUrl || undefined
       }
     }));
   }
@@ -2616,7 +2615,7 @@ export class DatabaseStorage implements IStorage {
       business: {
         ...row.businesses,
         // Ensure logoUrl exists for front-end compatibility
-        logoUrl: row.businesses.imageUrl
+        logoUrl: row.businesses.imageUrl || undefined
       }
     }));
   }
@@ -2814,7 +2813,7 @@ export class DatabaseStorage implements IStorage {
       business: {
         ...row.businesses,
         // Ensure logoUrl exists for front-end compatibility
-        logoUrl: row.businesses.imageUrl
+        logoUrl: row.businesses.imageUrl || undefined
       }
     }));
     
