@@ -2452,7 +2452,7 @@ export class DatabaseStorage implements IStorage {
         ...row.deals,
         business: {
           ...row.businesses,
-          logoUrl: row.businesses.imageUrl ?? undefined
+          logoUrl: row.businesses.imageUrl || undefined
         }
       }));
     } else if (userRole === 'business' && userId) {
@@ -2471,7 +2471,7 @@ export class DatabaseStorage implements IStorage {
           ...row.deals,
           business: {
             ...row.businesses,
-            logoUrl: row.businesses.imageUrl ?? undefined
+            logoUrl: row.businesses.imageUrl || undefined
           }
         }));
       } else {
@@ -2487,7 +2487,7 @@ export class DatabaseStorage implements IStorage {
           ...row.deals,
           business: {
             ...row.businesses,
-            logoUrl: row.businesses.imageUrl ?? undefined
+            logoUrl: row.businesses.imageUrl || undefined
           }
         }));
       }
@@ -2511,7 +2511,7 @@ export class DatabaseStorage implements IStorage {
       ...row.deals,
       business: {
         ...row.businesses,
-        logoUrl: row.businesses.imageUrl ?? undefined
+        logoUrl: row.businesses.imageUrl || undefined
       }
     }));
   }
@@ -2621,7 +2621,7 @@ export class DatabaseStorage implements IStorage {
       business: {
         ...row.businesses,
         // Ensure logoUrl exists for front-end compatibility
-        logoUrl: row.businesses.imageUrl ?? undefined
+        logoUrl: row.businesses.imageUrl || undefined
       }
     }));
   }
@@ -2819,7 +2819,7 @@ export class DatabaseStorage implements IStorage {
       business: {
         ...row.businesses,
         // Ensure logoUrl exists for front-end compatibility
-        logoUrl: row.businesses.imageUrl ?? undefined
+        logoUrl: row.businesses.imageUrl || undefined
       }
     }));
     
