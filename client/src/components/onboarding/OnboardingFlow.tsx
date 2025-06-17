@@ -89,9 +89,12 @@ export default function OnboardingFlow({
       expiringDeals: true
     }
   };
+
+  // Tell TS exactly what your defaults look like:
+  type IndividualPreferences = typeof defaultIndividualPreferences;
   
   // Initialize the state with the default or externally provided values
-  const [internalIndividualPreferences, setInternalIndividualPreferences] = useState(
+  const [internalIndividualPreferences, setInternalIndividualPreferences] = useState<IndividualPreferences>(
     externalIndividualPreferences || defaultIndividualPreferences
   );
   
@@ -130,9 +133,12 @@ export default function OnboardingFlow({
       localFocus: true
     }
   };
+
+  // Tell TS exactly what your business defaults look like:
+  type BusinessPreferences = typeof defaultBusinessPreferences;
   
   // Initialize the business preferences state with default or externally provided values
-  const [internalBusinessPreferences, setInternalBusinessPreferences] = useState(
+  const [internalBusinessPreferences, setInternalBusinessPreferences] = useState<BusinessPreferences>(
     externalBusinessPreferences || defaultBusinessPreferences
   );
 

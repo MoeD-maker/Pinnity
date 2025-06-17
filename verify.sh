@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "⚠️ Skipping TypeScript check temporarily to get app running..."
-# npm run check
+echo "🔍 1. Server type-check…"
+npm run check:server
 
-echo "⚠️ Skipping build step temporarily..."
-# npm run build
+echo "🔍 2. Client type-check…"
+npm run check:client
 
-echo "⚠️ Skipping security audit temporarily..."
-# npm audit --production --audit-level=moderate
+echo "🧪 3. Unit & integration tests…"
+npm test
 
-echo "✅ All checks passed!"
+echo "🌐 4. Cypress E2E tests…"
+npm run cypress:run
+
+echo "✅ All checks passed—starting dev server!"
+npm run dev
