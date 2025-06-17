@@ -1205,10 +1205,14 @@ export class MemStorage implements IStorage {
     
     const id = this.currentBusinessDocumentId++;
     const document: BusinessDocument = {
-      ...documentData,
       id,
-      submittedAt: new Date(),
+      businessId: documentData.businessId,
+      documentType: documentData.documentType,
+      filePath: documentData.filePath,
       status: documentData.status || "pending",
+      feedback: documentData.feedback || null,
+      submittedAt: new Date(),
+      reviewedAt: documentData.reviewedAt ?? null,
     };
     
     this.businessDocuments.set(id, document);
@@ -1279,9 +1283,31 @@ export class MemStorage implements IStorage {
     const id = this.currentDealId++;
     
     const deal: Deal = {
-      ...dealData,
       id,
+      businessId: dealData.businessId,
+      title: dealData.title,
+      description: dealData.description,
+      category: dealData.category,
+      startDate: dealData.startDate,
+      endDate: dealData.endDate,
+      dealType: dealData.dealType,
+      featured: dealData.featured ?? false,
+      status: dealData.status ?? "pending",
+      imageUrl: dealData.imageUrl || null,
       createdAt: new Date(),
+      isRecurring: dealData.isRecurring ?? false,
+      recurringDays: dealData.recurringDays ?? [],
+      terms: dealData.terms || null,
+      discount: dealData.discount || null,
+      requiresPin: dealData.requiresPin ?? true,
+      redemptionCode: dealData.redemptionCode || null,
+      approvalDate: dealData.approvalDate || null,
+      maxRedemptionsPerUser: dealData.maxRedemptionsPerUser ?? 1,
+      totalRedemptionsLimit: dealData.totalRedemptionsLimit || null,
+      redemptionInstructions: dealData.redemptionInstructions || null,
+      viewCount: dealData.viewCount ?? 0,
+      saveCount: dealData.saveCount ?? 0,
+      redemptionCount: dealData.redemptionCount ?? 0,
     };
     
     this.deals.set(id, deal);
@@ -1343,7 +1369,6 @@ export class MemStorage implements IStorage {
     const updatedDeal: Deal = {
       ...deal,
       status,
-      updatedAt: new Date(),
     };
     
     this.deals.set(id, updatedDeal);
@@ -1467,10 +1492,15 @@ export class MemStorage implements IStorage {
     
     const id = this.currentDealApprovalId++;
     const approval: DealApproval = {
-      ...approvalData,
       id,
-      submittedAt: new Date(),
+      dealId: approvalData.dealId,
+      submitterId: approvalData.submitterId,
       status: approvalData.status || "pending",
+      reviewerId: approvalData.reviewerId ?? null,
+      feedback: approvalData.feedback ?? null,
+      submittedAt: new Date(),
+      reviewedAt: approvalData.reviewedAt ?? null,
+      revisionCount: approvalData.revisionCount ?? 0,
     };
     
     this.dealApprovals.set(id, approval);
