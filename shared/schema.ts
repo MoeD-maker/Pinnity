@@ -182,19 +182,8 @@ export const refreshTokens = pgTable("refresh_tokens", {
 });
 
 // Create Zod schemas for insertion
-export const insertUserSchema = createInsertSchema(users).extend({
-  phoneVerified: z.boolean().optional()
-});
-export const insertBusinessSchema = createInsertSchema(businesses).extend({
-  verificationStatus: z.string().optional(),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  imageUrl: z.string().optional(),
-  description: z.string().optional(),
-  latitude: z.number().optional(),
-  longitude: z.number().optional(),
-  website: z.string().optional()
-});
+export const insertUserSchema = createInsertSchema(users);
+export const insertBusinessSchema = createInsertSchema(businesses);
 export const insertDealSchema = createInsertSchema(deals);
 export const insertUserFavoriteSchema = createInsertSchema(userFavorites);
 export const insertDealRedemptionSchema = createInsertSchema(dealRedemptions);
