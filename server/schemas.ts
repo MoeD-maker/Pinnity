@@ -216,7 +216,13 @@ export const businessSchemas = {
         message: "Business ID must be a valid number"
       })
     }),
-    body: insertBusinessSchema.partial().omit(['id', 'userId'])
+    body: z.object({
+      businessName: z.string().optional(),
+      businessCategory: z.string().optional(),
+      governmentId: z.string().optional(),
+      proofOfAddress: z.string().optional(),
+      proofOfBusiness: z.string().optional()
+    })
   }),
 
   // Update business verification
@@ -246,7 +252,13 @@ export const businessSchemas = {
 
   // Create business hours
   createBusinessHours: z.object({
-    body: insertBusinessHoursSchema.omit(['id'])
+    body: z.object({
+      businessId: z.number(),
+      dayOfWeek: z.number(),
+      openTime: z.string(),
+      closeTime: z.string(),
+      isClosed: z.boolean().optional()
+    })
   }),
 
   // Update business hours
@@ -256,7 +268,12 @@ export const businessSchemas = {
         message: "Business hours ID must be a valid number"
       })
     }),
-    body: insertBusinessHoursSchema.partial().omit(['id', 'businessId'])
+    body: z.object({
+      dayOfWeek: z.number().optional(),
+      openTime: z.string().optional(),
+      closeTime: z.string().optional(),
+      isClosed: z.boolean().optional()
+    })
   }),
 
   // Delete business hours
@@ -337,7 +354,10 @@ export const dealSchemas = {
         message: "Deal ID must be a valid number"
       })
     }),
-    body: insertDealApprovalSchema.omit(['id', 'submittedAt'])
+    body: z.object({
+      dealId: z.number(),
+      submitterId: z.number()
+    })
   }),
 
   // Get deal approval
@@ -468,7 +488,16 @@ export const adminSchemas = {
   getAllUsers: z.object({}),
   
   createUser: z.object({
-    body: insertUserSchema.omit(['id'])
+    body: z.object({
+      username: z.string(),
+      email: z.string().email(),
+      password: z.string(),
+      firstName: z.string(),
+      lastName: z.string(),
+      phone: z.string(),
+      address: z.string(),
+      userType: z.string()
+    })
   }),
   
   updateUser: z.object({
@@ -477,7 +506,14 @@ export const adminSchemas = {
         message: "User ID must be a valid number"
       })
     }),
-    body: insertUserSchema.partial().omit(['id'])
+    body: z.object({
+      username: z.string().optional(),
+      email: z.string().email().optional(),
+      firstName: z.string().optional(),
+      lastName: z.string().optional(),
+      phone: z.string().optional(),
+      address: z.string().optional()
+    })
   }),
   
   deleteUser: z.object({
