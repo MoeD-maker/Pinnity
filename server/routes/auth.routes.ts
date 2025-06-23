@@ -45,7 +45,7 @@ export function authRoutes(app: Express): void {
         return res.status(404).json({ message: "User not found" });
       }
 
-      await storage.updateUser(user.id, { phoneVerified: true });
+      await storage.updateUser(user.id, {  });
       console.log(`✅ Phone verified for user ${user.id} (${user.phone})`);
 
       return res.status(200).json({ message: "Phone verified successfully" });
@@ -948,7 +948,7 @@ export function authRoutes(app: Express): void {
       }
       
       // Update user to mark phone as verified
-      await storage.updateUser(user.id, { phoneVerified: true });
+      await storage.updateUser(user.id, {  });
       console.log(`Phone verified for user ${user.id} (${phoneNumber})`);
       
       return res.status(200).json({ message: 'Phone verified successfully' });

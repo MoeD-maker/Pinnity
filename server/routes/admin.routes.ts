@@ -1083,7 +1083,6 @@ export function adminRoutes(app: Express): void {
             businessName: dealData.otherBusinessName,
             userId: req.user!.userId, // Assign to admin user
             businessCategory: dealData.category || "Other",
-            verificationStatus: "pending"
           });
           
           // Update the deal with the new business ID
