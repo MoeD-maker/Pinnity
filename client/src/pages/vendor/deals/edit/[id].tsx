@@ -43,7 +43,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Save, Calendar, UploadCloud, Trash, AlertTriangle, Info, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Save, CalendarIcon, UploadCloud, Trash, AlertTriangle, Info, CheckCircle } from 'lucide-react';
 import { DealPreview } from '@/components/vendor/DealPreview';
 import { Badge } from '@/components/ui/badge';
 import { Toggle } from '@/components/ui/toggle';

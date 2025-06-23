@@ -300,7 +300,6 @@ export default function DealDetailPage() {
           {deal.isRecurring && (
             <DealAvailabilityBadge 
               isRecurring={true} 
-              availability={undefined}
               variant="featured"
             />
           )}
@@ -376,14 +375,14 @@ export default function DealDetailPage() {
                 </div>
                 
                 {/* Ratings summary (if implemented) */}
-                {deal.business.avgRating && (
+                {(deal.business as any).avgRating && (
                   <div className="flex-shrink-0 border rounded-md p-3 text-center w-full md:w-auto">
                     <div className="flex items-center justify-center gap-1 mb-1">
                       <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                      <span className="text-xl font-bold">{deal.business.avgRating.toFixed(1)}</span>
+                      <span className="text-xl font-bold">{(deal.business as any).avgRating.toFixed(1)}</span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {deal.business.ratingCount || 0} ratings
+                      {(deal.business as any).ratingCount || 0} ratings
                     </p>
                   </div>
                 )}

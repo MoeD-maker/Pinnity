@@ -48,7 +48,7 @@ export default function DebugCachePage() {
             databases.map(db => {
               if (db.name) {
                 return new Promise((resolve) => {
-                  const deleteReq = indexedDB.deleteDatabase(db.name);
+                  const deleteReq = indexedDB.deleteDatabase(db.name!);
                   deleteReq.onsuccess = () => resolve(true);
                   deleteReq.onerror = () => resolve(false);
                   deleteReq.onblocked = () => resolve(false);

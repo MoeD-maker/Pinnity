@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
