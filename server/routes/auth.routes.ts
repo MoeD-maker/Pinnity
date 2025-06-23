@@ -135,15 +135,7 @@ export function authRoutes(app: Express): void {
           return res.status(500).json({ message: "Internal server error" });
         }
         
-        // Additional check for account status (if implemented)
-        if (user.status === 'inactive') {
-          console.warn(`[${timestamp}] Login attempt for inactive account: ${normalizedEmail}`);
-          return res.status(403).json({ 
-            message: "Account inactive",
-            detail: "This account has been deactivated",
-            errorCode: "ACCOUNT_INACTIVE"
-          });
-        }
+        // User authenticated successfully
         
         // Generate JWT token with enhanced security
         console.time('generateToken');

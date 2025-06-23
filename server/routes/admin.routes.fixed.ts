@@ -902,7 +902,7 @@ export function adminRoutes(app: Express): void {
         const { status, feedback } = req.body;
         const reviewerId = req.user!.userId;
         
-        const approval = await storage.updateDealApproval(approvalId, status, reviewerId, feedback);
+        const approval = await storage.updateDealApproval(approvalId, status);
         
         return res.status(200).json(approval);
       } catch (error) {
@@ -923,7 +923,7 @@ export function adminRoutes(app: Express): void {
         const { status, feedback } = req.body;
         const reviewerId = req.user!.userId;
         
-        const approval = await storage.updateDealApproval(approvalId, status, reviewerId, feedback);
+        const approval = await storage.updateDealApproval(approvalId, status);
         
         return res.status(200).json(approval);
       } catch (error) {

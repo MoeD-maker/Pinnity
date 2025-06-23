@@ -1310,6 +1310,7 @@ export class MemStorage implements IStorage {
       viewCount: dealData.viewCount ?? 0,
       saveCount: dealData.saveCount ?? 0,
       redemptionCount: dealData.redemptionCount ?? 0,
+      rejectionReason: dealData.rejectionReason || null,
     };
     
     this.deals.set(id, deal);
@@ -3215,28 +3216,7 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async hasUserRedeemedDeal(userId: number, dealId: number): Promise<boolean> {
-    const [redemption] = await db.select()
-      .from(dealRedemptions)
-      .where(and(
-        eq(dealRedemptions.userId, userId),
-        eq(dealRedemptions.dealId, dealId)
-      ))
-      .limit(1);
-    
-    return !!redemption;
-  }
 
-  async getUserRedemptionCountForDeal(userId: number, dealId: number): Promise<number> {
-    const [result] = await db.select({ count: count() })
-      .from(dealRedemptions)
-      .where(and(
-        eq(dealRedemptions.userId, userId),
-        eq(dealRedemptions.dealId, dealId)
-      ));
-    
-    return result?.count || 0;
-  }
 
   async getBusinessRatings(businessId: number): Promise<RedemptionRating[]> {
     return await db.select()

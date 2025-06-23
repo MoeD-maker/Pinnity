@@ -967,7 +967,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Status is required" });
       }
       
-      const updatedApproval = await storage.updateDealApproval(approvalId, status, reviewerId, feedback);
+      const updatedApproval = await storage.updateDealApproval(approvalId, status);
       
       return res.status(200).json(updatedApproval);
     } catch (error) {
