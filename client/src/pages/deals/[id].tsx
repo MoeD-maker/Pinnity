@@ -297,11 +297,13 @@ export default function DealDetailPage() {
           </div>
           
           {/* Deal Availability Badge for recurring deals */}
-          <DealAvailabilityBadge 
-            isRecurring={deal.isRecurring || false} 
-            availability={deal.availability || null}
-            variant="featured"
-          />
+          {deal.isRecurring && (
+            <DealAvailabilityBadge 
+              isRecurring={true} 
+              availability={null}
+              variant="featured"
+            />
+          )}
         </div>
 
         <CardHeader>
@@ -326,7 +328,7 @@ export default function DealDetailPage() {
             <Calendar className="h-4 w-4 mr-2" />
             {deal.startDate && deal.endDate ? (
               <span>
-                Valid from {formatDate(deal.startDate)} to {formatDate(deal.endDate)}
+                Valid from {formatDate(deal.startDate.toString())} to {formatDate(deal.endDate.toString())}
               </span>
             ) : (
               <span>No date information available</span>
@@ -365,10 +367,10 @@ export default function DealDetailPage() {
                       <span>{deal.business.businessCategory}</span>
                     </div>
                   )}
-                  {deal.business.businessAddress && (
+                  {deal.business.address && (
                     <div className="flex items-start text-sm text-muted-foreground">
                       <Map className="h-4 w-4 mr-2 mt-1" />
-                      <span className="whitespace-pre-line">{deal.business.businessAddress}</span>
+                      <span className="whitespace-pre-line">{deal.business.address}</span>
                     </div>
                   )}
                 </div>

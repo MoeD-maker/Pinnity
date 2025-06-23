@@ -461,11 +461,11 @@ export function ValidatedCheckboxGroup<TFieldValues extends FieldValues = FieldV
               <div key={option.id} className="flex items-center space-x-2">
                 <Checkbox
                   id={`${name}-${option.id}`}
-                  checked={(field.value || []).includes(option.id)}
+                  checked={((field.value as string[]) || []).includes(option.id)}
                   onCheckedChange={(checked) => {
                     const updatedValues = checked 
-                      ? [...(field.value || []), option.id]
-                      : (field.value || []).filter((value: string) => value !== option.id);
+                      ? [...((field.value as string[]) || []), option.id]
+                      : ((field.value as string[]) || []).filter((value: string) => value !== option.id);
                     
                     field.onChange(updatedValues);
                     
