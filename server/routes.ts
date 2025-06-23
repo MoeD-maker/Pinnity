@@ -155,16 +155,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/register/individual", async (req: Request, res: Response) => {
     try {
       // Create validation schema for individual registration
-      const individualSchema = z.object({
-        email: z.string().email(),
-        password: z.string(),
-        firstName: z.string(),
-        lastName: z.string(), 
-        phone: z.string(),
-        address: z.string(),
-        confirmPassword: z.string(),
-        termsAccepted: z.boolean()
-      })
+      const individualSchema = insertUserSchema.omit(['id', 'username', 'userType', 'created_at'])
+        .extend({
+          confirmPassword: z.string(),
+          termsAccepted: z.boolean()
+        })
       .refine((data) => data.password === data.confirmPassword, {
         message: "Passwords must match",
         path: ["confirmPassword"],

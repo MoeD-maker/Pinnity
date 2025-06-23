@@ -461,7 +461,7 @@ export const adminSchemas = {
   getAllUsers: z.object({}),
   
   createUser: z.object({
-    body: insertUserSchema.omit({ id: true } as const)
+    body: insertUserSchema.omit(['id'])
   }),
   
   updateUser: z.object({
@@ -470,7 +470,7 @@ export const adminSchemas = {
         message: "User ID must be a valid number"
       })
     }),
-    body: insertUserSchema.partial().omit({ id: true } as const)
+    body: insertUserSchema.partial().omit(['id'])
   }),
   
   deleteUser: z.object({
@@ -510,8 +510,8 @@ export const adminSchemas = {
   // Admin business operations
   createBusinessUser: z.object({
     body: z.object({
-      user: insertUserSchema.omit({ id: true } as const),
-      business: insertBusinessSchema.omit({ id: true, userId: true } as const)
+      user: insertUserSchema.omit(['id']),
+      business: insertBusinessSchema.omit(['id', 'userId'])
     })
   }),
   
