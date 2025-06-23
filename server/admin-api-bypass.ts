@@ -141,7 +141,6 @@ bypassRouter.post(
       await storage.createDealApproval({
         dealId: deal.id,
         submitterId: req.user.userId, // req.user is already verified above
-        status: dealData.status === 'active' ? 'approved' : dealData.status
       });
       console.log("Deal approval record created successfully");
       
@@ -298,8 +297,7 @@ bypassRouter.post(
       console.log(`Creating approval record for deal ${deal.id} with status ${dealData.status}`);
       await storage.createDealApproval({
         dealId: deal.id,
-        submitterId: req.user.userId, // req.user is already verified above
-        status: dealData.status === 'active' ? 'approved' : dealData.status
+        submitterId: req.user.userId // req.user is already verified above
       });
       console.log("Deal approval record created successfully");
       

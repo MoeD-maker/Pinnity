@@ -158,7 +158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const individualSchema = insertUserSchema.omit({ id: true, username: true, userType: true, created_at: true })
         .extend({
           confirmPassword: z.string(),
-          termsAccepted: z.literal(true)
+          termsAccepted: z.boolean()
         })
         .refine((data) => data.password === data.confirmPassword, {
           message: "Passwords don't match",

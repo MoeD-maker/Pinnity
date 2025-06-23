@@ -1,0 +1,839 @@
+~/workspace$ npm run check:server
+
+> rest-express@1.0.0 check:server
+> tsc -p tsconfig.server.json --noEmit
+
+server/admin-api-bypass.ts:144:9 - error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'Omit<{ dealId: number; submitterId: number; }, "id" | "submittedAt">'.
+
+144         status: dealData.status === 'active' ? 'approved' : dealData.status
+            ~~~~~~
+
+server/admin-api-bypass.ts:302:9 - error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'Omit<{ dealId: number; submitterId: number; }, "id" | "submittedAt">'.
+
+302         status: dealData.status === 'active' ? 'approved' : dealData.status
+            ~~~~~~
+
+server/routes.ts:158:56 - error TS2322: Type 'boolean' is not assignable to type 'never'.
+
+158       const individualSchema = insertUserSchema.omit({ id: true, username: true, userType: true, created_at: true })
+                                                           ~~
+
+server/routes.ts:158:66 - error TS2322: Type 'boolean' is not assignable to type 'never'.
+
+158       const individualSchema = insertUserSchema.omit({ id: true, username: true, userType: true, created_at: true })
+                                                                     ~~~~~~~~
+
+server/routes.ts:158:82 - error TS2322: Type 'boolean' is not assignable to type 'never'.
+
+158       const individualSchema = insertUserSchema.omit({ id: true, username: true, userType: true, created_at: true })
+                                                                                     ~~~~~~~~
+
+server/routes.ts:158:98 - error TS2322: Type 'boolean' is not assignable to type 'never'.
+
+158       const individualSchema = insertUserSchema.omit({ id: true, username: true, userType: true, created_at: true })
+                                                                                                     ~~~~~~~~~~
+
+server/routes.ts:163:32 - error TS2339: Property 'password' does not exist on type '{ confirmPassword?: string; termsAccepted?: true; }'.
+
+163         .refine((data) => data.password === data.confirmPassword, {
+                                   ~~~~~~~~
+
+server/routes.ts:175:55 - error TS2345: Argument of type '{}' is not assignable to parameter of type 'Omit<{ username: string; email: string; password: string; firstName: string; lastName: string; phone: string; address: string; userType: string; }, "username" | "userType">'.
+  Type '{}' is missing the following properties from type 'Omit<{ username: string; email: string; password: string; firstName: string; lastName: string; phone: string; address: string; userType: string; }, "username" | "userType">': email, password, firstName, lastName, and 2 more.
+
+175       const user = await storage.createIndividualUser(userData);
+                                                          ~~~~~~~~
+
+server/routes.ts:254:11 - error TS2353: Object literal may only specify known properties, and 'verificationStatus' does not exist in type 'Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "userId">'.
+
+254           verificationStatus: "pending"
+              ~~~~~~~~~~~~~~~~~~
+
+server/routes/admin.routes.ts:1003:17 - error TS2353: Object literal may only specify known properties, and 'reviewerId' does not exist in type 'Omit<{ dealId: number; submitterId: number; }, "id" | "submittedAt">'.
+
+1003                 reviewerId: req.user?.userId,
+                     ~~~~~~~~~~
+
+server/routes/admin.routes.ts:1040:57 - error TS2353: Object literal may only specify known properties, and 'featured' does not exist in type 'Partial<Omit<{ description: string; businessId: number; title: string; category: string; startDate: Date; endDate: Date; dealType: string; }, "id" | "businessId">>'.
+
+1040         const deal = await storage.updateDeal(dealId, { featured });
+                                                             ~~~~~~~~
+
+server/routes/admin.routes.ts:1088:13 - error TS2353: Object literal may only specify known properties, and 'verificationStatus' does not exist in type 'Partial<Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">>'.
+
+1088             verificationStatus: "pending"
+                 ~~~~~~~~~~~~~~~~~~
+
+server/routes/admin.routes.ts:1147:13 - error TS2353: Object literal may only specify known properties, and 'verificationStatus' does not exist in type 'Partial<Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">>'.
+
+1147             verificationStatus: "pending"
+                 ~~~~~~~~~~~~~~~~~~
+
+server/routes/auth.routes.fixed.ts:364:13 - error TS2353: Object literal may only specify known properties, and 'verificationStatus' does not exist in type 'Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "userId">'.
+
+364             verificationStatus: "pending"
+                ~~~~~~~~~~~~~~~~~~
+
+server/routes/auth.routes.fixed.ts:475:13 - error TS2353: Object literal may only specify known properties, and 'verificationStatus' does not exist in type 'Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "userId">'.
+
+475             verificationStatus: "pending"
+                ~~~~~~~~~~~~~~~~~~
+
+server/routes/auth.routes.ts:48:43 - error TS2353: Object literal may only specify known properties, and 'phoneVerified' does not exist in type 'Partial<Omit<{ username: string; email: string; password: string; firstName: string; lastName: string; phone: string; address: string; userType: string; }, "id" | "password">>'.
+
+48       await storage.updateUser(user.id, { phoneVerified: true });
+                                             ~~~~~~~~~~~~~
+
+server/routes/auth.routes.ts:433:13 - error TS2353: Object literal may only specify known properties, and 'verificationStatus' does not exist in type 'Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "userId">'.
+
+433             verificationStatus: "pending"
+                ~~~~~~~~~~~~~~~~~~
+
+server/routes/auth.routes.ts:559:13 - error TS2353: Object literal may only specify known properties, and 'verificationStatus' does not exist in type 'Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "userId">'.
+
+559             verificationStatus: "pending"
+                ~~~~~~~~~~~~~~~~~~
+
+server/routes/auth.routes.ts:951:43 - error TS2353: Object literal may only specify known properties, and 'phoneVerified' does not exist in type 'Partial<Omit<{ username: string; email: string; password: string; firstName: string; lastName: string; phone: string; address: string; userType: string; }, "id" | "password">>'.
+
+951       await storage.updateUser(user.id, { phoneVerified: true });
+                                              ~~~~~~~~~~~~~
+
+server/routes/deal.routes.fixed.ts:677:64 - error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'Partial<Omit<{ description: string; businessId: number; title: string; category: string; startDate: Date; endDate: Date; dealType: string; }, "id" | "businessId">>'.
+
+677         const updatedDeal = await storage.updateDeal(dealId, { status: "approved" });
+                                                                   ~~~~~~
+
+server/routes/deal.routes.fixed.ts:704:11 - error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'Partial<Omit<{ description: string; businessId: number; title: string; category: string; startDate: Date; endDate: Date; dealType: string; }, "id" | "businessId">>'.
+
+704           status: "rejected",
+              ~~~~~~
+
+server/routes/deal.routes.new.ts:626:64 - error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'Partial<Omit<{ description: string; businessId: number; title: string; category: string; startDate: Date; endDate: Date; dealType: string; }, "id" | "businessId">>'.
+
+626         const updatedDeal = await storage.updateDeal(dealId, { status: "approved" });
+                                                                   ~~~~~~
+
+server/routes/deal.routes.new.ts:653:11 - error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'Partial<Omit<{ description: string; businessId: number; title: string; category: string; startDate: Date; endDate: Date; dealType: string; }, "id" | "businessId">>'.
+
+653           status: "rejected",
+              ~~~~~~
+
+server/routes/deal.routes.ts:212:58 - error TS2322: Type 'boolean' is not assignable to type 'never'.
+
+212         const createDealSchema = insertDealSchema.omit({ id: true, createdAt: true });
+                                                             ~~
+
+server/routes/deal.routes.ts:212:68 - error TS2322: Type 'boolean' is not assignable to type 'never'.
+
+212         const createDealSchema = insertDealSchema.omit({ id: true, createdAt: true });
+                                                                       ~~~~~~~~~
+
+server/routes/deal.routes.ts:235:9 - error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'Omit<{ dealId: number; submitterId: number; }, "id" | "submittedAt">'.
+
+235         status: dealData.status === 'active' ? 'approved' : dealData.status
+            ~~~~~~
+
+server/routes/deal.routes.ts:276:58 - error TS2322: Type 'boolean' is not assignable to type 'never'.
+
+276         const createDealSchema = insertDealSchema.omit({ id: true, createdAt: true });
+                                                             ~~
+
+server/routes/deal.routes.ts:276:68 - error TS2322: Type 'boolean' is not assignable to type 'never'.
+
+276         const createDealSchema = insertDealSchema.omit({ id: true, createdAt: true });
+                                                                       ~~~~~~~~~
+
+server/routes/deal.routes.ts:292:9 - error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'Omit<{ dealId: number; submitterId: number; }, "id" | "submittedAt">'.
+
+292         status: 'pending'
+            ~~~~~~
+
+server/routes/deal.routes.ts:347:11 - error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'Omit<{ dealId: number; submitterId: number; }, "id" | "submittedAt">'.
+
+347           status: 'pending'
+              ~~~~~~
+
+server/routes/deal.routes.ts:392:9 - error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'Omit<{ dealId: number; submitterId: number; }, "id" | "submittedAt">'.
+
+392         status: 'pending'
+            ~~~~~~
+
+server/routes/deal.routes.ts:501:9 - error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'Omit<{ dealId: number; submitterId: number; }, "id" | "submittedAt">'.
+
+501         status: 'pending'
+            ~~~~~~
+
+server/routes/sms.routes.ts:108:47 - error TS2353: Object literal may only specify known properties, and 'phoneVerified' does not exist in type 'Partial<Omit<{ username: string; email: string; password: string; firstName: string; lastName: string; phone: string; address: string; userType: string; }, "id" | "password">>'.
+
+108           await storage.updateUser(user.id, { phoneVerified: true });
+                                                  ~~~~~~~~~~~~~
+
+server/schemas.ts:101:45 - error TS2322: Type 'boolean' is not assignable to type 'never'.
+
+101     body: insertUserSchema.partial().omit({ id: true, password: true, userType: true })
+                                                ~~
+
+server/schemas.ts:101:55 - error TS2322: Type 'boolean' is not assignable to type 'never'.
+
+101     body: insertUserSchema.partial().omit({ id: true, password: true, userType: true })
+                                                          ~~~~~~~~
+
+server/schemas.ts:101:71 - error TS2322: Type 'boolean' is not assignable to type 'never'.
+
+101     body: insertUserSchema.partial().omit({ id: true, password: true, userType: true })
+                                                                          ~~~~~~~~
+
+server/schemas.ts:189:58 - error TS2322: Type 'boolean' is not assignable to type 'never'.
+
+189     body: insertUserNotificationPreferencesSchema.omit({ id: true, userId: true }).partial()
+                                                             ~~
+
+server/schemas.ts:189:68 - error TS2322: Type 'boolean' is not assignable to type 'never'.
+
+189     body: insertUserNotificationPreferencesSchema.omit({ id: true, userId: true }).partial()
+                                                                       ~~~~~~
+
+server/schemas.ts:212:49 - error TS2322: Type 'boolean' is not assignable to type 'never'.
+
+212     body: insertBusinessSchema.partial().omit({ id: true, userId: true })
+                                                    ~~
+
+server/schemas.ts:212:59 - error TS2322: Type 'boolean' is not assignable to type 'never'.
+
+212     body: insertBusinessSchema.partial().omit({ id: true, userId: true })
+                                                              ~~~~~~
+
+server/schemas.ts:242:44 - error TS2322: Type 'boolean' is not assignable to type 'never'.
+
+242     body: insertBusinessHoursSchema.omit({ id: true })
+                                               ~~
+
+server/schemas.ts:252:54 - error TS2322: Type 'boolean' is not assignable to type 'never'.
+
+252     body: insertBusinessHoursSchema.partial().omit({ id: true, businessId: true })
+                                                         ~~
+
+server/schemas.ts:252:64 - error TS2322: Type 'boolean' is not assignable to type 'never'.
+
+252     body: insertBusinessHoursSchema.partial().omit({ id: true, businessId: true })
+                                                                   ~~~~~~~~~~
+
+server/schemas.ts:333:43 - error TS2322: Type 'boolean' is not assignable to type 'never'.
+
+333     body: insertDealApprovalSchema.omit({ id: true, submittedAt: true })
+                                              ~~
+
+server/schemas.ts:333:53 - error TS2322: Type 'boolean' is not assignable to type 'never'.
+
+333     body: insertDealApprovalSchema.omit({ id: true, submittedAt: true })
+                                                        ~~~~~~~~~~~
+
+server/schemas.ts:464:35 - error TS2322: Type 'boolean' is not assignable to type 'never'.
+
+464     body: insertUserSchema.omit({ id: true })
+                                      ~~
+
+server/schemas.ts:473:45 - error TS2322: Type 'boolean' is not assignable to type 'never'.
+
+473     body: insertUserSchema.partial().omit({ id: true })
+                                                ~~
+
+server/schemas.ts:513:37 - error TS2322: Type 'boolean' is not assignable to type 'never'.
+
+513       user: insertUserSchema.omit({ id: true }),
+                                        ~~
+
+server/schemas.ts:514:45 - error TS2322: Type 'boolean' is not assignable to type 'never'.
+
+514       business: insertBusinessSchema.omit({ id: true, userId: true })
+                                                ~~
+
+server/schemas.ts:514:55 - error TS2322: Type 'boolean' is not assignable to type 'never'.
+
+514       business: insertBusinessSchema.omit({ id: true, userId: true })
+                                                          ~~~~~~
+
+server/storage.ts:270:11 - error TS2353: Object literal may only specify known properties, and 'description' does not exist in type 'Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "userId">'.
+
+270           description: "A test vendor business for demonstration purposes",
+              ~~~~~~~~~~~
+
+server/storage.ts:308:9 - error TS2353: Object literal may only specify known properties, and 'description' does not exist in type 'Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">'.
+
+308         description: "A cozy café serving fresh coffee and pastries",
+            ~~~~~~~~~~~
+
+server/storage.ts:334:9 - error TS2353: Object literal may only specify known properties, and 'description' does not exist in type 'Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">'.
+
+334         description: "Fine dining with a modern twist",
+            ~~~~~~~~~~~
+
+server/storage.ts:360:9 - error TS2353: Object literal may only specify known properties, and 'description' does not exist in type 'Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">'.
+
+360         description: "Trendy clothing and accessories for all occasions",
+            ~~~~~~~~~~~
+
+server/storage.ts:386:9 - error TS2353: Object literal may only specify known properties, and 'description' does not exist in type 'Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">'.
+
+386         description: "A peaceful oasis offering massage and skincare services",
+            ~~~~~~~~~~~
+
+server/storage.ts:520:40 - error TS2339: Property 'verificationStatus' does not exist on type 'Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">'.
+
+520       verificationStatus: businessData.verificationStatus ?? "pending",
+                                           ~~~~~~~~~~~~~~~~~~
+
+server/storage.ts:521:27 - error TS2339: Property 'phone' does not exist on type 'Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">'.
+
+521       phone: businessData.phone || null,
+                              ~~~~~
+
+server/storage.ts:522:29 - error TS2339: Property 'address' does not exist on type 'Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">'.
+
+522       address: businessData.address || null,
+                                ~~~~~~~
+
+server/storage.ts:523:30 - error TS2339: Property 'imageUrl' does not exist on type 'Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">'.
+
+523       imageUrl: businessData.imageUrl || null,
+                                 ~~~~~~~~
+
+server/storage.ts:524:33 - error TS2339: Property 'description' does not exist on type 'Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">'.
+
+524       description: businessData.description || null,
+                                    ~~~~~~~~~~~
+
+server/storage.ts:525:30 - error TS2339: Property 'latitude' does not exist on type 'Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">'.
+
+525       latitude: businessData.latitude || null,
+                                 ~~~~~~~~
+
+server/storage.ts:526:31 - error TS2339: Property 'longitude' does not exist on type 'Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">'.
+
+526       longitude: businessData.longitude || null,
+                                  ~~~~~~~~~
+
+server/storage.ts:527:29 - error TS2339: Property 'website' does not exist on type 'Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">'.
+
+527       website: businessData.website || null,
+                                ~~~~~~~
+
+server/storage.ts:544:7 - error TS2353: Object literal may only specify known properties, and 'verificationStatus' does not exist in type 'Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">'.
+
+544       verificationStatus: businessData.verificationStatus || "pending",
+          ~~~~~~~~~~~~~~~~~~
+
+server/storage.ts:544:40 - error TS2339: Property 'verificationStatus' does not exist on type 'Partial<Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">>'.
+
+544       verificationStatus: businessData.verificationStatus || "pending",
+                                           ~~~~~~~~~~~~~~~~~~
+
+server/storage.ts:545:29 - error TS2339: Property 'address' does not exist on type 'Partial<Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">>'.
+
+545       address: businessData.address || "",
+                                ~~~~~~~
+
+server/storage.ts:546:33 - error TS2339: Property 'description' does not exist on type 'Partial<Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">>'.
+
+546       description: businessData.description || `Temporary business created for ${businessData.businessName}`,
+                                    ~~~~~~~~~~~
+
+server/storage.ts:548:27 - error TS2339: Property 'phone' does not exist on type 'Partial<Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">>'.
+
+548       phone: businessData.phone || "",
+                              ~~~~~
+
+server/storage.ts:549:29 - error TS2339: Property 'website' does not exist on type 'Partial<Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">>'.
+
+549       website: businessData.website || "",
+                                ~~~~~~~
+
+server/storage.ts:550:30 - error TS2339: Property 'imageUrl' does not exist on type 'Partial<Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">>'.
+
+550       imageUrl: businessData.imageUrl || "",
+                                 ~~~~~~~~
+
+server/storage.ts:551:30 - error TS2339: Property 'latitude' does not exist on type 'Partial<Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">>'.
+
+551       latitude: businessData.latitude || 0,
+                                 ~~~~~~~~
+
+server/storage.ts:552:31 - error TS2339: Property 'longitude' does not exist on type 'Partial<Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">>'.
+
+552       longitude: businessData.longitude || 0,
+                                  ~~~~~~~~~
+
+server/storage.ts:824:31 - error TS2339: Property 'phoneVerified' does not exist on type 'Omit<{ username: string; email: string; password: string; firstName: string; lastName: string; phone: string; address: string; userType: string; }, "id">'.
+
+824       phoneVerified: userData.phoneVerified ?? false,
+                                  ~~~~~~~~~~~~~
+
+server/storage.ts:825:28 - error TS2339: Property 'created_at' does not exist on type 'Omit<{ username: string; email: string; password: string; firstName: string; lastName: string; phone: string; address: string; userType: string; }, "id">'.
+
+825       created_at: userData.created_at ?? new Date().toISOString(),
+                               ~~~~~~~~~~
+
+server/storage.ts:1114:35 - error TS2339: Property 'openTime' does not exist on type 'Omit<{ businessId: number; dayOfWeek: number; }, "id">'.
+
+1114       openTime: businessHoursData.openTime ?? null,
+                                       ~~~~~~~~
+
+server/storage.ts:1115:36 - error TS2339: Property 'closeTime' does not exist on type 'Omit<{ businessId: number; dayOfWeek: number; }, "id">'.
+
+1115       closeTime: businessHoursData.closeTime ?? null,
+                                        ~~~~~~~~~
+
+server/storage.ts:1116:35 - error TS2339: Property 'isClosed' does not exist on type 'Omit<{ businessId: number; dayOfWeek: number; }, "id">'.
+
+1116       isClosed: businessHoursData.isClosed ?? null,
+                                       ~~~~~~~~
+
+server/storage.ts:1165:32 - error TS2339: Property 'username' does not exist on type 'Omit<{ businessId: number; platform: string; url: string; }, "id">'.
+
+1165       username: socialLinkData.username ?? null,
+                                    ~~~~~~~~
+
+server/storage.ts:1214:28 - error TS2339: Property 'status' does not exist on type 'Omit<{ businessId: number; documentType: string; filePath: string; }, "id" | "submittedAt">'.
+
+1214       status: documentData.status || "pending",
+                                ~~~~~~
+
+server/storage.ts:1215:30 - error TS2339: Property 'feedback' does not exist on type 'Omit<{ businessId: number; documentType: string; filePath: string; }, "id" | "submittedAt">'.
+
+1215       feedback: documentData.feedback || null,
+                                  ~~~~~~~~
+
+server/storage.ts:1217:32 - error TS2339: Property 'reviewedAt' does not exist on type 'Omit<{ businessId: number; documentType: string; filePath: string; }, "id" | "submittedAt">'.
+
+1217       reviewedAt: documentData.reviewedAt ?? null,
+                                    ~~~~~~~~~~
+
+server/storage.ts:1296:26 - error TS2339: Property 'featured' does not exist on type 'Omit<{ description: string; businessId: number; title: string; category: string; startDate: Date; endDate: Date; dealType: string; }, "id" | "createdAt">'.
+
+1296       featured: dealData.featured ?? false,
+                              ~~~~~~~~
+
+server/storage.ts:1297:24 - error TS2339: Property 'status' does not exist on type 'Omit<{ description: string; businessId: number; title: string; category: string; startDate: Date; endDate: Date; dealType: string; }, "id" | "createdAt">'.
+
+1297       status: dealData.status ?? "pending",
+                            ~~~~~~
+
+server/storage.ts:1298:26 - error TS2339: Property 'imageUrl' does not exist on type 'Omit<{ description: string; businessId: number; title: string; category: string; startDate: Date; endDate: Date; dealType: string; }, "id" | "createdAt">'.
+
+1298       imageUrl: dealData.imageUrl || null,
+                              ~~~~~~~~
+
+server/storage.ts:1300:29 - error TS2339: Property 'isRecurring' does not exist on type 'Omit<{ description: string; businessId: number; title: string; category: string; startDate: Date; endDate: Date; dealType: string; }, "id" | "createdAt">'.
+
+1300       isRecurring: dealData.isRecurring ?? false,
+                                 ~~~~~~~~~~~
+
+server/storage.ts:1301:31 - error TS2339: Property 'recurringDays' does not exist on type 'Omit<{ description: string; businessId: number; title: string; category: string; startDate: Date; endDate: Date; dealType: string; }, "id" | "createdAt">'.
+
+1301       recurringDays: dealData.recurringDays ?? [],
+                                   ~~~~~~~~~~~~~
+
+server/storage.ts:1302:23 - error TS2339: Property 'terms' does not exist on type 'Omit<{ description: string; businessId: number; title: string; category: string; startDate: Date; endDate: Date; dealType: string; }, "id" | "createdAt">'.
+
+1302       terms: dealData.terms || null,
+                           ~~~~~
+
+server/storage.ts:1303:26 - error TS2339: Property 'discount' does not exist on type 'Omit<{ description: string; businessId: number; title: string; category: string; startDate: Date; endDate: Date; dealType: string; }, "id" | "createdAt">'.
+
+1303       discount: dealData.discount || null,
+                              ~~~~~~~~
+
+server/storage.ts:1304:29 - error TS2339: Property 'requiresPin' does not exist on type 'Omit<{ description: string; businessId: number; title: string; category: string; startDate: Date; endDate: Date; dealType: string; }, "id" | "createdAt">'.
+
+1304       requiresPin: dealData.requiresPin ?? true,
+                                 ~~~~~~~~~~~
+
+server/storage.ts:1305:32 - error TS2339: Property 'redemptionCode' does not exist on type 'Omit<{ description: string; businessId: number; title: string; category: string; startDate: Date; endDate: Date; dealType: string; }, "id" | "createdAt">'.
+
+1305       redemptionCode: dealData.redemptionCode || null,
+                                    ~~~~~~~~~~~~~~
+
+server/storage.ts:1306:30 - error TS2339: Property 'approvalDate' does not exist on type 'Omit<{ description: string; businessId: number; title: string; category: string; startDate: Date; endDate: Date; dealType: string; }, "id" | "createdAt">'.
+
+1306       approvalDate: dealData.approvalDate || null,
+                                  ~~~~~~~~~~~~
+
+server/storage.ts:1307:39 - error TS2339: Property 'maxRedemptionsPerUser' does not exist on type 'Omit<{ description: string; businessId: number; title: string; category: string; startDate: Date; endDate: Date; dealType: string; }, "id" | "createdAt">'.
+
+1307       maxRedemptionsPerUser: dealData.maxRedemptionsPerUser ?? 1,
+                                           ~~~~~~~~~~~~~~~~~~~~~
+
+server/storage.ts:1308:39 - error TS2339: Property 'totalRedemptionsLimit' does not exist on type 'Omit<{ description: string; businessId: number; title: string; category: string; startDate: Date; endDate: Date; dealType: string; }, "id" | "createdAt">'.
+
+1308       totalRedemptionsLimit: dealData.totalRedemptionsLimit || null,
+                                           ~~~~~~~~~~~~~~~~~~~~~
+
+server/storage.ts:1309:40 - error TS2339: Property 'redemptionInstructions' does not exist on type 'Omit<{ description: string; businessId: number; title: string; category: string; startDate: Date; endDate: Date; dealType: string; }, "id" | "createdAt">'.
+
+1309       redemptionInstructions: dealData.redemptionInstructions || null,
+                                            ~~~~~~~~~~~~~~~~~~~~~~
+
+server/storage.ts:1310:27 - error TS2339: Property 'viewCount' does not exist on type 'Omit<{ description: string; businessId: number; title: string; category: string; startDate: Date; endDate: Date; dealType: string; }, "id" | "createdAt">'.
+
+1310       viewCount: dealData.viewCount ?? 0,
+                               ~~~~~~~~~
+
+server/storage.ts:1311:27 - error TS2339: Property 'saveCount' does not exist on type 'Omit<{ description: string; businessId: number; title: string; category: string; startDate: Date; endDate: Date; dealType: string; }, "id" | "createdAt">'.
+
+1311       saveCount: dealData.saveCount ?? 0,
+                               ~~~~~~~~~
+
+server/storage.ts:1312:33 - error TS2339: Property 'redemptionCount' does not exist on type 'Omit<{ description: string; businessId: number; title: string; category: string; startDate: Date; endDate: Date; dealType: string; }, "id" | "createdAt">'.
+
+1312       redemptionCount: dealData.redemptionCount ?? 0,
+                                     ~~~~~~~~~~~~~~~
+
+server/storage.ts:1313:33 - error TS2339: Property 'rejectionReason' does not exist on type 'Omit<{ description: string; businessId: number; title: string; category: string; startDate: Date; endDate: Date; dealType: string; }, "id" | "createdAt">'.
+
+1313       rejectionReason: dealData.rejectionReason || null,
+                                     ~~~~~~~~~~~~~~~
+
+server/storage.ts:1501:28 - error TS2339: Property 'status' does not exist on type 'Omit<{ dealId: number; submitterId: number; }, "id" | "submittedAt">'.
+
+1501       status: approvalData.status || "pending",
+                                ~~~~~~
+
+server/storage.ts:1502:32 - error TS2339: Property 'reviewerId' does not exist on type 'Omit<{ dealId: number; submitterId: number; }, "id" | "submittedAt">'.
+
+1502       reviewerId: approvalData.reviewerId ?? null,
+                                    ~~~~~~~~~~
+
+server/storage.ts:1503:30 - error TS2339: Property 'feedback' does not exist on type 'Omit<{ dealId: number; submitterId: number; }, "id" | "submittedAt">'.
+
+1503       feedback: approvalData.feedback ?? null,
+                                  ~~~~~~~~
+
+server/storage.ts:1505:32 - error TS2339: Property 'reviewedAt' does not exist on type 'Omit<{ dealId: number; submitterId: number; }, "id" | "submittedAt">'.
+
+1505       reviewedAt: approvalData.reviewedAt ?? null,
+                                    ~~~~~~~~~~
+
+server/storage.ts:1506:35 - error TS2339: Property 'revisionCount' does not exist on type 'Omit<{ dealId: number; submitterId: number; }, "id" | "submittedAt">'.
+
+1506       revisionCount: approvalData.revisionCount ?? 0,
+                                       ~~~~~~~~~~~~~
+
+server/storage.ts:1719:43 - error TS2339: Property 'emailNotifications' does not exist on type '{ userId: number; }'.
+
+1719       emailNotifications: preferencesData.emailNotifications ?? null,
+                                               ~~~~~~~~~~~~~~~~~~
+
+server/storage.ts:1720:42 - error TS2339: Property 'pushNotifications' does not exist on type '{ userId: number; }'.
+
+1720       pushNotifications: preferencesData.pushNotifications ?? null,
+                                              ~~~~~~~~~~~~~~~~~
+
+server/storage.ts:1721:35 - error TS2339: Property 'dealAlerts' does not exist on type '{ userId: number; }'.
+
+1721       dealAlerts: preferencesData.dealAlerts ?? null,
+                                       ~~~~~~~~~~
+
+server/storage.ts:1722:46 - error TS2339: Property 'expiringDealReminders' does not exist on type '{ userId: number; }'.
+
+1722       expiringDealReminders: preferencesData.expiringDealReminders ?? null,
+                                                  ~~~~~~~~~~~~~~~~~~~~~
+
+server/storage.ts:1723:50 - error TS2339: Property 'expiringDealReminderHours' does not exist on type '{ userId: number; }'.
+
+1723       expiringDealReminderHours: preferencesData.expiringDealReminderHours ?? null,
+                                                      ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/storage.ts:1724:41 - error TS2339: Property 'weeklyNewsletter' does not exist on type '{ userId: number; }'.
+
+1724       weeklyNewsletter: preferencesData.weeklyNewsletter ?? null,
+                                             ~~~~~~~~~~~~~~~~
+
+server/storage.ts:1725:40 - error TS2339: Property 'locationSharing' does not exist on type '{ userId: number; }'.
+
+1725       locationSharing: preferencesData.locationSharing ?? null,
+                                            ~~~~~~~~~~~~~~~
+
+server/storage.ts:1739:9 - error TS2353: Object literal may only specify known properties, and 'emailNotifications' does not exist in type '{ userId: number; }'.
+
+1739         emailNotifications: true,
+             ~~~~~~~~~~~~~~~~~~
+
+server/storage.ts:1909:55 - error TS2339: Property 'phoneVerified' does not exist on type 'Omit<{ username: string; email: string; password: string; firstName: string; lastName: string; phone: string; address: string; userType: string; }, "username" | "userType">'.
+
+1909     console.log(`📱 Phone verified status: ${userData.phoneVerified}`);
+                                                           ~~~~~~~~~~~~~
+
+server/storage.ts:1943:10 - error TS2769: No overload matches this call.
+  Overload 1 of 2, '(value: { userId: number | SQL<unknown> | Placeholder<string, any>; businessName: string | SQL<unknown> | Placeholder<string, any>; businessCategory: string | SQL<...> | Placeholder<...>; governmentId: string | ... 1 more ... | Placeholder<...>; proofOfAddress: string | ... 1 more ... | Placeholder<...>; proofOfBusiness: string | ... 1 more ... | Placeholder<...>; }): PgInsertBase<...>', gave the following error.
+    Object literal may only specify known properties, and 'verificationStatus' does not exist in type '{ userId: number | SQL<unknown> | Placeholder<string, any>; businessName: string | SQL<unknown> | Placeholder<string, any>; businessCategory: string | SQL<...> | Placeholder<...>; governmentId: string | ... 1 more ... | Placeholder<...>; proofOfAddress: string | ... 1 more ... | Placeholder<...>; proofOfBusiness: st...'.
+  Overload 2 of 2, '(values: { userId: number | SQL<unknown> | Placeholder<string, any>; businessName: string | SQL<unknown> | Placeholder<string, any>; businessCategory: string | SQL<...> | Placeholder<...>; governmentId: string | ... 1 more ... | Placeholder<...>; proofOfAddress: string | ... 1 more ... | Placeholder<...>; proofOfBusiness: string | ... 1 more ... | Placeholder<...>; }[]): PgInsertBase<...>', gave the following error.
+    Object literal may only specify known properties, and 'userId' does not exist in type '{ userId: number | SQL<unknown> | Placeholder<string, any>; businessName: string | SQL<unknown> | Placeholder<string, any>; businessCategory: string | SQL<...> | Placeholder<...>; governmentId: string | ... 1 more ... | Placeholder<...>; proofOfAddress: string | ... 1 more ... | Placeholder<...>; proofOfBusiness: st...'.
+
+1943         .values({
+              ~~~~~~
+
+
+server/storage.ts:1948:44 - error TS2339: Property 'verificationStatus' does not exist on type 'Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "userId">'.
+
+1948           verificationStatus: businessData.verificationStatus || 'pending'
+                                                ~~~~~~~~~~~~~~~~~~
+
+server/storage.ts:1964:9 - error TS2769: No overload matches this call.
+  Overload 1 of 2, '(value: { userId: number | SQL<unknown> | Placeholder<string, any>; businessName: string | SQL<unknown> | Placeholder<string, any>; businessCategory: string | SQL<...> | Placeholder<...>; governmentId: string | ... 1 more ... | Placeholder<...>; proofOfAddress: string | ... 1 more ... | Placeholder<...>; proofOfBusiness: string | ... 1 more ... | Placeholder<...>; }): PgInsertBase<...>', gave the following error.
+    Object literal may only specify known properties, and 'verificationStatus' does not exist in type '{ userId: number | SQL<unknown> | Placeholder<string, any>; businessName: string | SQL<unknown> | Placeholder<string, any>; businessCategory: string | SQL<...> | Placeholder<...>; governmentId: string | ... 1 more ... | Placeholder<...>; proofOfAddress: string | ... 1 more ... | Placeholder<...>; proofOfBusiness: st...'.
+  Overload 2 of 2, '(values: { userId: number | SQL<unknown> | Placeholder<string, any>; businessName: string | SQL<unknown> | Placeholder<string, any>; businessCategory: string | SQL<...> | Placeholder<...>; governmentId: string | ... 1 more ... | Placeholder<...>; proofOfAddress: string | ... 1 more ... | Placeholder<...>; proofOfBusiness: string | ... 1 more ... | Placeholder<...>; }[]): PgInsertBase<...>', gave the following error.
+    Object literal may only specify known properties, and 'verificationStatus' does not exist in type '{ userId: number | SQL<unknown> | Placeholder<string, any>; businessName: string | SQL<unknown> | Placeholder<string, any>; businessCategory: string | SQL<...> | Placeholder<...>; governmentId: string | ... 1 more ... | Placeholder<...>; proofOfAddress: string | ... 1 more ... | Placeholder<...>; proofOfBusiness: st...'.
+
+1964         verificationStatus: businessData.verificationStatus || 'pending'
+             ~~~~~~~~~~~~~~~~~~
+
+
+server/storage.ts:1964:42 - error TS2339: Property 'verificationStatus' does not exist on type 'Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">'.
+
+1964         verificationStatus: businessData.verificationStatus || 'pending'
+                                              ~~~~~~~~~~~~~~~~~~
+
+server/storage.ts:1982:7 - error TS2353: Object literal may only specify known properties, and 'verificationStatus' does not exist in type 'Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">'.
+
+1982       verificationStatus: businessData.verificationStatus || "pending",
+           ~~~~~~~~~~~~~~~~~~
+
+server/storage.ts:1982:40 - error TS2339: Property 'verificationStatus' does not exist on type 'Partial<Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">>'.
+
+1982       verificationStatus: businessData.verificationStatus || "pending",
+                                            ~~~~~~~~~~~~~~~~~~
+
+server/storage.ts:1983:33 - error TS2339: Property 'description' does not exist on type 'Partial<Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">>'.
+
+1983       description: businessData.description || `Temporary business created for ${businessData.businessName}`,
+                                     ~~~~~~~~~~~
+
+server/storage.ts:1984:29 - error TS2339: Property 'address' does not exist on type 'Partial<Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">>'.
+
+1984       address: businessData.address || "",
+                                 ~~~~~~~
+
+server/storage.ts:1985:27 - error TS2339: Property 'phone' does not exist on type 'Partial<Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">>'.
+
+1985       phone: businessData.phone || "",
+                               ~~~~~
+
+server/storage.ts:1986:29 - error TS2339: Property 'website' does not exist on type 'Partial<Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">>'.
+
+1986       website: businessData.website || "",
+                                 ~~~~~~~
+
+server/storage.ts:1987:30 - error TS2339: Property 'imageUrl' does not exist on type 'Partial<Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">>'.
+
+1987       imageUrl: businessData.imageUrl || "",
+                                  ~~~~~~~~
+
+server/storage.ts:1988:30 - error TS2339: Property 'latitude' does not exist on type 'Partial<Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">>'.
+
+1988       latitude: businessData.latitude || 0,
+                                  ~~~~~~~~
+
+server/storage.ts:1989:31 - error TS2339: Property 'longitude' does not exist on type 'Partial<Omit<{ userId: number; businessName: string; businessCategory: string; governmentId: string; proofOfAddress: string; proofOfBusiness: string; }, "id">>'.
+
+1989       longitude: businessData.longitude || 0,
+                                   ~~~~~~~~~
+
+server/storage.ts:2087:42 - error TS2769: No overload matches this call.
+  Overload 1 of 2, '(value: { userId: number | SQL<unknown> | Placeholder<string, any>; token: string | SQL<unknown> | Placeholder<string, any>; expiresAt: SQL<unknown> | Date | Placeholder<...>; }): PgInsertBase<...>', gave the following error.
+    Object literal may only specify known properties, and 'ipAddress' does not exist in type '{ userId: number | SQL<unknown> | Placeholder<string, any>; token: string | SQL<unknown> | Placeholder<string, any>; expiresAt: SQL<unknown> | Date | Placeholder<...>; }'.
+  Overload 2 of 2, '(values: { userId: number | SQL<unknown> | Placeholder<string, any>; token: string | SQL<unknown> | Placeholder<string, any>; expiresAt: SQL<unknown> | Date | Placeholder<...>; }[]): PgInsertBase<...>', gave the following error.
+    Object literal may only specify known properties, and 'userId' does not exist in type '{ userId: number | SQL<unknown> | Placeholder<string, any>; token: string | SQL<unknown> | Placeholder<string, any>; expiresAt: SQL<unknown> | Date | Placeholder<...>; }[]'.
+
+2087     await db.insert(passwordResetTokens).values({
+                                              ~~~~~~
+
+
+server/storage.ts:2139:14 - error TS2353: Object literal may only specify known properties, and 'usedAt' does not exist in type '{ userId?: number | SQL<unknown> | PgColumn<ColumnBaseConfig<ColumnDataType, string>, {}, {}>; token?: string | SQL<unknown> | PgColumn<ColumnBaseConfig<...>, {}, {}>; expiresAt?: SQL<...> | ... 1 more ... | PgColumn<...>; }'.
+
+2139       .set({ usedAt: new Date() })
+                  ~~~~~~
+
+server/storage.ts:2286:9 - error TS2353: Object literal may only specify known properties, and 'verificationStatus' does not exist in type '{ userId?: number | SQL<unknown> | PgColumn<ColumnBaseConfig<ColumnDataType, string>, {}, {}>; businessName?: string | SQL<unknown> | PgColumn<...>; businessCategory?: string | ... 1 more ... | PgColumn<...>; governmentId?: string | ... 1 more ... | PgColumn<...>; proofOfAddress?: string | ... 1 more ... | PgColumn<...'.
+
+2286         verificationStatus: status
+             ~~~~~~~~~~~~~~~~~~
+
+server/storage.ts:2429:9 - error TS2769: No overload matches this call.
+  Overload 1 of 2, '(value: { businessId: number | SQL<unknown> | Placeholder<string, any>; documentType: string | SQL<unknown> | Placeholder<string, any>; filePath: string | SQL<...> | Placeholder<...>; }): PgInsertBase<...>', gave the following error.
+    Object literal may only specify known properties, and 'submittedAt' does not exist in type '{ businessId: number | SQL<unknown> | Placeholder<string, any>; documentType: string | SQL<unknown> | Placeholder<string, any>; filePath: string | SQL<...> | Placeholder<...>; }'.
+  Overload 2 of 2, '(values: { businessId: number | SQL<unknown> | Placeholder<string, any>; documentType: string | SQL<unknown> | Placeholder<string, any>; filePath: string | SQL<...> | Placeholder<...>; }[]): PgInsertBase<...>', gave the following error.
+    Object literal may only specify known properties, and 'submittedAt' does not exist in type '{ businessId: number | SQL<unknown> | Placeholder<string, any>; documentType: string | SQL<unknown> | Placeholder<string, any>; filePath: string | SQL<...> | Placeholder<...>; }[]'.
+
+2429         submittedAt: new Date()
+             ~~~~~~~~~~~
+
+
+server/storage.ts:2439:9 - error TS2353: Object literal may only specify known properties, and 'status' does not exist in type '{ businessId?: number | SQL<unknown> | PgColumn<ColumnBaseConfig<ColumnDataType, string>, {}, {}>; documentType?: string | SQL<unknown> | PgColumn<...>; filePath?: string | ... 1 more ... | PgColumn<...>; }'.
+
+2439         status,
+             ~~~~~~
+
+server/storage.ts:2718:14 - error TS2353: Object literal may only specify known properties, and 'status' does not exist in type '{ description?: string | SQL<unknown> | PgColumn<ColumnBaseConfig<ColumnDataType, string>, {}, {}>; businessId?: number | SQL<unknown> | PgColumn<...>; ... 4 more ...; dealType?: string | ... 1 more ... | PgColumn<...>; }'.
+
+2718       .set({ status })
+                  ~~~~~~
+
+server/storage.ts:2741:8 - error TS2769: No overload matches this call.
+  Overload 1 of 2, '(value: { description: string | SQL<unknown> | Placeholder<string, any>; businessId: number | SQL<unknown> | Placeholder<string, any>; title: string | SQL<unknown> | Placeholder<...>; category: string | ... 1 more ... | Placeholder<...>; startDate: SQL<...> | ... 1 more ... | Placeholder<...>; endDate: SQL<...> | ... 1 more ... | Placeholder<...>; dealType: string | ... 1 more ... | Placeholder<...>; }): PgInsertBase<...>', gave the following error.
+    Object literal may only specify known properties, and 'imageUrl' does not exist in type '{ description: string | SQL<unknown> | Placeholder<string, any>; businessId: number | SQL<unknown> | Placeholder<string, any>; title: string | SQL<unknown> | Placeholder<...>; category: string | ... 1 more ... | Placeholder<...>; startDate: SQL<...> | ... 1 more ... | Placeholder<...>; endDate: SQL<...> | ... 1 more...'.
+  Overload 2 of 2, '(values: { description: string | SQL<unknown> | Placeholder<string, any>; businessId: number | SQL<unknown> | Placeholder<string, any>; title: string | SQL<unknown> | Placeholder<...>; category: string | ... 1 more ... | Placeholder<...>; startDate: SQL<...> | ... 1 more ... | Placeholder<...>; endDate: SQL<...> | ... 1 more ... | Placeholder<...>; dealType: string | ... 1 more ... | Placeholder<...>; }[]): PgInsertBase<...>', gave the following error.
+    Object literal may only specify known properties, and 'businessId' does not exist in type '{ description: string | SQL<unknown> | Placeholder<string, any>; businessId: number | SQL<unknown> | Placeholder<string, any>; title: string | SQL<unknown> | Placeholder<...>; category: string | ... 1 more ... | Placeholder<...>; startDate: SQL<...> | ... 1 more ... | Placeholder<...>; endDate: SQL<...> | ... 1 more...'.
+
+2741       .values({
+            ~~~~~~
+
+
+server/storage.ts:2773:9 - error TS2353: Object literal may only specify known properties, and 'viewCount' does not exist in type '{ description?: string | SQL<unknown> | PgColumn<ColumnBaseConfig<ColumnDataType, string>, {}, {}>; businessId?: number | SQL<unknown> | PgColumn<...>; ... 4 more ...; dealType?: string | ... 1 more ... | PgColumn<...>; }'.
+
+2773         viewCount: sql`${deals.viewCount} + 1`
+             ~~~~~~~~~
+
+server/storage.ts:2788:9 - error TS2353: Object literal may only specify known properties, and 'saveCount' does not exist in type '{ description?: string | SQL<unknown> | PgColumn<ColumnBaseConfig<ColumnDataType, string>, {}, {}>; businessId?: number | SQL<unknown> | PgColumn<...>; ... 4 more ...; dealType?: string | ... 1 more ... | PgColumn<...>; }'.
+
+2788         saveCount: sql`${deals.saveCount} + 1`
+             ~~~~~~~~~
+
+server/storage.ts:2803:9 - error TS2353: Object literal may only specify known properties, and 'redemptionCount' does not exist in type '{ description?: string | SQL<unknown> | PgColumn<ColumnBaseConfig<ColumnDataType, string>, {}, {}>; businessId?: number | SQL<unknown> | PgColumn<...>; ... 4 more ...; dealType?: string | ... 1 more ... | PgColumn<...>; }'.
+
+2803         redemptionCount: sql`${deals.redemptionCount} + 1`
+             ~~~~~~~~~~~~~~~
+
+server/storage.ts:2868:9 - error TS2769: No overload matches this call.
+  Overload 1 of 2, '(value: { dealId: number | SQL<unknown> | Placeholder<string, any>; submitterId: number | SQL<unknown> | Placeholder<string, any>; }): PgInsertBase<PgTableWithColumns<{ name: "deal_approvals"; schema: undefined; columns: { ...; }; dialect: "pg"; }>, ... 4 more ..., never>', gave the following error.
+    Object literal may only specify known properties, but 'submittedAt' does not exist in type '{ dealId: number | SQL<unknown> | Placeholder<string, any>; submitterId: number | SQL<unknown> | Placeholder<string, any>; }'. Did you mean to write 'submitterId'?
+  Overload 2 of 2, '(values: { dealId: number | SQL<unknown> | Placeholder<string, any>; submitterId: number | SQL<unknown> | Placeholder<string, any>; }[]): PgInsertBase<PgTableWithColumns<{ name: "deal_approvals"; schema: undefined; columns: { ...; }; dialect: "pg"; }>, ... 4 more ..., never>', gave the following error.
+    Object literal may only specify known properties, and 'submittedAt' does not exist in type '{ dealId: number | SQL<unknown> | Placeholder<string, any>; submitterId: number | SQL<unknown> | Placeholder<string, any>; }[]'.
+
+2868         submittedAt: new Date()
+             ~~~~~~~~~~~
+
+
+server/storage.ts:3013:8 - error TS2769: No overload matches this call.
+  Overload 1 of 2, '(value: { userId: number | SQL<unknown> | Placeholder<string, any>; dealId: number | SQL<unknown> | Placeholder<string, any>; }): PgInsertBase<PgTableWithColumns<{ name: "user_favorites"; schema: undefined; columns: { ...; }; dialect: "pg"; }>, ... 4 more ..., never>', gave the following error.
+    Object literal may only specify known properties, and 'createdAt' does not exist in type '{ userId: number | SQL<unknown> | Placeholder<string, any>; dealId: number | SQL<unknown> | Placeholder<string, any>; }'.
+  Overload 2 of 2, '(values: { userId: number | SQL<unknown> | Placeholder<string, any>; dealId: number | SQL<unknown> | Placeholder<string, any>; }[]): PgInsertBase<PgTableWithColumns<{ name: "user_favorites"; schema: undefined; columns: { ...; }; dialect: "pg"; }>, ... 4 more ..., never>', gave the following error.
+    Object literal may only specify known properties, and 'userId' does not exist in type '{ userId: number | SQL<unknown> | Placeholder<string, any>; dealId: number | SQL<unknown> | Placeholder<string, any>; }[]'.
+
+3013       .values({
+            ~~~~~~
+
+
+server/storage.ts:3097:8 - error TS2769: No overload matches this call.
+  Overload 1 of 2, '(value: { userId: number | SQL<unknown> | Placeholder<string, any>; dealId: number | SQL<unknown> | Placeholder<string, any>; }): PgInsertBase<PgTableWithColumns<{ name: "deal_redemptions"; schema: undefined; columns: { ...; }; dialect: "pg"; }>, ... 4 more ..., never>', gave the following error.
+    Object literal may only specify known properties, and 'status' does not exist in type '{ userId: number | SQL<unknown> | Placeholder<string, any>; dealId: number | SQL<unknown> | Placeholder<string, any>; }'.
+  Overload 2 of 2, '(values: { userId: number | SQL<unknown> | Placeholder<string, any>; dealId: number | SQL<unknown> | Placeholder<string, any>; }[]): PgInsertBase<PgTableWithColumns<{ name: "deal_redemptions"; schema: undefined; columns: { ...; }; dialect: "pg"; }>, ... 4 more ..., never>', gave the following error.
+    Object literal may only specify known properties, and 'userId' does not exist in type '{ userId: number | SQL<unknown> | Placeholder<string, any>; dealId: number | SQL<unknown> | Placeholder<string, any>; }[]'.
+
+3097       .values({
+            ~~~~~~
+
+
+server/storage.ts:3113:14 - error TS2353: Object literal may only specify known properties, and 'status' does not exist in type '{ userId?: number | SQL<unknown> | PgColumn<ColumnBaseConfig<ColumnDataType, string>, {}, {}>; dealId?: number | SQL<unknown> | PgColumn<ColumnBaseConfig<...>, {}, {}>; }'.
+
+3113       .set({ status })
+                  ~~~~~~
+
+server/storage.ts:3143:10 - error TS2769: No overload matches this call.
+  Overload 1 of 2, '(value: { userId: number | SQL<unknown> | Placeholder<string, any>; }): PgInsertBase<PgTableWithColumns<{ name: "user_notification_preferences"; schema: undefined; columns: { id: PgColumn<{ name: "id"; tableName: "user_notification_preferences"; ... 12 more ...; generated: undefined; }, {}, {}>; ... 7 more ...; locationSharing: PgColumn<...>; }; dialect: "pg"; }>, ... 4 more ..., never>', gave the following error.
+    Object literal may only specify known properties, and 'dealAlerts' does not exist in type '{ userId: number | SQL<unknown> | Placeholder<string, any>; }'.
+  Overload 2 of 2, '(values: { userId: number | SQL<unknown> | Placeholder<string, any>; }[]): PgInsertBase<PgTableWithColumns<{ name: "user_notification_preferences"; schema: undefined; columns: { id: PgColumn<{ name: "id"; tableName: "user_notification_preferences"; ... 12 more ...; generated: undefined; }, {}, {}>; ... 7 more ...; locationSharing: PgColumn<...>; }; dialect: "pg"; }>, ... 4 more ..., never>', gave the following error.
+    Object literal may only specify known properties, and 'userId' does not exist in type '{ userId: number | SQL<unknown> | Placeholder<string, any>; }[]'.
+
+3143         .values({
+              ~~~~~~
+
+
+server/storage.ts:3145:39 - error TS2339: Property 'dealAlerts' does not exist on type 'Partial<Omit<{ userId: number; }, "id" | "userId">>'.
+
+3145           dealAlerts: preferencesData.dealAlerts ?? null,
+                                           ~~~~~~~~~~
+
+server/storage.ts:3146:47 - error TS2339: Property 'emailNotifications' does not exist on type 'Partial<Omit<{ userId: number; }, "id" | "userId">>'.
+
+3146           emailNotifications: preferencesData.emailNotifications ?? null,
+                                                   ~~~~~~~~~~~~~~~~~~
+
+server/storage.ts:3147:46 - error TS2339: Property 'pushNotifications' does not exist on type 'Partial<Omit<{ userId: number; }, "id" | "userId">>'.
+
+3147           pushNotifications: preferencesData.pushNotifications ?? null,
+                                                  ~~~~~~~~~~~~~~~~~
+
+server/storage.ts:3148:50 - error TS2339: Property 'expiringDealReminders' does not exist on type 'Partial<Omit<{ userId: number; }, "id" | "userId">>'.
+
+3148           expiringDealReminders: preferencesData.expiringDealReminders ?? null,
+                                                      ~~~~~~~~~~~~~~~~~~~~~
+
+server/storage.ts:3149:54 - error TS2339: Property 'expiringDealReminderHours' does not exist on type 'Partial<Omit<{ userId: number; }, "id" | "userId">>'.
+
+3149           expiringDealReminderHours: preferencesData.expiringDealReminderHours ?? null,
+                                                          ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/storage.ts:3150:45 - error TS2339: Property 'weeklyNewsletter' does not exist on type 'Partial<Omit<{ userId: number; }, "id" | "userId">>'.
+
+3150           weeklyNewsletter: preferencesData.weeklyNewsletter ?? null,
+                                                 ~~~~~~~~~~~~~~~~
+
+server/storage.ts:3151:44 - error TS2339: Property 'locationSharing' does not exist on type 'Partial<Omit<{ userId: number; }, "id" | "userId">>'.
+
+3151           locationSharing: preferencesData.locationSharing ?? null
+                                                ~~~~~~~~~~~~~~~
+
+server/storage.ts:3174:8 - error TS2769: No overload matches this call.
+  Overload 1 of 2, '(value: { userId: number | SQL<unknown> | Placeholder<string, any>; businessId: number | SQL<unknown> | Placeholder<string, any>; dealId: number | SQL<unknown> | Placeholder<...>; redemptionId: number | ... 1 more ... | Placeholder<...>; rating: number | ... 1 more ... | Placeholder<...>; }): PgInsertBase<...>', gave the following error.
+    Object literal may only specify known properties, and 'comment' does not exist in type '{ userId: number | SQL<unknown> | Placeholder<string, any>; businessId: number | SQL<unknown> | Placeholder<string, any>; dealId: number | SQL<unknown> | Placeholder<...>; redemptionId: number | ... 1 more ... | Placeholder<...>; rating: number | ... 1 more ... | Placeholder<...>; }'.
+  Overload 2 of 2, '(values: { userId: number | SQL<unknown> | Placeholder<string, any>; businessId: number | SQL<unknown> | Placeholder<string, any>; dealId: number | SQL<unknown> | Placeholder<...>; redemptionId: number | ... 1 more ... | Placeholder<...>; rating: number | ... 1 more ... | Placeholder<...>; }[]): PgInsertBase<...>', gave the following error.
+    Object literal may only specify known properties, and 'redemptionId' does not exist in type '{ userId: number | SQL<unknown> | Placeholder<string, any>; businessId: number | SQL<unknown> | Placeholder<string, any>; dealId: number | SQL<unknown> | Placeholder<...>; redemptionId: number | ... 1 more ... | Placeholder<...>; rating: number | ... 1 more ... | Placeholder<...>; }[]'.
+
+3174       .values({
+            ~~~~~~
+
+
+server/storage.ts:3280:14 - error TS2353: Object literal may only specify known properties, and 'isRevoked' does not exist in type '{ userId?: number | SQL<unknown> | PgColumn<ColumnBaseConfig<ColumnDataType, string>, {}, {}>; token?: string | SQL<unknown> | PgColumn<ColumnBaseConfig<...>, {}, {}>; expiresAt?: SQL<...> | ... 1 more ... | PgColumn<...>; }'.
+
+3280       .set({ isRevoked: true })
+                  ~~~~~~~~~
+
+server/storage.ts:3288:14 - error TS2353: Object literal may only specify known properties, and 'isRevoked' does not exist in type '{ userId?: number | SQL<unknown> | PgColumn<ColumnBaseConfig<ColumnDataType, string>, {}, {}>; token?: string | SQL<unknown> | PgColumn<ColumnBaseConfig<...>, {}, {}>; expiresAt?: SQL<...> | ... 1 more ... | PgColumn<...>; }'.
+
+3288       .set({ isRevoked: true })
+                  ~~~~~~~~~
+
+server/vite.ts:5:10 - error TS2305: Module '"vite"' has no exported member 'createServer'.
+
+5 import { createServer as createViteServer, createLogger } from "vite";
+           ~~~~~~~~~~~~
+
+server/vite.ts:5:44 - error TS2305: Module '"vite"' has no exported member 'createLogger'.
+
+5 import { createServer as createViteServer, createLogger } from "vite";
+                                             ~~~~~~~~~~~~
+
+vite.config.ts:1:10 - error TS2305: Module '"vite"' has no exported member 'defineConfig'.
+
+1 import { defineConfig } from "vite";
+           ~~~~~~~~~~~~
+
+
+Found 153 errors in 13 files.
+
+Errors  Files
+     2  server/admin-api-bypass.ts:144
+     7  server/routes.ts:158
+     4  server/routes/admin.routes.ts:1003
+     2  server/routes/auth.routes.fixed.ts:364
+     4  server/routes/auth.routes.ts:48
+     2  server/routes/deal.routes.fixed.ts:677
+     2  server/routes/deal.routes.new.ts:626
+     9  server/routes/deal.routes.ts:212
+     1  server/routes/sms.routes.ts:108
+    17  server/schemas.ts:101
+   100  server/storage.ts:270
+     2  server/vite.ts:5
+     1  vite.config.ts:1
+~/workspace$ 
