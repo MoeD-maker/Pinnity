@@ -553,8 +553,23 @@ export const adminSchemas = {
   // Admin business operations
   createBusinessUser: z.object({
     body: z.object({
-      user: insertUserSchema.omit(['id']),
-      business: insertBusinessSchema.omit(['id', 'userId'])
+      user: z.object({
+        username: z.string(),
+        email: z.string().email(),
+        password: z.string(),
+        firstName: z.string(),
+        lastName: z.string(),
+        phone: z.string(),
+        address: z.string(),
+        userType: z.string()
+      }),
+      business: z.object({
+        businessName: z.string(),
+        businessCategory: z.string(),
+        governmentId: z.string(),
+        proofOfAddress: z.string(),
+        proofOfBusiness: z.string()
+      })
     })
   }),
   
