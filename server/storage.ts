@@ -490,14 +490,14 @@ export class MemStorage implements IStorage {
       ...businessData,
       id: businessId,
       userId,
-      verificationStatus: businessData.verificationStatus || "pending",
-      phone: businessData.phone ?? null,
-      address: businessData.address ?? null,
-      imageUrl: businessData.imageUrl ?? null,
-      description: businessData.description ?? null,
-      latitude: businessData.latitude ?? null,
-      longitude: businessData.longitude ?? null,
-      website: businessData.website ?? null,
+      verificationStatus: (businessData as any).verificationStatus || "pending",
+      phone: (businessData as any).phone ?? null,
+      address: (businessData as any).address ?? null,
+      imageUrl: (businessData as any).imageUrl ?? null,
+      description: (businessData as any).description ?? null,
+      latitude: (businessData as any).latitude ?? null,
+      longitude: (businessData as any).longitude ?? null,
+      website: (businessData as any).website ?? null,
     };
     
     this.users.set(userId, user);

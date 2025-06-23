@@ -1,7 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "include": ["server/**/*", "shared/**/*"],
-  "exclude": ["node_modules", "build", "dist", "client/**/*", "**/*.test.ts"],
+  "exclude": ["node_modules", "build", "dist", "client/**/*", "**/*.test.ts", "server/vite.ts"],
   "compilerOptions": {
     "noEmit": true,
     "target": "ES2018",
