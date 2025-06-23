@@ -361,7 +361,7 @@ export function authRoutes(app: Express): void {
             governmentId: governmentIdPath,
             proofOfAddress: proofOfAddressPath,
             proofOfBusiness: proofOfBusinessPath,
-            verificationStatus: "pending"
+            
           }
         );
         
@@ -472,7 +472,7 @@ export function authRoutes(app: Express): void {
             governmentId: governmentIdPath,
             proofOfAddress: proofOfAddressPath,
             proofOfBusiness: proofOfBusinessPath,
-            verificationStatus: "pending"
+            
           }
         );
         
