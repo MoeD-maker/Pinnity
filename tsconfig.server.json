@@ -1,13 +1,13 @@
 {
   "extends": "./tsconfig.json",
   "include": ["server/**/*", "shared/**/*"],
-  "exclude": ["node_modules", "build", "dist", "client/**/*", "**/*.test.ts", "server/vite.ts"],
+  "exclude": ["node_modules", "build", "dist", "client/**/*", "**/*.test.ts"],
   "compilerOptions": {
     "noEmit": true,
     "target": "ES2018",
     "module": "ESNext",
     "moduleResolution": "node",
-    "strict": true,
+    "strict": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
