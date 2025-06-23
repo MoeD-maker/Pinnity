@@ -7,7 +7,20 @@
     "target": "ES2019",
     "strict": true,
     "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["client/src/*"],       // your client alias
+      "@shared/*": ["shared/schema.ts"]      // <-- adjust this to wherever your shared schemas actually live
+    }
   },
-  "include": ["client/**/*", "types/**/*"],
-  "exclude": ["client/**/*.test.tsx", "node_modules", "dist"]
+  "include": [
+    "client/**/*",
+    "shared/**/*",
+    "types/**/*"
+  ],
+  "exclude": [
+    "client/**/*.test.tsx",
+    "node_modules",
+    "dist"
+  ]
 }

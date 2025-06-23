@@ -113,9 +113,10 @@ export function authRoutes(app: Express): void {
         console.log(`[${timestamp}] 🚀 About to call storage.verifyLogin with email: ${normalizedEmail}`);
         console.time('verifyLogin');
         
+        let user;
         try {
           console.log(`[${timestamp}] 🔍 Calling storage.verifyLogin now...`);
-          const user = await storage.verifyLogin(normalizedEmail, password);
+          user = await storage.verifyLogin(normalizedEmail, password);
           console.timeEnd('verifyLogin');
           console.log(`[${timestamp}] 📤 storage.verifyLogin completed and returned:`, !!user);
           console.log(`[${timestamp}] 📊 User object type:`, typeof user);
@@ -268,7 +269,7 @@ export function authRoutes(app: Express): void {
         const token = generateToken(user);
         
         // Set secure HTTP-only cookie with the token
-        const cookieOptions = { maxAge: 24 * 60 * 60 * 1000 }; // 1 day
+        const cookieOptions: any = { maxAge: 24 * 60 * 60 * 1000 }; // 1 day
         
         // In development, we need to ensure sameSite is not 'strict' for testing across subdomains
         if (process.env.NODE_ENV === 'development') {
@@ -325,7 +326,7 @@ export function authRoutes(app: Express): void {
         const token = generateToken(user);
         
         // Set secure HTTP-only cookie with the token
-        const cookieOptions = { maxAge: 24 * 60 * 60 * 1000 }; // 1 day
+        const cookieOptions: any = { maxAge: 24 * 60 * 60 * 1000 }; // 1 day
         
         // In development, we need to ensure sameSite is not 'strict' for testing across subdomains
         if (process.env.NODE_ENV === 'development') {
@@ -445,7 +446,7 @@ export function authRoutes(app: Express): void {
         const token = generateToken(user);
         
         // Set secure HTTP-only cookie with the token
-        const cookieOptions = { maxAge: 24 * 60 * 60 * 1000 }; // 1 day
+        const cookieOptions: any = { maxAge: 24 * 60 * 60 * 1000 }; // 1 day
         
         // In development, we need to ensure sameSite is not 'strict' for testing across subdomains
         if (process.env.NODE_ENV === 'development') {
@@ -571,7 +572,7 @@ export function authRoutes(app: Express): void {
         const token = generateToken(user);
         
         // Set secure HTTP-only cookie with the token
-        const cookieOptions = { maxAge: 24 * 60 * 60 * 1000 }; // 1 day
+        const cookieOptions: any = { maxAge: 24 * 60 * 60 * 1000 }; // 1 day
         
         // In development, we need to ensure sameSite is not 'strict' for testing across subdomains
         if (process.env.NODE_ENV === 'development') {
@@ -804,7 +805,7 @@ export function authRoutes(app: Express): void {
       const userId = refreshTokenPayload.userId;
       
       // Get the associated refresh token from storage
-      const refreshToken = await storage.getRefreshToken(refreshTokenPayload.jti);
+      const refreshToken = await storage.getRefreshToken((refreshTokenPayload as any).jti);
       
       // Verify token hasn't been revoked
       if (!refreshToken || refreshToken.isRevoked) {
@@ -831,7 +832,7 @@ export function authRoutes(app: Express): void {
       const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
       
       // Rotate the refresh token (revoke the old one, create a new one)
-      await storage.rotateRefreshToken(refreshTokenPayload.jti, jti, expiresAt);
+      await storage.rotateRefreshToken((refreshTokenPayload as any).jti, jti, expiresAt);
       
       // Create new token pair
       const { accessToken, refreshToken: newRefreshToken } = createTokenPair(user);
@@ -847,7 +848,7 @@ export function authRoutes(app: Express): void {
       
       // Update the last used timestamp
       if (refreshToken.id) {
-        await storage.getRefreshToken(refreshTokenPayload.jti);
+        await storage.getRefreshToken((refreshTokenPayload as any).jti);
       }
       
       // Return minimal user info for UI updates
@@ -879,7 +880,7 @@ export function authRoutes(app: Express): void {
       const userId = refreshTokenPayload.userId;
       
       // Get the associated refresh token from storage
-      const refreshToken = await storage.getRefreshToken(refreshTokenPayload.jti);
+      const refreshToken = await storage.getRefreshToken((refreshTokenPayload as any).jti);
       
       // Verify token hasn't been revoked
       if (!refreshToken || refreshToken.isRevoked) {
@@ -906,7 +907,7 @@ export function authRoutes(app: Express): void {
       const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
       
       // Rotate the refresh token (revoke the old one, create a new one)
-      await storage.rotateRefreshToken(refreshTokenPayload.jti, jti, expiresAt);
+      await storage.rotateRefreshToken((refreshTokenPayload as any).jti, jti, expiresAt);
       
       // Create new token pair
       const { accessToken, refreshToken: newRefreshToken } = createTokenPair(user);
@@ -922,7 +923,7 @@ export function authRoutes(app: Express): void {
       
       // Update the last used timestamp
       if (refreshToken.id) {
-        await storage.getRefreshToken(refreshTokenPayload.jti);
+        await storage.getRefreshToken((refreshTokenPayload as any).jti);
       }
       
       // Return minimal user info for UI updates
