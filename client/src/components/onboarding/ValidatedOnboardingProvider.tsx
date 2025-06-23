@@ -165,7 +165,7 @@ export function ValidatedOnboardingProvider({
     
     // Allow existing persisted data to be loaded
     restoreFormState();
-  }, [userType]);
+  }, [userType, restoreFormState]);
   
   // Get relevant field paths for the current step
   const getStepFields = (stepNumber: number): string[] => {
@@ -189,14 +189,12 @@ export function ValidatedOnboardingProvider({
   // Validate all fields in the current step
   const validateCurrentStep = (): boolean => {
     const fields = getStepFields(step);
-    try {
-      // Use form.trigger synchronously and handle the result
-      const result = form.trigger(fields as any);
-      return Boolean(result);
-    } catch (error) {
-      console.error('Validation error:', error);
-      return false;
-    }
+    // Check if form state is valid for current step fields
+    const hasErrors = fields.some(field => {
+      const errors = form.formState.errors as Record<string, any>;
+      return errors[field];
+    });
+    return !hasErrors && form.formState.isValid;
   };
   
   // Get all error messages for a specific step
@@ -205,8 +203,12 @@ export function ValidatedOnboardingProvider({
     const errors = form.formState.errors as Record<string, any>;
     return fields
       .map(field => {
-        const error = errors[field];
-        return error ? (error.message as string) : null;
+        const fieldPath = field.split('.');
+        let errorObj = errors;
+        for (const path of fieldPath) {
+          errorObj = errorObj?.[path];
+        }
+        return errorObj?.message ? String(errorObj.message) : null;
       })
       .filter(Boolean) as string[];
   };
@@ -214,8 +216,12 @@ export function ValidatedOnboardingProvider({
   // Get error message for a specific field
   const getFieldError = (fieldName: string): string | undefined => {
     const errors = form.formState.errors as Record<string, any>;
-    const error = errors[fieldName];
-    return error ? (error.message as string) : undefined;
+    const fieldPath = fieldName.split('.');
+    let errorObj = errors;
+    for (const path of fieldPath) {
+      errorObj = errorObj?.[path];
+    }
+    return errorObj?.message ? String(errorObj.message) : undefined;
   };
   
   // Save form progress
@@ -288,8 +294,8 @@ export function ValidatedOnboardingProvider({
     },
     meta: {
       isOnline,
-      hasSavedProgress: hasPersistedData,
-      isFormPersisted: hasPersistedData
+      hasSavedProgress: metadata.hasPersistedData,
+      isFormPersisted: metadata.hasPersistedData
     }
   };
   
