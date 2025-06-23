@@ -155,7 +155,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/register/individual", async (req: Request, res: Response) => {
     try {
       // Create validation schema for individual registration
-      const individualSchema = insertUserSchema.omit({ id: true, username: true, userType: true, created_at: true } as const)
+      const individualSchema = insertUserSchema.omit(['id', 'username', 'userType', 'created_at'])
         .extend({
           confirmPassword: z.string(),
           termsAccepted: z.boolean()

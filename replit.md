@@ -131,7 +131,9 @@ Preferred communication style: Simple, everyday language.
 Recent Changes:
 - June 23, 2025: Complete TypeScript compilation error resolution across entire application
   - **Client-side fixes (45+ errors)**: useOfflineFormPersistence hook signature, Deal/Favorite/Business type imports, ImageCropper zoom parameters, ValidatedFormField array types, admin users page error handling, vendor profile Image constructor conflicts, vendor deals edit Calendar imports/API calls
-  - **Server-side fixes (164 errors)**: Extended schema definitions for insertUserSchema (phoneVerified), insertBusinessSchema (verificationStatus, phone, address, etc.), insertDealApprovalSchema (status, reviewerId, feedback), and insertPasswordResetTokenSchema (ipAddress, userAgent)
+  - **Server-side fixes (164+ errors)**: Extended schema definitions for insertUserSchema (phoneVerified), insertBusinessSchema (verificationStatus, phone, address, etc.), insertDealApprovalSchema (status, reviewerId, feedback), and insertPasswordResetTokenSchema (ipAddress, userAgent)
+  - **Zod schema fixes**: Applied const assertions to all .omit() calls (15 locations) to resolve "boolean is not assignable to type 'never'" errors
+  - **Admin API fixes**: Removed status property from createDealApproval calls to match DealApprovalInsert type requirements
   - **Type safety achievement**: Zero compilation errors across client and server with complete type safety
   - **Application status**: Fully operational with admin dashboard showing live data (5 pending vendors, 20 users)
   - All core functionality restored including authentication, deal management, image processing, and admin controls

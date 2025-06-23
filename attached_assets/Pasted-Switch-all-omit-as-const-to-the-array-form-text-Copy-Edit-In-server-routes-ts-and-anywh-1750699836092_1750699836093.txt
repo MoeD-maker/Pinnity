@@ -1,0 +1,71 @@
+Switch all .omit({ … } as const) to the array form
+text
+Copy
+Edit
+In **server/routes.ts** (and anywhere else) change every Zod `schema.omit({ id: true, foo: true } as const)` into the array-overload:
+
+```ts
+// before
+insertUserSchema.omit({ id: true, username: true, userType: true, created_at: true } as const)
+
+// after
+insertUserSchema.omit(['id', 'username', 'userType', 'created_at'])
+Do the same for all other .omit({ … } as const) calls in server/routes.ts, server/schemas.ts, and server/storage.ts. Show me the diff.
+
+yaml
+Copy
+Edit
+
+---
+
+### 2) Add the missing `password` field to your Zod refine schema
+
+```text
+In **server/routes.ts**, your registration schema only declares `{ confirmPassword?: string; termsAccepted?: boolean }`, so `data.password` is unknown. Modify the `z.object({ … }).refine(...)` block to include:
+
+```ts
+z.object({
+  password: z.string(),
+  confirmPassword: z.string(),
+  termsAccepted: z.boolean(),
+})
+.refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords must match",
+  path: ["confirmPassword"],
+})
+Replace the existing object and refine call with the above. Show me the patch.
+
+yaml
+Copy
+Edit
+
+---
+
+### 3) Fix your `createIndividualUser` call shape
+
+```text
+In **server/routes.ts** around line 175, you call:
+```ts
+const user = await storage.createIndividualUser(userData)
+but userData is {}. Destructure exactly the fields your storage API expects:
+
+ts
+Copy
+Edit
+const { email, password, firstName, lastName, phone, address } = req.body;
+const userData = { email, password, firstName, lastName, phone, address };
+const user = await storage.createIndividualUser(userData);
+Apply that change so TS sees the correct shape. Show me the diff.
+
+pgsql
+Copy
+Edit
+
+---
+
+### 4) Remove unsupported properties from your route handlers
+
+```text
+Type errors like “property ‘verificationStatus’ does not exist” or “reviewerId”/“status”/“phoneVerified” not on the insert/update type—simply stop passing them in your route handlers.  
+
+In **server/routes*.ts** and **server/routes/admin.routes.ts** (all three auth, deal, sms, admin files), remove any `{ phoneVerified, verificationStatus, reviewerId, featured, status }` properties from the objects you pass to `storage.create…` or `storage.update…`. Show me a combined patch for all those removals.
