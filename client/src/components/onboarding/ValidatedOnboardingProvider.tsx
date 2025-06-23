@@ -143,12 +143,14 @@ export function ValidatedOnboardingProvider({
   });
   
   // Set up offline form persistence
-  const { 
-    saveForm, 
-    loadForm, 
-    hasSavedProgress, 
-    isFormPersisted 
-  } = useOfflineFormPersistence("onboarding-form", form);
+  const {
+    saveFormState,
+    restoreFormState,
+    clearFormState,
+    checkForSavedData,
+    syncToServer,
+    metadata: { hasPersistedData }
+  } = useOfflineFormPersistence(form.getValues(), { formId: "onboarding-form" });
   
   // Update the form's validation schema when user type changes
   useEffect(() => {
@@ -162,7 +164,7 @@ export function ValidatedOnboardingProvider({
     });
     
     // Allow existing persisted data to be loaded
-    loadForm();
+    restoreFormState();
   }, [userType]);
   
   // Get relevant field paths for the current step
@@ -185,18 +187,18 @@ export function ValidatedOnboardingProvider({
   };
   
   // Validate all fields in the current step
-  const validateCurrentStep = async (): Promise<boolean> => {
+  const validateCurrentStep = (): boolean => {
     const fields = getStepFields(step);
-    const result = await form.trigger(fields as any);
-    return result;
+    return form.trigger(fields as any);
   };
   
   // Get all error messages for a specific step
   const getStepErrors = (stepNumber: number): string[] => {
     const fields = getStepFields(stepNumber);
+    const errors = form.formState.errors as Record<string, any>;
     return fields
       .map(field => {
-        const error = form.formState.errors[field];
+        const error = errors[field];
         return error ? (error.message as string) : null;
       })
       .filter(Boolean) as string[];
@@ -204,14 +206,15 @@ export function ValidatedOnboardingProvider({
   
   // Get error message for a specific field
   const getFieldError = (fieldName: string): string | undefined => {
-    const error = form.formState.errors[fieldName];
+    const errors = form.formState.errors as Record<string, any>;
+    const error = errors[fieldName];
     return error ? (error.message as string) : undefined;
   };
   
   // Save form progress
   const saveProgress = async (): Promise<void> => {
     try {
-      await saveForm();
+      await saveFormState();
       toast({
         title: "Progress saved",
         description: isOnline 

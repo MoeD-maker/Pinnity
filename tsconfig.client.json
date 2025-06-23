@@ -9,8 +9,8 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["client/src/*"],       // your client alias
-      "@shared/*": ["shared/schema.ts"]      // <-- adjust this to wherever your shared schemas actually live
+      "@/*": ["client/src/*"],
+      "@shared/*": ["shared/*"]
     }
   },
   "include": [
