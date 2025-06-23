@@ -98,7 +98,7 @@ export const userSchemas = {
         message: "User ID must be a valid number"
       })
     }),
-    body: insertUserSchema.partial().omit(['id', 'password', 'userType'])
+    body: insertUserSchema.partial().omit({ id: true, password: true, userType: true } as const)
   }),
 
   // User favorites
