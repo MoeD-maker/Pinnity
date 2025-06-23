@@ -258,13 +258,10 @@ export default function EditDealPage() {
         // Upload the image
         const uploadResponse = await apiRequest('/api/uploads/deal-image', {
           method: 'POST',
-          body: formData,
-          headers: {
-            // No Content-Type header for multipart/form-data, browser sets it automatically
-          },
+          data: formData,
           // Specify raw response since we're dealing with FormData
           rawResponse: true,
-        });
+        } as any);
         
         if (uploadResponse && uploadResponse.imageUrl) {
           finalValues.imageUrl = uploadResponse.imageUrl;
@@ -307,14 +304,14 @@ export default function EditDealPage() {
         // If deal was rejected or revision requested, update status to pending
         if (dealStatus === 'rejected' || dealStatus === 'pending_revision') {
           // When resubmitting after rejection/revision, set back to pending
-          updatePayload.status = 'pending';
+          (updatePayload as any).status = 'pending';
         }
       }
       
       // Update the deal
       const updatedDeal = await apiRequest(`/api/deals/${dealId}`, {
         method: 'PATCH',
-        body: JSON.stringify(updatePayload),
+        data: updatePayload,
       });
       
       if (updatedDeal) {
