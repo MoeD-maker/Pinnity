@@ -273,7 +273,7 @@ export function dealRoutes(app: Express): void {
       // Validate the deal data
       try {
         // Create a modified schema without the required ID field
-        const createDealSchema = insertDealSchema.omit(['id']);
+        const createDealSchema = insertDealSchema.omit({ id: true } as const);
         createDealSchema.parse(dealData);
       } catch (validationError) {
         if (validationError instanceof z.ZodError) {

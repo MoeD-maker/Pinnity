@@ -186,7 +186,7 @@ export const userSchemas = {
         message: "User ID must be a valid number"
       })
     }),
-    body: insertUserNotificationPreferencesSchema.omit(['id', 'userId']).partial()
+    body: insertUserNotificationPreferencesSchema.omit({ id: true, userId: true } as const).partial()
   })
 };
 
@@ -209,7 +209,7 @@ export const businessSchemas = {
         message: "Business ID must be a valid number"
       })
     }),
-    body: insertBusinessSchema.partial().omit(['id', 'userId'])
+    body: insertBusinessSchema.partial().omit({ id: true, userId: true } as const)
   }),
 
   // Update business verification
@@ -239,7 +239,7 @@ export const businessSchemas = {
 
   // Create business hours
   createBusinessHours: z.object({
-    body: insertBusinessHoursSchema.omit(['id'])
+    body: insertBusinessHoursSchema.omit({ id: true } as const)
   }),
 
   // Update business hours
@@ -249,7 +249,7 @@ export const businessSchemas = {
         message: "Business hours ID must be a valid number"
       })
     }),
-    body: insertBusinessHoursSchema.partial().omit(['id', 'businessId'])
+    body: insertBusinessHoursSchema.partial().omit({ id: true, businessId: true } as const)
   }),
 
   // Delete business hours
@@ -320,7 +320,7 @@ export const dealSchemas = {
         message: "Deal ID must be a valid number"
       })
     }),
-    body: apiDealSchema.partial().omit(['businessId'])
+    body: apiDealSchema.partial().omit({ businessId: true } as const)
   }),
 
   // Deal approval
@@ -330,7 +330,7 @@ export const dealSchemas = {
         message: "Deal ID must be a valid number"
       })
     }),
-    body: insertDealApprovalSchema.omit(['id', 'submittedAt'])
+    body: insertDealApprovalSchema.omit({ id: true, submittedAt: true } as const)
   }),
 
   // Get deal approval
@@ -461,7 +461,7 @@ export const adminSchemas = {
   getAllUsers: z.object({}),
   
   createUser: z.object({
-    body: insertUserSchema.omit(['id'])
+    body: insertUserSchema.omit({ id: true } as const)
   }),
   
   updateUser: z.object({
@@ -470,7 +470,7 @@ export const adminSchemas = {
         message: "User ID must be a valid number"
       })
     }),
-    body: insertUserSchema.partial().omit(['id'])
+    body: insertUserSchema.partial().omit({ id: true } as const)
   }),
   
   deleteUser: z.object({
