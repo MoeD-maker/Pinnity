@@ -155,21 +155,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/register/individual", async (req: Request, res: Response) => {
     try {
       // Create validation schema for individual registration
-      const individualSchema = insertUserSchema.omit(['id', 'username', 'userType', 'created_at'])
-        .extend({
-          confirmPassword: z.string(),
-          termsAccepted: z.boolean()
-        })
-        .refine((data) => data.password === data.confirmPassword, {
-          message: "Passwords don't match",
-          path: ["confirmPassword"],
-        });
+      const individualSchema = z.object({
+        email: z.string().email(),
+        password: z.string(),
+        firstName: z.string(),
+        lastName: z.string(), 
+        phone: z.string(),
+        address: z.string(),
+        confirmPassword: z.string(),
+        termsAccepted: z.boolean()
+      })
+      .refine((data) => data.password === data.confirmPassword, {
+        message: "Passwords must match",
+        path: ["confirmPassword"],
+      });
       
       // Validate request body
       const validatedData = individualSchema.parse(req.body);
       
-      // Remove fields not needed for user creation
-      const { confirmPassword, termsAccepted, ...userData } = validatedData;
+      // Extract exactly the fields needed for user creation
+      const { email, password, firstName, lastName, phone, address } = validatedData;
+      const userData = { email, password, firstName, lastName, phone, address };
       
       // Create the user
       const user = await storage.createIndividualUser(userData);

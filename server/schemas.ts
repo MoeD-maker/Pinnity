@@ -98,7 +98,7 @@ export const userSchemas = {
         message: "User ID must be a valid number"
       })
     }),
-    body: insertUserSchema.partial().omit({ id: true, password: true, userType: true } as const)
+    body: insertUserSchema.partial().omit(['id', 'password', 'userType'])
   }),
 
   // User favorites
@@ -186,7 +186,7 @@ export const userSchemas = {
         message: "User ID must be a valid number"
       })
     }),
-    body: insertUserNotificationPreferencesSchema.omit({ id: true, userId: true } as const).partial()
+    body: insertUserNotificationPreferencesSchema.omit(['id', 'userId']).partial()
   })
 };
 
@@ -209,7 +209,7 @@ export const businessSchemas = {
         message: "Business ID must be a valid number"
       })
     }),
-    body: insertBusinessSchema.partial().omit({ id: true, userId: true } as const)
+    body: insertBusinessSchema.partial().omit(['id', 'userId'])
   }),
 
   // Update business verification
@@ -239,7 +239,7 @@ export const businessSchemas = {
 
   // Create business hours
   createBusinessHours: z.object({
-    body: insertBusinessHoursSchema.omit({ id: true } as const)
+    body: insertBusinessHoursSchema.omit(['id'])
   }),
 
   // Update business hours
@@ -249,7 +249,7 @@ export const businessSchemas = {
         message: "Business hours ID must be a valid number"
       })
     }),
-    body: insertBusinessHoursSchema.partial().omit({ id: true, businessId: true } as const)
+    body: insertBusinessHoursSchema.partial().omit(['id', 'businessId'])
   }),
 
   // Delete business hours
@@ -320,7 +320,7 @@ export const dealSchemas = {
         message: "Deal ID must be a valid number"
       })
     }),
-    body: apiDealSchema.partial().omit({ businessId: true } as const)
+    body: apiDealSchema.partial().omit(['businessId'])
   }),
 
   // Deal approval
@@ -330,7 +330,7 @@ export const dealSchemas = {
         message: "Deal ID must be a valid number"
       })
     }),
-    body: insertDealApprovalSchema.omit({ id: true, submittedAt: true } as const)
+    body: insertDealApprovalSchema.omit(['id', 'submittedAt'])
   }),
 
   // Get deal approval
