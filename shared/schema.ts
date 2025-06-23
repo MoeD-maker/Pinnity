@@ -103,7 +103,7 @@ export const dealApprovals = pgTable("deal_approvals", {
   dealId: integer("deal_id").notNull().references(() => deals.id),
   submitterId: integer("submitter_id").notNull().references(() => users.id), // User ID of the person submitting the deal for approval
   status: text("status").notNull().default("pending"), // "pending", "approved", "rejected"
-  reviewerId: integer("reviewer_id"), // Optional: admin/reviewer user ID 
+  reviewerId: integer("reviewer_id").references(() => users.id), // Optional: admin/reviewer user ID 
   feedback: text("feedback"), // Feedback from reviewer, especially for rejections
   submittedAt: timestamp("submitted_at").notNull().defaultNow(),
   reviewedAt: timestamp("reviewed_at"),
@@ -182,18 +182,36 @@ export const refreshTokens = pgTable("refresh_tokens", {
 });
 
 // Create Zod schemas for insertion
-export const insertUserSchema = createInsertSchema(users);
-export const insertBusinessSchema = createInsertSchema(businesses);
+export const insertUserSchema = createInsertSchema(users).extend({
+  phoneVerified: z.boolean().optional()
+});
+export const insertBusinessSchema = createInsertSchema(businesses).extend({
+  verificationStatus: z.string().optional(),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  imageUrl: z.string().optional(),
+  description: z.string().optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+  website: z.string().optional()
+});
 export const insertDealSchema = createInsertSchema(deals);
 export const insertUserFavoriteSchema = createInsertSchema(userFavorites);
 export const insertDealRedemptionSchema = createInsertSchema(dealRedemptions);
 export const insertUserNotificationPreferencesSchema = createInsertSchema(userNotificationPreferences);
-export const insertDealApprovalSchema = createInsertSchema(dealApprovals);
+export const insertDealApprovalSchema = createInsertSchema(dealApprovals).extend({
+  status: z.string().optional(),
+  reviewerId: z.number().optional(),
+  feedback: z.string().optional()
+});
 export const insertBusinessHoursSchema = createInsertSchema(businessHours);
 export const insertBusinessSocialSchema = createInsertSchema(businessSocial);
 export const insertBusinessDocumentSchema = createInsertSchema(businessDocuments);
 export const insertRedemptionRatingSchema = createInsertSchema(redemptionRatings);
-export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens);
+export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens).extend({
+  ipAddress: z.string().optional(),
+  userAgent: z.string().optional()
+});
 export const insertRefreshTokenSchema = createInsertSchema(refreshTokens);
 
 // Custom API schema for deals with string dates and recurring fields
