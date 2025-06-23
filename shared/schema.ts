@@ -162,6 +162,7 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   expiresAt: timestamp("expires_at").notNull(),
   usedAt: timestamp("used_at"),
+  isRevoked: boolean("is_revoked").default(false),
   ipAddress: text("ip_address"),
   userAgent: text("user_agent"),
 });

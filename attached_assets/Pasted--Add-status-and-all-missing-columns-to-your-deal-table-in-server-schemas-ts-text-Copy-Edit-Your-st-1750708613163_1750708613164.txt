@@ -1,0 +1,43 @@
+ Add status (and all missing columns) to your deal table in server/schemas.ts
+text
+Copy
+Edit
+Your storage.ts is inserting/updating these properties on deals:
+  featured, status, imageUrl, isRecurring, recurringDays, terms, discount,
+  requiresPin, redemptionCode, approvalDate, maxRedemptionsPerUser,
+  totalRedemptionsLimit, redemptionInstructions, viewCount, saveCount,
+  redemptionCount, rejectionReason
+
+Go into **server/schemas.ts**, in your `export interface Deal { … }` and/or Kysely table definition, **add** all of those fields (with the correct types: booleans, strings, arrays, dates, numbers, nullable where appropriate). Then rebuild so `storage.updateDeal(…, { status: 'approved' })` and all those `.insert()` calls type-check. Show me the diff for that table definition only.```
+
+---
+
+### 3) Add missing columns to **business**, **deal_approvals**, **user_favorites**, **deal_redemptions**, **password_reset_tokens**, and **user_notification_preferences** in `server/schemas.ts`
+
+```text
+Similarly, update these table defs in **server/schemas.ts**:
+- **Business**: description, verificationStatus, phone, address, imageUrl, latitude, longitude, website
+- **DealApprovals**: submittedAt, status, reviewerId, feedback, reviewedAt, revisionCount
+- **UserFavorites**: createdAt
+- **DealRedemptions**: status
+- **PasswordResetTokens**: ipAddress, usedAt, isRevoked
+- **UserNotificationPreferences**: dealAlerts, emailNotifications, pushNotifications, expiringDealReminders, expiringDealReminderHours, weeklyNewsletter, locationSharing
+
+Add each of those fields (with correct nullable/optional types) so that all your `storage.insert(…)` and `.set(…)` calls compile. Show me only the diff for those table definitions.```
+
+---
+
+### 4) Finally, fix your Vite imports
+
+```text
+In **server/vite.ts** remove the nonexistent `createLogger` import:
+
+- import { createServer as createViteServer, createLogger } from 'vite';
++ import { createServer as createViteServer } from 'vite';
+
+In **vite.config.ts** ensure you’re importing `defineConfig` correctly (if you’ve already scaffolded it, just verify this is present):
+
+```ts
+import { defineConfig } from 'vite';
+export default defineConfig({ /* … */ });
+Show me that two-file patch.```
