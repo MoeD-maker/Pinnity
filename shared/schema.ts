@@ -206,7 +206,7 @@ export const apiDealSchema = insertDealSchema
     featured: z.boolean().optional().default(false),
     requiresPin: z.boolean().optional().default(true)
   })
-  .omit({ id: true, createdAt: true, approvalDate: true, status: true });
+  .omit({ id: true });
 
 // Login schema
 export const loginUserSchema = z.object({

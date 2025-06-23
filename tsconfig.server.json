@@ -8,6 +8,8 @@
     "module": "ESNext",
     "moduleResolution": "node",
     "strict": false,
+    "noImplicitAny": false,
+    "suppressImplicitAnyIndexErrors": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
