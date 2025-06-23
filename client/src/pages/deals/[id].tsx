@@ -77,7 +77,7 @@ export default function DealDetailPage() {
   // Add to favorites mutation
   const addToFavorites = useMutation({
     mutationFn: async () => {
-      const userId = user?.userId;
+      const userId = user?.id;
       if (!userId) throw new Error('User not authenticated');
       
       return apiRequest<Favorite>(`/api/v1/user/${userId}/favorites`, {
@@ -92,7 +92,7 @@ export default function DealDetailPage() {
       });
       
       // Invalidate favorites query
-      queryClient.invalidateQueries({ queryKey: ['/api/v1/user', user?.userId, 'favorites'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/v1/user', user?.id, 'favorites'] });
     },
     onError: (error) => {
       toast({
@@ -106,7 +106,7 @@ export default function DealDetailPage() {
   // Remove from favorites mutation
   const removeFromFavorites = useMutation({
     mutationFn: async () => {
-      const userId = user?.userId;
+      const userId = user?.id;
       if (!userId) throw new Error('User not authenticated');
       
       return apiRequest<{ success: boolean }>(`/api/v1/user/${userId}/favorites/${dealId}`, {
@@ -120,7 +120,7 @@ export default function DealDetailPage() {
       });
       
       // Invalidate favorites query
-      queryClient.invalidateQueries({ queryKey: ['/api/v1/user', user?.userId, 'favorites'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/v1/user', user?.id, 'favorites'] });
     },
     onError: (error) => {
       toast({

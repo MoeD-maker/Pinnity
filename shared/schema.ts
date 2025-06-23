@@ -241,6 +241,7 @@ export type Deal = typeof deals.$inferSelect;
 export type InsertDeal = typeof deals.$inferInsert;
 export type UserFavorite = typeof userFavorites.$inferSelect;
 export type InsertUserFavorite = typeof userFavorites.$inferInsert;
+export type Favorite = typeof userFavorites.$inferSelect;
 export type DealRedemption = typeof dealRedemptions.$inferSelect;
 export type InsertDealRedemption = typeof dealRedemptions.$inferInsert;
 export type UserNotificationPreferences = typeof userNotificationPreferences.$inferSelect;
