@@ -123,7 +123,7 @@ export function ValidatedOnboardingProvider({
   onSubmitError
 }: ValidatedOnboardingProviderProps) {
   const { toast } = useToast();
-  const isOnline = useOnlineStatus();
+  const { isOnline } = useOnlineStatus();
   const [step, setStep] = useState(initialStep);
   const [userType, setUserType] = useState<'individual' | 'business'>(initialUserType);
   
@@ -149,7 +149,7 @@ export function ValidatedOnboardingProvider({
     clearFormState,
     checkForSavedData,
     syncToServer,
-    metadata: { hasPersistedData }
+    metadata
   } = useOfflineFormPersistence(form.getValues(), { formId: "onboarding-form" });
   
   // Update the form's validation schema when user type changes
@@ -189,7 +189,14 @@ export function ValidatedOnboardingProvider({
   // Validate all fields in the current step
   const validateCurrentStep = (): boolean => {
     const fields = getStepFields(step);
-    return form.trigger(fields as any);
+    try {
+      // Use form.trigger synchronously and handle the result
+      const result = form.trigger(fields as any);
+      return Boolean(result);
+    } catch (error) {
+      console.error('Validation error:', error);
+      return false;
+    }
   };
   
   // Get all error messages for a specific step
@@ -281,8 +288,8 @@ export function ValidatedOnboardingProvider({
     },
     meta: {
       isOnline,
-      hasSavedProgress,
-      isFormPersisted
+      hasSavedProgress: hasPersistedData,
+      isFormPersisted: hasPersistedData
     }
   };
   
