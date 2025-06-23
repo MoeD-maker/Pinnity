@@ -209,7 +209,7 @@ export function dealRoutes(app: Express): void {
       try {
         console.log("Validating deal data...");
         // Create a modified schema without the required ID field
-        const createDealSchema = insertDealSchema.omit({ id: true } as const);
+        const createDealSchema = insertDealSchema.omit(['id']);
         createDealSchema.parse(dealData);
         console.log("Deal data validation successful");
       } catch (validationError) {
@@ -272,7 +272,7 @@ export function dealRoutes(app: Express): void {
       // Validate the deal data
       try {
         // Create a modified schema without the required ID field
-        const createDealSchema = insertDealSchema.omit({ id: true } as const);
+        const createDealSchema = insertDealSchema.omit(['id']);
         createDealSchema.parse(dealData);
       } catch (validationError) {
         if (validationError instanceof z.ZodError) {
