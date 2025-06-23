@@ -96,7 +96,7 @@ const UserDetailPage = () => {
       console.log("User data received:", userData);
       setUser(userData);
       setEditedUser(userData);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching user:", error);
       toast({
         title: "Error",

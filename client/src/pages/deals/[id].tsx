@@ -300,7 +300,7 @@ export default function DealDetailPage() {
           {deal.isRecurring && (
             <DealAvailabilityBadge 
               isRecurring={true} 
-              availability={null}
+              availability={undefined}
               variant="featured"
             />
           )}
