@@ -510,8 +510,8 @@ export const adminSchemas = {
   // Admin business operations
   createBusinessUser: z.object({
     body: z.object({
-      user: insertUserSchema.omit(['id']),
-      business: insertBusinessSchema.omit(['id', 'userId'])
+      user: insertUserSchema.omit({ id: true } as const),
+      business: insertBusinessSchema.omit({ id: true, userId: true } as const)
     })
   }),
   

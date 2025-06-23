@@ -231,8 +231,7 @@ export function dealRoutes(app: Express): void {
       console.log(`Creating approval record for deal ${deal.id} with status ${dealData.status}`);
       await storage.createDealApproval({
         dealId: deal.id,
-        submitterId: req.user.userId, // req.user is already verified above
-        status: dealData.status === 'active' ? 'approved' : dealData.status
+        submitterId: req.user.userId // req.user is already verified above
       });
       console.log("Deal approval record created successfully");
       
@@ -288,8 +287,7 @@ export function dealRoutes(app: Express): void {
       // Create initial approval record
       await storage.createDealApproval({
         dealId: deal.id,
-        submitterId: req.user.userId,
-        status: 'pending'
+        submitterId: req.user.userId
       });
       
       return res.status(201).json(deal);
@@ -343,8 +341,7 @@ export function dealRoutes(app: Express): void {
       if (deal.status === 'pending_revision' && req.user?.userType === 'business') {
         await storage.createDealApproval({
           dealId: dealId,
-          submitterId: req.user.userId,
-          status: 'pending'
+          submitterId: req.user.userId
         });
         
         // Update the deal status to pending
@@ -388,8 +385,7 @@ export function dealRoutes(app: Express): void {
       // Create the approval record
       const approval = await storage.createDealApproval({
         dealId,
-        submitterId: req.user!.userId,
-        status: 'pending'
+        submitterId: req.user!.userId
       });
       
       return res.status(201).json(approval);
