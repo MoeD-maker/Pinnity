@@ -133,12 +133,12 @@ export default function DealDetailPage() {
 
   // Fetch user's favorites to check if this deal is favorited
   const { data: favorites } = useQuery<Favorite[]>({
-    queryKey: ['/api/v1/user', user?.userId, 'favorites'],
+    queryKey: ['/api/v1/user', user?.id, 'favorites'],
     queryFn: async () => {
-      if (!user?.userId) return [];
-      return apiRequest<Favorite[]>(`/api/v1/user/${user.userId}/favorites`);
+      if (!user?.id) return [];
+      return apiRequest<Favorite[]>(`/api/v1/user/${user.id}/favorites`);
     },
-    enabled: !!user?.userId
+    enabled: !!user?.id
   });
 
   // Check if the deal is in favorites
@@ -298,7 +298,7 @@ export default function DealDetailPage() {
           
           {/* Deal Availability Badge for recurring deals */}
           <DealAvailabilityBadge 
-            isRecurring={deal.isRecurring} 
+            isRecurring={deal.isRecurring || false} 
             availability={deal.availability}
             variant="featured"
           />
