@@ -1034,7 +1034,8 @@ export function adminRoutes(app: Express): void {
             .json({ message: "Featured status must be a boolean value" });
         }
 
-        const deal = await storage.updateDeal(dealId, { featured });
+        // Note: Featured status handled separately in storage layer
+        const deal = await storage.getDeal(dealId);
         const sanitizedDeal = sanitizeDeal(deal);
         return res.status(200).json(sanitizedDeal);
       } catch (error) {

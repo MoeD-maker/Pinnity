@@ -256,8 +256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           businessCategory,
           governmentId: governmentIdPath,
           proofOfAddress: proofOfAddressPath,
-          proofOfBusiness: proofOfBusinessPath,
-          verificationStatus: "pending"
+          proofOfBusiness: proofOfBusinessPath
         }
       );
       
