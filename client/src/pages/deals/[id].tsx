@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMutation } from '@tanstack/react-query';
 import RedemptionDialog from '@/components/dashboard/RedemptionDialog';
 import DealAvailabilityBadge from '@/components/shared/DealAvailabilityBadge';
+import { Deal, Favorite, Business } from '@shared/schema';
 
 // UI components
 import {
@@ -60,11 +61,11 @@ export default function DealDetailPage() {
   const [showRedemptionDialog, setShowRedemptionDialog] = useState(false);
   
   // Fetch the deal details
-  const { data: deal, isLoading, error } = useQuery({
+  const { data: deal, isLoading, error } = useQuery<Deal & { business: Business }>({
     queryKey: ['/api/v1/deals', dealId],
     queryFn: async () => {
       try {
-        return await apiRequest(`/api/v1/deals/${dealId}`);
+        return await apiRequest<Deal & { business: Business }>(`/api/v1/deals/${dealId}`);
       } catch (error) {
         console.error('Error fetching deal details:', error);
         throw error;
@@ -79,7 +80,7 @@ export default function DealDetailPage() {
       const userId = user?.userId;
       if (!userId) throw new Error('User not authenticated');
       
-      return apiRequest(`/api/v1/user/${userId}/favorites`, {
+      return apiRequest<Favorite>(`/api/v1/user/${userId}/favorites`, {
         method: 'POST',
         data: { dealId }
       });
@@ -108,7 +109,7 @@ export default function DealDetailPage() {
       const userId = user?.userId;
       if (!userId) throw new Error('User not authenticated');
       
-      return apiRequest(`/api/v1/user/${userId}/favorites/${dealId}`, {
+      return apiRequest<{ success: boolean }>(`/api/v1/user/${userId}/favorites/${dealId}`, {
         method: 'DELETE'
       });
     },
@@ -131,17 +132,17 @@ export default function DealDetailPage() {
   });
 
   // Fetch user's favorites to check if this deal is favorited
-  const { data: favorites } = useQuery({
+  const { data: favorites } = useQuery<Favorite[]>({
     queryKey: ['/api/v1/user', user?.userId, 'favorites'],
     queryFn: async () => {
       if (!user?.userId) return [];
-      return apiRequest(`/api/v1/user/${user.userId}/favorites`);
+      return apiRequest<Favorite[]>(`/api/v1/user/${user.userId}/favorites`);
     },
     enabled: !!user?.userId
   });
 
   // Check if the deal is in favorites
-  const isFavorited = favorites?.some((fav: any) => fav.dealId === dealId);
+  const isFavorited = favorites?.some((fav: Favorite) => fav.dealId === dealId);
 
   // Handle toggling favorite
   const handleToggleFavorite = () => {
