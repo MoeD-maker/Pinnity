@@ -197,16 +197,26 @@ export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTo
 export const insertRefreshTokenSchema = createInsertSchema(refreshTokens);
 
 // Custom API schema for deals with string dates and recurring fields
-export const apiDealSchema = insertDealSchema
-  .extend({
-    startDate: z.string(), // Accept string dates from frontend
-    endDate: z.string(),   // Accept string dates from frontend
-    isRecurring: z.boolean().optional().default(false),
-    recurringDays: z.array(z.number().min(0).max(6)).optional().default([]),
-    featured: z.boolean().optional().default(false),
-    requiresPin: z.boolean().optional().default(true)
-  })
-  .omit({ id: true });
+export const apiDealSchema = z.object({
+  businessId: z.number(),
+  title: z.string(),
+  description: z.string(),
+  category: z.string(),
+  imageUrl: z.string().optional(),
+  startDate: z.string(), // Accept string dates from frontend
+  endDate: z.string(),   // Accept string dates from frontend
+  terms: z.string().optional(),
+  discount: z.string().optional(),
+  dealType: z.string(),
+  featured: z.boolean().optional().default(false),
+  requiresPin: z.boolean().optional().default(true),
+  redemptionCode: z.string().optional(),
+  maxRedemptionsPerUser: z.number().optional().default(1),
+  totalRedemptionsLimit: z.number().optional(),
+  redemptionInstructions: z.string().optional(),
+  isRecurring: z.boolean().optional().default(false),
+  recurringDays: z.array(z.number().min(0).max(6)).optional().default([])
+});
 
 // Login schema
 export const loginUserSchema = z.object({
