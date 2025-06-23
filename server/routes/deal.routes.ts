@@ -493,8 +493,7 @@ export function dealRoutes(app: Express): void {
       // Create initial approval record for the new deal
       await storage.createDealApproval({
         dealId: newDeal.id,
-        submitterId: req.user!.userId,
-        status: 'pending'
+        submitterId: req.user!.userId
       });
       
       return res.status(201).json(newDeal);

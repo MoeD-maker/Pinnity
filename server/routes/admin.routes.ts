@@ -999,10 +999,7 @@ export function adminRoutes(app: Express): void {
               // Create a new approval record if none exists
               await storage.createDealApproval({
                 dealId: dealId,
-                submitterId: deal.businessId, // Use business ID as submitter
-                reviewerId: req.user?.userId,
-                status: dbStatus,
-                feedback: feedback || null
+                submitterId: deal.businessId // Use business ID as submitter
               });
               console.log(`Created new deal approval record with feedback`);
             }

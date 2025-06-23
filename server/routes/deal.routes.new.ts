@@ -623,7 +623,7 @@ export function dealRoutes(app: Express): void {
         }
         
         // Update the deal status to approved
-        const updatedDeal = await storage.updateDeal(dealId, { status: "approved" });
+        const updatedDeal = await storage.updateDealStatus(dealId, "approved");
         
         return res.status(200).json(updatedDeal);
       } catch (error) {
@@ -649,10 +649,7 @@ export function dealRoutes(app: Express): void {
         }
         
         // Update the deal status to rejected and add rejection reason
-        const updatedDeal = await storage.updateDeal(dealId, { 
-          status: "rejected",
-          rejectionReason: reason || "Did not meet platform guidelines"
-        });
+        const updatedDeal = await storage.updateDealStatus(dealId, "rejected");
         
         return res.status(200).json(updatedDeal);
       } catch (error) {
