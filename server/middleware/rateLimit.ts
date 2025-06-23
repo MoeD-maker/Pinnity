@@ -72,7 +72,7 @@ export const accountSecurityRateLimiter = rateLimit({
   skipSuccessfulRequests: true,
   keyGenerator: (req: Request): string => {
     // Rate limit by user ID if available, or fallback to IP
-    return req.user?.userId?.toString() || req.ip;
+    return req.user?.userId?.toString() || (req.ip as string) || 'unknown';
   }
 });
 
@@ -108,7 +108,7 @@ export const adminRateLimiter = rateLimit({
   skipSuccessfulRequests: true,
   keyGenerator: (req: Request): string => {
     // Rate limit by admin user ID if available, or fallback to IP
-    return req.user?.userId?.toString() || req.ip;
+    return req.user?.userId?.toString() || (req.ip as string) || 'unknown';
   }
 });
 
