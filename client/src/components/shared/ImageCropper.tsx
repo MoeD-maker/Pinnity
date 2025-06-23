@@ -151,7 +151,8 @@ export default function ImageCropper({
   const getFallbackCroppedImgFunc = async (
     imageSrc: string,
     pixelCrop: Area,
-    rotation = 0
+    rotation = 0,
+    zoomValue = 1
   ): Promise<string> => {
     try {
       // Create a new image element
@@ -248,7 +249,8 @@ export default function ImageCropper({
         const fallbackCroppedImage = await getFallbackCroppedImgFunc(
           image,
           croppedAreaPixels,
-          rotation
+          rotation,
+          zoom
         );
 
         // Reset crop settings to default values before completing
@@ -906,7 +908,8 @@ async function getCroppedImg(
 async function getFallbackCroppedImg(
   imageSrc: string,
   pixelCrop: Area,
-  rotation = 0
+  rotation = 0,
+  zoom = 1
 ): Promise<string> {
   try {
     // Create a new image element

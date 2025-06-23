@@ -299,7 +299,7 @@ export default function DealDetailPage() {
           {/* Deal Availability Badge for recurring deals */}
           <DealAvailabilityBadge 
             isRecurring={deal.isRecurring || false} 
-            availability={deal.availability}
+            availability={deal.availability || null}
             variant="featured"
           />
         </div>
