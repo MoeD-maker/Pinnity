@@ -456,7 +456,7 @@ export class MemStorage implements IStorage {
       username,
       password: hashedPassword,
       userType: "individual",
-      phoneVerified: userData.phoneVerified ?? false,
+      phoneVerified: (userData as any).phoneVerified ?? false,
       created_at: new Date().toISOString(),
     };
     
@@ -481,7 +481,7 @@ export class MemStorage implements IStorage {
       username,
       password: hashedPassword,
       userType: "business",
-      phoneVerified: userData.phoneVerified ?? false,
+      phoneVerified: (userData as any).phoneVerified ?? false,
       created_at: new Date().toISOString(),
     };
     
@@ -3260,10 +3260,7 @@ export class DatabaseStorage implements IStorage {
       .values({
         userId,
         token,
-        expiresAt,
-        ipAddress: clientInfo?.ipAddress || null,
-        userAgent: clientInfo?.userAgent || null,
-        deviceInfo: clientInfo?.deviceInfo || null
+        expiresAt
       })
       .returning();
     return refreshToken;
@@ -3280,7 +3277,7 @@ export class DatabaseStorage implements IStorage {
   async revokeRefreshToken(token: string): Promise<boolean> {
     const result = await db
       .update(refreshTokens)
-      .set({ isRevoked: true, revokedAt: new Date() })
+      .set({ isRevoked: true })
       .where(eq(refreshTokens.token, token));
     return (result.rowCount || 0) > 0;
   }
@@ -3288,7 +3285,7 @@ export class DatabaseStorage implements IStorage {
   async revokeAllUserRefreshTokens(userId: number): Promise<number> {
     const result = await db
       .update(refreshTokens)
-      .set({ isRevoked: true, revokedAt: new Date() })
+      .set({ isRevoked: true })
       .where(eq(refreshTokens.userId, userId));
     return result.rowCount || 0;
   }
