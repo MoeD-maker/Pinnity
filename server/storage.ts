@@ -267,7 +267,7 @@ export class MemStorage implements IStorage {
         {
           businessName: "Test Vendor Business",
           businessCategory: "retail",
-          description: "A test vendor business for demonstration purposes",
+          
           address: "300 Business St, Anytown, USA",
           latitude: 37.7841,
           longitude: -122.4077,
@@ -305,7 +305,7 @@ export class MemStorage implements IStorage {
         userId: cafeUser.id,
         businessName: "Morning Brew Café",
         businessCategory: "restaurant",
-        description: "A cozy café serving fresh coffee and pastries",
+        
         address: "456 Oak St, Anytown, USA",
         latitude: 37.7749,
         longitude: -122.4194,
@@ -331,7 +331,7 @@ export class MemStorage implements IStorage {
         userId: restaurantUser.id,
         businessName: "Bistro Delight",
         businessCategory: "restaurant",
-        description: "Fine dining with a modern twist",
+        
         address: "789 Pine St, Anytown, USA",
         latitude: 37.7739,
         longitude: -122.4114,
@@ -357,7 +357,7 @@ export class MemStorage implements IStorage {
         userId: retailUser.id,
         businessName: "Urban Threads",
         businessCategory: "retail",
-        description: "Trendy clothing and accessories for all occasions",
+        
         address: "321 Maple St, Anytown, USA",
         latitude: 37.7729,
         longitude: -122.4134,
@@ -383,7 +383,7 @@ export class MemStorage implements IStorage {
         userId: spaUser.id,
         businessName: "Tranquil Retreat Spa",
         businessCategory: "services",
-        description: "A peaceful oasis offering massage and skincare services",
+       
         address: "654 Elm St, Anytown, USA",
         latitude: 37.7719,
         longitude: -122.4154,
@@ -517,14 +517,8 @@ export class MemStorage implements IStorage {
       governmentId: businessData.governmentId,
       proofOfAddress: businessData.proofOfAddress,
       proofOfBusiness: businessData.proofOfBusiness,
-      verificationStatus: businessData.verificationStatus ?? "pending",
-      phone: businessData.phone || null,
-      address: businessData.address || null,
-      imageUrl: businessData.imageUrl || null,
-      description: businessData.description || null,
-      latitude: businessData.latitude || null,
-      longitude: businessData.longitude || null,
-      website: businessData.website || null,
+      
+      
     };
     this.businesses.set(id, business);
     return business;
@@ -541,15 +535,9 @@ export class MemStorage implements IStorage {
       userId: businessData.userId,
       businessName: businessData.businessName,
       businessCategory: businessData.businessCategory || "other",
-      verificationStatus: businessData.verificationStatus || "pending",
-      address: businessData.address || "",
-      description: businessData.description || `Temporary business created for ${businessData.businessName}`,
+     
       // Set all other required fields with default values
-      phone: businessData.phone || "",
-      website: businessData.website || "",
-      imageUrl: businessData.imageUrl || "",
-      latitude: businessData.latitude || 0,
-      longitude: businessData.longitude || 0,
+      
       governmentId: businessData.governmentId || "",
       proofOfAddress: businessData.proofOfAddress || "",
       proofOfBusiness: businessData.proofOfBusiness || ""

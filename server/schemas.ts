@@ -193,7 +193,7 @@ export const userSchemas = {
         message: "User ID must be a valid number"
       })
     }),
-    body: insertUserNotificationPreferencesSchema.omit(['id', 'userId']).partial()
+    body: insertUserNotificationPreferencesSchema.omit({ id: true, userId: true } as const).partial()
   })
 };
 
@@ -344,7 +344,7 @@ export const dealSchemas = {
         message: "Deal ID must be a valid number"
       })
     }),
-    body: apiDealSchema.partial().omit(['businessId'])
+    body: apiDealSchema.partial().omit({ businessId: true } as const)
   }),
 
   // Deal approval
