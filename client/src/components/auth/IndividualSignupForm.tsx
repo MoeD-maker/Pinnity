@@ -12,8 +12,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { apiPost } from "@/lib/api";
 import { Eye, EyeOff } from "lucide-react";
 import TwilioPhoneVerification from "./TwilioPhoneVerification";
+import { useLoadScript } from "@react-google-maps/api";
+import usePlacesAutocomplete, { getGeocode, getLatLng } from "use-places-autocomplete";
 
-// Schema with proper terms validation
+// Schema with proper terms validation including Google Places fields
 const individualSignupSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
@@ -22,6 +24,11 @@ const individualSignupSchema = z.object({
   confirmPassword: z.string().min(1, "Please confirm your password"),
   phone: z.string().min(1, "Phone number is required"),
   address: z.string().min(1, "Address is required"),
+  postalCode: z.string().optional(),
+  city: z.string().optional(),
+  province: z.string().optional(),
+  lat: z.number().optional(),
+  lng: z.number().optional(),
   termsAccepted: z.literal(true, {
     errorMap: () => ({ message: "You must accept the Terms and Conditions" })
   })
@@ -32,14 +39,94 @@ const individualSignupSchema = z.object({
 
 type IndividualSignupData = z.infer<typeof individualSignupSchema>;
 
-function lookupAddressByPOBox(poBox: string): string {
-  const poBoxMap: Record<string, string> = {
-    "1000": "123 Main St, Toronto, ON",
-    "2000": "456 Queen St, Mississauga, ON",
-    "3000": "789 King St, Ottawa, ON",
-    // Add more mappings as needed
+const libraries: ("places")[] = ["places"];
+
+// PlacesAutocomplete component
+function PlacesAutocomplete({ onPlaceSelect }: { onPlaceSelect: (place: any) => void }) {
+  const {
+    ready,
+    value,
+    setValue,
+    suggestions: { status, data },
+    clearSuggestions,
+  } = usePlacesAutocomplete({
+    requestOptions: {
+      componentRestrictions: { country: "ca" }, // Restrict to Canada
+    },
+    debounce: 300,
+  });
+
+  const handleSelect = async (description: string) => {
+    setValue(description, false);
+    clearSuggestions();
+
+    try {
+      const results = await getGeocode({ address: description });
+      const { lat, lng } = await getLatLng(results[0]);
+      
+      // Parse address components
+      const addressComponents = results[0].address_components;
+      let streetNumber = "";
+      let route = "";
+      let locality = "";
+      let administrativeAreaLevel1 = "";
+      let postalCode = "";
+
+      addressComponents.forEach((component) => {
+        const types = component.types;
+        if (types.includes("street_number")) {
+          streetNumber = component.long_name;
+        } else if (types.includes("route")) {
+          route = component.long_name;
+        } else if (types.includes("locality")) {
+          locality = component.long_name;
+        } else if (types.includes("administrative_area_level_1")) {
+          administrativeAreaLevel1 = component.short_name;
+        } else if (types.includes("postal_code")) {
+          postalCode = component.long_name;
+        }
+      });
+
+      const fullAddress = `${streetNumber} ${route}`.trim();
+      
+      onPlaceSelect({
+        address: fullAddress,
+        city: locality,
+        province: administrativeAreaLevel1,
+        postalCode: postalCode,
+        lat,
+        lng,
+      });
+    } catch (error) {
+      console.error("Error fetching place details:", error);
+    }
   };
-  return poBoxMap[poBox] || "";
+
+  return (
+    <div className="relative">
+      <Input
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        disabled={!ready}
+        placeholder="Start typing your address..."
+        className="w-full"
+      />
+      
+      {status === "OK" && (
+        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+          {data.map(({ place_id, description }) => (
+            <div
+              key={place_id}
+              className="px-4 py-2 cursor-pointer hover:bg-gray-100 border-b border-gray-100 last:border-b-0"
+              onClick={() => handleSelect(description)}
+            >
+              {description}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function IndividualSignupForm() {
@@ -52,6 +139,12 @@ function IndividualSignupForm() {
   const { refreshToken } = useAuth();
   const [, setLocation] = useLocation();
 
+  // Load Google Maps script
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: process.env.VITE_GOOGLE_MAPS_API_KEY || "",
+    libraries,
+  });
+
   const form = useForm<IndividualSignupData>({
     resolver: zodResolver(individualSignupSchema),
     defaultValues: {
@@ -62,16 +155,24 @@ function IndividualSignupForm() {
       confirmPassword: "",
       phone: "",
       address: "",
+      postalCode: "",
+      city: "",
+      province: "",
+      lat: undefined,
+      lng: undefined,
       termsAccepted: false as any // Will be overridden by setValue
     }
   });
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = form;
 
-  const handlePOBoxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const poBox = event.target.value;
-    const address = lookupAddressByPOBox(poBox);
-    setValue("address", address);
+  const handlePlaceSelect = (placeData: any) => {
+    setValue("address", placeData.address);
+    setValue("city", placeData.city);
+    setValue("province", placeData.province);
+    setValue("postalCode", placeData.postalCode);
+    setValue("lat", placeData.lat);
+    setValue("lng", placeData.lng);
   };
 
   // Auto-submit when phone verification completes
