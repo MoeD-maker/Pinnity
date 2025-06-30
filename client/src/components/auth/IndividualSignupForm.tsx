@@ -39,8 +39,6 @@ const individualSignupSchema = z.object({
 
 type IndividualSignupData = z.infer<typeof individualSignupSchema>;
 
-const libraries: ("places")[] = ["places"];
-
 // PlacesAutocomplete component
 function PlacesAutocomplete({ onPlaceSelect }: { onPlaceSelect: (place: any) => void }) {
   const {
@@ -141,8 +139,8 @@ function IndividualSignupForm() {
 
   // Load Google Maps script
   const { isLoaded } = useLoadScript({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
-    libraries,
+    googleMapsApiKey: import.meta.env?.VITE_GOOGLE_MAPS_API_KEY || "",
+    libraries: ['places'],
   });
 
   const form = useForm<IndividualSignupData>({
