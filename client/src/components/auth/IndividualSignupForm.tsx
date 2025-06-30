@@ -32,6 +32,16 @@ const individualSignupSchema = z.object({
 
 type IndividualSignupData = z.infer<typeof individualSignupSchema>;
 
+function lookupAddressByPOBox(poBox: string): string {
+  const poBoxMap: Record<string, string> = {
+    "1000": "123 Main St, Toronto, ON",
+    "2000": "456 Queen St, Mississauga, ON",
+    "3000": "789 King St, Ottawa, ON",
+    // Add more mappings as needed
+  };
+  return poBoxMap[poBox] || "";
+}
+
 function IndividualSignupForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -57,6 +67,12 @@ function IndividualSignupForm() {
   });
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = form;
+
+  const handlePOBoxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const poBox = event.target.value;
+    const address = lookupAddressByPOBox(poBox);
+    setValue("address", address);
+  };
 
   // Auto-submit when phone verification completes
   useEffect(() => {
@@ -381,11 +397,25 @@ function IndividualSignupForm() {
         </div>
 
         <div className="space-y-2">
+          <Label htmlFor="poBox">PO Box</Label>
+          <Input
+            id="poBox"
+            onChange={handlePOBoxChange}
+            placeholder="Enter PO Box number (e.g., 1000, 2000, 3000)"
+          />
+          <p className="text-xs text-gray-600">
+            Supported PO Boxes: 1000 (Toronto), 2000 (Mississauga), 3000 (Ottawa)
+          </p>
+        </div>
+
+        <div className="space-y-2">
           <Label htmlFor="address">Address</Label>
           <Input
             id="address"
             {...register("address")}
-            placeholder="Enter your address"
+            placeholder="Address will be auto-filled based on PO Box"
+            readOnly
+            className="bg-gray-50 cursor-not-allowed"
           />
           {errors.address && (
             <p className="text-sm text-red-500">{errors.address.message}</p>
