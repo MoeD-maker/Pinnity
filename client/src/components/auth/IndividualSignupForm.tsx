@@ -141,7 +141,7 @@ function IndividualSignupForm() {
 
   // Load Google Maps script
   const { isLoaded } = useLoadScript({
-    googleMapsApiKey: process.env.VITE_GOOGLE_MAPS_API_KEY || "",
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
     libraries,
   });
 
@@ -235,6 +235,11 @@ function IndividualSignupForm() {
         confirmPassword: data.confirmPassword,
         phone: data.phone,
         address: data.address,
+        postalCode: data.postalCode,
+        city: data.city,
+        province: data.province,
+        lat: data.lat,
+        lng: data.lng,
         termsAccepted: true,
         phoneVerified: isPhoneVerified
       });
@@ -498,29 +503,54 @@ function IndividualSignupForm() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="poBox">PO Box</Label>
-          <Input
-            id="poBox"
-            onChange={handlePOBoxChange}
-            placeholder="Enter PO Box number (e.g., 1000, 2000, 3000)"
-          />
-          <p className="text-xs text-gray-600">
-            Supported PO Boxes: 1000 (Toronto), 2000 (Mississauga), 3000 (Ottawa)
-          </p>
-        </div>
-
-        <div className="space-y-2">
           <Label htmlFor="address">Address</Label>
-          <Input
-            id="address"
-            {...register("address")}
-            placeholder="Address will be auto-filled based on PO Box"
-            readOnly
-            className="bg-gray-50 cursor-not-allowed"
-          />
+          {isLoaded ? (
+            <PlacesAutocomplete onPlaceSelect={handlePlaceSelect} />
+          ) : (
+            <Input
+              placeholder="Loading Google Places..."
+              disabled
+              className="bg-gray-50"
+            />
+          )}
           {errors.address && (
             <p className="text-sm text-red-500">{errors.address.message}</p>
           )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="city">City</Label>
+            <Input
+              id="city"
+              {...register("city")}
+              placeholder="Auto-filled from address"
+              readOnly
+              className="bg-gray-50 cursor-not-allowed"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="province">Province</Label>
+            <Input
+              id="province"
+              {...register("province")}
+              placeholder="Auto-filled from address"
+              readOnly
+              className="bg-gray-50 cursor-not-allowed"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="postalCode">Postal Code</Label>
+          <Input
+            id="postalCode"
+            {...register("postalCode")}
+            placeholder="Auto-filled from address"
+            readOnly
+            className="bg-gray-50 cursor-not-allowed"
+          />
         </div>
 
         <div className="space-y-2">
