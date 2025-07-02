@@ -39,6 +39,9 @@ const individualSignupSchema = z.object({
 
 type IndividualSignupData = z.infer<typeof individualSignupSchema>;
 
+// Static libraries array to prevent reloading
+const GOOGLE_MAPS_LIBRARIES: ("places")[] = ["places"];
+
 // PlacesAutocomplete component
 function PlacesAutocomplete({ onPlaceSelect }: { onPlaceSelect: (place: any) => void }) {
   const {
@@ -138,10 +141,17 @@ function IndividualSignupForm() {
   const [, setLocation] = useLocation();
 
   // Load Google Maps script
-  const { isLoaded } = useLoadScript({
-    googleMapsApiKey: import.meta.env?.VITE_GOOGLE_MAPS_API_KEY || "",
-    libraries: ['places'],
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: (import.meta as any).env.VITE_GOOGLE_MAPS_API_KEY,
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
+
+  // Debug logging
+  useEffect(() => {
+    console.log("GOOGLE KEY:", (import.meta as any).env.VITE_GOOGLE_MAPS_API_KEY);
+    console.log("isLoaded:", isLoaded);
+    console.log("loadError:", loadError);
+  }, [isLoaded, loadError]);
 
   const form = useForm<IndividualSignupData>({
     resolver: zodResolver(individualSignupSchema),
@@ -504,6 +514,17 @@ function IndividualSignupForm() {
           <Label htmlFor="address">Address</Label>
           {isLoaded ? (
             <PlacesAutocomplete onPlaceSelect={handlePlaceSelect} />
+          ) : loadError ? (
+            <div className="space-y-2">
+              <Input
+                id="address"
+                {...register("address")}
+                placeholder="Enter your full address"
+              />
+              <p className="text-xs text-gray-600">
+                Google Places unavailable. Please enter your address manually.
+              </p>
+            </div>
           ) : (
             <Input
               placeholder="Loading Google Places..."
@@ -522,9 +543,9 @@ function IndividualSignupForm() {
             <Input
               id="city"
               {...register("city")}
-              placeholder="Auto-filled from address"
-              readOnly
-              className="bg-gray-50 cursor-not-allowed"
+              placeholder={isLoaded ? "Auto-filled from address" : "Enter your city"}
+              readOnly={isLoaded}
+              className={isLoaded ? "bg-gray-50 cursor-not-allowed" : ""}
             />
           </div>
 
@@ -533,9 +554,9 @@ function IndividualSignupForm() {
             <Input
               id="province"
               {...register("province")}
-              placeholder="Auto-filled from address"
-              readOnly
-              className="bg-gray-50 cursor-not-allowed"
+              placeholder={isLoaded ? "Auto-filled from address" : "Enter your province"}
+              readOnly={isLoaded}
+              className={isLoaded ? "bg-gray-50 cursor-not-allowed" : ""}
             />
           </div>
         </div>
@@ -545,9 +566,9 @@ function IndividualSignupForm() {
           <Input
             id="postalCode"
             {...register("postalCode")}
-            placeholder="Auto-filled from address"
-            readOnly
-            className="bg-gray-50 cursor-not-allowed"
+            placeholder={isLoaded ? "Auto-filled from address" : "Enter your postal code"}
+            readOnly={isLoaded}
+            className={isLoaded ? "bg-gray-50 cursor-not-allowed" : ""}
           />
         </div>
 
