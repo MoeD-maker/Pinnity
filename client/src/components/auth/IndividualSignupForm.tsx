@@ -12,7 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { apiPost } from "@/lib/api";
 import { Eye, EyeOff } from "lucide-react";
 import TwilioPhoneVerification from "./TwilioPhoneVerification";
-import { useLoadScript } from "@react-google-maps/api";
+
 import usePlacesAutocomplete, { getGeocode, getLatLng } from "use-places-autocomplete";
 
 // Schema with proper terms validation including Google Places fields
@@ -139,19 +139,20 @@ function IndividualSignupForm() {
   const { toast } = useToast();
   const { refreshToken } = useAuth();
   const [, setLocation] = useLocation();
+  const [isMapsLoaded, setIsMapsLoaded] = useState(false);
 
-  // Load Google Maps script
-  const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: (import.meta as any).env.VITE_GOOGLE_MAPS_API_KEY,
-    libraries: GOOGLE_MAPS_LIBRARIES,
-  });
-
-  // Debug logging
   useEffect(() => {
-    console.log("GOOGLE KEY:", (import.meta as any).env.VITE_GOOGLE_MAPS_API_KEY);
-    console.log("isLoaded:", isLoaded);
-    console.log("loadError:", loadError);
-  }, [isLoaded, loadError]);
+    const script = document.createElement("script");
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => setIsMapsLoaded(true);
+    script.onerror = () => console.error("Google Maps script failed to load");
+    document.head.appendChild(script);
+  }, []);
+ 
+
+
 
   const form = useForm<IndividualSignupData>({
     resolver: zodResolver(individualSignupSchema),
@@ -512,25 +513,10 @@ function IndividualSignupForm() {
 
         <div className="space-y-2">
           <Label htmlFor="address">Address</Label>
-          {isLoaded ? (
+          {isMapsLoaded ? (
             <PlacesAutocomplete onPlaceSelect={handlePlaceSelect} />
-          ) : loadError ? (
-            <div className="space-y-2">
-              <Input
-                id="address"
-                {...register("address")}
-                placeholder="Enter your full address"
-              />
-              <p className="text-xs text-gray-600">
-                Google Places unavailable. Please enter your address manually.
-              </p>
-            </div>
           ) : (
-            <Input
-              placeholder="Loading Google Places..."
-              disabled
-              className="bg-gray-50"
-            />
+            <Input placeholder="Loading Google Places..." disabled className="bg-gray-50" />
           )}
           {errors.address && (
             <p className="text-sm text-red-500">{errors.address.message}</p>
@@ -543,9 +529,9 @@ function IndividualSignupForm() {
             <Input
               id="city"
               {...register("city")}
-              placeholder={isLoaded ? "Auto-filled from address" : "Enter your city"}
-              readOnly={isLoaded}
-              className={isLoaded ? "bg-gray-50 cursor-not-allowed" : ""}
+              placeholder={isMapsLoaded ? "Auto-filled from address" : "Enter your city"}
+              readOnly={isMapsLoaded}
+              className={isMapsLoaded ? "bg-gray-50 cursor-not-allowed" : ""}
             />
           </div>
 
@@ -554,9 +540,9 @@ function IndividualSignupForm() {
             <Input
               id="province"
               {...register("province")}
-              placeholder={isLoaded ? "Auto-filled from address" : "Enter your province"}
-              readOnly={isLoaded}
-              className={isLoaded ? "bg-gray-50 cursor-not-allowed" : ""}
+              placeholder={isMapsLoaded ? "Auto-filled from address" : "Enter your province"}
+              readOnly={isMapsLoaded}
+              className={isMapsLoaded ? "bg-gray-50 cursor-not-allowed" : ""}
             />
           </div>
         </div>
@@ -566,9 +552,9 @@ function IndividualSignupForm() {
           <Input
             id="postalCode"
             {...register("postalCode")}
-            placeholder={isLoaded ? "Auto-filled from address" : "Enter your postal code"}
-            readOnly={isLoaded}
-            className={isLoaded ? "bg-gray-50 cursor-not-allowed" : ""}
+            placeholder={isMapsLoaded ? "Auto-filled from address" : "Enter your postal code"}
+            readOnly={isMapsLoaded}
+            className={isMapsLoaded ? "bg-gray-50 cursor-not-allowed" : ""}
           />
         </div>
 
