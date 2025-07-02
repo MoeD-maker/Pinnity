@@ -13,7 +13,6 @@ import { apiPost } from "@/lib/api";
 import { Eye, EyeOff } from "lucide-react";
 import TwilioPhoneVerification from "./TwilioPhoneVerification";
 
-import usePlacesAutocomplete, { getGeocode, getLatLng } from "use-places-autocomplete";
 
 // Schema with proper terms validation including Google Places fields
 const individualSignupSchema = z.object({
@@ -42,90 +41,46 @@ type IndividualSignupData = z.infer<typeof individualSignupSchema>;
 // Static libraries array to prevent reloading
 const GOOGLE_MAPS_LIBRARIES: ("places")[] = ["places"];
 
-// PlacesAutocomplete component
 function PlacesAutocomplete({ onPlaceSelect }: { onPlaceSelect: (place: any) => void }) {
-  const {
-    ready,
-    value,
-    setValue,
-    suggestions: { status, data },
-    clearSuggestions,
-  } = usePlacesAutocomplete({
-    requestOptions: {
-      componentRestrictions: { country: "ca" }, // Restrict to Canada
-    },
-    debounce: 300,
-  });
-
-  const handleSelect = async (description: string) => {
-    setValue(description, false);
-    clearSuggestions();
-
-    try {
-      const results = await getGeocode({ address: description });
-      const { lat, lng } = await getLatLng(results[0]);
-      
-      // Parse address components
-      const addressComponents = results[0].address_components;
-      let streetNumber = "";
-      let route = "";
-      let locality = "";
-      let administrativeAreaLevel1 = "";
-      let postalCode = "";
-
-      addressComponents.forEach((component) => {
-        const types = component.types;
-        if (types.includes("street_number")) {
-          streetNumber = component.long_name;
-        } else if (types.includes("route")) {
-          route = component.long_name;
-        } else if (types.includes("locality")) {
-          locality = component.long_name;
-        } else if (types.includes("administrative_area_level_1")) {
-          administrativeAreaLevel1 = component.short_name;
-        } else if (types.includes("postal_code")) {
-          postalCode = component.long_name;
-        }
-      });
-
-      const fullAddress = `${streetNumber} ${route}`.trim();
-      
-      onPlaceSelect({
-        address: fullAddress,
-        city: locality,
-        province: administrativeAreaLevel1,
-        postalCode: postalCode,
-        lat,
-        lng,
-      });
-    } catch (error) {
-      console.error("Error fetching place details:", error);
-    }
-  };
-
   return (
     <div className="relative">
       <Input
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        disabled={!ready}
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
         placeholder="Start typing your address..."
         className="w-full"
       />
-      
-      {status === "OK" && (
-        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-          {data.map(({ place_id, description }) => (
-            <div
-              key={place_id}
-              className="px-4 py-2 cursor-pointer hover:bg-gray-100 border-b border-gray-100 last:border-b-0"
-              onClick={() => handleSelect(description)}
-            >
-              {description}
-            </div>
-          ))}
+      {predictions.map((p) => (
+        <div
+          key={p.place_id}
+          className="px-4 py-2 cursor-pointer hover:bg-gray-100 border-b border-gray-100 last:border-b-0"
+          onClick={async () => {
+            // Fetch full place details
+            const res = await fetch(
+              `https://maps.googleapis.com/maps/api/geocode/json?` +
+              `place_id=${p.place_id}` +
+              `&sessiontoken=${sessionToken}` +
+              `&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`
+            );
+            const { results } = await res.json();
+            const comps = results[0].address_components;
+            const get = (type: string) => comps.find((c) => c.types.includes(type))?.long_name || "";
+            onPlaceSelect({
+              address: `${get("street_number")} ${get("route")}`.trim(),
+              city: get("locality"),
+              province: get("administrative_area_level_1"),
+              postalCode: get("postal_code"),
+              lat: results[0].geometry.location.lat,
+              lng: results[0].geometry.location.lng,
+            });
+            // Start a fresh session for the next search
+            const newToken = crypto.randomUUID?.() || Math.random().toString(36).slice(2);
+            setSessionToken(newToken);
+          }}
+        >
+          {p.description}
         </div>
-      )}
+      ))}
     </div>
   );
 }
@@ -139,20 +94,43 @@ function IndividualSignupForm() {
   const { toast } = useToast();
   const { refreshToken } = useAuth();
   const [, setLocation] = useLocation();
-  const [isMapsLoaded, setIsMapsLoaded] = useState(false);
+  
+  // ——————————————————————————————
+  // REST-based Google Places Autocomplete
+  const [sessionToken, setSessionToken] = useState("");
+  useEffect(() => {
+    // create one session token per page load
+    const token = crypto.randomUUID?.() || Math.random().toString(36).slice(2);
+    setSessionToken(token);
+  }, []);
+
+  const [inputValue, setInputValue] = useState("");
+  const [predictions, setPredictions] = useState<{ place_id: string; description: string; }[]>([]);
 
   useEffect(() => {
-    const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places`;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => setIsMapsLoaded(true);
-    script.onerror = () => console.error("Google Maps script failed to load");
-    document.head.appendChild(script);
-  }, []);
- 
+    if (!inputValue) {
+      setPredictions([]);
+      return;
+    }
+    const handle = setTimeout(() => {
+      fetch(
+        `https://maps.googleapis.com/maps/api/place/autocomplete/json?` +
+        `input=${encodeURIComponent(inputValue)}` +
+        `&components=country:ca` +
+        `&sessiontoken=${sessionToken}` +
+        `&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`
+      )
+        .then(r => r.json())
+        .then(d => setPredictions(d.predictions || []))
+        .catch(() => setPredictions([]));
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [inputValue, sessionToken]);
+
+  
 
 
+  
 
   const form = useForm<IndividualSignupData>({
     resolver: zodResolver(individualSignupSchema),
@@ -513,11 +491,7 @@ function IndividualSignupForm() {
 
         <div className="space-y-2">
           <Label htmlFor="address">Address</Label>
-          {isMapsLoaded ? (
-            <PlacesAutocomplete onPlaceSelect={handlePlaceSelect} />
-          ) : (
-            <Input placeholder="Loading Google Places..." disabled className="bg-gray-50" />
-          )}
+          <PlacesAutocomplete onPlaceSelect={handlePlaceSelect} />
           {errors.address && (
             <p className="text-sm text-red-500">{errors.address.message}</p>
           )}
@@ -529,9 +503,10 @@ function IndividualSignupForm() {
             <Input
               id="city"
               {...register("city")}
-              placeholder={isMapsLoaded ? "Auto-filled from address" : "Enter your city"}
-              readOnly={isMapsLoaded}
-              className={isMapsLoaded ? "bg-gray-50 cursor-not-allowed" : ""}
+              placeholder="Auto-filled from address"
+                readOnly
+                className="bg-gray-50 cursor-not-allowed"
+              />
             />
           </div>
 
@@ -540,9 +515,9 @@ function IndividualSignupForm() {
             <Input
               id="province"
               {...register("province")}
-              placeholder={isMapsLoaded ? "Auto-filled from address" : "Enter your province"}
-              readOnly={isMapsLoaded}
-              className={isMapsLoaded ? "bg-gray-50 cursor-not-allowed" : ""}
+            placeholder="Auto-filled from address"
+              readOnly
+              className="bg-gray-50 cursor-not-allowed"
             />
           </div>
         </div>
@@ -552,10 +527,10 @@ function IndividualSignupForm() {
           <Input
             id="postalCode"
             {...register("postalCode")}
-            placeholder={isMapsLoaded ? "Auto-filled from address" : "Enter your postal code"}
-            readOnly={isMapsLoaded}
-            className={isMapsLoaded ? "bg-gray-50 cursor-not-allowed" : ""}
-          />
+            placeholder="Auto-filled from address"
+              readOnly
+              className="bg-gray-50 cursor-not-allowed"
+            />
         </div>
 
         <div className="space-y-2">
