@@ -462,8 +462,7 @@ function IndividualSignupForm() {
               placeholder={isMapsLoaded ? "Auto-filled from address" : "Enter your value"}
               readOnly={isMapsLoaded}
               className={isMapsLoaded ? "bg-gray-50 cursor-not-allowed" : ""}
-              />
-        
+            />
           </div>
 
           <div className="space-y-2">
