@@ -41,49 +41,7 @@ type IndividualSignupData = z.infer<typeof individualSignupSchema>;
 // Static libraries array to prevent reloading
 const GOOGLE_MAPS_LIBRARIES: ("places")[] = ["places"];
 
-function PlacesAutocomplete({ onPlaceSelect }: { onPlaceSelect: (place: any) => void }) {
-  return (
-    <div className="relative">
-      <Input
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-        placeholder="Start typing your address..."
-        className="w-full"
-      />
-      {predictions.map((p) => (
-        <div
-          key={p.place_id}
-          className="px-4 py-2 cursor-pointer hover:bg-gray-100 border-b border-gray-100 last:border-b-0"
-          onClick={async () => {
-            // Fetch full place details
-            const res = await fetch(
-              `https://maps.googleapis.com/maps/api/geocode/json?` +
-              `place_id=${p.place_id}` +
-              `&sessiontoken=${sessionToken}` +
-              `&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`
-            );
-            const { results } = await res.json();
-            const comps = results[0].address_components;
-            const get = (type: string) => comps.find((c) => c.types.includes(type))?.long_name || "";
-            onPlaceSelect({
-              address: `${get("street_number")} ${get("route")}`.trim(),
-              city: get("locality"),
-              province: get("administrative_area_level_1"),
-              postalCode: get("postal_code"),
-              lat: results[0].geometry.location.lat,
-              lng: results[0].geometry.location.lng,
-            });
-            // Start a fresh session for the next search
-            const newToken = crypto.randomUUID?.() || Math.random().toString(36).slice(2);
-            setSessionToken(newToken);
-          }}
-        >
-          {p.description}
-        </div>
-      ))}
-    </div>
-  );
-}
+
 
 function IndividualSignupForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -94,6 +52,8 @@ function IndividualSignupForm() {
   const { toast } = useToast();
   const { refreshToken } = useAuth();
   const [, setLocation] = useLocation();
+    
+  
   
   // ——————————————————————————————
   // REST-based Google Places Autocomplete
@@ -490,11 +450,7 @@ function IndividualSignupForm() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="address">Address</Label>
           <PlacesAutocomplete onPlaceSelect={handlePlaceSelect} />
-          {errors.address && (
-            <p className="text-sm text-red-500">{errors.address.message}</p>
-          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -503,11 +459,11 @@ function IndividualSignupForm() {
             <Input
               id="city"
               {...register("city")}
-              placeholder="Auto-filled from address"
-                readOnly
-                className="bg-gray-50 cursor-not-allowed"
+              placeholder={isMapsLoaded ? "Auto-filled from address" : "Enter your value"}
+              readOnly={isMapsLoaded}
+              className={isMapsLoaded ? "bg-gray-50 cursor-not-allowed" : ""}
               />
-            />
+        
           </div>
 
           <div className="space-y-2">
@@ -515,9 +471,9 @@ function IndividualSignupForm() {
             <Input
               id="province"
               {...register("province")}
-            placeholder="Auto-filled from address"
-              readOnly
-              className="bg-gray-50 cursor-not-allowed"
+              placeholder={isMapsLoaded ? "Auto-filled from address" : "Enter your value"}
+              readOnly={isMapsLoaded}
+              className={isMapsLoaded ? "bg-gray-50 cursor-not-allowed" : ""}
             />
           </div>
         </div>
@@ -527,9 +483,9 @@ function IndividualSignupForm() {
           <Input
             id="postalCode"
             {...register("postalCode")}
-            placeholder="Auto-filled from address"
-              readOnly
-              className="bg-gray-50 cursor-not-allowed"
+            placeholder={isMapsLoaded ? "Auto-filled from address" : "Enter your value"}
+            readOnly={isMapsLoaded}
+            className={isMapsLoaded ? "bg-gray-50 cursor-not-allowed" : ""}
             />
         </div>
 
