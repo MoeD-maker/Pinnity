@@ -14,6 +14,7 @@ import {
   versionHeadersMiddleware,
   deprecationMiddleware
 } from "../../src/utils/routeVersioning";
+import { supabaseAdmin } from "../supabaseAdmin";
 
 /**
  * Authentication routes for login and registration
@@ -194,7 +195,42 @@ export function authRoutes(app: Express): void {
         // Remove fields not needed for user creation
         const { confirmPassword, termsAccepted, ...userData } = req.body;
         
-        // After validation middleware, these fields are guaranteed to exist
+        // Create user with Supabase Admin SDK
+        console.log("🔥 [FIXED] About to create Supabase user with email:", userData.email);
+        const { data: supabaseUser, error } = await supabaseAdmin.auth.admin.createUser({
+          email: userData.email,
+          password: userData.password,
+          phone: userData.phone,
+          user_metadata: {
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            phone: userData.phone,
+            address: userData.address,
+            postalCode: userData.postalCode,
+            city: userData.city,
+            province: userData.province,
+            lat: userData.lat,
+            lng: userData.lng,
+            userType: 'individual',
+            phoneVerified: userData.phoneVerified || false
+          }
+        });
+
+        console.log("🔥 [FIXED] Supabase response - data:", supabaseUser, "error:", error);
+
+        if (error) {
+          console.error("❌ [FIXED] Supabase user creation error:", error);
+          throw new Error(error.message);
+        }
+
+        if (!supabaseUser?.user) {
+          console.error("❌ [FIXED] No user returned from Supabase");
+          throw new Error("Failed to create user");
+        }
+
+        console.log("✅ [FIXED] Supabase user created successfully with ID:", supabaseUser.user.id);
+        
+        // Create user record in our database for compatibility
         console.log("Creating user with phoneVerified:", userData.phoneVerified);
         const userToCreate = {
           firstName: userData.firstName,
@@ -218,11 +254,12 @@ export function authRoutes(app: Express): void {
         console.log('Setting auth cookie with options:', cookieOptions);
         setAuthCookie(res, 'auth_token', token, cookieOptions);
         
-        // Return success with user info (token is in HTTP-only cookie)
+        // Return success with Supabase user info
         return res.status(201).json({ 
           message: "User registered successfully",
-          userId: user.id,
-          userType: user.userType
+          userId: supabaseUser.user.id,
+          userType: 'individual',
+          supabaseUserId: supabaseUser.user.id
         });
       } catch (error) {
         if (error instanceof Error) {

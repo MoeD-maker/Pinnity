@@ -230,6 +230,7 @@ export function authRoutes(app: Express): void {
 
   // Create versioned and legacy routes for individual registration
   const [versionedIndividualRegPath, legacyIndividualRegPath] = createVersionedRoutes('/auth/register/individual');
+  console.log("🎯 Generated routes:", { versionedIndividualRegPath, legacyIndividualRegPath });
   
   // Versioned route (primary)
   app.post(
@@ -241,11 +242,14 @@ export function authRoutes(app: Express): void {
     validatePasswordStrength('password'), // Server-side password strength validation
     async (req: Request, res: Response) => {
       try {
+        console.log("🚨 VERSIONED ROUTE ENTERED: ", versionedIndividualRegPath);
         // Request is already validated by middleware
         // Remove fields not needed for user creation
         const { confirmPassword, termsAccepted, ...userData } = req.body;
+        console.log("🔍 userData extracted:", Object.keys(userData));
         
         // Create user with Supabase Admin SDK
+        console.log("🔥 About to create Supabase user with email:", userData.email);
         const { data: supabaseUser, error } = await supabaseAdmin.auth.admin.createUser({
           email: userData.email,
           password: userData.password,
@@ -265,14 +269,19 @@ export function authRoutes(app: Express): void {
           }
         });
 
+        console.log("🔥 Supabase response - data:", supabaseUser, "error:", error);
+
         if (error) {
-          console.error("Supabase user creation error:", error);
+          console.error("❌ Supabase user creation error:", error);
           throw new Error(error.message);
         }
 
         if (!supabaseUser?.user) {
+          console.error("❌ No user returned from Supabase");
           throw new Error("Failed to create user");
         }
+
+        console.log("✅ Supabase user created successfully with ID:", supabaseUser.user.id);
 
         // Create user record in our database for compatibility
         const userToCreate = {
@@ -318,7 +327,7 @@ export function authRoutes(app: Express): void {
     }
   );
   
-  // Legacy route (for backward compatibility)
+  // Legacy route (for backward compatibility) - also uses Supabase
   app.post(
     legacyIndividualRegPath,
     versionHeadersMiddleware(),
@@ -331,17 +340,51 @@ export function authRoutes(app: Express): void {
         // Remove fields not needed for user creation
         const { confirmPassword, termsAccepted, ...userData } = req.body;
         
-        // After validation middleware, these fields are guaranteed to exist
+        // Create user with Supabase Admin SDK (same as versioned route)
+        console.log("🔥 [LEGACY] About to create Supabase user with email:", userData.email);
+        const { data: supabaseUser, error } = await supabaseAdmin.auth.admin.createUser({
+          email: userData.email,
+          password: userData.password,
+          phone: userData.phone,
+          user_metadata: {
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            phone: userData.phone,
+            address: userData.address,
+            postalCode: userData.postalCode,
+            city: userData.city,
+            province: userData.province,
+            lat: userData.lat,
+            lng: userData.lng,
+            userType: 'individual',
+            phoneVerified: userData.phoneVerified || false
+          }
+        });
+
+        console.log("🔥 [LEGACY] Supabase response - data:", supabaseUser, "error:", error);
+
+        if (error) {
+          console.error("❌ [LEGACY] Supabase user creation error:", error);
+          throw new Error(error.message);
+        }
+
+        if (!supabaseUser?.user) {
+          console.error("❌ [LEGACY] No user returned from Supabase");
+          throw new Error("Failed to create user");
+        }
+
+        console.log("✅ [LEGACY] Supabase user created successfully with ID:", supabaseUser.user.id);
+        
+        // Create user record in our database for compatibility
         const userToCreate = {
           firstName: userData.firstName,
           lastName: userData.lastName,
           email: userData.email,
-          password: userData.password,
+          password: userData.password, // Will be hashed by storage
           phone: userData.phone,
           address: userData.address
         };
         
-        // Create the user
         const user = await storage.createIndividualUser(userToCreate);
         
         // Generate JWT token
@@ -359,11 +402,12 @@ export function authRoutes(app: Express): void {
         console.log('Setting auth cookie with options (legacy route):', cookieOptions);
         setAuthCookie(res, 'auth_token', token, cookieOptions);
         
-        // Return success with user info (token is in HTTP-only cookie)
+        // Return success with Supabase user info
         return res.status(201).json({ 
           message: "User registered successfully",
-          userId: user.id,
-          userType: user.userType
+          userId: supabaseUser.user.id,
+          userType: 'individual',
+          supabaseUserId: supabaseUser.user.id
         });
       } catch (error) {
         if (error instanceof Error) {
