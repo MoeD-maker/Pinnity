@@ -24,6 +24,7 @@ import {
 import { verifyCsrf } from "../middleware";
 import { validatePasswordStrength } from "../middleware/passwordValidationMiddleware";
 import { isStrongPassword } from "../utils/passwordValidation";
+import { supabaseAdmin } from "../supabaseAdmin";
 
 /**
  * Authentication routes for login and registration
@@ -244,17 +245,45 @@ export function authRoutes(app: Express): void {
         // Remove fields not needed for user creation
         const { confirmPassword, termsAccepted, ...userData } = req.body;
         
-        // After validation middleware, these fields are guaranteed to exist
+        // Create user with Supabase Admin SDK
+        const { data: supabaseUser, error } = await supabaseAdmin.auth.admin.createUser({
+          email: userData.email,
+          password: userData.password,
+          phone: userData.phone,
+          user_metadata: {
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            phone: userData.phone,
+            address: userData.address,
+            postalCode: userData.postalCode,
+            city: userData.city,
+            province: userData.province,
+            lat: userData.lat,
+            lng: userData.lng,
+            userType: 'individual',
+            phoneVerified: userData.phoneVerified || false
+          }
+        });
+
+        if (error) {
+          console.error("Supabase user creation error:", error);
+          throw new Error(error.message);
+        }
+
+        if (!supabaseUser?.user) {
+          throw new Error("Failed to create user");
+        }
+
+        // Create user record in our database for compatibility
         const userToCreate = {
           firstName: userData.firstName,
           lastName: userData.lastName,
           email: userData.email,
-          password: userData.password,
+          password: userData.password, // Will be hashed by storage
           phone: userData.phone,
           address: userData.address
         };
         
-        // Create the user
         const user = await storage.createIndividualUser(userToCreate);
         
         // Generate JWT token
@@ -272,11 +301,12 @@ export function authRoutes(app: Express): void {
         console.log('Setting auth cookie with options:', cookieOptions);
         setAuthCookie(res, 'auth_token', token, cookieOptions);
         
-        // Return success with user info (token is in HTTP-only cookie)
+        // Return success with Supabase user info
         return res.status(201).json({ 
           message: "User registered successfully",
-          userId: user.id,
-          userType: user.userType
+          userId: supabaseUser.user.id,
+          userType: 'individual',
+          supabaseUserId: supabaseUser.user.id
         });
       } catch (error) {
         if (error instanceof Error) {
@@ -409,12 +439,46 @@ export function authRoutes(app: Express): void {
           });
         }
 
-        // Get file paths/URLs
+        // Get file paths/URLs (uploaded to Cloudinary)
         const governmentIdPath = files.governmentId[0].path;
         const proofOfAddressPath = files.proofOfAddress[0].path;
         const proofOfBusinessPath = files.proofOfBusiness[0].path;
         
-        // Create user with business
+        // Create user with Supabase Admin SDK
+        const { data: supabaseUser, error } = await supabaseAdmin.auth.admin.createUser({
+          email: email,
+          password: password,
+          phone: phone,
+          user_metadata: {
+            firstName: firstName,
+            lastName: lastName,
+            phone: phone,
+            address: address,
+            userType: 'business',
+            businessName: businessName,
+            businessCategory: businessCategory,
+            governmentId: governmentIdPath,
+            proofOfAddress: proofOfAddressPath,
+            proofOfBusiness: proofOfBusinessPath
+          }
+        });
+
+        if (error) {
+          console.error("Supabase user creation error:", error);
+          // Clean up uploaded files on error
+          [governmentIdPath, proofOfAddressPath, proofOfBusinessPath].forEach(filePath => {
+            if (filePath && fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+            }
+          });
+          throw new Error(error.message);
+        }
+
+        if (!supabaseUser?.user) {
+          throw new Error("Failed to create user");
+        }
+
+        // Create user record in our database for compatibility and local operations
         const user = await storage.createBusinessUser(
           {
             firstName,
@@ -449,11 +513,12 @@ export function authRoutes(app: Express): void {
         console.log('Setting auth cookie with options:', cookieOptions);
         setAuthCookie(res, 'auth_token', token, cookieOptions);
         
-        // Return success with user info (token is in HTTP-only cookie)
+        // Return success with Supabase user info
         return res.status(201).json({ 
           message: "Business registered successfully",
-          userId: user.id,
-          userType: user.userType
+          userId: supabaseUser.user.id,
+          userType: 'business',
+          supabaseUserId: supabaseUser.user.id
         });
       } catch (error) {
         // Clean up any uploaded files in case of error
