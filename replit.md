@@ -22,7 +22,7 @@ Pinnity is a comprehensive full-stack web application that connects local busine
 - **Security**: Comprehensive middleware stack including CSRF protection, rate limiting, and input validation
 
 ### Database Design
-- **Primary Database**: PostgreSQL with Neon serverless hosting
+- **Primary Database**: PostgreSQL with Supabase hosting
 - **Schema Management**: Drizzle Kit for migrations and schema evolution
 - **Key Tables**: Users, Businesses, Deals, Favorites, Redemptions, Approvals
 - **Location Data**: Latitude/longitude coordinates for mapping functionality
@@ -87,7 +87,7 @@ Pinnity is a comprehensive full-stack web application that connects local busine
 ## External Dependencies
 
 ### Infrastructure Services
-- **Neon Database**: Serverless PostgreSQL hosting
+- **Supabase**: PostgreSQL database hosting with real-time capabilities
 - **Cloudinary**: Image upload, processing, and CDN
 - **Replit**: Development and hosting environment
 
@@ -106,7 +106,7 @@ Pinnity is a comprehensive full-stack web application that connects local busine
 
 ### Development Environment
 - Replit-based development with hot reloading
-- Local PostgreSQL for database development
+- Supabase PostgreSQL for database development
 - Environment-based configuration management
 - Comprehensive logging and debugging tools
 
@@ -129,6 +129,12 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 Recent Changes:
+- January 12, 2025: Migrated from Neon Database to Supabase PostgreSQL
+  - **Database Migration**: Switched from @neondatabase/serverless to standard pg client with Supabase
+  - **Infrastructure Update**: Updated database connection to use Supabase PostgreSQL instead of Neon
+  - **Environment Variables**: Added VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY for frontend Supabase client
+  - **Documentation Update**: Updated replit.md to reflect Supabase as primary database provider
+  - **Client Setup**: Created src/lib/supabaseClient.ts for frontend Supabase integration
 - June 23, 2025: Complete TypeScript compilation error resolution across entire application
   - **Client-side fixes (45+ errors)**: useOfflineFormPersistence hook signature, Deal/Favorite/Business type imports, ImageCropper zoom parameters, ValidatedFormField array types, admin users page error handling, vendor profile Image constructor conflicts, vendor deals edit Calendar imports/API calls
   - **Server-side fixes (164+ errors)**: Extended schema definitions for insertUserSchema (phoneVerified), insertBusinessSchema (verificationStatus, phone, address, etc.), insertDealApprovalSchema (status, reviewerId, feedback), and insertPasswordResetTokenSchema (ipAddress, userAgent)

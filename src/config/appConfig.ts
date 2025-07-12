@@ -185,6 +185,15 @@ const schemas = {
     .transform(val => val.split(',').map(t => t.trim()))
     .default('jpg,jpeg,png,pdf'),
   
+  // Supabase settings
+  supabaseUrl: z.string()
+    .url({ message: 'VITE_SUPABASE_URL must be a valid URL' })
+    .optional(),
+  
+  supabaseAnonKey: z.string()
+    .min(32, { message: 'VITE_SUPABASE_ANON_KEY must be at least 32 characters long' })
+    .optional(),
+  
   // Development settings
   enableDebugLogging: z.coerce.boolean().default(false),
   mockAuthEnabled: z.coerce.boolean().default(false),
@@ -349,6 +358,24 @@ const ENV_CONFIG: EnvVarConfig[] = [
     isRequired: false,
     requireInProduction: false,
     description: 'Comma-separated list of allowed file extensions'
+  },
+  
+  // Supabase settings
+  {
+    key: 'VITE_SUPABASE_URL',
+    schema: schemas.supabaseUrl,
+    isSecret: false,
+    isRequired: false,
+    requireInProduction: false,
+    description: 'Supabase project URL for frontend client'
+  },
+  {
+    key: 'VITE_SUPABASE_ANON_KEY',
+    schema: schemas.supabaseAnonKey,
+    isSecret: true,
+    isRequired: false,
+    requireInProduction: false,
+    description: 'Supabase anonymous key for frontend client'
   },
   
   // Development settings
