@@ -6,6 +6,12 @@ import crypto from 'crypto';
  * This is used for server-side validation to prevent weak passwords
  * even if frontend validation is bypassed
  * 
+ * Requirements:
+ * - Minimum 8 characters
+ * - At least one letter (A-Z or a-z)
+ * - At least one number (0-9)
+ * - Can include special characters (!@#$%^&*)
+ * 
  * @param password The password to check
  * @returns boolean indicating if the password meets minimum strength requirements
  */

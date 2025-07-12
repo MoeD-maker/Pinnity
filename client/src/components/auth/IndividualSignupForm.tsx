@@ -19,7 +19,9 @@ const individualSignupSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*]*$/, "Password must contain at least one letter and one number"),
   confirmPassword: z.string().min(1, "Please confirm your password"),
   phone: z.string().min(1, "Phone number is required"),
   address: z.string().min(1, "Address is required"),

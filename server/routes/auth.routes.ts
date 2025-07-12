@@ -391,7 +391,7 @@ export function authRoutes(app: Express): void {
         // Server-side password strength validation
         if (!isStrongPassword(password)) {
           return res.status(400).json({ 
-            message: "Password is too weak. It must be at least 8 characters long and contain both letters and numbers." 
+            message: "Password is too weak. It must be at least 8 characters long and contain at least one letter and one number." 
           });
         }
 
@@ -517,7 +517,7 @@ export function authRoutes(app: Express): void {
         // Server-side password strength validation
         if (!isStrongPassword(password)) {
           return res.status(400).json({ 
-            message: "Password is too weak. It must be at least 8 characters long and contain both letters and numbers." 
+            message: "Password is too weak. It must be at least 8 characters long and contain at least one letter and one number." 
           });
         }
 

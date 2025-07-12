@@ -20,7 +20,7 @@ export function validatePasswordStrength(passwordField: string = 'password') {
     // Validate password strength using the utility function
     if (!isStrongPassword(password)) {
       return res.status(400).json({ 
-        message: "Password is too weak. It must be at least 8 characters long and contain both letters and numbers." 
+        message: "Password is too weak. It must be at least 8 characters long and contain at least one letter and one number." 
       });
     }
     
