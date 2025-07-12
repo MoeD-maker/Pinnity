@@ -69,7 +69,7 @@ export default function PasswordStrengthIndicator({
   const progressValue = score * 25; // 0, 25, 50, 75, 100
 
   return (
-    <div className="mt-2 space-y-1">
+    <div className="mt-2 space-y-2">
       <div className="flex items-center justify-between">
         <p className={`text-xs font-medium ${getLabelColorClass()}`}>{getLabel()}</p>
         <p className="text-xs text-gray-500">{progressValue}%</p>
@@ -87,16 +87,16 @@ export default function PasswordStrengthIndicator({
                 {password.length >= 8 ? "✓" : "✗"}
               </span>
               <span className={password.length >= 8 ? "text-green-700" : "text-red-500"}>
-                At least 8 characters
+                Minimum 8 characters
               </span>
             </li>
             
             <li className="flex items-center gap-1.5">
-              <span className={/[A-Z]/.test(password) ? "text-green-600" : "text-red-500"}>
-                {/[A-Z]/.test(password) ? "✓" : "✗"}
+              <span className={/[A-Za-z]/.test(password) ? "text-green-600" : "text-red-500"}>
+                {/[A-Za-z]/.test(password) ? "✓" : "✗"}
               </span>
-              <span className={/[A-Z]/.test(password) ? "text-green-700" : "text-red-500"}>
-                At least one uppercase letter
+              <span className={/[A-Za-z]/.test(password) ? "text-green-700" : "text-red-500"}>
+                At least one letter (A-Z or a-z)
               </span>
             </li>
             
@@ -105,16 +105,14 @@ export default function PasswordStrengthIndicator({
                 {/[0-9]/.test(password) ? "✓" : "✗"}
               </span>
               <span className={/[0-9]/.test(password) ? "text-green-700" : "text-red-500"}>
-                At least one number
+                At least one number (0-9)
               </span>
             </li>
             
             <li className="flex items-center gap-1.5">
-              <span className={/[^A-Za-z0-9]/.test(password) ? "text-green-600" : "text-red-500"}>
-                {/[^A-Za-z0-9]/.test(password) ? "✓" : "✗"}
-              </span>
-              <span className={/[^A-Za-z0-9]/.test(password) ? "text-green-700" : "text-red-500"}>
-                At least one special character
+              <span className="text-gray-500">•</span>
+              <span className="text-gray-500">
+                Can include special characters (!@#$%^&*)
               </span>
             </li>
           </ul>
