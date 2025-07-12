@@ -2,7 +2,7 @@ import type { Express, Request, Response, CookieOptions } from "express";
 import { storage } from "../storage";
 import { z } from "zod";
 import { generateToken, generateRefreshToken } from "../auth";
-import { getUploadMiddleware } from "../uploadMiddleware";
+import { getUploadMiddleware } from "../uploadMiddleware.supabase";
 import fs from 'fs';
 import { validate } from "../middleware/validationMiddleware";
 import { authSchemas } from "../schemas";
@@ -377,10 +377,10 @@ export function authRoutes(app: Express): void {
           });
         }
 
-        // Get file paths/URLs
-        const governmentIdPath = files.governmentId[0].path;
-        const proofOfAddressPath = files.proofOfAddress[0].path;
-        const proofOfBusinessPath = files.proofOfBusiness[0].path;
+        // Get file paths/URLs (now using Supabase signed URLs)
+        const governmentIdPath = files.governmentId[0].signedUrl || files.governmentId[0].path;
+        const proofOfAddressPath = files.proofOfAddress[0].signedUrl || files.proofOfAddress[0].path;
+        const proofOfBusinessPath = files.proofOfBusiness[0].signedUrl || files.proofOfBusiness[0].path;
         
         // Create user with business
         const user = await storage.createBusinessUser(
@@ -488,10 +488,10 @@ export function authRoutes(app: Express): void {
           });
         }
 
-        // Get file paths/URLs
-        const governmentIdPath = files.governmentId[0].path;
-        const proofOfAddressPath = files.proofOfAddress[0].path;
-        const proofOfBusinessPath = files.proofOfBusiness[0].path;
+        // Get file paths/URLs (legacy route - now using Supabase signed URLs)
+        const governmentIdPath = files.governmentId[0].signedUrl || files.governmentId[0].path;
+        const proofOfAddressPath = files.proofOfAddress[0].signedUrl || files.proofOfAddress[0].path;
+        const proofOfBusinessPath = files.proofOfBusiness[0].signedUrl || files.proofOfBusiness[0].path;
         
         // Create user with business
         const user = await storage.createBusinessUser(

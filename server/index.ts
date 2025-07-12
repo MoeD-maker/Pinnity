@@ -1,5 +1,6 @@
 import express, { Response, NextFunction } from "express";
 import { registerRoutes } from "./routes/index";
+import { initializeSupabaseStorage } from './supabaseStorage';
 import { setupVite, serveStatic, log } from "./vite";
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
@@ -224,6 +225,14 @@ app.get('/api/csrf-token', csrfProtection, (req: Request, res: Response) => {
 });
 
 (async () => {
+  // Initialize Supabase Storage bucket before starting routes
+  try {
+    await initializeSupabaseStorage();
+  } catch (error) {
+    console.error('Failed to initialize Supabase Storage:', error);
+    // Continue without storage - routes will handle individual failures
+  }
+  
   const server = await registerRoutes(app);
 
   // Global error handler with enhanced security error responses

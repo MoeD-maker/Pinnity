@@ -129,13 +129,20 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 Recent Changes:
+- July 12, 2025: Complete Migration from Cloudinary to Supabase Storage
+  - **Private Storage Bucket**: Created 'user-docs' private bucket with signed URL access and edge CDN delivery
+  - **Upload Middleware**: Replaced server/uploadMiddleware.ts with server/uploadMiddleware.supabase.ts for Supabase Storage
+  - **File Management**: Implemented server/supabaseStorage.ts with upload, signed URL generation, and cleanup utilities
+  - **Security Preservation**: Maintained all existing file validation, MIME type checking, and security features
+  - **Server Integration**: Added storage initialization to server startup with automatic bucket creation
+  - **Route Updates**: Updated auth.routes.fixed.ts to use Supabase signed URLs instead of Cloudinary URLs
+  - **CDN Performance**: Enabled edge CDN with cache optimization for improved file delivery speed
 - July 12, 2025: Complete Supabase Auth Integration - Server-side Implementation
   - **Server Admin SDK**: Implemented Supabase Admin SDK in server/supabaseAdmin.ts for user creation
   - **Authentication Routes**: Updated auth.routes.fixed.ts with Supabase user creation before local database storage
   - **Dual Authentication**: Users now created in both Supabase (primary) and local database (compatibility)
   - **UUID Implementation**: Server now returns Supabase UUID as primary user ID instead of local database ID
   - **Environment Variables**: Added SUPABASE_SERVICE_ROLE_KEY for server-side admin operations
-  - **File Upload Preservation**: Maintained existing Cloudinary file upload workflow for business documents
   - **Error Handling**: Added comprehensive error handling for Supabase user creation with file cleanup
 - January 12, 2025: Migrated from Neon Database to Supabase PostgreSQL
   - **Database Migration**: Switched from @neondatabase/serverless to standard pg client with Supabase
