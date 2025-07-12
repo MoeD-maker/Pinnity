@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { apiPost } from "@/lib/api";
+import { supabase } from "@/lib/supabaseClient";
 import { Eye, EyeOff } from "lucide-react";
 import TwilioPhoneVerification from "./TwilioPhoneVerification";
 
@@ -175,67 +175,50 @@ function IndividualSignupForm() {
       console.log("Phone verified status:", isPhoneVerified);
       console.log("Form data:", data);
 
-      // Registration API call
-      const response = await apiPost('/api/v1/auth/register/individual', {
-        firstName: data.firstName,
-        lastName: data.lastName,
+      // Registration with Supabase Auth
+      const { user, session, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
-        confirmPassword: data.confirmPassword,
-        phone: data.phone,
-        address: data.address,
-        postalCode: data.postalCode,
-        city: data.city,
-        province: data.province,
-        lat: data.lat,
-        lng: data.lng,
-        termsAccepted: true,
-        phoneVerified: isPhoneVerified
+        options: {
+          data: {
+            firstName: data.firstName,
+            lastName: data.lastName,
+            phone: data.phone,
+            address: data.address,
+            postalCode: data.postalCode,
+            city: data.city,
+            province: data.province,
+            lat: data.lat,
+            lng: data.lng,
+            userType: 'individual',
+            phoneVerified: isPhoneVerified
+          }
+        }
       });
 
-      console.log("Registration response:", response);
-
-      // Save user data immediately to localStorage before calling refreshToken
-      const responseData = response as { userId: number; userType: string; message: string };
-      if (responseData.userId && responseData.userType) {
-        console.log("Saving user data to localStorage:", responseData.userId, responseData.userType);
-        // Import saveUserData function
-        const { saveUserData } = await import('../../utils/userUtils');
-        saveUserData(responseData.userId.toString(), responseData.userType);
-        
-        // Verify the data was saved
-        const userIdFromStorage = localStorage.getItem('pinnity_user_id');
-        console.log("Verified saved user ID:", userIdFromStorage);
+      if (error) {
+        console.error("Supabase registration error:", error);
+        throw new Error(error.message);
       }
 
-      // Instead of using refreshToken(), directly verify the authentication by checking the user
-      console.log("Verifying authentication after registration...");
+      console.log("Supabase registration successful:", { user, session });
+
+      // Call refreshToken to sync with our existing auth system if needed
       try {
-        // Try to fetch the user data to verify authentication worked
-        const userResponse = await fetch(`/api/v1/user/${responseData.userId}`, {
-          credentials: 'include', // Include cookies
-        });
-        
-        if (userResponse.ok) {
-          console.log("Authentication verified successfully");
-          // Trigger auth context refresh to update the UI state
-          const authEvent = new CustomEvent('authStateChange', { 
-            detail: { authenticated: true, userId: responseData.userId } 
-          });
-          window.dispatchEvent(authEvent);
-        } else {
-          console.error("User verification failed with status:", userResponse.status);
-          throw new Error("Authentication verification failed after registration");
-        }
+        await refreshToken();
+        console.log("✅ Authentication sync completed successfully");
       } catch (verifyError: any) {
-        console.error("Authentication verification threw an error:", verifyError);
-        throw new Error(`Authentication verification failed: ${verifyError?.message || 'Unknown error'}`);
+        console.error("Authentication sync error:", verifyError);
+        // Don't throw here as Supabase registration was successful
+        console.log("Continuing with Supabase session");
       }
 
       console.log("Authentication successful, showing success toast");
       toast({
         title: "Registration successful!",
-        description: "Redirecting to homepage...",
+        description: user?.email_confirmed_at 
+          ? "Welcome to Pinnity! Redirecting to homepage..."
+          : "Please check your email to verify your account, then you can explore deals.",
       });
 
       // Immediate redirect to home page after successful registration

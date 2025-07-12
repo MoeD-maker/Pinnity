@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { apiPost } from "@/lib/api";
+import { supabase } from "@/lib/supabaseClient";
 import { Eye, EyeOff, Upload } from "lucide-react";
 import TwilioPhoneVerification from "./TwilioPhoneVerification";
 
@@ -90,55 +90,63 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
     setIsSubmitting(true);
     
     try {
-      // Create FormData for multipart form submission
-      const formData = new FormData();
-      formData.append('businessName', data.businessName);
-      formData.append('businessCategory', data.category); // Backend expects 'businessCategory'
-      formData.append('firstName', data.firstName);
-      formData.append('lastName', data.lastName);
-      formData.append('email', data.email);
-      formData.append('password', data.password);
-      formData.append('phone', data.phone);
-      formData.append('address', data.address);
-      formData.append('termsAccepted', 'true');
-      
-      // Add uploaded files
-      if (uploadedFiles.governmentId) {
-        formData.append('governmentId', uploadedFiles.governmentId);
-      }
-      if (uploadedFiles.proofOfAddress) {
-        formData.append('proofOfAddress', uploadedFiles.proofOfAddress);
-      }
-      if (uploadedFiles.proofOfBusiness) {
-        formData.append('proofOfBusiness', uploadedFiles.proofOfBusiness);
-      }
-
-      // Get CSRF token for the request
-      const csrfResponse = await fetch('/api/csrf-token', {
-        credentials: 'include'
-      });
-      const { csrfToken } = await csrfResponse.json();
-
-      // Use fetch directly for FormData submission
-      const response = await fetch('/api/v1/auth/register/business', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'X-CSRF-Token': csrfToken
-        },
-        body: formData // Don't set Content-Type header for FormData
+      // First, register user with Supabase Auth
+      const { user, session, error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: {
+            firstName: data.firstName,
+            lastName: data.lastName,
+            phone: data.phone,
+            address: data.address,
+            businessName: data.businessName,
+            businessCategory: data.category,
+            userType: 'business'
+          }
+        }
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Registration failed');
+      if (error) {
+        console.error("Supabase registration error:", error);
+        throw new Error(error.message);
       }
 
-      const result = await response.json();
+      console.log("Supabase business registration successful:", { user, session });
+
+      // Now handle file uploads to our backend (since Supabase user is created)
+      if (uploadedFiles.governmentId || uploadedFiles.proofOfAddress || uploadedFiles.proofOfBusiness) {
+        const formData = new FormData();
+        formData.append('userId', user?.id || '');
+        
+        if (uploadedFiles.governmentId) {
+          formData.append('governmentId', uploadedFiles.governmentId);
+        }
+        if (uploadedFiles.proofOfAddress) {
+          formData.append('proofOfAddress', uploadedFiles.proofOfAddress);
+        }
+        if (uploadedFiles.proofOfBusiness) {
+          formData.append('proofOfBusiness', uploadedFiles.proofOfBusiness);
+        }
+
+        // Upload documents to our backend
+        const uploadResponse = await fetch('/api/v1/business/documents', {
+          method: 'POST',
+          credentials: 'include',
+          body: formData
+        });
+
+        if (!uploadResponse.ok) {
+          console.error("Document upload failed, but user was created");
+          // Don't fail the registration, just warn
+        }
+      }
 
       toast({
         title: "Business registration successful!",
-        description: "Your business account has been created and is pending verification.",
+        description: user?.email_confirmed_at 
+          ? "Your business account has been created and is pending verification."
+          : "Please check your email to verify your account, then your business will be pending verification.",
       });
 
       // Redirect to home page after successful registration
