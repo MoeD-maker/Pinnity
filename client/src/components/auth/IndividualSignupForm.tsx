@@ -68,6 +68,7 @@ function IndividualSignupForm() {
 
   const [inputValue, setInputValue] = useState("");
   const [predictions, setPredictions] = useState<{ place_id: string; description: string; }[]>([]);
+  const [isMapsLoaded] = useState(false); // Simplified for now
 
   useEffect(() => {
     if (!inputValue) {
@@ -435,7 +436,15 @@ function IndividualSignupForm() {
         </div>
 
         <div className="space-y-2">
-          <PlacesAutocomplete onPlaceSelect={handlePlaceSelect} />
+          <Label htmlFor="address">Address</Label>
+          <Input
+            id="address"
+            {...register("address")}
+            placeholder="Enter your full address"
+          />
+          {errors.address && (
+            <p className="text-sm text-red-500">{errors.address.message}</p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
