@@ -90,63 +90,60 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
     setIsSubmitting(true);
     
     try {
-      // First, register user with Supabase Auth
-      const { user, session, error } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          data: {
-            firstName: data.firstName,
-            lastName: data.lastName,
-            phone: data.phone,
-            address: data.address,
-            businessName: data.businessName,
-            businessCategory: data.category,
-            userType: 'business'
-          }
-        }
+      // Check if all required files are uploaded
+      if (!uploadedFiles.governmentId || !uploadedFiles.proofOfAddress || !uploadedFiles.proofOfBusiness) {
+        toast({
+          title: "Missing documents",
+          description: "Please upload all required documents before registering.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Create form data with all business registration info and documents
+      const formData = new FormData();
+      
+      // Add business data
+      formData.append('businessName', data.businessName);
+      formData.append('businessCategory', data.category);
+      formData.append('firstName', data.firstName);
+      formData.append('lastName', data.lastName);
+      formData.append('email', data.email);
+      formData.append('password', data.password);
+      formData.append('phone', data.phone);
+      formData.append('address', data.address);
+      formData.append('termsAccepted', 'true');
+      
+      // Add documents
+      formData.append('governmentId', uploadedFiles.governmentId);
+      formData.append('proofOfAddress', uploadedFiles.proofOfAddress);
+      formData.append('proofOfBusiness', uploadedFiles.proofOfBusiness);
+
+      // Register business using our backend endpoint (handles Supabase + local DB + file upload)
+      const response = await fetch('/api/v1/auth/register/business', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData
       });
 
-      if (error) {
-        console.error("Supabase registration error:", error);
-        throw new Error(error.message);
+      let result: any;
+      try {
+        result = await response.json();
+      } catch (e) {
+        console.error('Failed to parse response as JSON:', e);
+        throw new Error('Invalid server response');
       }
 
-      console.log("Supabase business registration successful:", { user, session });
-
-      // Now handle file uploads to our backend (since Supabase user is created)
-      if (uploadedFiles.governmentId || uploadedFiles.proofOfAddress || uploadedFiles.proofOfBusiness) {
-        const formData = new FormData();
-        formData.append('userId', user?.id || '');
-        
-        if (uploadedFiles.governmentId) {
-          formData.append('governmentId', uploadedFiles.governmentId);
-        }
-        if (uploadedFiles.proofOfAddress) {
-          formData.append('proofOfAddress', uploadedFiles.proofOfAddress);
-        }
-        if (uploadedFiles.proofOfBusiness) {
-          formData.append('proofOfBusiness', uploadedFiles.proofOfBusiness);
-        }
-
-        // Upload documents to our backend
-        const uploadResponse = await fetch('/api/v1/business/documents', {
-          method: 'POST',
-          credentials: 'include',
-          body: formData
-        });
-
-        if (!uploadResponse.ok) {
-          console.error("Document upload failed, but user was created");
-          // Don't fail the registration, just warn
-        }
+      if (!response.ok) {
+        console.error('Business registration failed:', result?.message);
+        throw new Error(result?.message || 'Registration failed');
       }
 
+      console.log('Business registration succeeded:', result);
+      
       toast({
         title: "Business registration successful!",
-        description: user?.email_confirmed_at 
-          ? "Your business account has been created and is pending verification."
-          : "Please check your email to verify your account, then your business will be pending verification.",
+        description: result?.message || "Your business account has been created and is pending verification."
       });
 
       // Redirect to home page after successful registration
