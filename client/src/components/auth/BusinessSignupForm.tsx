@@ -197,11 +197,42 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
   const handleFileUpload = (fileType: keyof typeof uploadedFiles) => (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
+      const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.pdf'];
+      const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+      
+      if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload only JPG, PNG, WebP, GIF, or PDF files.",
+          variant: "destructive",
+        });
+        event.target.value = ''; // Clear the input
+        return;
+      }
+      
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please upload files smaller than 5MB.",
+          variant: "destructive",
+        });
+        event.target.value = ''; // Clear the input
+        return;
+      }
+      
       setUploadedFiles(prev => ({
         ...prev,
         [fileType]: file
       }));
       console.log(`${fileType} uploaded:`, file.name);
+      
+      toast({
+        title: "File uploaded",
+        description: `${file.name} has been selected successfully.`,
+      });
     }
   };
 
@@ -429,6 +460,12 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
         {/* Document Upload Section */}
         <div className="space-y-4 border-t pt-4">
           <h3 className="text-lg font-semibold">Required Documents</h3>
+          <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-md">
+            <p className="font-medium mb-1">Accepted file types:</p>
+            <p>• Images: JPG, JPEG, PNG, WebP, GIF</p>
+            <p>• Documents: PDF only</p>
+            <p>• Maximum file size: 5MB per file</p>
+          </div>
           
           <div className="space-y-2">
             <Label htmlFor="governmentId">Government ID</Label>
@@ -436,7 +473,7 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
               <Input
                 id="governmentId"
                 type="file"
-                accept="image/*,.pdf"
+                accept=".jpg,.jpeg,.png,.webp,.gif,.pdf"
                 onChange={handleFileUpload('governmentId')}
                 className="hidden"
               />
@@ -463,7 +500,7 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
               <Input
                 id="proofOfAddress"
                 type="file"
-                accept="image/*,.pdf"
+                accept=".jpg,.jpeg,.png,.webp,.gif,.pdf"
                 onChange={handleFileUpload('proofOfAddress')}
                 className="hidden"
               />
@@ -490,7 +527,7 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
               <Input
                 id="proofOfBusiness"
                 type="file"
-                accept="image/*,.pdf"
+                accept=".jpg,.jpeg,.png,.webp,.gif,.pdf"
                 onChange={handleFileUpload('proofOfBusiness')}
                 className="hidden"
               />
