@@ -10,8 +10,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
-import { Eye, EyeOff, Upload } from "lucide-react";
 import TwilioPhoneVerification from "./TwilioPhoneVerification";
+import { Eye, EyeOff, Upload } from "lucide-react";
 
 interface BusinessSignupFormProps {
   setUserType?: Dispatch<SetStateAction<"business" | "individual">>;
@@ -53,6 +53,8 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [currentStep, setCurrentStep] = useState<'form' | 'phone' | 'complete'>('form');
   const [uploadedFiles, setUploadedFiles] = useState({
     governmentId: null as File | null,
     proofOfAddress: null as File | null,
@@ -86,6 +88,12 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
       proofOfAddress: uploadedFiles.proofOfAddress?.name,
       proofOfBusiness: uploadedFiles.proofOfBusiness?.name
     });
+    
+    // Move to phone verification step first
+    if (!isPhoneVerified) {
+      setCurrentStep('phone');
+      return;
+    }
     
     setIsSubmitting(true);
     
@@ -146,10 +154,13 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
         description: result?.message || "Your business account has been created and is pending verification."
       });
 
+      // Move to completion step
+      setCurrentStep('complete');
+      
       // Redirect to home page after successful registration
       setTimeout(() => {
         setLocation('/');
-      }, 1500); // Small delay to show the success message
+      }, 2000); // Small delay to show the success message
       
     } catch (error) {
       console.error("Registration error:", error);
@@ -160,6 +171,17 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handlePhoneVerificationComplete = (verified: boolean) => {
+    if (verified) {
+      setIsPhoneVerified(true);
+      setCurrentStep('form');
+      toast({
+        title: "Phone verified!",
+        description: "You can now complete your business registration.",
+      });
     }
   };
 
@@ -182,11 +204,65 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
     }
   };
 
+  // Show phone verification step
+  if (currentStep === 'phone') {
+    return (
+      <div className="space-y-6">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold">Verify Your Phone</h2>
+          <p className="text-gray-600 mt-2">We need to verify your phone number before creating your business account</p>
+        </div>
+
+        <TwilioPhoneVerification
+          phoneNumber={watch("phone")}
+          onVerificationComplete={handlePhoneVerificationComplete}
+          onPhoneChange={(phone) => setValue("phone", phone)}
+        />
+
+        <div className="flex justify-center">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setCurrentStep('form')}
+          >
+            Back to Form
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show completion step
+  if (currentStep === 'complete') {
+    return (
+      <div className="space-y-6">
+        <div className="text-center">
+          <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-green-600">Registration Complete!</h2>
+          <p className="text-gray-600 mt-2">Your business account has been created and is pending verification.</p>
+          <p className="text-sm text-gray-500 mt-1">You'll be redirected shortly...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="text-center">
         <h2 className="text-2xl font-bold">Create Business Account</h2>
         <p className="text-gray-600 mt-2">Join Pinnity as a vendor to offer deals</p>
+        {isPhoneVerified && (
+          <div className="inline-flex items-center gap-2 mt-2 text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            Phone verified
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -461,7 +537,7 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
           className="w-full" 
           disabled={isSubmitting}
         >
-          {isSubmitting ? "Creating Business Account..." : "Create Business Account"}
+          {isSubmitting ? "Creating Business Account..." : isPhoneVerified ? "Create Business Account" : "Continue to Phone Verification"}
         </Button>
       </form>
     </div>
