@@ -1920,7 +1920,7 @@ export class DatabaseStorage implements IStorage {
       const [user] = await tx.insert(users)
         .values({
           ...userData,
-          username: userData.email.split('@')[0],
+          username: `${userData.email.split('@')[0]}_${Date.now()}`,
           userType: "business",
           password: hashPassword(userData.password)
         })

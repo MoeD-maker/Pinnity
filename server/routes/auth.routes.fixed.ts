@@ -377,12 +377,18 @@ export function authRoutes(app: Express): void {
           });
         }
 
-        // Get file paths/URLs (now using Supabase signed URLs)
-        const governmentIdPath = files.governmentId[0].signedUrl || files.governmentId[0].path;
-        const proofOfAddressPath = files.proofOfAddress[0].signedUrl || files.proofOfAddress[0].path;
-        const proofOfBusinessPath = files.proofOfBusiness[0].signedUrl || files.proofOfBusiness[0].path;
+        // Get temporary file paths from pending uploads
+        const tempGovernmentIdPath = files.governmentId[0].supabasePath || files.governmentId[0].filename;
+        const tempProofOfAddressPath = files.proofOfAddress[0].supabasePath || files.proofOfAddress[0].filename;
+        const tempProofOfBusinessPath = files.proofOfBusiness[0].supabasePath || files.proofOfBusiness[0].filename;
         
-        // Create user with business
+        console.log('📂 Temporary file paths:', {
+          governmentId: tempGovernmentIdPath,
+          proofOfAddress: tempProofOfAddressPath,
+          proofOfBusiness: tempProofOfBusinessPath
+        });
+        
+        // Create user with business first
         const user = await storage.createBusinessUser(
           {
             firstName,
@@ -395,12 +401,38 @@ export function authRoutes(app: Express): void {
           {
             businessName,
             businessCategory,
-            governmentId: governmentIdPath,
-            proofOfAddress: proofOfAddressPath,
-            proofOfBusiness: proofOfBusinessPath,
-            
+            governmentId: 'pending', // Temporary placeholder
+            proofOfAddress: 'pending',
+            proofOfBusiness: 'pending'
           }
         );
+        
+        // Move files from pending to user-specific folder
+        try {
+          const { moveFilesToUserFolder, generateSignedUrlsForPaths } = await import('../fileManager');
+          
+          const filesToMove = [tempGovernmentIdPath, tempProofOfAddressPath, tempProofOfBusinessPath];
+          const movedFiles = await moveFilesToUserFolder(filesToMove, user.id);
+          
+          // Generate signed URLs for the moved files
+          const signedUrls = await generateSignedUrlsForPaths(Object.values(movedFiles));
+          
+          // Update business with actual file paths (need to get business ID first)
+          const business = await storage.getBusinessByUserId(user.id);
+          if (business) {
+            await storage.updateBusiness(business.id, {
+              governmentId: Object.values(movedFiles)[0],
+              proofOfAddress: Object.values(movedFiles)[1], 
+              proofOfBusiness: Object.values(movedFiles)[2]
+            });
+          }
+          
+          console.log('✅ Files successfully moved to user folder:', Object.values(movedFiles));
+          
+        } catch (fileError) {
+          console.error('❌ Failed to move files to user folder:', fileError);
+          // Don't fail the registration, but log the issue
+        }
         
         // Generate JWT token
         const token = generateToken(user);

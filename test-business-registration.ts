@@ -55,7 +55,7 @@ async function testBusinessRegistration() {
     formData.append('businessCategory', 'Restaurant');
     formData.append('firstName', 'Business');
     formData.append('lastName', 'Owner');
-    formData.append('email', 'business.test@example.com');
+    formData.append('email', `business.test.${Date.now()}@example.com`);
     formData.append('password', 'SecurePass123!');
     formData.append('phone', '+15551234890');
     formData.append('address', '456 Business Ave, Toronto, ON M5V 1A1');

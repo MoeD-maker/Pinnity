@@ -230,7 +230,9 @@ export function getUploadMiddleware() {
                 
                 // Upload to Supabase Storage
                 try {
-                  const userId = (req as any).user?.userId;
+                  // For business registration, use 'pending' as temporary folder
+                  // Override default 'anonymous' behavior for business registration
+                  const userId = 'pending';
                   const result = await uploadFileToSupabase(file, userId, 'business-documents');
                   
                   // Replace file object with Supabase result
