@@ -55,6 +55,7 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
   const [currentStep, setCurrentStep] = useState<'form' | 'phone' | 'complete'>('form');
+  const [skipPhoneVerification] = useState(true); // Temporarily skip phone verification
   const [uploadedFiles, setUploadedFiles] = useState({
     governmentId: null as File | null,
     proofOfAddress: null as File | null,
@@ -89,8 +90,8 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
       proofOfBusiness: uploadedFiles.proofOfBusiness?.name
     });
     
-    // Move to phone verification step first
-    if (!isPhoneVerified) {
+    // Skip phone verification if disabled for testing
+    if (!skipPhoneVerification && !isPhoneVerified) {
       setCurrentStep('phone');
       return;
     }
@@ -287,7 +288,15 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
       <div className="text-center">
         <h2 className="text-2xl font-bold">Create Business Account</h2>
         <p className="text-gray-600 mt-2">Join Pinnity as a vendor to offer deals</p>
-        {isPhoneVerified && (
+        {skipPhoneVerification && (
+          <div className="inline-flex items-center gap-2 mt-2 text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Phone verification temporarily disabled
+          </div>
+        )}
+        {!skipPhoneVerification && isPhoneVerified && (
           <div className="inline-flex items-center gap-2 mt-2 text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

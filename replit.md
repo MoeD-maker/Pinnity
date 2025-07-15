@@ -129,6 +129,12 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 Recent Changes:
+- July 15, 2025: Temporarily Disabled Phone Verification for Business Registration Testing
+  - **Development Mode**: Phone verification step bypassed for business users during Twilio/Supabase testing
+  - **Visual Indicator**: Added clear notification that phone verification is temporarily disabled
+  - **Immediate Registration**: Business users can now complete registration without SMS verification
+  - **Twilio Issue Resolution**: Working on Twilio trial account verification before re-enabling phone verification
+  - **Easy Re-enable**: Simple flag change to restore phone verification when ready
 - July 15, 2025: Enhanced User Experience with Automatic Homepage Redirect
   - **Standardized Redirect Flow**: Both individual and business users now redirect to homepage after successful signup and phone verification
   - **Improved Success Messages**: Added consistent welcome messages for both user types before redirect
