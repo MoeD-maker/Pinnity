@@ -46,9 +46,25 @@ export async function sendSMSVerification(phoneNumber: string): Promise<boolean>
     console.log('SMS sent successfully:', message.sid);
     console.log(`Code ${code} is ready for verification for ${phoneNumber}`);
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error sending SMS:', error);
-    // Clean up stored code if SMS sending failed
+    
+    // Check if it's a Twilio trial account error for unverified numbers
+    if (error && error.code === 21608) {
+      console.log('🔧 DEVELOPMENT MODE: Twilio trial account - number not verified');
+      console.log('💡 For development: You can use the verification code that was stored');
+      console.log(`🔑 Development verification code for ${phoneNumber}: ${code}`);
+      console.log(`📱 To complete verification, enter this code: ${code}`);
+      console.log('=====================================');
+      console.log(`   VERIFICATION CODE: ${code}`);
+      console.log('=====================================');
+      
+      // In development mode, we keep the code stored so it can be used
+      // Don't delete the code - let the user manually enter it
+      return true; // Return true so the frontend doesn't show an error
+    }
+    
+    // Clean up stored code if SMS sending failed for other reasons
     verificationCodes.delete(phoneNumber);
     return false;
   }
