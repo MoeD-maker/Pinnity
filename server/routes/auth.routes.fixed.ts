@@ -412,7 +412,9 @@ export function authRoutes(app: Express): void {
           const { moveFilesToUserFolder, generateSignedUrlsForPaths } = await import('../fileManager');
           
           const filesToMove = [tempGovernmentIdPath, tempProofOfAddressPath, tempProofOfBusinessPath];
-          const movedFiles = await moveFilesToUserFolder(filesToMove, user.id);
+          // Use business name for folder organization instead of user ID
+          const sanitizedBusinessName = businessName.replace(/[^a-zA-Z0-9\-_]/g, '_');
+          const movedFiles = await moveFilesToUserFolder(filesToMove, sanitizedBusinessName);
           
           // Generate signed URLs for the moved files
           const signedUrls = await generateSignedUrlsForPaths(Object.values(movedFiles));

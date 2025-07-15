@@ -10,7 +10,7 @@ import { supabaseAdmin } from './supabaseAdmin';
  */
 export async function moveFilesToUserFolder(
   filePaths: string[],
-  userId: string | number,
+  userIdentifier: string | number,
   folder: string = 'business-documents'
 ): Promise<{ [originalPath: string]: string }> {
   const movedFiles: { [originalPath: string]: string } = {};
@@ -35,9 +35,9 @@ export async function moveFilesToUserFolder(
         throw new Error(`Failed to download file: ${downloadError.message}`);
       }
       
-      // Generate new path with user ID
+      // Generate new path with user identifier (business name or user ID)
       const fileName = filePath.split('/').pop(); // Get filename
-      const newPath = `${folder}/${userId}/${fileName}`;
+      const newPath = `${folder}/${userIdentifier}/${fileName}`;
       
       // Upload to new location
       const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
