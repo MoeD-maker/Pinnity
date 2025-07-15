@@ -129,6 +129,12 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 Recent Changes:
+- July 15, 2025: Enhanced User Experience with Automatic Homepage Redirect
+  - **Standardized Redirect Flow**: Both individual and business users now redirect to homepage after successful signup and phone verification
+  - **Improved Success Messages**: Added consistent welcome messages for both user types before redirect
+  - **Optimized Timing**: Set 1.5-second delay before redirect to allow users to see success confirmation
+  - **Enhanced UX**: Users now automatically signed in and redirected to main app after registration completion
+  - **Consistent Experience**: Both signup flows now provide identical post-registration experience
 - July 15, 2025: Complete File Organization Fix for Business Registration
   - **Fixed Upload Path Issue**: Files now correctly upload to "pending" folder instead of "anonymous" during registration
   - **Implemented File Movement System**: Added moveFilesToUserFolder() function that automatically moves files from pending to user-specific folders after user creation

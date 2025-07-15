@@ -217,14 +217,13 @@ function IndividualSignupForm() {
       console.log("Authentication successful, showing success toast");
       toast({
         title: "Registration successful!",
-        description: user?.email_confirmed_at 
-          ? "Welcome to Pinnity! Redirecting to homepage..."
-          : "Please check your email to verify your account, then you can explore deals.",
+        description: "Welcome to Pinnity! You're now signed in.",
       });
-
-      // Immediate redirect to home page after successful registration
-      console.log("Redirecting to homepage...");
-      setLocation('/');
+      
+      setTimeout(() => {
+        console.log("Redirecting to homepage...");
+        setLocation('/');
+      }, 1500); // Small delay to show the success message
       
     } catch (error: any) {
       console.error("Registration error:", error);

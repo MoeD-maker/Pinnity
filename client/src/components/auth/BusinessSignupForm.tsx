@@ -149,18 +149,19 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
 
       console.log('Business registration succeeded:', result);
       
-      toast({
-        title: "Business registration successful!",
-        description: result?.message || "Your business account has been created and is pending verification."
-      });
-
       // Move to completion step
       setCurrentStep('complete');
       
-      // Redirect to home page after successful registration
+      // Show success message and redirect to home page
+      toast({
+        title: "Business registration successful!",
+        description: "Welcome to Pinnity! Your business is now registered and you're signed in.",
+      });
+      
       setTimeout(() => {
+        console.log("Redirecting business user to homepage...");
         setLocation('/');
-      }, 2000); // Small delay to show the success message
+      }, 1500); // Small delay to show the success message
       
     } catch (error) {
       console.error("Registration error:", error);
