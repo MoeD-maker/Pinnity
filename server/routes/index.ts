@@ -59,6 +59,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register SMS routes with versioning
   app.use('/api/v1/sms', smsRoutes);
   
+  // Register unified Supabase routes
+  try {
+    const { unifiedRouter } = await import('./unified-routes');
+    app.use('/api/v1', unifiedRouter);
+    console.log('Unified Supabase routes registered successfully');
+  } catch (error) {
+    console.error('Failed to register unified routes:', error);
+  }
+  
   // Add test routes for debugging Terms of Service validation
   addTestRoutes(app);
   
