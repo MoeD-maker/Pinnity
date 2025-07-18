@@ -35,7 +35,8 @@ const businessSignupSchema = z.object({
   province: z.string().optional(),
   termsAccepted: z.literal(true, {
     errorMap: () => ({ message: "You must accept the Terms and Conditions" })
-  })
+  }),
+  marketingConsent: z.boolean().optional()
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"]
@@ -82,7 +83,8 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
       postalCode: "",
       city: "",
       province: "",
-      termsAccepted: false as any // Will be overridden by setValue
+      termsAccepted: false as any, // Will be overridden by setValue
+      marketingConsent: false
     }
   });
 
@@ -127,7 +129,11 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
       formData.append('password', data.password);
       formData.append('phone', data.phone);
       formData.append('address', data.address);
+      formData.append('city', data.city || '');
+      formData.append('province', data.province || '');
+      formData.append('postalCode', data.postalCode || '');
       formData.append('termsAccepted', 'true');
+      formData.append('marketingConsent', data.marketingConsent ? 'true' : 'false');
       
       // Add documents
       formData.append('governmentId', uploadedFiles.governmentId);
@@ -195,6 +201,10 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
 
   const handleTermsChange = (checked: boolean) => {
     setValue("termsAccepted", checked as any);
+  };
+
+  const handleMarketingConsentChange = (checked: boolean) => {
+    setValue("marketingConsent", checked);
   };
 
   const handleCategoryChange = (value: string) => {
@@ -602,25 +612,42 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="termsAccepted"
-              onCheckedChange={handleTermsChange}
-            />
-            <Label
-              htmlFor="termsAccepted"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              I accept the{" "}
-              <a href="/terms" className="text-blue-600 hover:underline">
-                Terms and Conditions
-              </a>
-            </Label>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="termsAccepted"
+                onCheckedChange={handleTermsChange}
+              />
+              <Label
+                htmlFor="termsAccepted"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                I accept the{" "}
+                <a href="/terms" className="text-blue-600 hover:underline">
+                  Terms and Conditions
+                </a>
+              </Label>
+            </div>
+            {errors.termsAccepted && (
+              <p className="text-sm text-red-500">{errors.termsAccepted.message}</p>
+            )}
           </div>
-          {errors.termsAccepted && (
-            <p className="text-sm text-red-500">{errors.termsAccepted.message}</p>
-          )}
+
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="marketingConsent"
+                onCheckedChange={handleMarketingConsentChange}
+              />
+              <Label
+                htmlFor="marketingConsent"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Keep me in the loop—I'm hungry for hot deals!
+              </Label>
+            </div>
+          </div>
         </div>
 
         <Button 

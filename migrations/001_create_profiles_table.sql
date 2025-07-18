@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     address TEXT,
     user_type TEXT NOT NULL DEFAULT 'individual' CHECK (user_type IN ('individual', 'business', 'admin')),
     phone_verified BOOLEAN DEFAULT false,
+    marketing_consent BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -43,6 +44,7 @@ BEGIN
         address,
         user_type,
         phone_verified,
+        marketing_consent,
         created_at,
         updated_at
     ) VALUES (
@@ -54,6 +56,7 @@ BEGIN
         NEW.user_metadata->>'address',
         COALESCE(NEW.user_metadata->>'userType', 'individual'),
         COALESCE((NEW.user_metadata->>'phoneVerified')::boolean, false),
+        COALESCE((NEW.user_metadata->>'marketingConsent')::boolean, false),
         NOW(),
         NOW()
     );
@@ -73,6 +76,7 @@ BEGIN
         address = NEW.user_metadata->>'address',
         user_type = COALESCE(NEW.user_metadata->>'userType', user_type),
         phone_verified = COALESCE((NEW.user_metadata->>'phoneVerified')::boolean, phone_verified),
+        marketing_consent = COALESCE((NEW.user_metadata->>'marketingConsent')::boolean, marketing_consent),
         updated_at = NOW()
     WHERE id = NEW.id;
     RETURN NEW;
