@@ -89,16 +89,26 @@ function formatDate(dateString: string | undefined): string {
   }
 }
 
+// Helper function to get created date from either field
+function getCreatedDate(user: UserData): string {
+  return user.createdAt || user.created_at || "";
+}
+
 interface UserData {
   id: number;
-  username: string;
+  username?: string;
   email: string;
   firstName: string;
   lastName: string;
-  phone: string;
-  address: string;
+  phone?: string;
+  address?: string;
   userType: "individual" | "business" | "admin";
-  created_at: string;
+  created_at?: string;
+  createdAt?: string;
+  phoneVerified?: boolean;
+  businessName?: string;
+  businessCategory?: string;
+  verificationStatus?: string;
 }
 
 const UserManagementPage = () => {
@@ -136,23 +146,45 @@ const UserManagementPage = () => {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/admin/users');
+      // Try the new unified endpoint first, fallback to legacy
+      let response = await fetch('/api/v1/direct/admin/users');
+      
+      if (!response.ok) {
+        console.warn('Unified endpoint failed, trying legacy endpoint');
+        response = await fetch('/api/admin/users');
+      }
+      
       if (!response.ok) {
         throw new Error('Failed to fetch users');
       }
       
       const data = await response.json();
+      console.log("Raw API response:", data);
       
-      // Handle different response formats (array or object with numeric keys)
+      // Handle new unified API response format
       let usersArray: UserData[];
       
-      if (Array.isArray(data)) {
+      if (data.users && Array.isArray(data.users)) {
+        // New unified API format with users array
+        usersArray = data.users;
+        console.log("Using unified API format:", usersArray.length, "users");
+        
+        // Set counts from API response if available
+        if (data.totalUsers) {
+          console.log("Total users from API:", data.totalUsers);
+        }
+        if (data.syncStatus) {
+          console.log("Sync status:", data.syncStatus);
+        }
+        
+      } else if (Array.isArray(data)) {
+        // Legacy array format
         usersArray = data;
-        console.log("Users response is already an array:", usersArray.length);
+        console.log("Using legacy array format:", usersArray.length, "users");
       } else if (data && typeof data === 'object') {
-        // Convert object to array (legacy API format)
+        // Legacy object format
         usersArray = Object.values(data);
-        console.log("Converted users object to array:", usersArray.length);
+        console.log("Using legacy object format:", usersArray.length, "users");
       } else {
         console.error("Unknown users data format:", data);
         usersArray = [];
@@ -182,7 +214,7 @@ const UserManagementPage = () => {
         user.firstName.toLowerCase().includes(query) ||
         user.lastName.toLowerCase().includes(query) ||
         user.email.toLowerCase().includes(query) ||
-        user.username.toLowerCase().includes(query)
+        (user.username || '').toLowerCase().includes(query)
       );
     }
 
@@ -204,10 +236,12 @@ const UserManagementPage = () => {
           ? a.email.localeCompare(b.email)
           : b.email.localeCompare(a.email);
       } else if (sortField === "created_at") {
-        // Use safe date comparison
+        // Use safe date comparison with new field names
         try {
-          const aTime = a.created_at && isValidDate(a.created_at) ? new Date(a.created_at).getTime() : 0;
-          const bTime = b.created_at && isValidDate(b.created_at) ? new Date(b.created_at).getTime() : 0;
+          const aDate = getCreatedDate(a);
+          const bDate = getCreatedDate(b);
+          const aTime = aDate && isValidDate(aDate) ? new Date(aDate).getTime() : 0;
+          const bTime = bDate && isValidDate(bDate) ? new Date(bDate).getTime() : 0;
           return sortDirection === "asc" ? aTime - bTime : bTime - aTime;
         } catch (e) {
           return 0;
@@ -531,7 +565,7 @@ const UserManagementPage = () => {
                         </TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>{getUserTypeBadge(user.userType)}</TableCell>
-                        <TableCell>{formatDate(user.created_at)}</TableCell>
+                        <TableCell>{formatDate(getCreatedDate(user))}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button 
@@ -585,7 +619,7 @@ const UserManagementPage = () => {
                           {user.firstName} {user.lastName}
                         </TableCell>
                         <TableCell>{user.email}</TableCell>
-                        <TableCell>{formatDate(user.created_at)}</TableCell>
+                        <TableCell>{formatDate(getCreatedDate(user))}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button 
@@ -638,7 +672,7 @@ const UserManagementPage = () => {
                           {user.firstName} {user.lastName}
                         </TableCell>
                         <TableCell>{user.email}</TableCell>
-                        <TableCell>{formatDate(user.created_at)}</TableCell>
+                        <TableCell>{formatDate(getCreatedDate(user))}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button 
@@ -699,7 +733,7 @@ const UserManagementPage = () => {
                           {user.firstName} {user.lastName}
                         </TableCell>
                         <TableCell>{user.email}</TableCell>
-                        <TableCell>{formatDate(user.created_at)}</TableCell>
+                        <TableCell>{formatDate(getCreatedDate(user))}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button 
