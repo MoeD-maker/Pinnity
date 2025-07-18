@@ -17,7 +17,7 @@ interface BusinessSignupFormProps {
   setUserType?: Dispatch<SetStateAction<"business" | "individual">>;
 }
 
-// Schema with proper terms validation
+// Schema with proper terms validation and address fields
 const businessSignupSchema = z.object({
   businessName: z.string().min(1, "Business name is required"),
   category: z.string().min(1, "Business category is required"),
@@ -30,6 +30,9 @@ const businessSignupSchema = z.object({
   confirmPassword: z.string().min(1, "Please confirm your password"),
   phone: z.string().min(1, "Phone number is required"),
   address: z.string().min(1, "Address is required"),
+  postalCode: z.string().optional(),
+  city: z.string().optional(),
+  province: z.string().optional(),
   termsAccepted: z.literal(true, {
     errorMap: () => ({ message: "You must accept the Terms and Conditions" })
   })
@@ -76,6 +79,9 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
       confirmPassword: "",
       phone: "",
       address: "",
+      postalCode: "",
+      city: "",
+      province: "",
       termsAccepted: false as any // Will be overridden by setValue
     }
   });
@@ -463,6 +469,44 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
           />
           {errors.address && (
             <p className="text-sm text-red-500">{errors.address.message}</p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="city">City</Label>
+            <Input
+              id="city"
+              {...register("city")}
+              placeholder="Enter your city"
+            />
+            {errors.city && (
+              <p className="text-sm text-red-500">{errors.city.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="province">Province</Label>
+            <Input
+              id="province"
+              {...register("province")}
+              placeholder="Enter your province"
+            />
+            {errors.province && (
+              <p className="text-sm text-red-500">{errors.province.message}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="postalCode">Postal Code</Label>
+          <Input
+            id="postalCode"
+            {...register("postalCode")}
+            placeholder="Enter your postal code"
+          />
+          {errors.postalCode && (
+            <p className="text-sm text-red-500">{errors.postalCode.message}</p>
           )}
         </div>
 
