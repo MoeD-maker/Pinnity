@@ -10,6 +10,7 @@ import { generateToken } from '../auth';
 import { setAuthCookie } from '../utils/cookieUtils';
 import { authCookieConfig, withCustomAge } from '../utils/cookieConfig';
 import { moveFilesToUserFolder } from '../fileManager';
+import { pool } from '../db';
 
 // Validation schemas
 const individualRegistrationSchema = z.object({
@@ -246,23 +247,52 @@ export async function login(req: Request, res: Response) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // Get the Supabase user to verify password
-    const { data: supabaseUser, error: supabaseError } = await supabaseAdmin.auth.admin.getUserById(user.supabase_user_id!);
-    
-    if (supabaseError || !supabaseUser?.user) {
-      console.error("Failed to get Supabase user:", supabaseError);
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
+    // Check if this is a legacy user (no Supabase ID) or a Supabase user
+    if (user.supabase_user_id) {
+      // Supabase user - verify password through Supabase
+      const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+        email: validatedData.email,
+        password: validatedData.password
+      });
 
-    // Sign in with Supabase to verify password
-    const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
-      email: validatedData.email,
-      password: validatedData.password
-    });
-
-    if (signInError) {
-      console.error("Password verification failed:", signInError);
-      return res.status(401).json({ message: "Invalid credentials" });
+      if (signInError) {
+        console.error("Supabase password verification failed:", signInError);
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      console.log("Supabase login successful for:", validatedData.email);
+    } else {
+      // Legacy user - check the old users table
+      console.log("Legacy user login attempt for:", validatedData.email);
+      
+      // Query the legacy users table
+      const { rows: legacyUsers } = await pool.query(
+        'SELECT id, email, password, first_name, last_name, user_type FROM users WHERE email = $1',
+        [validatedData.email]
+      );
+      
+      if (legacyUsers.length === 0 || !legacyUsers[0].password) {
+        console.error("Legacy user not found or has no password");
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      const legacyUser = legacyUsers[0];
+      // bcrypt is already imported at the top
+      const isValidPassword = await bcrypt.compare(validatedData.password, legacyUser.password);
+      
+      if (!isValidPassword) {
+        console.error("Legacy password verification failed");
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      console.log("Legacy login successful for:", validatedData.email);
+      
+      // Update the user object to use legacy user data
+      user.id = user.id; // Keep the profiles table ID
+      user.email = legacyUser.email;
+      user.first_name = legacyUser.first_name;
+      user.last_name = legacyUser.last_name;
+      user.user_type = legacyUser.user_type;
     }
 
     console.log("Login successful for:", validatedData.email);
