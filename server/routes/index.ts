@@ -49,24 +49,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(environmentInfo);
   });
 
-  // Register all route modules
+  // PRIMARY: Register Supabase routes as main authentication system
+  console.log('🔥 Registering PRIMARY Supabase authentication system');
+  try {
+    const { unifiedRouter } = await import('./unified-routes');
+    app.use('/api', unifiedRouter);  // Main auth routes at /api/auth/*
+    console.log('✅ Primary Supabase authentication system registered');
+  } catch (error) {
+    console.error('❌ Failed to register primary Supabase routes:', error);
+  }
+
+  // LEGACY: Register old routes for backward compatibility only
+  console.log('⚠️ Registering LEGACY routes (deprecated)');
   adminRoutes(app);
-  authRoutes(app);
+  authRoutes(app);  // Legacy auth routes
   userRoutes(app);
   dealRoutes(app);
   businessRoutes(app);
   
   // Register SMS routes with versioning
   app.use('/api/v1/sms', smsRoutes);
-  
-  // Register unified Supabase routes
-  try {
-    const { unifiedRouter } = await import('./unified-routes');
-    app.use('/api/v1', unifiedRouter);
-    console.log('Unified Supabase routes registered successfully');
-  } catch (error) {
-    console.error('Failed to register unified routes:', error);
-  }
   
   // Add test routes for debugging Terms of Service validation
   addTestRoutes(app);

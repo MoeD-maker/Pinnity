@@ -297,13 +297,16 @@ export async function createBusiness(
 }
 
 /**
- * Update business
+ * Update business with Supabase sync
  */
 export async function updateBusiness(
   businessId: number,
   updates: Partial<Omit<Business, 'id' | 'profile_id' | 'created_at' | 'updated_at'>>
 ): Promise<Business> {
   try {
+    console.log(`[SUPABASE SYNC] Starting business update for ${businessId}`);
+    
+    // First update PostgreSQL business record
     const updateFields = Object.keys(updates).map((key, index) => `${key} = $${index + 2}`).join(', ');
     const updateValues = Object.values(updates);
     
@@ -319,8 +322,41 @@ export async function updateBusiness(
     if (result.rows.length === 0) {
       throw new Error('Business not found');
     }
+
+    const updatedBusiness = result.rows[0];
+
+    // If verification status changed, sync to Supabase Auth user metadata
+    if (updates.verification_status) {
+      console.log(`[SUPABASE SYNC] Business verification status changed to: ${updates.verification_status}`);
+      
+      // Get the profile to find supabase_user_id
+      const profile = await getUserById(updatedBusiness.profile_id);
+      
+      if (profile?.supabase_user_id) {
+        console.log(`[SUPABASE SYNC] Syncing verification status to Supabase Auth: ${profile.supabase_user_id}`);
+        
+        const { error: supabaseError } = await supabaseAdmin.auth.admin.updateUserById(
+          profile.supabase_user_id,
+          {
+            user_metadata: {
+              ...profile,
+              businessVerificationStatus: updates.verification_status,
+              businessName: updatedBusiness.business_name,
+              businessCategory: updatedBusiness.business_category
+            }
+          }
+        );
+        
+        if (supabaseError) {
+          console.error('[SUPABASE SYNC] Error syncing business status to Supabase Auth:', supabaseError);
+          // Don't throw here - local update was successful
+        } else {
+          console.log('[SUPABASE SYNC] Successfully synced business status to Supabase Auth');
+        }
+      }
+    }
     
-    return result.rows[0];
+    return updatedBusiness;
   } catch (error) {
     console.error('Error updating business:', error);
     throw new Error(`Failed to update business: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -385,13 +421,16 @@ export async function getPendingBusinesses(): Promise<UserWithBusiness[]> {
 }
 
 /**
- * Update user profile
+ * Update user profile with Supabase sync
  */
 export async function updateProfile(
   id: string,
   updates: Partial<Omit<Profile, 'id' | 'created_at' | 'updated_at'>>
 ): Promise<Profile> {
   try {
+    console.log(`[SUPABASE SYNC] Starting profile update for ${id}`);
+    
+    // First update PostgreSQL profile
     const updateFields = Object.keys(updates).map((key, index) => `${key} = $${index + 2}`).join(', ');
     const updateValues = Object.values(updates);
     
@@ -407,8 +446,54 @@ export async function updateProfile(
     if (result.rows.length === 0) {
       throw new Error('Profile not found');
     }
+
+    const updatedProfile = result.rows[0];
+
+    // Sync to Supabase Auth if supabase_user_id exists
+    if (updatedProfile.supabase_user_id) {
+      console.log(`[SUPABASE SYNC] Syncing profile updates to Supabase Auth: ${updatedProfile.supabase_user_id}`);
+      
+      const authUpdates: any = {};
+      
+      // Map profile fields to Supabase Auth user metadata
+      if (updates.first_name || updates.last_name) {
+        authUpdates.user_metadata = {
+          firstName: updatedProfile.first_name,
+          lastName: updatedProfile.last_name,
+          phone: updatedProfile.phone,
+          address: updatedProfile.address,
+          userType: updatedProfile.user_type,
+          phoneVerified: updatedProfile.phone_verified
+        };
+      }
+      
+      if (updates.email) {
+        authUpdates.email = updates.email;
+      }
+      
+      if (updates.phone) {
+        authUpdates.phone = updates.phone;
+      }
+
+      // Update Supabase Auth user if there are changes to sync
+      if (Object.keys(authUpdates).length > 0) {
+        const { error: supabaseError } = await supabaseAdmin.auth.admin.updateUserById(
+          updatedProfile.supabase_user_id,
+          authUpdates
+        );
+        
+        if (supabaseError) {
+          console.error('[SUPABASE SYNC] Error syncing to Supabase Auth:', supabaseError);
+          // Don't throw here - local update was successful
+        } else {
+          console.log('[SUPABASE SYNC] Successfully synced to Supabase Auth');
+        }
+      }
+    } else {
+      console.log('[SUPABASE SYNC] Profile has no supabase_user_id, skipping Auth sync');
+    }
     
-    return result.rows[0];
+    return updatedProfile;
   } catch (error) {
     console.error('Error updating profile:', error);
     throw new Error(`Failed to update profile: ${error instanceof Error ? error.message : 'Unknown error'}`);

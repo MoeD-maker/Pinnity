@@ -2052,6 +2052,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUser(userId: number, userData: Partial<Omit<InsertUser, "id" | "password">>): Promise<User> {
+    // Import Supabase sync functions
+    const { updateProfile, getUserByEmail } = await import('./supabaseQueries');
+    
+    // First get the user to find their email for Supabase lookup
+    const existingUser = await this.getUser(userId);
+    if (!existingUser) {
+      throw new Error("User not found");
+    }
+    
+    console.log(`[STORAGE SYNC] Updating legacy user ${userId}: ${existingUser.email}`);
+    
+    // Update the legacy PostgreSQL users table
     const [updatedUser] = await db.update(users)
       .set(userData)
       .where(eq(users.id, userId))
@@ -2059,6 +2071,32 @@ export class DatabaseStorage implements IStorage {
     
     if (!updatedUser) {
       throw new Error("User not found");
+    }
+    
+    // Try to sync with Supabase profile
+    try {
+      console.log(`[STORAGE SYNC] Looking for Supabase profile with email: ${existingUser.email}`);
+      const supabaseProfile = await getUserByEmail(existingUser.email);
+      if (supabaseProfile) {
+        console.log(`[STORAGE SYNC] Found Supabase profile ${supabaseProfile.id}, syncing updates...`);
+        
+        // Map legacy user fields to Supabase profile fields
+        const profileUpdates: any = {};
+        if (userData.firstName) profileUpdates.first_name = userData.firstName;
+        if (userData.lastName) profileUpdates.last_name = userData.lastName;
+        if (userData.phone) profileUpdates.phone = userData.phone;
+        if (userData.phoneVerified !== undefined) profileUpdates.phone_verified = userData.phoneVerified;
+        
+        if (Object.keys(profileUpdates).length > 0) {
+          await updateProfile(supabaseProfile.id, profileUpdates);
+          console.log(`[STORAGE SYNC] Successfully synced user updates to Supabase`);
+        }
+      } else {
+        console.log(`[STORAGE SYNC] No Supabase profile found for ${existingUser.email}`);
+      }
+    } catch (error) {
+      console.error(`[STORAGE SYNC] Error syncing user update to Supabase:`, error);
+      // Don't throw here - local update was successful
     }
     
     return updatedUser;
@@ -2313,6 +2351,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateBusiness(id: number, businessData: Partial<Omit<InsertBusiness, "id" | "userId">>): Promise<Business> {
+    // Import Supabase sync functions  
+    const { updateBusiness: updateSupabaseBusiness, getUserByEmail } = await import('./supabaseQueries');
+    
+    console.log(`📝 Updating business ${id} with data:`, Object.keys(businessData));
+    
+    // Get the current business to find the user for Supabase lookup
+    const existingBusiness = await this.getBusiness(id);
+    if (!existingBusiness) {
+      throw new Error("Business not found");
+    }
+    
+    const businessUser = await this.getUser(existingBusiness.userId);
+    
+    // Update the legacy PostgreSQL business table
     const [updatedBusiness] = await db.update(businesses)
       .set(businessData)
       .where(eq(businesses.id, id))
@@ -2320,6 +2372,36 @@ export class DatabaseStorage implements IStorage {
     
     if (!updatedBusiness) {
       throw new Error("Business not found");
+    }
+    
+    console.log(`✅ Business updated successfully:`, updatedBusiness.businessName);
+    
+    // Try to sync with Supabase business
+    if (businessUser) {
+      try {
+        console.log(`[STORAGE SYNC] Looking for Supabase profile with email: ${businessUser.email}`);
+        const supabaseProfile = await getUserByEmail(businessUser.email);
+        if (supabaseProfile && supabaseProfile.business) {
+          console.log(`[STORAGE SYNC] Found Supabase business, syncing updates...`);
+          
+          // Map legacy business fields to Supabase business fields
+          const businessUpdates: any = {};
+          if (businessData.businessName) businessUpdates.business_name = businessData.businessName;
+          if (businessData.businessCategory) businessUpdates.business_category = businessData.businessCategory;
+          if (businessData.verificationStatus) businessUpdates.verification_status = businessData.verificationStatus;
+          
+          if (Object.keys(businessUpdates).length > 0) {
+            // Note: We need the business ID from Supabase, not the legacy ID
+            // For now, we'll skip this sync since we don't have the mapping
+            console.log(`[STORAGE SYNC] Skipping business sync - mapping needed between legacy and Supabase business IDs`);
+          }
+        } else {
+          console.log(`[STORAGE SYNC] No Supabase business found for ${businessUser.email}`);
+        }
+      } catch (error) {
+        console.error(`[STORAGE SYNC] Error syncing business update to Supabase:`, error);
+        // Don't throw here - local update was successful
+      }
     }
     
     return updatedBusiness;
