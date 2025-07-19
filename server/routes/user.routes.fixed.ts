@@ -63,7 +63,8 @@ export function userRoutes(app: Express): void {
         
         return res.status(200).json(userData);
       } catch (error) {
-        console.error("Get user error:", error);
+        console.error("Get user error for UUID", userIdParam, ":", error);
+        console.error("Error stack:", error.stack);
         return res.status(500).json({ message: "Internal server error" });
       }
     }

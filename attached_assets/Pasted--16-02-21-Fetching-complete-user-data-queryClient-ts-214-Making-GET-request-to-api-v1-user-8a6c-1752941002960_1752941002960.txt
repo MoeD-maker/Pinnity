@@ -1,0 +1,71 @@
+[16:02:21] Fetching complete user data...
+queryClient.ts:214 Making GET request to /api/v1/user/8a6c416c-452c-4a90-88ec-5f81e6a87e4e undefined
+api/v1/user/8a6c416c-452c-4a90-88ec-5f81e6a87e4e:1 
+        
+        
+       Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+errorHandling.ts:154 Error (server): Object
+handleError @ errorHandling.ts:154
+AuthContext.tsx:635 [16:02:21] Error fetching user data: Error: Internal server error
+    at throwIfResNotOk (queryClient.ts:20:19)
+    at async queryClient.ts:276:9
+    at async login (AuthContext.tsx:618:28)
+    at async onSubmit (LoginForm.tsx:49:7)
+    at async chunk-XZQGPSBH.js?v=a0b7de92:1675:9
+login @ AuthContext.tsx:635
+AuthContext.tsx:655 [16:02:21] Preparing redirection after login...
+AuthContext.tsx:668 [16:02:21] Setting redirect path to /admin
+LoginForm.tsx:51 Login successful, not showing success toast
+AuthContext.tsx:304 [16:02:24] Checking authentication status...
+AuthContext.tsx:308 [16:02:24] Fetching CSRF token...
+AuthContext.tsx:311 [16:02:24] CSRF token obtained for session: Yes
+AuthContext.tsx:323 [16:02:24] Stored user ID: Present
+AuthContext.tsx:388 [16:02:24] Attempting to fetch user data with ID: 8a6c416c-452c-4a90-88ec-5f81e6a87e4e
+queryClient.ts:214 Making GET request to /api/v1/user/8a6c416c-452c-4a90-88ec-5f81e6a87e4e undefined
+api/v1/user/8a6c416c-452c-4a90-88ec-5f81e6a87e4e:1 
+        
+        
+       Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+errorHandling.ts:154 Error (server): Object
+handleError @ errorHandling.ts:154
+AuthContext.tsx:398 [16:02:24] Failed to fetch user data for ID: 8a6c416c-452c-4a90-88ec-5f81e6a87e4e Error: Internal server error
+    at throwIfResNotOk (queryClient.ts:20:19)
+    at async queryClient.ts:276:9
+    at async checkAuthStatus (AuthContext.tsx:395:28)
+checkAuthStatus @ AuthContext.tsx:398
+AuthContext.tsx:399 [16:02:24] Error details: {
+  "status": 500,
+  "data": {
+    "message": "Internal server error"
+  }
+}
+checkAuthStatus @ AuthContext.tsx:399
+AuthContext.tsx:404 [16:02:24] User profile not found (500), but token is valid. This might be a legacy admin user.
+AuthContext.tsx:493 [16:02:24] Error fetching user data: ReferenceError: getCurrentUserType is not defined
+    at checkAuthStatus (AuthContext.tsx:408:43)
+checkAuthStatus @ AuthContext.tsx:493
+AuthContext.tsx:675 [16:02:21] Executing redirect to /admin
+App.tsx:372 Current route location: /admin
+AuthContext.tsx:513 [16:02:25] Auth status check completed
+AuthContext.tsx:682 [16:02:21] Redirection completed, returning to authenticated state
+App.tsx:285 [16:02:25] Route evaluation: authState=authenticated, path=/admin
+AuthContext.tsx:74 [16:02:25] Computing redirect: user=admin, path=/admin
+AuthContext.tsx:144 [16:02:25] No redirection needed for admin on /admin
+App.tsx:318 [16:02:25] Path /admin is valid for user, proceeding to render
+index.tsx:194 Admin authentication successful
+index.tsx:620 vendorsError: null
+index.tsx:621 pendingBusinessesError: null
+index.tsx:622 dealsError: null
+index.tsx:623 transactionsError: null
+index.tsx:624 usersError: null
+index.tsx:625 dashboardError: null
+AdminLayout.tsx:86 AdminLayout: Found 2 pending vendors
+index.tsx:429 Dashboard: Found 2 pending vendors
+index.tsx:430 Dashboard: Found 0 approved vendors (including 0 verified vendors)
+index.tsx:433 Dashboard: Found 0 rejected vendors
+index.tsx:481 Dashboard: Found 0 pending deals
+index.tsx:482 Dashboard: Found 0 active deals
+index.tsx:483 Dashboard: Found 0 rejected deals
+index.tsx:484 Dashboard: Found 0 expired deals
+index.tsx:513 Dashboard: Found 19 total users
+index.tsx:551 Dashboard: Found 0 redemptions today

@@ -65,11 +65,48 @@ export function getCurrentUserId(): string | number | null {
  * Gets the current user object with available data
  * Returns a basic user object or null if not authenticated
  */
+/**
+ * Gets the current user type from storage
+ */
+export function getCurrentUserType(): string | null {
+  try {
+    // First try the current standard format
+    const userType = localStorage.getItem(USER_TYPE_KEY);
+    if (userType) {
+      return userType;
+    }
+
+    // Then try legacy "userType" format
+    const legacyUserType = localStorage.getItem('userType');
+    if (legacyUserType) {
+      return legacyUserType;
+    }
+
+    // Try extracting from user object if it exists (very old format)
+    const userObj = localStorage.getItem('user');
+    if (userObj) {
+      try {
+        const parsed = JSON.parse(userObj);
+        if (parsed && parsed.userType) {
+          return parsed.userType;
+        }
+      } catch (e) {
+        console.error('Error parsing user object from localStorage:', e);
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error retrieving user type:', error);
+    return null;
+  }
+}
+
 export function getCurrentUser(): any | null {
   const userId = getCurrentUserId();
   if (!userId) return null;
 
-  const userType = localStorage.getItem(USER_TYPE_KEY) || localStorage.getItem('userType') || 'individual';
+  const userType = getCurrentUserType() || 'individual';
 
   // First check for full user object
   const userObj = localStorage.getItem('user');

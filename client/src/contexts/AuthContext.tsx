@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
 import { apiPost, resetCSRFToken, fetchWithCSRF } from '@/lib/api';
 import { handleError, ErrorCategory } from '@/lib/errorHandling';
-import { getCurrentUserId, saveUserData, clearUserData } from '@/utils/userUtils';
+import { getCurrentUserId, getCurrentUserType, saveUserData, clearUserData } from '@/utils/userUtils';
 
 // Cookie-based authentication
 // Since we're using secure HTTP-only cookies, we only need to keep track of auth status client-side
