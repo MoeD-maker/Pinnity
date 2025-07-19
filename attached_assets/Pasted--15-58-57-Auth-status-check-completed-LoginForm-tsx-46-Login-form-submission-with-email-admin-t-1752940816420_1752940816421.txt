@@ -1,0 +1,271 @@
+[15:58:57] Auth status check completed
+LoginForm.tsx:46 Login form submission with: {email: 'admin@test.com', rememberMe: false}email: "admin@test.com"rememberMe: false[[Prototype]]: Object
+AuthContext.tsx:537 [15:59:10] Fetching CSRF token before login...
+AuthContext.tsx:566 [15:59:10] CSRF token obtained successfully: Yes
+api.ts:30 CSRF token reset - will fetch a new token on next request
+AuthContext.tsx:586 [15:59:10] Attempting login with credentials for email: admin@test.com...
+api.ts:74 Fetching CSRF token (attempt 1/3)...
+api.ts:106 CSRF token obtained successfully
+AuthContext.tsx:601 [15:59:10] Login response received: {message: 'Login successful', userId: '8a6c416c-452c-4a90-88ec-5f81e6a87e4e', userType: 'admin', apiVersion: '1.0.0'}apiVersion: "1.0.0"message: "Login successful"userId: "8a6c416c-452c-4a90-88ec-5f81e6a87e4e"userType: "admin"[[Prototype]]: Object
+AuthContext.tsx:602 [15:59:10] Response userId: 8a6c416c-452c-4a90-88ec-5f81e6a87e4e
+AuthContext.tsx:603 [15:59:10] Response userType: admin
+AuthContext.tsx:606 [15:59:10] Login successful, user ID: 8a6c416c-452c-4a90-88ec-5f81e6a87e4e, type: admin
+AuthContext.tsx:616 [15:59:10] Fetching complete user data...
+queryClient.ts:214 Making GET request to /api/v1/user/8a6c416c-452c-4a90-88ec-5f81e6a87e4e undefined
+api.ts:177 
+        
+        
+       GET https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/api/v1/user/8a6c416c-452c-4a90-88ec-5f81e6a87e4e 500 (Internal Server Error)
+fetchWithCSRF @ api.ts:177
+(anonymous) @ queryClient.ts:238
+withErrorHandling @ errorHandling.ts:312
+apiRequest @ queryClient.ts:230
+login @ AuthContext.tsx:618
+await in login (async)
+onSubmit @ LoginForm.tsx:49
+(anonymous) @ chunk-XZQGPSBH.js?v=a0b7de92:1675
+await in (anonymous) (async)
+callCallback2 @ chunk-NFC5BX5N.js?v=a0b7de92:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=a0b7de92:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=a0b7de92:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=a0b7de92:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=a0b7de92:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=a0b7de92:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=a0b7de92:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=a0b7de92:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=a0b7de92:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=a0b7de92:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=a0b7de92:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=a0b7de92:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=a0b7de92:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=a0b7de92:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=a0b7de92:5449
+Show 16 more frames
+Show less
+errorHandling.ts:154 Error (server): {name: 'Error', message: 'Internal server error', stack: 'Error: Internal server error\n    at throwIfResNotO…es/.vite/deps/chunk-XZQGPSBH.js?v=a0b7de92:1675:9', category: 'server', timestamp: Sat Jul 19 2025 11:59:11 GMT-0400 (Eastern Daylight Time), …}category: "server"details: {message: 'Internal server error'}handled: truemessage: "Internal server error"name: "Error"originalError: Error: Internal server error
+    at throwIfResNotOk (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/lib/queryClient.ts:17:19)
+    at async https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/lib/queryClient.ts:205:9
+    at async login (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/contexts/AuthContext.tsx:401:28)
+    at async onSubmit (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/components/auth/LoginForm.tsx:60:7)
+    at async https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XZQGPSBH.js?v=a0b7de92:1675:9recoverable: truestack: "Error: Internal server error\n    at throwIfResNotOk (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/lib/queryClient.ts:17:19)\n    at async https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/lib/queryClient.ts:205:9\n    at async login (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/contexts/AuthContext.tsx:401:28)\n    at async onSubmit (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/components/auth/LoginForm.tsx:60:7)\n    at async https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XZQGPSBH.js?v=a0b7de92:1675:9"status: 500timestamp: Sat Jul 19 2025 11:59:11 GMT-0400 (Eastern Daylight Time) {}[[Prototype]]: Object
+handleError @ errorHandling.ts:154
+(anonymous) @ errorHandling.ts:313
+Promise.catch (async)
+withErrorHandling @ errorHandling.ts:312
+apiRequest @ queryClient.ts:230
+login @ AuthContext.tsx:618
+await in login (async)
+onSubmit @ LoginForm.tsx:49
+(anonymous) @ chunk-XZQGPSBH.js?v=a0b7de92:1675
+await in (anonymous) (async)
+callCallback2 @ chunk-NFC5BX5N.js?v=a0b7de92:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=a0b7de92:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=a0b7de92:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=a0b7de92:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=a0b7de92:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=a0b7de92:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=a0b7de92:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=a0b7de92:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=a0b7de92:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=a0b7de92:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=a0b7de92:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=a0b7de92:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=a0b7de92:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=a0b7de92:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=a0b7de92:5449
+Show 16 more frames
+Show less
+AuthContext.tsx:635 [15:59:10] Error fetching user data: Error: Internal server error
+    at throwIfResNotOk (queryClient.ts:20:19)
+    at async queryClient.ts:276:9
+    at async login (AuthContext.tsx:618:28)
+    at async onSubmit (LoginForm.tsx:49:7)
+    at async chunk-XZQGPSBH.js?v=a0b7de92:1675:9
+login @ AuthContext.tsx:635
+await in login (async)
+onSubmit @ LoginForm.tsx:49
+(anonymous) @ chunk-XZQGPSBH.js?v=a0b7de92:1675
+await in (anonymous) (async)
+callCallback2 @ chunk-NFC5BX5N.js?v=a0b7de92:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=a0b7de92:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=a0b7de92:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=a0b7de92:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=a0b7de92:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=a0b7de92:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=a0b7de92:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=a0b7de92:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=a0b7de92:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=a0b7de92:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=a0b7de92:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=a0b7de92:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=a0b7de92:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=a0b7de92:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=a0b7de92:5449
+Show 16 more frames
+Show less
+AuthContext.tsx:655 [15:59:10] Preparing redirection after login...
+AuthContext.tsx:668 [15:59:10] Setting redirect path to /admin
+LoginForm.tsx:51 Login successful, not showing success toast
+AuthContext.tsx:304 [15:59:11] Checking authentication status...
+AuthContext.tsx:308 [15:59:11] Fetching CSRF token...
+AuthContext.tsx:311 [15:59:11] CSRF token obtained for session: Yes
+AuthContext.tsx:323 [15:59:11] Stored user ID: Present
+AuthContext.tsx:388 [15:59:11] Attempting to fetch user data with ID: 8
+queryClient.ts:214 Making GET request to /api/v1/user/8 undefined
+AuthContext.tsx:675 [15:59:10] Executing redirect to /admin
+App.tsx:372 Current route location: /admin
+api.ts:177 
+        
+        
+       GET https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/api/v1/user/8 404 (Not Found)
+fetchWithCSRF @ api.ts:177
+(anonymous) @ queryClient.ts:238
+withErrorHandling @ errorHandling.ts:312
+apiRequest @ queryClient.ts:230
+checkAuthStatus @ AuthContext.tsx:395
+await in checkAuthStatus (async)
+(anonymous) @ AuthContext.tsx:519
+commitHookEffectListMount @ chunk-NFC5BX5N.js?v=a0b7de92:16915
+commitPassiveMountOnFiber @ chunk-NFC5BX5N.js?v=a0b7de92:18156
+commitPassiveMountEffects_complete @ chunk-NFC5BX5N.js?v=a0b7de92:18129
+commitPassiveMountEffects_begin @ chunk-NFC5BX5N.js?v=a0b7de92:18119
+commitPassiveMountEffects @ chunk-NFC5BX5N.js?v=a0b7de92:18109
+flushPassiveEffectsImpl @ chunk-NFC5BX5N.js?v=a0b7de92:19490
+flushPassiveEffects @ chunk-NFC5BX5N.js?v=a0b7de92:19447
+performSyncWorkOnRoot @ chunk-NFC5BX5N.js?v=a0b7de92:18868
+flushSyncCallbacks @ chunk-NFC5BX5N.js?v=a0b7de92:9119
+commitRootImpl @ chunk-NFC5BX5N.js?v=a0b7de92:19432
+commitRoot @ chunk-NFC5BX5N.js?v=a0b7de92:19277
+finishConcurrentRender @ chunk-NFC5BX5N.js?v=a0b7de92:18805
+performConcurrentWorkOnRoot @ chunk-NFC5BX5N.js?v=a0b7de92:18718
+workLoop @ chunk-NFC5BX5N.js?v=a0b7de92:197
+flushWork @ chunk-NFC5BX5N.js?v=a0b7de92:176
+performWorkUntilDeadline @ chunk-NFC5BX5N.js?v=a0b7de92:384
+Show 16 more frames
+Show less
+errorHandling.ts:154 Error (client): {name: 'Error', message: 'User not found', stack: 'Error: User not found\n    at throwIfResNotOk (http…f.replit.dev/src/contexts/AuthContext.tsx:244:28)', category: 'client', timestamp: Sat Jul 19 2025 11:59:12 GMT-0400 (Eastern Daylight Time), …}
+handleError @ errorHandling.ts:154
+(anonymous) @ errorHandling.ts:313
+Promise.catch (async)
+withErrorHandling @ errorHandling.ts:312
+apiRequest @ queryClient.ts:230
+checkAuthStatus @ AuthContext.tsx:395
+await in checkAuthStatus (async)
+(anonymous) @ AuthContext.tsx:519
+commitHookEffectListMount @ chunk-NFC5BX5N.js?v=a0b7de92:16915
+commitPassiveMountOnFiber @ chunk-NFC5BX5N.js?v=a0b7de92:18156
+commitPassiveMountEffects_complete @ chunk-NFC5BX5N.js?v=a0b7de92:18129
+commitPassiveMountEffects_begin @ chunk-NFC5BX5N.js?v=a0b7de92:18119
+commitPassiveMountEffects @ chunk-NFC5BX5N.js?v=a0b7de92:18109
+flushPassiveEffectsImpl @ chunk-NFC5BX5N.js?v=a0b7de92:19490
+flushPassiveEffects @ chunk-NFC5BX5N.js?v=a0b7de92:19447
+performSyncWorkOnRoot @ chunk-NFC5BX5N.js?v=a0b7de92:18868
+flushSyncCallbacks @ chunk-NFC5BX5N.js?v=a0b7de92:9119
+commitRootImpl @ chunk-NFC5BX5N.js?v=a0b7de92:19432
+commitRoot @ chunk-NFC5BX5N.js?v=a0b7de92:19277
+finishConcurrentRender @ chunk-NFC5BX5N.js?v=a0b7de92:18805
+performConcurrentWorkOnRoot @ chunk-NFC5BX5N.js?v=a0b7de92:18718
+workLoop @ chunk-NFC5BX5N.js?v=a0b7de92:197
+flushWork @ chunk-NFC5BX5N.js?v=a0b7de92:176
+performWorkUntilDeadline @ chunk-NFC5BX5N.js?v=a0b7de92:384
+Show 16 more frames
+Show less
+AuthContext.tsx:398 [15:59:11] Failed to fetch user data for ID: 8 Error: User not found
+    at throwIfResNotOk (queryClient.ts:20:19)
+    at async queryClient.ts:276:9
+    at async checkAuthStatus (AuthContext.tsx:395:28)
+checkAuthStatus @ AuthContext.tsx:398
+await in checkAuthStatus (async)
+(anonymous) @ AuthContext.tsx:519
+commitHookEffectListMount @ chunk-NFC5BX5N.js?v=a0b7de92:16915
+commitPassiveMountOnFiber @ chunk-NFC5BX5N.js?v=a0b7de92:18156
+commitPassiveMountEffects_complete @ chunk-NFC5BX5N.js?v=a0b7de92:18129
+commitPassiveMountEffects_begin @ chunk-NFC5BX5N.js?v=a0b7de92:18119
+commitPassiveMountEffects @ chunk-NFC5BX5N.js?v=a0b7de92:18109
+flushPassiveEffectsImpl @ chunk-NFC5BX5N.js?v=a0b7de92:19490
+flushPassiveEffects @ chunk-NFC5BX5N.js?v=a0b7de92:19447
+performSyncWorkOnRoot @ chunk-NFC5BX5N.js?v=a0b7de92:18868
+flushSyncCallbacks @ chunk-NFC5BX5N.js?v=a0b7de92:9119
+commitRootImpl @ chunk-NFC5BX5N.js?v=a0b7de92:19432
+commitRoot @ chunk-NFC5BX5N.js?v=a0b7de92:19277
+finishConcurrentRender @ chunk-NFC5BX5N.js?v=a0b7de92:18805
+performConcurrentWorkOnRoot @ chunk-NFC5BX5N.js?v=a0b7de92:18718
+workLoop @ chunk-NFC5BX5N.js?v=a0b7de92:197
+flushWork @ chunk-NFC5BX5N.js?v=a0b7de92:176
+performWorkUntilDeadline @ chunk-NFC5BX5N.js?v=a0b7de92:384
+Show 16 more frames
+Show less
+AuthContext.tsx:399 [15:59:11] Error details: {
+  "status": 404,
+  "data": {
+    "message": "User not found"
+  }
+}
+checkAuthStatus @ AuthContext.tsx:399
+await in checkAuthStatus (async)
+(anonymous) @ AuthContext.tsx:519
+commitHookEffectListMount @ chunk-NFC5BX5N.js?v=a0b7de92:16915
+commitPassiveMountOnFiber @ chunk-NFC5BX5N.js?v=a0b7de92:18156
+commitPassiveMountEffects_complete @ chunk-NFC5BX5N.js?v=a0b7de92:18129
+commitPassiveMountEffects_begin @ chunk-NFC5BX5N.js?v=a0b7de92:18119
+commitPassiveMountEffects @ chunk-NFC5BX5N.js?v=a0b7de92:18109
+flushPassiveEffectsImpl @ chunk-NFC5BX5N.js?v=a0b7de92:19490
+flushPassiveEffects @ chunk-NFC5BX5N.js?v=a0b7de92:19447
+performSyncWorkOnRoot @ chunk-NFC5BX5N.js?v=a0b7de92:18868
+flushSyncCallbacks @ chunk-NFC5BX5N.js?v=a0b7de92:9119
+commitRootImpl @ chunk-NFC5BX5N.js?v=a0b7de92:19432
+commitRoot @ chunk-NFC5BX5N.js?v=a0b7de92:19277
+finishConcurrentRender @ chunk-NFC5BX5N.js?v=a0b7de92:18805
+performConcurrentWorkOnRoot @ chunk-NFC5BX5N.js?v=a0b7de92:18718
+workLoop @ chunk-NFC5BX5N.js?v=a0b7de92:197
+flushWork @ chunk-NFC5BX5N.js?v=a0b7de92:176
+performWorkUntilDeadline @ chunk-NFC5BX5N.js?v=a0b7de92:384
+Show 16 more frames
+Show less
+AuthContext.tsx:404 [15:59:11] User profile not found (404), but token is valid. This might be a legacy admin user.
+AuthContext.tsx:493 [15:59:11] Error fetching user data: ReferenceError: getCurrentUserType is not defined
+    at checkAuthStatus (AuthContext.tsx:408:43)
+checkAuthStatus @ AuthContext.tsx:493
+await in checkAuthStatus (async)
+(anonymous) @ AuthContext.tsx:519
+commitHookEffectListMount @ chunk-NFC5BX5N.js?v=a0b7de92:16915
+commitPassiveMountOnFiber @ chunk-NFC5BX5N.js?v=a0b7de92:18156
+commitPassiveMountEffects_complete @ chunk-NFC5BX5N.js?v=a0b7de92:18129
+commitPassiveMountEffects_begin @ chunk-NFC5BX5N.js?v=a0b7de92:18119
+commitPassiveMountEffects @ chunk-NFC5BX5N.js?v=a0b7de92:18109
+flushPassiveEffectsImpl @ chunk-NFC5BX5N.js?v=a0b7de92:19490
+flushPassiveEffects @ chunk-NFC5BX5N.js?v=a0b7de92:19447
+performSyncWorkOnRoot @ chunk-NFC5BX5N.js?v=a0b7de92:18868
+flushSyncCallbacks @ chunk-NFC5BX5N.js?v=a0b7de92:9119
+commitRootImpl @ chunk-NFC5BX5N.js?v=a0b7de92:19432
+commitRoot @ chunk-NFC5BX5N.js?v=a0b7de92:19277
+finishConcurrentRender @ chunk-NFC5BX5N.js?v=a0b7de92:18805
+performConcurrentWorkOnRoot @ chunk-NFC5BX5N.js?v=a0b7de92:18718
+workLoop @ chunk-NFC5BX5N.js?v=a0b7de92:197
+flushWork @ chunk-NFC5BX5N.js?v=a0b7de92:176
+performWorkUntilDeadline @ chunk-NFC5BX5N.js?v=a0b7de92:384
+Show 16 more frames
+Show less
+AuthContext.tsx:682 [15:59:10] Redirection completed, returning to authenticated state
+AuthContext.tsx:513 [15:59:12] Auth status check completed
+App.tsx:285 [15:59:12] Route evaluation: authState=authenticated, path=/admin
+AuthContext.tsx:74 [15:59:12] Computing redirect: user=admin, path=/admin
+AuthContext.tsx:144 [15:59:12] No redirection needed for admin on /admin
+App.tsx:318 [15:59:12] Path /admin is valid for user, proceeding to render
+index.tsx:194 Admin authentication successful
+index.tsx:620 vendorsError: null
+index.tsx:621 pendingBusinessesError: null
+index.tsx:622 dealsError: null
+index.tsx:623 transactionsError: null
+index.tsx:624 usersError: null
+index.tsx:625 dashboardError: null
+AdminLayout.tsx:86 AdminLayout: Found 2 pending vendors
+index.tsx:429 Dashboard: Found 2 pending vendors
+index.tsx:430 Dashboard: Found 0 approved vendors (including 0 verified vendors)
+index.tsx:433 Dashboard: Found 0 rejected vendors
+index.tsx:481 Dashboard: Found 0 pending deals
+index.tsx:482 Dashboard: Found 0 active deals
+index.tsx:483 Dashboard: Found 0 rejected deals
+index.tsx:484 Dashboard: Found 0 expired deals
+index.tsx:513 Dashboard: Found 19 total users
+index.tsx:551 Dashboard: Found 0 redemptions today

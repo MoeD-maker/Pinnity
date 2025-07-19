@@ -14,19 +14,29 @@ const AUTH_STATUS_KEY = 'pinnity_auth_status';
  * Gets the current user ID from any available storage format
  * Handles multiple legacy storage formats for backwards compatibility
  */
-export function getCurrentUserId(): number | null {
+export function getCurrentUserId(): string | number | null {
   try {
     // First try the current standard format
     const userId = localStorage.getItem(USER_ID_KEY);
     if (userId) {
-      return parseInt(userId, 10);
+      // Check if it's a UUID (contains hyphens) or numeric
+      if (userId.includes('-')) {
+        return userId; // Return UUID as string
+      } else {
+        return parseInt(userId, 10); // Return numeric ID as number
+      }
     }
 
     // Then try legacy "userId" format
     const legacyUserId = localStorage.getItem('userId');
     if (legacyUserId) {
       console.log('Using legacy user ID format. Consider migrating to new format.');
-      return parseInt(legacyUserId, 10);
+      // Check if it's a UUID or numeric
+      if (legacyUserId.includes('-')) {
+        return legacyUserId; // Return UUID as string
+      } else {
+        return parseInt(legacyUserId, 10); // Return numeric ID as number
+      }
     }
 
     // Try extracting from user object if it exists (very old format)
@@ -36,7 +46,7 @@ export function getCurrentUserId(): number | null {
         const parsed = JSON.parse(userObj);
         if (parsed && parsed.id) {
           console.log('Extracted user ID from user object. Consider migrating to new format.');
-          return parsed.id;
+          return parsed.id; // Return as-is (could be string or number)
         }
       } catch (e) {
         console.error('Error parsing user object from localStorage:', e);
