@@ -24,8 +24,8 @@ export function userRoutes(app: Express): void {
     checkOwnership('id'),
     validate(userSchemas.getUserById),
     async (req: Request, res: Response) => {
+      const userIdParam = req.params.id;
       try {
-        const userIdParam = req.params.id;
         console.log(`USER PROFILE: Getting user data for ID: ${userIdParam}`);
         
         // Handle both numeric and UUID user IDs
@@ -77,8 +77,8 @@ export function userRoutes(app: Express): void {
     checkOwnership('id'),
     validate(userSchemas.getUserById),
     async (req: Request, res: Response) => {
+      const userIdParam = req.params.id;
       try {
-        const userIdParam = req.params.id;
         console.log(`USER PROFILE (LEGACY): Getting user data for ID: ${userIdParam}`);
         
         // Handle both numeric and UUID user IDs
