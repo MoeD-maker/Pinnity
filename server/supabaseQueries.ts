@@ -414,3 +414,64 @@ export async function updateProfile(
     throw new Error(`Failed to update profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
+
+/**
+ * Delete user profile from Supabase (both auth and profile data)
+ */
+export async function deleteSupabaseUser(profileId: string): Promise<boolean> {
+  try {
+    console.log(`[SUPABASE DELETE] Starting deletion process for profile ID: ${profileId}`);
+    
+    // First get the profile to find the supabase_user_id
+    const profile = await getUserById(profileId);
+    if (!profile) {
+      console.log(`[SUPABASE DELETE] Profile ${profileId} not found, skipping deletion`);
+      return true; // Consider it successfully deleted if it doesn't exist
+    }
+
+    // Delete from Supabase Auth if supabase_user_id exists
+    if (profile.supabase_user_id) {
+      console.log(`[SUPABASE DELETE] Deleting from Supabase Auth: ${profile.supabase_user_id}`);
+      const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(profile.supabase_user_id);
+      if (authDeleteError) {
+        console.error(`[SUPABASE DELETE] Error deleting auth user ${profile.supabase_user_id}:`, authDeleteError);
+        // Don't throw here - continue with profile deletion even if auth deletion fails
+      } else {
+        console.log(`[SUPABASE DELETE] Successfully deleted from Supabase Auth`);
+      }
+    }
+
+    // Delete from profiles table
+    console.log(`[SUPABASE DELETE] Deleting profile record: ${profileId}`);
+    const query = `DELETE FROM profiles WHERE id = $1`;
+    const result = await pool.query(query, [profileId]);
+    
+    console.log(`[SUPABASE DELETE] Profile deletion completed. Rows affected: ${result.rowCount}`);
+    return true;
+
+  } catch (error) {
+    console.error('[SUPABASE DELETE] Error deleting user:', error);
+    throw new Error(`Failed to delete Supabase user: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * Delete business from Supabase profiles system
+ */
+export async function deleteSupabaseBusiness(profileId: string): Promise<boolean> {
+  try {
+    console.log(`[SUPABASE DELETE] Starting business deletion process for profile ID: ${profileId}`);
+    
+    // First delete the business record
+    const businessQuery = `DELETE FROM businesses_new WHERE profile_id = $1`;
+    const businessResult = await pool.query(businessQuery, [profileId]);
+    console.log(`[SUPABASE DELETE] Business deletion completed. Rows affected: ${businessResult.rowCount}`);
+    
+    // Then delete the user profile (which will also handle auth deletion)
+    return await deleteSupabaseUser(profileId);
+
+  } catch (error) {
+    console.error('[SUPABASE DELETE] Error deleting business:', error);
+    throw new Error(`Failed to delete Supabase business: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}

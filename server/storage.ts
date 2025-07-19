@@ -2199,11 +2199,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async adminDeleteUser(userId: number): Promise<boolean> {
+    // Import Supabase deletion functions
+    const { deleteSupabaseUser, getUserByEmail } = await import('./supabaseQueries');
+    
     // Check if user exists
     const user = await this.getUser(userId);
     if (!user) {
       throw new Error("User not found");
     }
+    
+    console.log(`[ADMIN DELETE] Starting deletion process for user ID ${userId}: ${user.email}`);
     
     // Start a transaction to delete the user and related data
     await db.transaction(async (tx) => {
@@ -2246,6 +2251,23 @@ export class DatabaseStorage implements IStorage {
       await tx.delete(users).where(eq(users.id, userId));
     });
     
+    // Now try to delete from Supabase if the user exists there
+    try {
+      console.log(`[ADMIN DELETE] Looking for Supabase profile with email: ${user.email}`);
+      const supabaseProfile = await getUserByEmail(user.email);
+      if (supabaseProfile) {
+        console.log(`[ADMIN DELETE] Found Supabase profile ${supabaseProfile.id}, deleting...`);
+        await deleteSupabaseUser(supabaseProfile.id);
+        console.log(`[ADMIN DELETE] Successfully deleted from Supabase`);
+      } else {
+        console.log(`[ADMIN DELETE] No Supabase profile found for ${user.email}`);
+      }
+    } catch (error) {
+      console.error(`[ADMIN DELETE] Error deleting from Supabase:`, error);
+      // Don't throw here - local deletion was successful
+    }
+    
+    console.log(`[ADMIN DELETE] User deletion completed for ${user.email}`);
     return true;
   }
 
@@ -2319,11 +2341,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteBusiness(id: number): Promise<boolean> {
+    // Import Supabase deletion functions
+    const { deleteSupabaseBusiness, getUserByEmail } = await import('./supabaseQueries');
+    
     return await db.transaction(async (tx) => {
       // Get the business first to check if it exists and get the user ID
       const [business] = await tx.select().from(businesses).where(eq(businesses.id, id));
       if (!business) {
         return false;
+      }
+
+      // Get the user details before deletion for Supabase cleanup
+      const [user] = await tx.select().from(users).where(eq(users.id, business.userId));
+      
+      console.log(`[BUSINESS DELETE] Starting deletion process for business ID ${id}: ${business.businessName}`);
+      if (user) {
+        console.log(`[BUSINESS DELETE] Associated user: ${user.email}`);
       }
 
       // Delete all related data in the correct order (child tables first)
@@ -2373,6 +2406,25 @@ export class DatabaseStorage implements IStorage {
       await tx.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, business.userId));
       await tx.delete(users).where(eq(users.id, business.userId));
 
+      // Now try to delete from Supabase if the user exists there
+      if (user) {
+        try {
+          console.log(`[BUSINESS DELETE] Looking for Supabase profile with email: ${user.email}`);
+          const supabaseProfile = await getUserByEmail(user.email);
+          if (supabaseProfile) {
+            console.log(`[BUSINESS DELETE] Found Supabase profile ${supabaseProfile.id}, deleting business...`);
+            await deleteSupabaseBusiness(supabaseProfile.id);
+            console.log(`[BUSINESS DELETE] Successfully deleted from Supabase`);
+          } else {
+            console.log(`[BUSINESS DELETE] No Supabase profile found for ${user.email}`);
+          }
+        } catch (error) {
+          console.error(`[BUSINESS DELETE] Error deleting from Supabase:`, error);
+          // Don't throw here - local deletion was successful
+        }
+      }
+
+      console.log(`[BUSINESS DELETE] Business deletion completed for ${business.businessName}`);
       return true;
     });
   }
