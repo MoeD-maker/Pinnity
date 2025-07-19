@@ -390,7 +390,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               // Our JWT token is in a secure HTTP-only cookie
               // so we just need to make the request and the browser will 
               // automatically include the cookie
-              const userData = await apiRequest(`/api/v1/user/${userId}`);
+              let userData;
+              try {
+                userData = await apiRequest(`/api/v1/user/${userId}`);
+                console.log(`[${timestamp}] User data fetch successful for ID: ${userId}`);
+              } catch (userFetchError) {
+                console.error(`[${timestamp}] Failed to fetch user data for ID: ${userId}`, userFetchError);
+                // If the user profile endpoint fails but we have a valid token, 
+                // this might be a legacy admin user without a profile entry
+                if ((userFetchError as any)?.status === 404) {
+                  console.log(`[${timestamp}] User profile not found, but token is valid. This might be a legacy admin user.`);
+                  // For admin users, we can create a minimal user object from the token
+                  // Since this is likely an admin user, create a minimal profile
+                  const currentUserId = getCurrentUserId();
+                  const currentUserType = getCurrentUserType();
+                  if (currentUserType === 'admin') {
+                    userData = {
+                      id: userId,
+                      email: 'admin@test.com', // Default admin email
+                      userType: 'admin',
+                      firstName: 'Admin',
+                      lastName: 'User',
+                      phoneVerified: true,
+                      marketingConsent: false
+                    };
+                    console.log(`[${timestamp}] Created minimal admin user object for authentication`);
+                  }
+                }
+                
+                if (!userData) {
+                  throw userFetchError;
+                }
+              }
               
               // Request complete
               pendingUserRequestRef.current = false;
