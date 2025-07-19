@@ -18,7 +18,7 @@ import PrivacyPolicyPage from "@/pages/privacy";
 import { ForgotPasswordPage } from "@/pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import InstallPrompt from "@/components/pwa/InstallPrompt";
+
 import UpdateNotification from "@/components/pwa/UpdateNotification";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { WifiOff, Wifi, X } from "lucide-react";
@@ -671,7 +671,6 @@ function App() {
             <div className="app-container min-h-screen flex flex-col bg-background text-foreground overflow-x-hidden">
               {/* PWA-related notifications */}
               <NetworkStatusAlert />
-              <InstallPrompt />
               <UpdateNotification />
               
               {/* Main routing */}
