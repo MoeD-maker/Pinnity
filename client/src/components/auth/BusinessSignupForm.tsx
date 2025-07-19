@@ -655,7 +655,7 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
           className="w-full" 
           disabled={isSubmitting}
         >
-          {isSubmitting ? "Creating Business Account..." : isPhoneVerified ? "Create Business Account" : "Continue to Phone Verification"}
+          {isSubmitting ? "Creating Business Account..." : isPhoneVerified ? "Create Business Account" : "Continue"}
         </Button>
       </form>
     </div>

@@ -531,7 +531,7 @@ function IndividualSignupForm() {
           className="w-full" 
           disabled={isSubmitting}
         >
-          {isSubmitting ? "Processing..." : "Continue to Phone Verification"}
+          {isSubmitting ? "Processing..." : "Continue"}
         </Button>
       </form>
     </div>
