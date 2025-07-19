@@ -6,8 +6,9 @@ import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { supabaseAdmin } from '../supabaseAdmin';
 import { createProfile, getUserByEmail, createBusiness } from '../supabaseQueries';
-import { generateToken } from '../utils/tokenUtils';
-import { authCookieConfig, setAuthCookie, withCustomAge } from '../utils/cookieUtils';
+import { generateToken } from '../auth';
+import { setAuthCookie } from '../utils/cookieUtils';
+import { authCookieConfig, withCustomAge } from '../utils/cookieConfig';
 import { moveFilesToUserFolder } from '../fileManager';
 
 // Validation schemas
@@ -294,4 +295,28 @@ export async function login(req: Request, res: Response) {
     }
     return res.status(500).json({ message: "Internal server error" });
   }
+}
+
+// Import upload middleware for business registration
+import { getUploadMiddleware } from '../uploadMiddleware.supabase';
+
+/**
+ * Register authentication routes with Supabase integration
+ */
+export function authRoutes(app: any) {
+  // Individual registration endpoint
+  app.post('/api/v1/auth/register/individual', registerIndividual);
+  
+  // Business registration endpoint with file upload support
+  app.post('/api/v1/auth/register/business', 
+    getUploadMiddleware().fields([
+      { name: 'governmentId', maxCount: 1 },
+      { name: 'proofOfAddress', maxCount: 1 },
+      { name: 'proofOfBusiness', maxCount: 1 }
+    ]),
+    registerBusiness
+  );
+  
+  // Login endpoint
+  app.post('/api/v1/auth/login', login);
 }
