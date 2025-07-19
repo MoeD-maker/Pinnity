@@ -148,12 +148,12 @@ const UserManagementPage = () => {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      // Try the new unified endpoint first, fallback to legacy
-      let response = await fetch('/api/v1/direct/admin/users');
+      // Use the working legacy endpoint for now until unified endpoint is fixed
+      let response = await fetch('/api/v1/admin/users');
       
       if (!response.ok) {
-        console.warn('Unified endpoint failed, trying legacy endpoint');
-        response = await fetch('/api/admin/users');
+        console.warn('Legacy endpoint failed, trying unified endpoint');
+        response = await fetch('/api/v1/direct/admin/users');
       }
       
       if (!response.ok) {
@@ -180,12 +180,18 @@ const UserManagementPage = () => {
         }
         
       } else if (Array.isArray(data)) {
-        // Legacy array format
-        usersArray = data;
+        // Legacy array format - add missing marketing consent field
+        usersArray = data.map((user: any) => ({
+          ...user,
+          marketingConsent: user.marketingConsent || false // Default to false for legacy users
+        }));
         console.log("Using legacy array format:", usersArray.length, "users");
       } else if (data && typeof data === 'object') {
-        // Legacy object format
-        usersArray = Object.values(data);
+        // Legacy object format - add missing marketing consent field
+        usersArray = Object.values(data).map((user: any) => ({
+          ...user,
+          marketingConsent: user.marketingConsent || false // Default to false for legacy users
+        }));
         console.log("Using legacy object format:", usersArray.length, "users");
       } else {
         console.error("Unknown users data format:", data);
