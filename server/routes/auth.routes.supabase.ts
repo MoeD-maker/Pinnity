@@ -249,8 +249,14 @@ export async function login(req: Request, res: Response) {
 
     // Check if this is a legacy user (no Supabase ID) or a Supabase user
     if (user.supabase_user_id) {
-      // Supabase user - verify password through Supabase
-      const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+      // Supabase user - verify password through Supabase using client-side flow
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseClient = createClient(
+        process.env.VITE_SUPABASE_URL!,
+        process.env.VITE_SUPABASE_ANON_KEY!
+      );
+      
+      const { data: signInData, error: signInError } = await supabaseClient.auth.signInWithPassword({
         email: validatedData.email,
         password: validatedData.password
       });
