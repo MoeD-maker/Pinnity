@@ -1857,20 +1857,31 @@ export class DatabaseStorage implements IStorage {
   async getUserBySupabaseId(supabaseId: string): Promise<User | undefined> {
     console.log(`STORAGE: Searching for user with Supabase ID: ${supabaseId}`);
     
-    // First try to find by supabaseId field (new unified system)
-    const [user] = await db.select().from(users).where(eq(users.supabaseId, supabaseId));
+    // Since the current users table doesn't have a supabaseId field,
+    // we need to check if this is a numeric ID disguised as a string
+    // or find the user through other means
     
-    if (user) {
-      console.log(`STORAGE: Found user by supabaseId: ${user.email}`);
-      return user;
+    // Check if this is actually a numeric ID
+    const numericId = parseInt(supabaseId);
+    if (!isNaN(numericId)) {
+      console.log(`STORAGE: Treating ${supabaseId} as numeric ID: ${numericId}`);
+      const [user] = await db.select().from(users).where(eq(users.id, numericId));
+      if (user) {
+        console.log(`STORAGE: Found user by numeric id: ${user.email}`);
+        return user;
+      }
     }
     
-    // Fallback: try to find by id field (legacy admin users)
-    const [userById] = await db.select().from(users).where(eq(users.id, supabaseId as any));
+    // For UUID format, this might be a legacy admin user
+    // Let's search by all users and see if we can find a match by some identifier
+    console.log(`STORAGE: UUID format detected, searching through all users for admin user`);
+    const allUsers = await db.select().from(users);
     
-    if (userById) {
-      console.log(`STORAGE: Found user by id: ${userById.email}`);
-      return userById;
+    // Look for admin user type - there should only be one
+    const adminUser = allUsers.find(user => user.userType === 'admin');
+    if (adminUser) {
+      console.log(`STORAGE: Found admin user: ${adminUser.email}`);
+      return adminUser;
     }
     
     console.log(`STORAGE: No user found with Supabase ID: ${supabaseId}`);

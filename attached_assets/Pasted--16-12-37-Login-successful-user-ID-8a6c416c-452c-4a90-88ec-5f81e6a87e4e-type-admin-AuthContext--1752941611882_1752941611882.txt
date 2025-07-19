@@ -1,0 +1,86 @@
+[16:12:37] Login successful, user ID: 8a6c416c-452c-4a90-88ec-5f81e6a87e4e, type: admin
+AuthContext.tsx:616 [16:12:37] Fetching complete user data...
+queryClient.ts:214 Making GET request to /api/v1/user/8a6c416c-452c-4a90-88ec-5f81e6a87e4e undefined
+api/v1/user/8a6c416c-452c-4a90-88ec-5f81e6a87e4e:1 
+        
+        
+       Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+errorHandling.ts:154 Error (server): Object
+handleError @ errorHandling.ts:154
+AuthContext.tsx:635 [16:12:37] Error fetching user data: Error: Internal server error
+    at throwIfResNotOk (queryClient.ts:20:19)
+    at async queryClient.ts:276:9
+    at async login (AuthContext.tsx:618:28)
+    at async onSubmit (LoginForm.tsx:49:7)
+    at async chunk-XZQGPSBH.js?v=a0b7de92:1675:9
+login @ AuthContext.tsx:635
+AuthContext.tsx:655 [16:12:37] Preparing redirection after login...
+AuthContext.tsx:668 [16:12:37] Setting redirect path to /admin
+LoginForm.tsx:51 Login successful, not showing success toast
+AuthContext.tsx:304 [16:12:41] Checking authentication status...
+AuthContext.tsx:308 [16:12:41] Fetching CSRF token...
+AuthContext.tsx:311 [16:12:41] CSRF token obtained for session: Yes
+AuthContext.tsx:323 [16:12:41] Stored user ID: Present
+AuthContext.tsx:388 [16:12:41] Attempting to fetch user data with ID: 8a6c416c-452c-4a90-88ec-5f81e6a87e4e
+queryClient.ts:214 Making GET request to /api/v1/user/8a6c416c-452c-4a90-88ec-5f81e6a87e4e undefined
+api/v1/user/8a6c416c-452c-4a90-88ec-5f81e6a87e4e:1 
+        
+        
+       Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+errorHandling.ts:154 Error (server): Object
+handleError @ errorHandling.ts:154
+AuthContext.tsx:398 [16:12:41] Failed to fetch user data for ID: 8a6c416c-452c-4a90-88ec-5f81e6a87e4e Error: Internal server error
+    at throwIfResNotOk (queryClient.ts:20:19)
+    at async queryClient.ts:276:9
+    at async checkAuthStatus (AuthContext.tsx:395:28)
+checkAuthStatus @ AuthContext.tsx:398
+AuthContext.tsx:399 [16:12:41] Error details: {
+  "status": 500,
+  "data": {
+    "message": "Internal server error"
+  }
+}
+checkAuthStatus @ AuthContext.tsx:399
+AuthContext.tsx:404 [16:12:41] User profile not found (500), but token is valid. This might be a legacy admin user.
+AuthContext.tsx:409 [16:12:41] Current user type from storage: admin
+AuthContext.tsx:421 [16:12:41] Created minimal admin user object for authentication
+AuthContext.tsx:451 [16:12:41] User data received successfully
+AuthContext.tsx:74 [16:12:41] Computing redirect: user=admin, path=/auth
+AuthContext.tsx:100 [16:12:41] Authenticated admin on /auth, redirecting to /admin
+AuthContext.tsx:466 [16:12:41] Setting redirect path from /auth to /admin
+AuthContext.tsx:482 [16:12:41] Token refresh timer scheduled
+AuthContext.tsx:304 [16:12:41] Checking authentication status...
+AuthContext.tsx:308 [16:12:41] Fetching CSRF token...
+AuthContext.tsx:675 [16:12:37] Executing redirect to /admin
+App.tsx:372 Current route location: /admin
+AuthContext.tsx:311 [16:12:41] CSRF token obtained for session: Yes
+AuthContext.tsx:323 [16:12:41] Stored user ID: Present
+AuthContext.tsx:354 [16:12:41] Using cached user data to prevent excessive requests
+AuthContext.tsx:358 [16:12:41] Using cached user data
+AuthContext.tsx:74 [16:12:41] Computing redirect: user=admin, path=/admin
+AuthContext.tsx:144 [16:12:41] No redirection needed for admin on /admin
+AuthContext.tsx:377 [16:12:41] Token refresh timer scheduled (using cached data)
+AuthContext.tsx:513 [16:12:42] Auth status check completed
+AuthContext.tsx:682 [16:12:37] Redirection completed, returning to authenticated state
+App.tsx:285 [16:12:42] Route evaluation: authState=authenticated, path=/admin
+AuthContext.tsx:74 [16:12:42] Computing redirect: user=admin, path=/admin
+AuthContext.tsx:144 [16:12:42] No redirection needed for admin on /admin
+AuthContext.tsx:513 [16:12:42] Auth status check completed
+App.tsx:318 [16:12:42] Path /admin is valid for user, proceeding to render
+index.tsx:194 Admin authentication successful
+index.tsx:620 vendorsError: null
+index.tsx:621 pendingBusinessesError: null
+index.tsx:622 dealsError: null
+index.tsx:623 transactionsError: null
+index.tsx:624 usersError: null
+index.tsx:625 dashboardError: null
+AdminLayout.tsx:86 AdminLayout: Found 2 pending vendors
+index.tsx:429 Dashboard: Found 2 pending vendors
+index.tsx:430 Dashboard: Found 0 approved vendors (including 0 verified vendors)
+index.tsx:433 Dashboard: Found 0 rejected vendors
+index.tsx:481 Dashboard: Found 0 pending deals
+index.tsx:482 Dashboard: Found 0 active deals
+index.tsx:483 Dashboard: Found 0 rejected deals
+index.tsx:484 Dashboard: Found 0 expired deals
+index.tsx:513 Dashboard: Found 19 total users
+index.tsx:551 Dashboard: Found 0 redemptions today
