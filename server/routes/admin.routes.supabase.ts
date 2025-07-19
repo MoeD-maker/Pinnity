@@ -33,6 +33,7 @@ export async function getAllUsers(req: Request, res: Response) {
       lastName: user.last_name || '',
       userType: user.user_type,
       phoneVerified: user.phone_verified,
+      marketingConsent: user.marketing_consent || false,
       createdAt: user.created_at,
       // Include business info if available
       businessName: user.business?.business_name || null,

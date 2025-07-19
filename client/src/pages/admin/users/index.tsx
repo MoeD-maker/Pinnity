@@ -109,12 +109,14 @@ interface UserData {
   businessName?: string;
   businessCategory?: string;
   verificationStatus?: string;
+  marketingConsent?: boolean;
 }
 
 const UserManagementPage = () => {
   const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [userTypeFilter, setUserTypeFilter] = useState<string | "all">("all");
+  const [marketingConsentFilter, setMarketingConsentFilter] = useState<string | "all">("all");
   const [sortField, setSortField] = useState<string>("created_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [users, setUsers] = useState<UserData[]>([]);
@@ -223,6 +225,18 @@ const UserManagementPage = () => {
       filtered = filtered.filter(user => user.userType === userTypeFilter);
     }
 
+    // Apply marketing consent filter
+    if (marketingConsentFilter !== "all") {
+      filtered = filtered.filter(user => {
+        if (marketingConsentFilter === "opted-in") {
+          return user.marketingConsent === true;
+        } else if (marketingConsentFilter === "opted-out") {
+          return user.marketingConsent === false || user.marketingConsent === undefined;
+        }
+        return true;
+      });
+    }
+
     // Sort users
     filtered.sort((a, b) => {
       if (sortField === "name") {
@@ -260,7 +274,7 @@ const UserManagementPage = () => {
     setIndividualCount(users.filter(u => u.userType === "individual").length);
     setBusinessCount(users.filter(u => u.userType === "business").length);
     setAdminCount(users.filter(u => u.userType === "admin").length);
-  }, [users, searchQuery, userTypeFilter, sortField, sortDirection]);
+  }, [users, searchQuery, userTypeFilter, marketingConsentFilter, sortField, sortDirection]);
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -460,6 +474,23 @@ const UserManagementPage = () => {
                     </SelectContent>
                   </Select>
                 </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="text-xs">Marketing Consent</DropdownMenuLabel>
+                  <Select
+                    value={marketingConsentFilter}
+                    onValueChange={(value) => setMarketingConsentFilter(value)}
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue placeholder="Select marketing preference" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Users</SelectItem>
+                      <SelectItem value="opted-in">Opted In</SelectItem>
+                      <SelectItem value="opted-out">Opted Out</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -513,6 +544,7 @@ const UserManagementPage = () => {
                         )}
                       </Button>
                     </TableHead>
+                    <TableHead>Marketing</TableHead>
                     <TableHead>
                       <Button 
                         variant="ghost" 
@@ -533,7 +565,7 @@ const UserManagementPage = () => {
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-10">
+                      <TableCell colSpan={6} className="text-center py-10">
                         <div className="flex items-center justify-center">
                           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
                         </div>
@@ -541,7 +573,7 @@ const UserManagementPage = () => {
                     </TableRow>
                   ) : filteredUsers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-10">
+                      <TableCell colSpan={6} className="text-center py-10">
                         <div className="flex flex-col items-center justify-center">
                           <Users className="h-12 w-12 text-muted-foreground mb-3" />
                           <p className="text-muted-foreground">No users found</p>
@@ -565,6 +597,19 @@ const UserManagementPage = () => {
                         </TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>{getUserTypeBadge(user.userType)}</TableCell>
+                        <TableCell>
+                          {user.marketingConsent ? (
+                            <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Opted In
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="bg-gray-100 text-gray-600">
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Opted Out
+                            </Badge>
+                          )}
+                        </TableCell>
                         <TableCell>{formatDate(getCreatedDate(user))}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
