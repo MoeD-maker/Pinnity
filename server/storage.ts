@@ -23,6 +23,7 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByPhone(phone: string): Promise<User | undefined>;
+  getUserBySupabaseId(supabaseId: string): Promise<User | undefined>;
   getUserWithBusiness(userId: number): Promise<(User & { business?: Business }) | undefined>;
   createIndividualUser(user: Omit<InsertUser, "userType" | "username">): Promise<User>;
   createBusinessUser(user: Omit<InsertUser, "userType" | "username">, business: Omit<InsertBusiness, "userId">): Promise<User & { business: Business }>;
@@ -1851,6 +1852,29 @@ export class DatabaseStorage implements IStorage {
     );
     
     return user || undefined;
+  }
+
+  async getUserBySupabaseId(supabaseId: string): Promise<User | undefined> {
+    console.log(`STORAGE: Searching for user with Supabase ID: ${supabaseId}`);
+    
+    // First try to find by supabaseId field (new unified system)
+    const [user] = await db.select().from(users).where(eq(users.supabaseId, supabaseId));
+    
+    if (user) {
+      console.log(`STORAGE: Found user by supabaseId: ${user.email}`);
+      return user;
+    }
+    
+    // Fallback: try to find by id field (legacy admin users)
+    const [userById] = await db.select().from(users).where(eq(users.id, supabaseId as any));
+    
+    if (userById) {
+      console.log(`STORAGE: Found user by id: ${userById.email}`);
+      return userById;
+    }
+    
+    console.log(`STORAGE: No user found with Supabase ID: ${supabaseId}`);
+    return undefined;
   }
 
   async getUserByPhone(phone: string): Promise<User | undefined> {

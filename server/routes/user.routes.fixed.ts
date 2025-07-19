@@ -25,12 +25,38 @@ export function userRoutes(app: Express): void {
     validate(userSchemas.getUserById),
     async (req: Request, res: Response) => {
       try {
-        const userId = parseInt(req.params.id);
+        const userIdParam = req.params.id;
+        console.log(`USER PROFILE: Getting user data for ID: ${userIdParam}`);
         
-        const user = await storage.getUser(userId);
+        // Handle both numeric and UUID user IDs
+        let user;
+        if (userIdParam.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+          // UUID format - this is likely a Supabase user ID or legacy admin user
+          console.log(`USER PROFILE: Searching for user by UUID: ${userIdParam}`);
+          user = await storage.getUserBySupabaseId(userIdParam);
+          
+          if (!user) {
+            // Fallback: check if this is a legacy admin user by email lookup
+            console.log(`USER PROFILE: UUID not found in Supabase users, checking legacy admin users`);
+            const allUsers = await storage.getAllUsers();
+            user = allUsers.find((u: any) => u.id === userIdParam || u.supabaseId === userIdParam);
+          }
+        } else {
+          // Numeric format - traditional user ID
+          const userId = parseInt(userIdParam);
+          if (isNaN(userId)) {
+            return res.status(400).json({ message: "Invalid user ID format" });
+          }
+          console.log(`USER PROFILE: Searching for user by numeric ID: ${userId}`);
+          user = await storage.getUser(userId);
+        }
+        
         if (!user) {
+          console.log(`USER PROFILE: User not found for ID: ${userIdParam}`);
           return res.status(404).json({ message: "User not found" });
         }
+        
+        console.log(`USER PROFILE: Found user: ${user.email} (${user.userType})`);
         
         // Don't return the password
         const { password, ...userData } = user;
@@ -51,12 +77,38 @@ export function userRoutes(app: Express): void {
     validate(userSchemas.getUserById),
     async (req: Request, res: Response) => {
       try {
-        const userId = parseInt(req.params.id);
+        const userIdParam = req.params.id;
+        console.log(`USER PROFILE (LEGACY): Getting user data for ID: ${userIdParam}`);
         
-        const user = await storage.getUser(userId);
+        // Handle both numeric and UUID user IDs
+        let user;
+        if (userIdParam.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+          // UUID format - this is likely a Supabase user ID or legacy admin user
+          console.log(`USER PROFILE (LEGACY): Searching for user by UUID: ${userIdParam}`);
+          user = await storage.getUserBySupabaseId(userIdParam);
+          
+          if (!user) {
+            // Fallback: check if this is a legacy admin user by email lookup
+            console.log(`USER PROFILE (LEGACY): UUID not found in Supabase users, checking legacy admin users`);
+            const allUsers = await storage.getAllUsers();
+            user = allUsers.find((u: any) => u.id === userIdParam || u.supabaseId === userIdParam);
+          }
+        } else {
+          // Numeric format - traditional user ID
+          const userId = parseInt(userIdParam);
+          if (isNaN(userId)) {
+            return res.status(400).json({ message: "Invalid user ID format" });
+          }
+          console.log(`USER PROFILE (LEGACY): Searching for user by numeric ID: ${userId}`);
+          user = await storage.getUser(userId);
+        }
+        
         if (!user) {
+          console.log(`USER PROFILE (LEGACY): User not found for ID: ${userIdParam}`);
           return res.status(404).json({ message: "User not found" });
         }
+        
+        console.log(`USER PROFILE (LEGACY): Found user: ${user.email} (${user.userType})`);
         
         // Don't return the password
         const { password, ...userData } = user;
