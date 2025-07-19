@@ -333,6 +333,71 @@ export async function login(req: Request, res: Response) {
   }
 }
 
+/**
+ * Change user password (admin or regular user)
+ */
+export async function changePassword(req: Request, res: Response) {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: "Current and new passwords are required" });
+    }
+    
+    if (newPassword.length < 8) {
+      return res.status(400).json({ message: "New password must be at least 8 characters" });
+    }
+    
+    // Get user profile
+    const user = await getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    // Verify current password first
+    if (user.supabase_user_id) {
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseClient = createClient(
+        process.env.VITE_SUPABASE_URL!,
+        process.env.VITE_SUPABASE_ANON_KEY!
+      );
+      
+      const { error: signInError } = await supabaseClient.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword
+      });
+
+      if (signInError) {
+        return res.status(401).json({ message: "Current password is incorrect" });
+      }
+      
+      // Update password in Supabase
+      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+        user.supabase_user_id,
+        { password: newPassword }
+      );
+      
+      if (updateError) {
+        console.error("Failed to update password:", updateError);
+        return res.status(500).json({ message: "Failed to update password" });
+      }
+      
+      console.log("Password updated successfully for user:", user.email);
+    }
+    
+    return res.status(200).json({ message: "Password updated successfully" });
+    
+  } catch (error) {
+    console.error("Change password error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
 // Import upload middleware for business registration
 import { getUploadMiddleware } from '../uploadMiddleware.supabase';
 
@@ -355,4 +420,7 @@ export function authRoutes(app: any) {
   
   // Login endpoint
   app.post('/api/v1/auth/login', login);
+  
+  // Change password endpoint (requires authentication)
+  app.post('/api/v1/auth/change-password', changePassword);
 }
