@@ -328,13 +328,31 @@ export function adminRoutes(app: Express): void {
     authorize(['admin']), 
     async (_req: Request, res: Response) => {
       try {
-        const users = await storage.getAllUsers();
+        console.log("Admin users endpoint: Using unified Supabase system");
         
-        // Filter out sensitive data
-        const sanitizedUsers = users.map(user => {
-          const { password, ...sanitizedUser } = user;
-          return sanitizedUser;
-        });
+        // Import and use the new unified system
+        const { getAllUsersWithBusinesses } = await import('../supabaseQueries');
+        const users = await getAllUsersWithBusinesses();
+        
+        console.log(`Admin users endpoint: Found ${users.length} users`);
+        
+        // Map to admin dashboard format
+        const sanitizedUsers = users.map(user => ({
+          id: user.id,
+          email: user.email,
+          firstName: user.first_name || '',
+          lastName: user.last_name || '',
+          userType: user.user_type,
+          phoneVerified: user.phone_verified,
+          marketingConsent: user.marketing_consent || false,
+          createdAt: user.created_at,
+          updatedAt: user.updated_at,
+          supabaseUserId: user.supabase_user_id,
+          // Include business info if available
+          businessName: user.business?.business_name || null,
+          businessCategory: user.business?.business_category || null,
+          verificationStatus: user.business?.verification_status || null
+        }));
         
         return res.status(200).json(sanitizedUsers);
       } catch (error) {
@@ -350,13 +368,31 @@ export function adminRoutes(app: Express): void {
     authorize(['admin']), 
     async (_req: Request, res: Response) => {
       try {
-        const users = await storage.getAllUsers();
+        console.log("Admin users endpoint (legacy): Using unified Supabase system");
         
-        // Filter out sensitive data
-        const sanitizedUsers = users.map(user => {
-          const { password, ...sanitizedUser } = user;
-          return sanitizedUser;
-        });
+        // Import and use the new unified system
+        const { getAllUsersWithBusinesses } = await import('../supabaseQueries');
+        const users = await getAllUsersWithBusinesses();
+        
+        console.log(`Admin users endpoint (legacy): Found ${users.length} users`);
+        
+        // Map to admin dashboard format
+        const sanitizedUsers = users.map(user => ({
+          id: user.id,
+          email: user.email,
+          firstName: user.first_name || '',
+          lastName: user.last_name || '',
+          userType: user.user_type,
+          phoneVerified: user.phone_verified,
+          marketingConsent: user.marketing_consent || false,
+          createdAt: user.created_at,
+          updatedAt: user.updated_at,
+          supabaseUserId: user.supabase_user_id,
+          // Include business info if available
+          businessName: user.business?.business_name || null,
+          businessCategory: user.business?.business_category || null,
+          verificationStatus: user.business?.verification_status || null
+        }));
         
         return res.status(200).json(sanitizedUsers);
       } catch (error) {
