@@ -129,6 +129,13 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 Recent Changes:
+- July 20, 2025: **MARKETING CONSENT SUPABASE SYNCHRONIZATION COMPLETED**
+  - **Fixed Marketing Consent Display**: Resolved admin dashboard showing incorrect "Opted Out" status for users who selected marketing opt-in
+  - **Database Consistency**: Fixed supabaseQueries.ts to include marketing_consent field in all user data mappings
+  - **Supabase Metadata Sync**: Synced existing marketing consent data to Supabase Auth user_metadata for full visibility
+  - **Registration Enhancement**: Updated registration process to include marketing consent in both PostgreSQL profiles and Supabase Auth metadata
+  - **Data Verification**: Confirmed mohamad.diab@hotmail.com now correctly shows "Opted In" status (was previously incorrectly showing "Opted Out")
+  - **Complete Integration**: Marketing preferences now stored and synchronized across both database systems
 - July 19, 2025: **COMPLETE SUPABASE SYNCHRONIZATION IMPLEMENTED**
   - **Data Cleanup**: Removed all test users and businesses except admin (cleared 18 users, 2 businesses)  
   - **Admin Migration**: Successfully migrated admin user to Supabase Auth (Password: AdminPassword123!)

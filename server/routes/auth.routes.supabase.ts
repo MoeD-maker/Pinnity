@@ -20,7 +20,8 @@ const individualRegistrationSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
   phone: z.string().min(10, "Phone number is required"),
   address: z.string().min(1, "Address is required"),
-  phoneVerified: z.boolean().optional().default(false)
+  phoneVerified: z.boolean().optional().default(false),
+  marketingConsent: z.boolean().optional().default(false)
 });
 
 const businessRegistrationSchema = z.object({
@@ -60,7 +61,8 @@ export async function registerIndividual(req: Request, res: Response) {
         phone: validatedData.phone,
         address: validatedData.address,
         userType: 'individual',
-        phoneVerified: validatedData.phoneVerified
+        phoneVerified: validatedData.phoneVerified,
+        marketing_consent: validatedData.marketingConsent
       }
     });
 
@@ -81,7 +83,8 @@ export async function registerIndividual(req: Request, res: Response) {
       phone: validatedData.phone,
       address: validatedData.address,
       userType: 'individual',
-      phoneVerified: validatedData.phoneVerified
+      phoneVerified: validatedData.phoneVerified,
+      marketingConsent: validatedData.marketingConsent
     });
 
     console.log("Profile created:", profile.id);
