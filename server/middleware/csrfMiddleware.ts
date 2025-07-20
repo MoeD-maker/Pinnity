@@ -1,5 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
-import { csrfProtection } from '../index';
+// Remove dependency on index.ts - define CSRF protection locally
+import csurf from 'csurf';
+
+// Create local CSRF protection instance
+const csrfProtection = csurf({
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  }
+});
 
 /**
  * CSRF protection middleware for sensitive operations

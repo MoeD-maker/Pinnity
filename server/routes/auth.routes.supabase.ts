@@ -21,7 +21,8 @@ const individualRegistrationSchema = z.object({
   phone: z.string().min(10, "Phone number is required"),
   address: z.string().min(1, "Address is required"),
   phoneVerified: z.boolean().optional().default(false),
-  marketingConsent: z.boolean().optional().default(false)
+  marketingConsent: z.boolean().optional().default(false),
+  role: z.enum(["individual", "vendor"]).optional().default("individual")
 });
 
 const businessRegistrationSchema = z.object({
@@ -33,7 +34,8 @@ const businessRegistrationSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
   phone: z.string().min(10, "Phone number is required"),
   address: z.string().min(1, "Address is required"),
-  phoneVerified: z.boolean().optional().default(false)
+  phoneVerified: z.boolean().optional().default(false),
+  role: z.enum(["individual", "vendor"]).optional().default("vendor")
 });
 
 const loginSchema = z.object({
@@ -62,6 +64,7 @@ export async function registerIndividual(req: Request, res: Response) {
         phone: validatedData.phone,
         address: validatedData.address,
         userType: 'individual',
+        role: validatedData.role,
         phoneVerified: validatedData.phoneVerified,
         marketing_consent: validatedData.marketingConsent
       }
@@ -77,6 +80,7 @@ export async function registerIndividual(req: Request, res: Response) {
     console.log("Supabase user created:", supabaseUser.user.id);
 
     // Create profile in our PostgreSQL database
+    const isLive = validatedData.role === 'vendor'; // Vendors are live, individuals are gated
     const profile = await createProfile(supabaseUser.user.id, {
       email: validatedData.email,
       firstName: validatedData.firstName,
@@ -84,6 +88,8 @@ export async function registerIndividual(req: Request, res: Response) {
       phone: validatedData.phone,
       address: validatedData.address,
       userType: 'individual',
+      role: validatedData.role,
+      isLive: isLive,
       phoneVerified: validatedData.phoneVerified,
       marketingConsent: validatedData.marketingConsent
     });
@@ -104,7 +110,9 @@ export async function registerIndividual(req: Request, res: Response) {
     return res.status(201).json({
       message: "Individual registration successful",
       userId: profile.id,
-      userType: profile.user_type
+      userType: profile.user_type,
+      role: profile.role,
+      is_live: profile.is_live
     });
 
   } catch (error) {

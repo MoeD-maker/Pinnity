@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { csrfProtection } from '../index';
+// Bypass CSRF middleware - no import needed
 import * as crypto from 'crypto';
 
 /**

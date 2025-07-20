@@ -36,7 +36,8 @@ const businessSignupSchema = z.object({
   termsAccepted: z.literal(true, {
     errorMap: () => ({ message: "You must accept the Terms and Conditions" })
   }),
-  marketingConsent: z.boolean().optional()
+  marketingConsent: z.boolean().optional(),
+  role: z.enum(["individual", "vendor"]).optional().default("vendor")
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"]
@@ -84,7 +85,8 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
       city: "",
       province: "",
       termsAccepted: false as any, // Will be overridden by setValue
-      marketingConsent: true
+      marketingConsent: true,
+      role: "vendor"
     }
   });
 
@@ -134,14 +136,15 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
       formData.append('postalCode', data.postalCode || '');
       formData.append('termsAccepted', 'true');
       formData.append('marketingConsent', data.marketingConsent ? 'true' : 'false');
+      formData.append('role', data.role || 'vendor');
       
       // Add documents
       formData.append('governmentId', uploadedFiles.governmentId);
       formData.append('proofOfAddress', uploadedFiles.proofOfAddress);
       formData.append('proofOfBusiness', uploadedFiles.proofOfBusiness);
 
-      // Register business using our backend endpoint (handles Supabase + local DB + file upload)
-      const response = await fetch('/api/v1/auth/register/business', {
+      // Register business using our gated backend endpoint (handles role-based gating)
+      const response = await fetch('/api/auth/gated/register', {
         method: 'POST',
         credentials: 'include',
         body: formData
@@ -157,6 +160,16 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
 
       if (!response.ok) {
         console.error('Business registration failed:', result?.message);
+        if (response.status === 403) {
+          // User is gated - show special message (unlikely for vendors but handle it)
+          toast({
+            title: "Registration Successful! 🎉",
+            description: result.message || "Thank you for signing up! We will email you as soon as we are live!",
+            variant: "default",
+          });
+          setIsSubmitting(false);
+          return;
+        }
         throw new Error(result?.message || 'Registration failed');
       }
 

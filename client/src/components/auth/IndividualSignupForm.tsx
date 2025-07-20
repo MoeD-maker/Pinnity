@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabaseClient";
 import { Eye, EyeOff } from "lucide-react";
 import TwilioPhoneVerification from "./TwilioPhoneVerification";
+import { RoleSelector } from "./RoleSelector";
 
 
 // Schema with proper terms validation including Google Places fields
@@ -33,7 +34,8 @@ const individualSignupSchema = z.object({
   termsAccepted: z.literal(true, {
     errorMap: () => ({ message: "You must accept the Terms and Conditions" })
   }),
-  marketingConsent: z.boolean().optional()
+  marketingConsent: z.boolean().optional(),
+  role: z.enum(["individual", "vendor"]).optional().default("individual")
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"]
@@ -112,7 +114,8 @@ function IndividualSignupForm() {
       lat: undefined,
       lng: undefined,
       termsAccepted: false as any, // Will be overridden by setValue
-      marketingConsent: true
+      marketingConsent: true,
+      role: "individual"
     }
   });
 
@@ -178,43 +181,63 @@ function IndividualSignupForm() {
       console.log("Phone verified status:", isPhoneVerified);
       console.log("Form data:", data);
 
-      // Registration with Supabase Auth
-      const { user, session, error } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          data: {
-            firstName: data.firstName,
-            lastName: data.lastName,
-            phone: data.phone,
-            address: data.address,
-            postalCode: data.postalCode,
-            city: data.city,
-            province: data.province,
-            lat: data.lat,
-            lng: data.lng,
-            userType: 'individual',
-            phoneVerified: isPhoneVerified,
-            marketingConsent: data.marketingConsent
-          }
-        }
+      // Registration with our gated backend endpoint
+      const response = await fetch('/api/auth/gated/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          password: data.password,
+          phone: data.phone,
+          address: data.address,
+          phoneVerified: isPhoneVerified,
+          marketingConsent: data.marketingConsent,
+          role: data.role || 'individual'
+        }),
       });
 
-      if (error) {
-        console.error("Supabase registration error:", error);
-        throw new Error(error.message);
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error("Registration error:", result);
+        if (response.status === 403) {
+          // User is gated - show special message
+          toast({
+            title: "Registration Successful! 🎉",
+            description: result.message || "Thank you for signing up! We will email you as soon as we are live!",
+            variant: "default",
+          });
+          // Don't redirect, show success but gated state
+          setIsSubmitting(false);
+          return;
+        }
+        throw new Error(result.message || 'Registration failed');
       }
 
-      console.log("Supabase registration successful:", { user, session });
+      console.log("Registration successful:", result);
 
-      // Call refreshToken to sync with our existing auth system if needed
+      // Check if user is live or gated based on role
+      if (result.role === 'individual' && !result.is_live) {
+        // Individual user is gated
+        toast({
+          title: "Registration Successful! 🎉",
+          description: "Thank you for signing up! We will email you as soon as we are live!",
+          variant: "default",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      // User is live (vendor or admin) - proceed normally
       try {
         await refreshToken();
         console.log("✅ Authentication sync completed successfully");
       } catch (verifyError: any) {
         console.error("Authentication sync error:", verifyError);
-        // Don't throw here as Supabase registration was successful
-        console.log("Continuing with Supabase session");
+        // Don't throw here as registration was successful
+        console.log("Continuing with session");
       }
 
       console.log("Authentication successful, showing success toast");
@@ -325,6 +348,12 @@ function IndividualSignupForm() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {/* Role Selector */}
+        <RoleSelector 
+          role={watch("role") || "individual"}
+          onRoleChange={(role) => setValue("role", role)}
+        />
+
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="firstName">First Name</Label>

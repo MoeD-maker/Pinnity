@@ -14,6 +14,8 @@ export interface Profile {
   phone?: string;
   address?: string;
   user_type: 'individual' | 'business' | 'admin';
+  role: 'individual' | 'vendor' | 'admin';
+  is_live: boolean;
   phone_verified: boolean;
   marketing_consent: boolean;
   created_at: string;
@@ -71,6 +73,8 @@ export async function getAllUsersWithBusinesses(): Promise<UserWithBusiness[]> {
       phone: row.phone,
       address: row.address,
       user_type: row.user_type,
+      role: row.role,
+      is_live: row.is_live,
       phone_verified: row.phone_verified,
       marketing_consent: row.marketing_consent,
       created_at: row.created_at,
@@ -195,6 +199,8 @@ export async function getUserByEmail(email: string): Promise<UserWithBusiness | 
       phone: row.phone,
       address: row.address,
       user_type: row.user_type,
+      role: row.role,
+      is_live: row.is_live,
       phone_verified: row.phone_verified,
       marketing_consent: row.marketing_consent,
       created_at: row.created_at,
@@ -230,6 +236,8 @@ export async function createProfile(
     phone?: string;
     address?: string;
     userType: 'individual' | 'business' | 'admin';
+    role?: 'individual' | 'vendor' | 'admin';
+    isLive?: boolean;
     phoneVerified?: boolean;
     marketingConsent?: boolean;
   }
@@ -238,9 +246,9 @@ export async function createProfile(
     const query = `
       INSERT INTO profiles (
         supabase_user_id, email, first_name, last_name, phone, address, 
-        user_type, phone_verified, marketing_consent
+        user_type, role, is_live, phone_verified, marketing_consent
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *
     `;
     
@@ -252,6 +260,8 @@ export async function createProfile(
       profileData.phone || null,
       profileData.address || null,
       profileData.userType,
+      profileData.role || 'individual',
+      profileData.isLive || false,
       profileData.phoneVerified || false,
       profileData.marketingConsent || false
     ];

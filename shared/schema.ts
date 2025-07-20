@@ -2,7 +2,7 @@ import { pgTable, text, serial, integer, boolean, json, timestamp, doublePrecisi
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// User schema - base table for both individuals and businesses
+// User schema - base table for both individuals and businesses (LEGACY)
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
@@ -15,6 +15,25 @@ export const users = pgTable("users", {
   address: text("address").notNull(),
   userType: text("user_type").notNull(), // "individual" or "business"
   created_at: text("created_at").notNull().default(new Date().toISOString()),
+});
+
+// Profiles schema - main user table with Supabase Auth integration
+export const profiles = pgTable("profiles", {
+  id: text("id").primaryKey(), // Supabase Auth UUID
+  supabase_user_id: text("supabase_user_id").unique(),
+  email: text("email").notNull().unique(),
+  first_name: text("first_name"),
+  last_name: text("last_name"),
+  avatar_url: text("avatar_url"),
+  phone: text("phone"),
+  address: text("address"),
+  user_type: text("user_type").notNull().default("individual"), // "individual", "business", "admin"
+  phone_verified: boolean("phone_verified").notNull().default(false),
+  marketing_consent: boolean("marketing_consent").notNull().default(false),
+  role: text("role").notNull().default("individual"), // "individual", "vendor", "admin"
+  is_live: boolean("is_live").notNull().default(false), // For gating individual users
+  created_at: text("created_at").notNull().default(new Date().toISOString()),
+  updated_at: text("updated_at").notNull().default(new Date().toISOString()),
 });
 
 // Business schema - extends user for business-specific data
@@ -184,6 +203,7 @@ export const refreshTokens = pgTable("refresh_tokens", {
 
 // Create Zod schemas for insertion
 export const insertUserSchema = createInsertSchema(users);
+export const insertProfileSchema = createInsertSchema(profiles);
 export const insertBusinessSchema = createInsertSchema(businesses);
 export const insertDealSchema = createInsertSchema(deals);
 export const insertUserFavoriteSchema = createInsertSchema(userFavorites);
@@ -243,6 +263,8 @@ export const ratingSchema = z.object({
 // Export types
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+export type Profile = typeof profiles.$inferSelect;
+export type InsertProfile = typeof profiles.$inferInsert;
 export type Business = typeof businesses.$inferSelect;
 export type InsertBusiness = typeof businesses.$inferInsert;
 export type Deal = typeof deals.$inferSelect;
