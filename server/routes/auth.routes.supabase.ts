@@ -55,6 +55,7 @@ export async function registerIndividual(req: Request, res: Response) {
       email: validatedData.email,
       password: validatedData.password,
       phone: validatedData.phone,
+      phone_confirmed: validatedData.phoneVerified,
       user_metadata: {
         firstName: validatedData.firstName,
         lastName: validatedData.lastName,
