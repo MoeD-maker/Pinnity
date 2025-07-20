@@ -112,7 +112,7 @@ function IndividualSignupForm() {
       lat: undefined,
       lng: undefined,
       termsAccepted: false as any, // Will be overridden by setValue
-      marketingConsent: false
+      marketingConsent: true
     }
   });
 

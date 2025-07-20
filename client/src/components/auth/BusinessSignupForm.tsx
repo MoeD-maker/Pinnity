@@ -84,7 +84,7 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
       city: "",
       province: "",
       termsAccepted: false as any, // Will be overridden by setValue
-      marketingConsent: false
+      marketingConsent: true
     }
   });
 
