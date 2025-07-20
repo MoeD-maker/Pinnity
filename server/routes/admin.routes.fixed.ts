@@ -335,6 +335,7 @@ export function adminRoutes(app: Express): void {
         const users = await getAllUsersWithBusinesses();
         
         console.log(`Admin users endpoint: Found ${users.length} users`);
+        console.log("Marketing consent values:", users.map(u => `${u.email}: ${u.marketing_consent}`));
         
         // Map to admin dashboard format
         const sanitizedUsers = users.map(user => ({

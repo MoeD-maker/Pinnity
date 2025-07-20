@@ -134,7 +134,6 @@ export async function getUserById(id: string): Promise<UserWithBusiness | null> 
       address: row.address,
       user_type: row.user_type,
       phone_verified: row.phone_verified,
-      marketing_consent: row.marketing_consent,
       created_at: row.created_at,
       updated_at: row.updated_at,
       business: row.business_id ? {
@@ -196,7 +195,6 @@ export async function getUserByEmail(email: string): Promise<UserWithBusiness | 
       address: row.address,
       user_type: row.user_type,
       phone_verified: row.phone_verified,
-      marketing_consent: row.marketing_consent,
       created_at: row.created_at,
       updated_at: row.updated_at,
       business: row.business_id ? {
@@ -219,44 +217,41 @@ export async function getUserByEmail(email: string): Promise<UserWithBusiness | 
 }
 
 /**
- * Create a new profile
+ * Create user profile (called after Supabase Auth user creation)
  */
 export async function createProfile(
   supabaseUserId: string,
   profileData: {
     email: string;
-    firstName: string;
-    lastName: string;
+    firstName?: string;
+    lastName?: string;
     phone?: string;
     address?: string;
-    userType: 'individual' | 'business' | 'admin';
+    userType?: 'individual' | 'business' | 'admin';
     phoneVerified?: boolean;
-    marketingConsent?: boolean;
   }
 ): Promise<Profile> {
   try {
     const query = `
       INSERT INTO profiles (
-        supabase_user_id, email, first_name, last_name, phone, address, 
-        user_type, phone_verified, marketing_consent
+        supabase_user_id, email, first_name, last_name, 
+        phone, address, user_type, phone_verified
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *
     `;
     
-    const values = [
+    const result = await pool.query(query, [
       supabaseUserId,
       profileData.email,
       profileData.firstName,
       profileData.lastName,
-      profileData.phone || null,
-      profileData.address || null,
-      profileData.userType,
-      profileData.phoneVerified || false,
-      profileData.marketingConsent || false
-    ];
+      profileData.phone,
+      profileData.address,
+      profileData.userType || 'individual',
+      profileData.phoneVerified || false
+    ]);
     
-    const result = await pool.query(query, values);
     return result.rows[0];
   } catch (error) {
     console.error('Error creating profile:', error);
@@ -265,99 +260,13 @@ export async function createProfile(
 }
 
 /**
- * Update a profile
- */
-export async function updateProfile(
-  id: string,
-  updates: Partial<{
-    email: string;
-    firstName: string;
-    lastName: string;
-    phone: string;
-    address: string;
-    phoneVerified: boolean;
-    marketingConsent: boolean;
-  }>
-): Promise<Profile | null> {
-  try {
-    const setClause = [];
-    const values = [];
-    let paramCount = 1;
-    
-    for (const [key, value] of Object.entries(updates)) {
-      const columnName = key === 'firstName' ? 'first_name' 
-                       : key === 'lastName' ? 'last_name'
-                       : key === 'phoneVerified' ? 'phone_verified'
-                       : key === 'marketingConsent' ? 'marketing_consent'
-                       : key;
-      setClause.push(`${columnName} = $${paramCount}`);
-      values.push(value);
-      paramCount++;
-    }
-    
-    if (setClause.length === 0) {
-      throw new Error('No valid updates provided');
-    }
-    
-    setClause.push(`updated_at = NOW()`);
-    values.push(id);
-    
-    const query = `
-      UPDATE profiles 
-      SET ${setClause.join(', ')}
-      WHERE id = $${paramCount}
-      RETURNING *
-    `;
-    
-    const result = await pool.query(query, values);
-    return result.rows[0] || null;
-  } catch (error) {
-    console.error('Error updating profile:', error);
-    throw new Error(`Failed to update profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
-}
-
-/**
- * Delete a profile and related data
- */
-export async function deleteProfile(id: string): Promise<void> {
-  try {
-    // Start a transaction
-    await pool.query('BEGIN');
-    
-    try {
-      // Delete related businesses first
-      await pool.query('DELETE FROM businesses_new WHERE profile_id = $1', [id]);
-      
-      // Delete the profile
-      const result = await pool.query('DELETE FROM profiles WHERE id = $1', [id]);
-      
-      if (result.rowCount === 0) {
-        throw new Error('Profile not found');
-      }
-      
-      // Commit the transaction
-      await pool.query('COMMIT');
-    } catch (error) {
-      // Rollback on error
-      await pool.query('ROLLBACK');
-      throw error;
-    }
-  } catch (error) {
-    console.error('Error deleting profile:', error);
-    throw new Error(`Failed to delete profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
-}
-
-/**
- * Create a new business for a profile
+ * Create a business for a user
  */
 export async function createBusiness(
   profileId: string,
   businessData: {
     businessName: string;
     businessCategory: string;
-    verificationStatus?: 'pending' | 'verified' | 'rejected';
     governmentId?: string;
     proofOfAddress?: string;
     proofOfBusiness?: string;
@@ -366,24 +275,22 @@ export async function createBusiness(
   try {
     const query = `
       INSERT INTO businesses_new (
-        profile_id, business_name, business_category, verification_status,
-        government_id, proof_of_address, proof_of_business
+        profile_id, business_name, business_category, 
+        government_id, proof_of_address, proof_of_business, verification_status
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      VALUES ($1, $2, $3, $4, $5, $6, 'pending')
       RETURNING *
     `;
     
-    const values = [
+    const result = await pool.query(query, [
       profileId,
       businessData.businessName,
       businessData.businessCategory,
-      businessData.verificationStatus || 'pending',
-      businessData.governmentId || null,
-      businessData.proofOfAddress || null,
-      businessData.proofOfBusiness || null
-    ];
+      businessData.governmentId,
+      businessData.proofOfAddress,
+      businessData.proofOfBusiness
+    ]);
     
-    const result = await pool.query(query, values);
     return result.rows[0];
   } catch (error) {
     console.error('Error creating business:', error);
@@ -392,7 +299,74 @@ export async function createBusiness(
 }
 
 /**
- * Get pending businesses for admin approval
+ * Update business with Supabase sync
+ */
+export async function updateBusiness(
+  businessId: number,
+  updates: Partial<Omit<Business, 'id' | 'profile_id' | 'created_at' | 'updated_at'>>
+): Promise<Business> {
+  try {
+    console.log(`[SUPABASE SYNC] Starting business update for ${businessId}`);
+    
+    // First update PostgreSQL business record
+    const updateFields = Object.keys(updates).map((key, index) => `${key} = $${index + 2}`).join(', ');
+    const updateValues = Object.values(updates);
+    
+    const query = `
+      UPDATE businesses_new 
+      SET ${updateFields}, updated_at = NOW()
+      WHERE id = $1
+      RETURNING *
+    `;
+    
+    const result = await pool.query(query, [businessId, ...updateValues]);
+    
+    if (result.rows.length === 0) {
+      throw new Error('Business not found');
+    }
+
+    const updatedBusiness = result.rows[0];
+
+    // If verification status changed, sync to Supabase Auth user metadata
+    if (updates.verification_status) {
+      console.log(`[SUPABASE SYNC] Business verification status changed to: ${updates.verification_status}`);
+      
+      // Get the profile to find supabase_user_id
+      const profile = await getUserById(updatedBusiness.profile_id);
+      
+      if (profile?.supabase_user_id) {
+        console.log(`[SUPABASE SYNC] Syncing verification status to Supabase Auth: ${profile.supabase_user_id}`);
+        
+        const { error: supabaseError } = await supabaseAdmin.auth.admin.updateUserById(
+          profile.supabase_user_id,
+          {
+            user_metadata: {
+              ...profile,
+              businessVerificationStatus: updates.verification_status,
+              businessName: updatedBusiness.business_name,
+              businessCategory: updatedBusiness.business_category
+            }
+          }
+        );
+        
+        if (supabaseError) {
+          console.error('[SUPABASE SYNC] Error syncing business status to Supabase Auth:', supabaseError);
+          // Don't throw here - local update was successful
+        } else {
+          console.log('[SUPABASE SYNC] Successfully synced business status to Supabase Auth');
+        }
+      }
+    }
+    
+    return updatedBusiness;
+  } catch (error) {
+    console.error('Error updating business:', error);
+    throw new Error(`Failed to update business: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * Get all pending businesses for admin approval
  */
 export async function getPendingBusinesses(): Promise<UserWithBusiness[]> {
   try {
@@ -411,7 +385,7 @@ export async function getPendingBusinesses(): Promise<UserWithBusiness[]> {
       FROM profiles p
       INNER JOIN businesses_new b ON p.id = b.profile_id
       WHERE b.verification_status = 'pending'
-      ORDER BY b.created_at DESC
+      ORDER BY p.created_at DESC
     `;
     
     const result = await pool.query(query);
@@ -427,7 +401,6 @@ export async function getPendingBusinesses(): Promise<UserWithBusiness[]> {
       address: row.address,
       user_type: row.user_type,
       phone_verified: row.phone_verified,
-      marketing_consent: row.marketing_consent,
       created_at: row.created_at,
       updated_at: row.updated_at,
       business: {
@@ -450,55 +423,142 @@ export async function getPendingBusinesses(): Promise<UserWithBusiness[]> {
 }
 
 /**
- * Update a business
+ * Update user profile with Supabase sync
  */
-export async function updateBusiness(
-  businessId: number,
-  updates: Partial<{
-    businessName: string;
-    businessCategory: string;
-    verificationStatus: 'pending' | 'verified' | 'rejected';
-    governmentId: string;
-    proofOfAddress: string;
-    proofOfBusiness: string;
-  }>
-): Promise<Business | null> {
+export async function updateProfile(
+  id: string,
+  updates: Partial<Omit<Profile, 'id' | 'created_at' | 'updated_at'>>
+): Promise<Profile> {
   try {
-    const setClause = [];
-    const values = [];
-    let paramCount = 1;
+    console.log(`[SUPABASE SYNC] Starting profile update for ${id}`);
     
-    for (const [key, value] of Object.entries(updates)) {
-      const columnName = key === 'businessName' ? 'business_name' 
-                       : key === 'businessCategory' ? 'business_category'
-                       : key === 'verificationStatus' ? 'verification_status'
-                       : key === 'governmentId' ? 'government_id'
-                       : key === 'proofOfAddress' ? 'proof_of_address'
-                       : key === 'proofOfBusiness' ? 'proof_of_business'
-                       : key;
-      setClause.push(`${columnName} = $${paramCount}`);
-      values.push(value);
-      paramCount++;
-    }
-    
-    if (setClause.length === 0) {
-      throw new Error('No valid updates provided');
-    }
-    
-    setClause.push(`updated_at = NOW()`);
-    values.push(businessId);
+    // First update PostgreSQL profile
+    const updateFields = Object.keys(updates).map((key, index) => `${key} = $${index + 2}`).join(', ');
+    const updateValues = Object.values(updates);
     
     const query = `
-      UPDATE businesses_new 
-      SET ${setClause.join(', ')}
-      WHERE id = $${paramCount}
+      UPDATE profiles 
+      SET ${updateFields}, updated_at = NOW()
+      WHERE id = $1
       RETURNING *
     `;
     
-    const result = await pool.query(query, values);
-    return result.rows[0] || null;
+    const result = await pool.query(query, [id, ...updateValues]);
+    
+    if (result.rows.length === 0) {
+      throw new Error('Profile not found');
+    }
+
+    const updatedProfile = result.rows[0];
+
+    // Sync to Supabase Auth if supabase_user_id exists
+    if (updatedProfile.supabase_user_id) {
+      console.log(`[SUPABASE SYNC] Syncing profile updates to Supabase Auth: ${updatedProfile.supabase_user_id}`);
+      
+      const authUpdates: any = {};
+      
+      // Map profile fields to Supabase Auth user metadata
+      if (updates.first_name || updates.last_name) {
+        authUpdates.user_metadata = {
+          firstName: updatedProfile.first_name,
+          lastName: updatedProfile.last_name,
+          phone: updatedProfile.phone,
+          address: updatedProfile.address,
+          userType: updatedProfile.user_type,
+          phoneVerified: updatedProfile.phone_verified
+        };
+      }
+      
+      if (updates.email) {
+        authUpdates.email = updates.email;
+      }
+      
+      if (updates.phone) {
+        authUpdates.phone = updates.phone;
+      }
+
+      // Update Supabase Auth user if there are changes to sync
+      if (Object.keys(authUpdates).length > 0) {
+        const { error: supabaseError } = await supabaseAdmin.auth.admin.updateUserById(
+          updatedProfile.supabase_user_id,
+          authUpdates
+        );
+        
+        if (supabaseError) {
+          console.error('[SUPABASE SYNC] Error syncing to Supabase Auth:', supabaseError);
+          // Don't throw here - local update was successful
+        } else {
+          console.log('[SUPABASE SYNC] Successfully synced to Supabase Auth');
+        }
+      }
+    } else {
+      console.log('[SUPABASE SYNC] Profile has no supabase_user_id, skipping Auth sync');
+    }
+    
+    return updatedProfile;
   } catch (error) {
-    console.error('Error updating business:', error);
-    throw new Error(`Failed to update business: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.error('Error updating profile:', error);
+    throw new Error(`Failed to update profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * Delete user profile from Supabase (both auth and profile data)
+ */
+export async function deleteSupabaseUser(profileId: string): Promise<boolean> {
+  try {
+    console.log(`[SUPABASE DELETE] Starting deletion process for profile ID: ${profileId}`);
+    
+    // First get the profile to find the supabase_user_id
+    const profile = await getUserById(profileId);
+    if (!profile) {
+      console.log(`[SUPABASE DELETE] Profile ${profileId} not found, skipping deletion`);
+      return true; // Consider it successfully deleted if it doesn't exist
+    }
+
+    // Delete from Supabase Auth if supabase_user_id exists
+    if (profile.supabase_user_id) {
+      console.log(`[SUPABASE DELETE] Deleting from Supabase Auth: ${profile.supabase_user_id}`);
+      const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(profile.supabase_user_id);
+      if (authDeleteError) {
+        console.error(`[SUPABASE DELETE] Error deleting auth user ${profile.supabase_user_id}:`, authDeleteError);
+        // Don't throw here - continue with profile deletion even if auth deletion fails
+      } else {
+        console.log(`[SUPABASE DELETE] Successfully deleted from Supabase Auth`);
+      }
+    }
+
+    // Delete from profiles table
+    console.log(`[SUPABASE DELETE] Deleting profile record: ${profileId}`);
+    const query = `DELETE FROM profiles WHERE id = $1`;
+    const result = await pool.query(query, [profileId]);
+    
+    console.log(`[SUPABASE DELETE] Profile deletion completed. Rows affected: ${result.rowCount}`);
+    return true;
+
+  } catch (error) {
+    console.error('[SUPABASE DELETE] Error deleting user:', error);
+    throw new Error(`Failed to delete Supabase user: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * Delete business from Supabase profiles system
+ */
+export async function deleteSupabaseBusiness(profileId: string): Promise<boolean> {
+  try {
+    console.log(`[SUPABASE DELETE] Starting business deletion process for profile ID: ${profileId}`);
+    
+    // First delete the business record
+    const businessQuery = `DELETE FROM businesses_new WHERE profile_id = $1`;
+    const businessResult = await pool.query(businessQuery, [profileId]);
+    console.log(`[SUPABASE DELETE] Business deletion completed. Rows affected: ${businessResult.rowCount}`);
+    
+    // Then delete the user profile (which will also handle auth deletion)
+    return await deleteSupabaseUser(profileId);
+
+  } catch (error) {
+    console.error('[SUPABASE DELETE] Error deleting business:', error);
+    throw new Error(`Failed to delete Supabase business: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
