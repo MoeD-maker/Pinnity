@@ -31,13 +31,22 @@ export function userRoutes(app: Express): void {
         // Handle both numeric and UUID user IDs
         let user;
         if (userIdParam.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-          // UUID format - this is likely a Supabase user ID or legacy admin user
+          // UUID format - this is likely a profile UUID
           console.log(`USER PROFILE: Searching for user by UUID: ${userIdParam}`);
-          user = await storage.getUserBySupabaseId(userIdParam);
+          
+          // First try to get user by profile ID directly using our new Supabase query
+          const { getUserById } = await import('../supabaseQueries');
+          user = await getUserById(userIdParam);
+          
+          if (!user) {
+            // Fallback: try with legacy storage method
+            console.log(`USER PROFILE: UUID not found in new system, trying legacy storage`);
+            user = await storage.getUserBySupabaseId(userIdParam);
+          }
           
           if (!user) {
             // Fallback: check if this is a legacy admin user by email lookup
-            console.log(`USER PROFILE: UUID not found in Supabase users, checking legacy admin users`);
+            console.log(`USER PROFILE: UUID not found in Supabase users, checking all users`);
             const allUsers = await storage.getAllUsers();
             user = allUsers.find((u: any) => u.id === userIdParam || u.supabaseId === userIdParam);
           }
@@ -56,10 +65,24 @@ export function userRoutes(app: Express): void {
           return res.status(404).json({ message: "User not found" });
         }
         
-        console.log(`USER PROFILE: Found user: ${user.email} (${user.userType})`);
+        console.log(`USER PROFILE: Found user: ${user.email} (${user.user_type || user.userType})`);
         
-        // Don't return the password
-        const { password, ...userData } = user;
+        // Handle different user object formats (legacy vs new)
+        const userData = {
+          id: user.id,
+          email: user.email,
+          firstName: user.first_name || user.firstName,
+          lastName: user.last_name || user.lastName,
+          userType: user.user_type || user.userType,
+          phoneVerified: user.phone_verified || user.phoneVerified,
+          phone: user.phone,
+          address: user.address,
+          avatarUrl: user.avatar_url || user.avatarUrl,
+          supabaseUserId: user.supabase_user_id || user.supabaseId,
+          createdAt: user.created_at || user.createdAt,
+          updatedAt: user.updated_at || user.updatedAt,
+          business: user.business
+        };
         
         return res.status(200).json(userData);
       } catch (error) {
