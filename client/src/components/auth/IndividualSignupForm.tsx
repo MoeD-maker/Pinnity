@@ -12,7 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabaseClient";
 import { Eye, EyeOff } from "lucide-react";
 import TwilioPhoneVerification from "./TwilioPhoneVerification";
-import { RoleSelector } from "./RoleSelector";
+// RoleSelector import removed - handled by parent component
 
 
 // Schema with proper terms validation including Google Places fields
@@ -348,12 +348,6 @@ function IndividualSignupForm() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {/* Role Selector */}
-        <RoleSelector 
-          role={watch("role") || "individual"}
-          onRoleChange={(role) => setValue("role", role)}
-        />
-
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="firstName">First Name</Label>
