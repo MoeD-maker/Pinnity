@@ -21,6 +21,7 @@ import { setupVite, serveStatic, log } from "./vite.js";
 import { initializeSupabaseStorage } from "./supabaseStorage.js";
 // Simplified imports for minimal server startup
 import { gatedRegister, gatedLogin } from "./routes/auth.routes.gated.js";
+import { pool } from "./db.js";
 // Skip complex imports that are causing issues
 // import { router as adminRouter } from "./routes/admin.routes.supabase.js";
 // import { router as authRouter } from "./routes/auth.routes.supabase.js";
@@ -197,57 +198,136 @@ app.post('/api/auth/gated/login', gatedLogin);
 app.post('/api/v1/auth/login', gatedLogin);
 
 // Admin API endpoints that the dashboard needs
-app.get('/api/v1/admin/businesses', (req, res) => {
-  // Return empty array for minimal setup
-  res.json([]);
+app.get('/api/v1/admin/businesses', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT b.*, p.email, p.first_name, p.last_name, p.phone, p.created_at
+      FROM businesses_new b
+      LEFT JOIN profiles p ON b.user_id = p.id
+      ORDER BY b.created_at DESC
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching businesses:', error);
+    res.status(500).json({ error: 'Failed to fetch businesses' });
+  }
 });
 
-app.get('/api/v1/admin/businesses/pending', (req, res) => {
-  // Return empty array for minimal setup
-  res.json([]);
+app.get('/api/v1/admin/businesses/pending', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT b.*, p.email, p.first_name, p.last_name, p.phone, p.created_at
+      FROM businesses_new b
+      LEFT JOIN profiles p ON b.user_id = p.id
+      WHERE b.verification_status = 'pending'
+      ORDER BY b.created_at DESC
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching pending businesses:', error);
+    res.status(500).json({ error: 'Failed to fetch pending businesses' });
+  }
 });
 
-app.get('/api/v1/admin/deals', (req, res) => {
-  // Return empty array for minimal setup
-  res.json([]);
+app.get('/api/v1/admin/deals', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT d.*, b.business_name, b.business_type
+      FROM deals d
+      LEFT JOIN businesses_new b ON d.business_id = b.id
+      ORDER BY d.created_at DESC
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching deals:', error);
+    res.status(500).json({ error: 'Failed to fetch deals' });
+  }
 });
 
-app.get('/api/v1/admin/users', (req, res) => {
-  // Return empty array for minimal setup
-  res.json([]);
+app.get('/api/v1/admin/users', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT id, email, first_name, last_name, user_type, role, phone, 
+             created_at, marketing_consent, is_live
+      FROM profiles
+      ORDER BY created_at DESC
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
 });
 
-app.get('/api/v1/admin/transactions', (req, res) => {
-  // Return empty array for minimal setup
-  res.json([]);
+app.get('/api/v1/admin/transactions', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT r.*, d.title as deal_title, p.email as user_email
+      FROM redemptions r
+      LEFT JOIN deals d ON r.deal_id = d.id
+      LEFT JOIN profiles p ON r.user_id = p.id
+      ORDER BY r.created_at DESC
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching transactions:', error);
+    res.status(500).json({ error: 'Failed to fetch transactions' });
+  }
 });
 
-app.get('/api/v1/admin/dashboard', (req, res) => {
-  // Return basic dashboard stats
-  res.json({
-    totalUsers: 0,
-    totalBusinesses: 0,
-    totalDeals: 0,
-    pendingApprovals: 0,
-    recentTransactions: []
-  });
+app.get('/api/v1/admin/dashboard', async (req, res) => {
+  try {
+    const [usersResult, businessesResult, dealsResult, pendingResult] = await Promise.all([
+      pool.query('SELECT COUNT(*) as count FROM profiles'),
+      pool.query('SELECT COUNT(*) as count FROM businesses_new'),
+      pool.query('SELECT COUNT(*) as count FROM deals'),
+      pool.query('SELECT COUNT(*) as count FROM businesses_new WHERE verification_status = \'pending\'')
+    ]);
+
+    res.json({
+      totalUsers: parseInt(usersResult.rows[0].count),
+      totalBusinesses: parseInt(businessesResult.rows[0].count),
+      totalDeals: parseInt(dealsResult.rows[0].count),
+      pendingApprovals: parseInt(pendingResult.rows[0].count),
+      recentTransactions: []
+    });
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error);
+    res.status(500).json({ error: 'Failed to fetch dashboard stats' });
+  }
 });
 
 // User data endpoint
-app.get('/api/v1/user/:id', (req, res) => {
+app.get('/api/v1/user/:id', async (req, res) => {
   const userId = req.params.id;
-  // Return minimal user data for admin
-  if (userId === '8a6c416c-452c-4a90-88ec-5f81e6a87e4e') {
+  try {
+    const result = await pool.query(`
+      SELECT id, email, first_name, last_name, user_type, role, phone, 
+             created_at, marketing_consent, is_live
+      FROM profiles
+      WHERE id = $1
+    `, [userId]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    const user = result.rows[0];
     res.json({
-      id: userId,
-      email: 'admin@test.com',
-      firstName: 'Admin',
-      lastName: 'User',
-      userType: 'admin',
-      role: 'admin'
+      id: user.id,
+      email: user.email,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      userType: user.user_type,
+      role: user.role,
+      phone: user.phone,
+      marketingConsent: user.marketing_consent,
+      isLive: user.is_live,
+      createdAt: user.created_at
     });
-  } else {
-    res.status(404).json({ message: 'User not found' });
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ error: 'Failed to fetch user' });
   }
 });
 
