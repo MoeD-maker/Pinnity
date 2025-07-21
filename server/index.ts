@@ -203,7 +203,7 @@ app.get('/api/v1/admin/businesses', async (req, res) => {
     const result = await pool.query(`
       SELECT b.*, p.email, p.first_name, p.last_name, p.phone, p.created_at
       FROM businesses_new b
-      LEFT JOIN profiles p ON b.user_id = p.id
+      LEFT JOIN profiles p ON b.profile_id = p.id
       ORDER BY b.created_at DESC
     `);
     res.json(result.rows);
@@ -218,7 +218,7 @@ app.get('/api/v1/admin/businesses/pending', async (req, res) => {
     const result = await pool.query(`
       SELECT b.*, p.email, p.first_name, p.last_name, p.phone, p.created_at
       FROM businesses_new b
-      LEFT JOIN profiles p ON b.user_id = p.id
+      LEFT JOIN profiles p ON b.profile_id = p.id
       WHERE b.verification_status = 'pending'
       ORDER BY b.created_at DESC
     `);
@@ -232,7 +232,7 @@ app.get('/api/v1/admin/businesses/pending', async (req, res) => {
 app.get('/api/v1/admin/deals', async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT d.*, b.business_name, b.business_type
+      SELECT d.*, b.business_name, b.business_category
       FROM deals d
       LEFT JOIN businesses_new b ON d.business_id = b.id
       ORDER BY d.created_at DESC
@@ -252,7 +252,22 @@ app.get('/api/v1/admin/users', async (req, res) => {
       FROM profiles
       ORDER BY created_at DESC
     `);
-    res.json(result.rows);
+    
+    // Convert snake_case to camelCase for frontend
+    const users = result.rows.map(user => ({
+      id: user.id,
+      email: user.email,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      userType: user.user_type,
+      role: user.role,
+      phone: user.phone,
+      createdAt: user.created_at,
+      marketingConsent: user.marketing_consent, // This is the key fix
+      isLive: user.is_live
+    }));
+    
+    res.json(users);
   } catch (error) {
     console.error('Error fetching users:', error);
     res.status(500).json({ error: 'Failed to fetch users' });
@@ -263,7 +278,7 @@ app.get('/api/v1/admin/transactions', async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT r.*, d.title as deal_title, p.email as user_email
-      FROM redemptions r
+      FROM deal_redemptions r
       LEFT JOIN deals d ON r.deal_id = d.id
       LEFT JOIN profiles p ON r.user_id = p.id
       ORDER BY r.created_at DESC

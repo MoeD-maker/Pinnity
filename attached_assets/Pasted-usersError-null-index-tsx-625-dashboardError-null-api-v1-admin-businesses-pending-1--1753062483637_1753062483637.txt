@@ -1,0 +1,118 @@
+usersError: null
+index.tsx:625 dashboardError: null
+/api/v1/admin/businesses/pending:1 
+        
+        
+       Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+/api/v1/admin/businesses:1 
+        
+        
+       Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+index.tsx:620 vendorsError: Error: Failed to fetch vendors
+    at fetchVendors (index.tsx:200:29)
+index.tsx:621 pendingBusinessesError: null
+index.tsx:622 dealsError: null
+index.tsx:623 transactionsError: null
+index.tsx:624 usersError: null
+index.tsx:625 dashboardError: null
+index.tsx:628 VENDORS API ERROR (/api/v1/admin/businesses): Error: Failed to fetch vendors
+    at fetchVendors (index.tsx:200:29)
+(anonymous) @ index.tsx:628
+index.tsx:656 Total failed API endpoints: 1
+(anonymous) @ index.tsx:656
+index.tsx:657 All errors: Array(1)
+(anonymous) @ index.tsx:657
+/api/v1/admin/deals:1 
+        
+        
+       Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+index.tsx:620 vendorsError: Error: Failed to fetch vendors
+    at fetchVendors (index.tsx:200:29)
+index.tsx:621 pendingBusinessesError: null
+index.tsx:622 dealsError: Error: Failed to fetch deals
+    at fetchDeals (index.tsx:236:29)
+index.tsx:623 transactionsError: null
+index.tsx:624 usersError: null
+index.tsx:625 dashboardError: null
+index.tsx:628 VENDORS API ERROR (/api/v1/admin/businesses): Error: Failed to fetch vendors
+    at fetchVendors (index.tsx:200:29)
+(anonymous) @ index.tsx:628
+index.tsx:634 DEALS API ERROR (/api/v1/admin/deals): Error: Failed to fetch deals
+    at fetchDeals (index.tsx:236:29)
+(anonymous) @ index.tsx:634
+index.tsx:656 Total failed API endpoints: 2
+(anonymous) @ index.tsx:656
+index.tsx:657 All errors: Array(2)
+(anonymous) @ index.tsx:657
+AdminLayout.tsx:128 Error fetching pending vendors count: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+fetchPendingVendors @ AdminLayout.tsx:128
+/api/v1/admin/transactions:1 
+        
+        
+       Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+index.tsx:620 vendorsError: Error: Failed to fetch vendors
+    at fetchVendors (index.tsx:200:29)
+index.tsx:621 pendingBusinessesError: null
+index.tsx:622 dealsError: Error: Failed to fetch deals
+    at fetchDeals (index.tsx:236:29)
+index.tsx:623 transactionsError: Error: Failed to fetch transactions
+    at fetchTransactions (index.tsx:254:29)
+index.tsx:624 usersError: null
+index.tsx:625 dashboardError: null
+index.tsx:628 VENDORS API ERROR (/api/v1/admin/businesses): Error: Failed to fetch vendors
+    at fetchVendors (index.tsx:200:29)
+(anonymous) @ index.tsx:628
+index.tsx:634 DEALS API ERROR (/api/v1/admin/deals): Error: Failed to fetch deals
+    at fetchDeals (index.tsx:236:29)
+(anonymous) @ index.tsx:634
+index.tsx:637 TRANSACTIONS API ERROR (/api/v1/admin/transactions): Error: Failed to fetch transactions
+    at fetchTransactions (index.tsx:254:29)
+(anonymous) @ index.tsx:637
+index.tsx:656 Total failed API endpoints: 3
+(anonymous) @ index.tsx:656
+index.tsx:657 All errors: Array(3)
+(anonymous) @ index.tsx:657
+index.tsx:513 Dashboard: Found 3 total users
+/api/v1/admin/businesses/pending:1 
+        
+        
+       Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+index.tsx:620 vendorsError: Error: Failed to fetch vendors
+    at fetchVendors (index.tsx:200:29)
+index.tsx:621 pendingBusinessesError: Error: Failed to fetch pending businesses
+    at fetchPendingBusinesses (index.tsx:218:29)
+index.tsx:622 dealsError: Error: Failed to fetch deals
+    at fetchDeals (index.tsx:236:29)
+index.tsx:623 transactionsError: Error: Failed to fetch transactions
+    at fetchTransactions (index.tsx:254:29)
+index.tsx:624 usersError: null
+index.tsx:625 dashboardError: null
+index.tsx:628 VENDORS API ERROR (/api/v1/admin/businesses): Error: Failed to fetch vendors
+    at fetchVendors (index.tsx:200:29)
+(anonymous) @ index.tsx:628
+index.tsx:631 PENDING BUSINESSES API ERROR (/api/v1/admin/businesses/pending): Error: Failed to fetch pending businesses
+    at fetchPendingBusinesses (index.tsx:218:29)
+(anonymous) @ index.tsx:631
+index.tsx:634 DEALS API ERROR (/api/v1/admin/deals): Error: Failed to fetch deals
+    at fetchDeals (index.tsx:236:29)
+(anonymous) @ index.tsx:634
+index.tsx:637 TRANSACTIONS API ERROR (/api/v1/admin/transactions): Error: Failed to fetch transactions
+    at fetchTransactions (index.tsx:254:29)
+(anonymous) @ index.tsx:637
+index.tsx:656 Total failed API endpoints: 4
+(anonymous) @ index.tsx:656
+index.tsx:657 All errors: Array(4)
+(anonymous) @ index.tsx:657
+App.tsx:372 Current route location: /admin/users
+App.tsx:285 [01:47:00] Route evaluation: authState=authenticated, path=/admin/users
+AuthContext.tsx:74 [01:47:00] Computing redirect: user=admin, path=/admin/users
+AuthContext.tsx:144 [01:47:00] No redirection needed for admin on /admin/users
+/api/v1/admin/businesses/pending:1 
+        
+        
+       Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+index.tsx:164 Raw API response: Array(3)
+index.tsx:188 Using legacy array format: 3 users
+AdminLayout.tsx:128 Error fetching pending vendors count: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+fetchPendingVendors @ AdminLayout.tsx:128
+App.tsx:318 [01:47:00] Path /admin/users is valid for user, proceeding to render
