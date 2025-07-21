@@ -113,47 +113,16 @@ export default function DealsPage() {
     queryKey: ['admin', 'deals', filter.status],
     queryFn: async () => {
       try {
-        // Get deals with the selected status - default to pending
-        const status = filter.status || 'pending';
+        // Use the working admin deals endpoint
+        console.log(`Fetching admin deals`);
         
-        // First attempt the versioned route, then fallback to legacy route if it fails
-        console.log(`Trying to fetch deals with status: ${status}`);
+        const response = await apiRequest('/api/v1/admin/deals');
+        console.log('Successfully fetched deals from admin endpoint:', response);
         
-        let response;
-        // Try versioned route first
-        try {
-          response = await apiRequest(`/api/v1/deals/status/${status}`);
-          console.log(`Successfully fetched deals from versioned route: /api/v1/deals/status/${status}`);
-        } catch (firstError) {
-          console.log(`Versioned route failed with error:`, firstError);
-          console.log(`Falling back to legacy route: /api/deals/status/${status}`);
-          
-          try {
-            response = await apiRequest(`/api/deals/status/${status}`);
-          } catch (secondError) {
-            console.log(`Legacy route also failed with error:`, secondError);
-            console.log(`Trying alternate admin endpoint as last resort`);
-            
-            try {
-              // Try the admin API endpoint for dashboard stats to get general deal data
-              const dashboardResponse = await apiRequest('/api/v1/admin/dashboard');
-              console.log('Retrieved dashboard data as fallback:', dashboardResponse);
-              
-              // See if we can extract deals from the dashboard data
-              const allDeals = await apiRequest('/api/v1/admin/debug/deals');
-              if (allDeals && allDeals.dealsByStatus && allDeals.dealsByStatus[status]) {
-                response = allDeals.dealsByStatus[status];
-                console.log(`Using deals from debug endpoint:`, response);
-              } else {
-                // Last resort - just return empty array with diagnostic info
-                console.log('All deal fetching attempts failed, returning empty array');
-                return [];
-              }
-            } catch (finalError) {
-              console.log('All endpoints failed. Returning empty array.', finalError);
-              return [];
-            }
-          }
+        // Filter by status if needed
+        const status = filter.status;
+        if (status && status !== 'all') {
+          return response.filter((deal: any) => deal.status === status);
         }
         
         // Update cache status
@@ -162,124 +131,7 @@ export default function DealsPage() {
           cacheDate: Date.now()
         });
         
-        console.log('Deals API response:', response);
-        
-        // If response is null or undefined, return empty array
-        if (!response) {
-          console.error('Response is null or undefined');
-          return [];
-        }
-        
-        // Check for new special wrapped format
-        if (response._isArray && response.data && Array.isArray(response.data)) {
-          console.log('Received special wrapped array format. Length:', response._length);
-          response = response.data;
-        } 
-        // If response is an object with numeric keys rather than an array, convert it to an array
-        else if (typeof response === 'object' && !Array.isArray(response)) {
-          console.log('Converting object with numeric keys to array:', response);
-          
-          // First, check if response has pendingDeals (from dashboard)
-          if (response.pendingDeals && Array.isArray(response.pendingDeals)) {
-            console.log('Found pendingDeals array property, using that instead');
-            response = response.pendingDeals;
-          }
-          // Then check if it's an object with numeric keys (like {0: deal1, 1: deal2})
-          else {
-            // Direct approach - most reliable way to convert an object with numeric keys to an array
-            const result = [];
-            let i = 0;
-            let hasNumericKeys = false;
-            
-            // First try numeric access
-            while (response[i] !== undefined) {
-              result.push(response[i]);
-              hasNumericKeys = true;
-              i++;
-            }
-            
-            // If we found numeric keys, use that result
-            if (hasNumericKeys && result.length > 0) {
-              console.log('Successfully converted object using numeric indexing, found:', result.length, 'items');
-              response = result;
-            } 
-            // Otherwise try Object.values()
-            else {
-              try {
-                const dealsArray = Object.values(response);
-                console.log('Converted deals array using Object.values():', dealsArray.length, 'items');
-                
-                // Additional check to ensure we don't have garbage objects
-                if (dealsArray.length > 0 && dealsArray[0] && typeof dealsArray[0] === 'object' && 'id' in dealsArray[0]) {
-                  response = dealsArray;
-                } else {
-                  console.log('Object.values() returned invalid data, trying JSON method');
-                  
-                  // JSON stringify/parse trick to force array conversion
-                  const jsonString = JSON.stringify(response);
-                  console.log('Response as JSON string (first 100 chars):', jsonString.substring(0, 100));
-                  
-                  // Force JSON re-parse
-                  const parsed = JSON.parse(jsonString);
-                  
-                  if (Array.isArray(parsed)) {
-                    console.log('JSON parsing converted to array:', parsed.length, 'items');
-                    response = parsed;
-                  } else {
-                    // Use worst-case fallback: manually loop through numeric keys
-                    console.log('Manual extraction as last resort');
-                    const manualResult = [];
-                    const keys = Object.keys(parsed).filter(key => !isNaN(Number(key)));
-                    
-                    for (const key of keys) {
-                      manualResult.push(parsed[key]);
-                    }
-                    
-                    if (manualResult.length > 0) {
-                      console.log('Manual extraction successful:', manualResult.length, 'items');
-                      response = manualResult;
-                    } else {
-                      console.error('All conversion methods failed, returning empty array');
-                      return [];
-                    }
-                  }
-                }
-              } catch (error) {
-                console.error('Error during all conversion attempts:', error);
-                return [];
-              }
-            }
-          }
-        }
-        
-        if (!response || !Array.isArray(response)) {
-          console.error('Invalid deal data returned from API after conversion attempt:', response);
-          toast({
-            title: "Data format error",
-            description: "The deal data returned from the server was invalid. Please try again.",
-            variant: "destructive",
-          });
-          return [];
-        }
-        
-        // Map the response to match our expected deal structure
-        // Converting createdAt to submissionDate for display
-        const dealData = response.map((deal: any) => ({
-          ...deal,
-          submissionDate: deal.createdAt || new Date().toISOString(),
-          lastUpdated: deal.updatedAt || deal.createdAt || new Date().toISOString(),
-          // Ensure all required fields exist
-          status: deal.status || 'pending',
-          businessId: deal.businessId || 0,
-          // Make sure business is defined
-          business: deal.business || {
-            id: deal.businessId || 0,
-            businessName: undefined
-          }
-        }));
-        
-        console.log(`Fetched ${dealData.length} deals with status: ${status}`);
-        return dealData;
+        return response;
       } catch (error) {
         console.error('Error fetching deals:', error);
         toast({
