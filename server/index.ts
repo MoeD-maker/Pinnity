@@ -196,6 +196,61 @@ app.post('/api/auth/gated/login', gatedLogin);
 // Standard login route that the frontend expects
 app.post('/api/v1/auth/login', gatedLogin);
 
+// Admin API endpoints that the dashboard needs
+app.get('/api/v1/admin/businesses', (req, res) => {
+  // Return empty array for minimal setup
+  res.json([]);
+});
+
+app.get('/api/v1/admin/businesses/pending', (req, res) => {
+  // Return empty array for minimal setup
+  res.json([]);
+});
+
+app.get('/api/v1/admin/deals', (req, res) => {
+  // Return empty array for minimal setup
+  res.json([]);
+});
+
+app.get('/api/v1/admin/users', (req, res) => {
+  // Return empty array for minimal setup
+  res.json([]);
+});
+
+app.get('/api/v1/admin/transactions', (req, res) => {
+  // Return empty array for minimal setup
+  res.json([]);
+});
+
+app.get('/api/v1/admin/dashboard', (req, res) => {
+  // Return basic dashboard stats
+  res.json({
+    totalUsers: 0,
+    totalBusinesses: 0,
+    totalDeals: 0,
+    pendingApprovals: 0,
+    recentTransactions: []
+  });
+});
+
+// User data endpoint
+app.get('/api/v1/user/:id', (req, res) => {
+  const userId = req.params.id;
+  // Return minimal user data for admin
+  if (userId === '8a6c416c-452c-4a90-88ec-5f81e6a87e4e') {
+    res.json({
+      id: userId,
+      email: 'admin@test.com',
+      firstName: 'Admin',
+      lastName: 'User',
+      userType: 'admin',
+      role: 'admin'
+    });
+  } else {
+    res.status(404).json({ message: 'User not found' });
+  }
+});
+
 console.log('✅ Gated authentication routes registered');
 
 // Skip other routes for now

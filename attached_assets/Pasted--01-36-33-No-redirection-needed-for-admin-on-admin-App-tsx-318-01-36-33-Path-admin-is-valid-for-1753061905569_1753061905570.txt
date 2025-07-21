@@ -1,0 +1,903 @@
+[01:36:33] No redirection needed for admin on /admin
+App.tsx:318 [01:36:33] Path /admin is valid for user, proceeding to render
+index.tsx:194 Admin authentication successful
+index.tsx:620 vendorsError: null
+index.tsx:621 pendingBusinessesError: null
+index.tsx:622 dealsError: null
+index.tsx:623 transactionsError: null
+index.tsx:624 usersError: null
+index.tsx:625 dashboardError: null
+AdminLayout.tsx:128 Error fetching pending vendors count: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+fetchPendingVendors @ AdminLayout.tsx:128
+await in fetchPendingVendors (async)
+(anonymous) @ AdminLayout.tsx:133
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 16 more frames
+Show less
+index.tsx:620 vendorsError: null
+index.tsx:621 pendingBusinessesError: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+index.tsx:622 dealsError: null
+index.tsx:623 transactionsError: null
+index.tsx:624 usersError: null
+index.tsx:625 dashboardError: null
+index.tsx:631 PENDING BUSINESSES API ERROR (/api/v1/admin/businesses/pending): SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+(anonymous) @ index.tsx:631
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19416
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18895
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+(anonymous) @ chunk-XQLYTHWV.js?v=792c839c:18627
+setTimeout (async)
+scheduleFn @ @tanstack_react-query.js?v=792c839c:555
+flush @ @tanstack_react-query.js?v=792c839c:569
+batch @ @tanstack_react-query.js?v=792c839c:587
+dispatch_fn @ @tanstack_react-query.js?v=792c839c:996
+onError @ @tanstack_react-query.js?v=792c839c:861
+reject @ @tanstack_react-query.js?v=792c839c:465
+(anonymous) @ @tanstack_react-query.js?v=792c839c:508
+Promise.catch (async)
+run @ @tanstack_react-query.js?v=792c839c:498
+start @ @tanstack_react-query.js?v=792c839c:536
+fetch @ @tanstack_react-query.js?v=792c839c:926
+executeFetch_fn @ @tanstack_react-query.js?v=792c839c:2211
+onSubscribe @ @tanstack_react-query.js?v=792c839c:1898
+subscribe @ @tanstack_react-query.js?v=792c839c:24
+(anonymous) @ @tanstack_react-query.js?v=792c839c:3022
+subscribeToStore @ chunk-XQLYTHWV.js?v=792c839c:11984
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 43 more frames
+Show less
+index.tsx:656 Total failed API endpoints: 1
+(anonymous) @ index.tsx:656
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19416
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18895
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+(anonymous) @ chunk-XQLYTHWV.js?v=792c839c:18627
+setTimeout (async)
+scheduleFn @ @tanstack_react-query.js?v=792c839c:555
+flush @ @tanstack_react-query.js?v=792c839c:569
+batch @ @tanstack_react-query.js?v=792c839c:587
+dispatch_fn @ @tanstack_react-query.js?v=792c839c:996
+onError @ @tanstack_react-query.js?v=792c839c:861
+reject @ @tanstack_react-query.js?v=792c839c:465
+(anonymous) @ @tanstack_react-query.js?v=792c839c:508
+Promise.catch (async)
+run @ @tanstack_react-query.js?v=792c839c:498
+start @ @tanstack_react-query.js?v=792c839c:536
+fetch @ @tanstack_react-query.js?v=792c839c:926
+executeFetch_fn @ @tanstack_react-query.js?v=792c839c:2211
+onSubscribe @ @tanstack_react-query.js?v=792c839c:1898
+subscribe @ @tanstack_react-query.js?v=792c839c:24
+(anonymous) @ @tanstack_react-query.js?v=792c839c:3022
+subscribeToStore @ chunk-XQLYTHWV.js?v=792c839c:11984
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 43 more frames
+Show less
+index.tsx:657 All errors: [SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON]
+(anonymous) @ index.tsx:657
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19416
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18895
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+(anonymous) @ chunk-XQLYTHWV.js?v=792c839c:18627
+setTimeout (async)
+scheduleFn @ @tanstack_react-query.js?v=792c839c:555
+flush @ @tanstack_react-query.js?v=792c839c:569
+batch @ @tanstack_react-query.js?v=792c839c:587
+dispatch_fn @ @tanstack_react-query.js?v=792c839c:996
+onError @ @tanstack_react-query.js?v=792c839c:861
+reject @ @tanstack_react-query.js?v=792c839c:465
+(anonymous) @ @tanstack_react-query.js?v=792c839c:508
+Promise.catch (async)
+run @ @tanstack_react-query.js?v=792c839c:498
+start @ @tanstack_react-query.js?v=792c839c:536
+fetch @ @tanstack_react-query.js?v=792c839c:926
+executeFetch_fn @ @tanstack_react-query.js?v=792c839c:2211
+onSubscribe @ @tanstack_react-query.js?v=792c839c:1898
+subscribe @ @tanstack_react-query.js?v=792c839c:24
+(anonymous) @ @tanstack_react-query.js?v=792c839c:3022
+subscribeToStore @ chunk-XQLYTHWV.js?v=792c839c:11984
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 43 more frames
+Show less
+index.tsx:620 vendorsError: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+index.tsx:621 pendingBusinessesError: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+index.tsx:622 dealsError: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+index.tsx:623 transactionsError: null
+index.tsx:624 usersError: null
+index.tsx:625 dashboardError: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+index.tsx:628 VENDORS API ERROR (/api/v1/admin/businesses): SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+(anonymous) @ index.tsx:628
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 16 more frames
+Show less
+index.tsx:631 PENDING BUSINESSES API ERROR (/api/v1/admin/businesses/pending): SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+(anonymous) @ index.tsx:631
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 16 more frames
+Show less
+index.tsx:634 DEALS API ERROR (/api/v1/admin/deals): SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+(anonymous) @ index.tsx:634
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 16 more frames
+Show less
+index.tsx:643 DASHBOARD API ERROR (/api/v1/admin/dashboard): SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+(anonymous) @ index.tsx:643
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 16 more frames
+Show less
+index.tsx:656 Total failed API endpoints: 4
+(anonymous) @ index.tsx:656
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 16 more frames
+Show less
+index.tsx:657 All errors: (4) [SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON, SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON, SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON, SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON]
+(anonymous) @ index.tsx:657
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 16 more frames
+Show less
+index.tsx:620 vendorsError: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+index.tsx:621 pendingBusinessesError: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+index.tsx:622 dealsError: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+index.tsx:623 transactionsError: null
+index.tsx:624 usersError: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+index.tsx:625 dashboardError: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+index.tsx:628 VENDORS API ERROR (/api/v1/admin/businesses): SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+(anonymous) @ index.tsx:628
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 16 more frames
+Show less
+index.tsx:631 PENDING BUSINESSES API ERROR (/api/v1/admin/businesses/pending): SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+(anonymous) @ index.tsx:631
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 16 more frames
+Show less
+index.tsx:634 DEALS API ERROR (/api/v1/admin/deals): SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+(anonymous) @ index.tsx:634
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 16 more frames
+Show less
+index.tsx:640 USERS API ERROR (/api/v1/admin/users): SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+(anonymous) @ index.tsx:640
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 16 more frames
+Show less
+index.tsx:643 DASHBOARD API ERROR (/api/v1/admin/dashboard): SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+(anonymous) @ index.tsx:643
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 16 more frames
+Show less
+index.tsx:656 Total failed API endpoints: 5
+(anonymous) @ index.tsx:656
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 16 more frames
+Show less
+index.tsx:657 All errors: (5) [SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON, SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON, SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON, SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON, SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON]
+(anonymous) @ index.tsx:657
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 16 more frames
+Show less
+index.tsx:620 vendorsError: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+index.tsx:621 pendingBusinessesError: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+index.tsx:622 dealsError: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+index.tsx:623 transactionsError: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+index.tsx:624 usersError: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+index.tsx:625 dashboardError: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+index.tsx:628 VENDORS API ERROR (/api/v1/admin/businesses): SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+(anonymous) @ index.tsx:628
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19416
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18895
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+(anonymous) @ chunk-XQLYTHWV.js?v=792c839c:18627
+setTimeout (async)
+scheduleFn @ @tanstack_react-query.js?v=792c839c:555
+flush @ @tanstack_react-query.js?v=792c839c:569
+batch @ @tanstack_react-query.js?v=792c839c:587
+dispatch_fn @ @tanstack_react-query.js?v=792c839c:996
+onError @ @tanstack_react-query.js?v=792c839c:861
+reject @ @tanstack_react-query.js?v=792c839c:465
+(anonymous) @ @tanstack_react-query.js?v=792c839c:508
+Promise.catch (async)
+run @ @tanstack_react-query.js?v=792c839c:498
+start @ @tanstack_react-query.js?v=792c839c:536
+fetch @ @tanstack_react-query.js?v=792c839c:926
+executeFetch_fn @ @tanstack_react-query.js?v=792c839c:2211
+onSubscribe @ @tanstack_react-query.js?v=792c839c:1898
+subscribe @ @tanstack_react-query.js?v=792c839c:24
+(anonymous) @ @tanstack_react-query.js?v=792c839c:3022
+subscribeToStore @ chunk-XQLYTHWV.js?v=792c839c:11984
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 43 more frames
+Show less
+index.tsx:631 PENDING BUSINESSES API ERROR (/api/v1/admin/businesses/pending): SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+(anonymous) @ index.tsx:631
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19416
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18895
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+(anonymous) @ chunk-XQLYTHWV.js?v=792c839c:18627
+setTimeout (async)
+scheduleFn @ @tanstack_react-query.js?v=792c839c:555
+flush @ @tanstack_react-query.js?v=792c839c:569
+batch @ @tanstack_react-query.js?v=792c839c:587
+dispatch_fn @ @tanstack_react-query.js?v=792c839c:996
+onError @ @tanstack_react-query.js?v=792c839c:861
+reject @ @tanstack_react-query.js?v=792c839c:465
+(anonymous) @ @tanstack_react-query.js?v=792c839c:508
+Promise.catch (async)
+run @ @tanstack_react-query.js?v=792c839c:498
+start @ @tanstack_react-query.js?v=792c839c:536
+fetch @ @tanstack_react-query.js?v=792c839c:926
+executeFetch_fn @ @tanstack_react-query.js?v=792c839c:2211
+onSubscribe @ @tanstack_react-query.js?v=792c839c:1898
+subscribe @ @tanstack_react-query.js?v=792c839c:24
+(anonymous) @ @tanstack_react-query.js?v=792c839c:3022
+subscribeToStore @ chunk-XQLYTHWV.js?v=792c839c:11984
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 43 more frames
+Show less
+index.tsx:634 DEALS API ERROR (/api/v1/admin/deals): SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+(anonymous) @ index.tsx:634
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19416
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18895
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+(anonymous) @ chunk-XQLYTHWV.js?v=792c839c:18627
+setTimeout (async)
+scheduleFn @ @tanstack_react-query.js?v=792c839c:555
+flush @ @tanstack_react-query.js?v=792c839c:569
+batch @ @tanstack_react-query.js?v=792c839c:587
+dispatch_fn @ @tanstack_react-query.js?v=792c839c:996
+onError @ @tanstack_react-query.js?v=792c839c:861
+reject @ @tanstack_react-query.js?v=792c839c:465
+(anonymous) @ @tanstack_react-query.js?v=792c839c:508
+Promise.catch (async)
+run @ @tanstack_react-query.js?v=792c839c:498
+start @ @tanstack_react-query.js?v=792c839c:536
+fetch @ @tanstack_react-query.js?v=792c839c:926
+executeFetch_fn @ @tanstack_react-query.js?v=792c839c:2211
+onSubscribe @ @tanstack_react-query.js?v=792c839c:1898
+subscribe @ @tanstack_react-query.js?v=792c839c:24
+(anonymous) @ @tanstack_react-query.js?v=792c839c:3022
+subscribeToStore @ chunk-XQLYTHWV.js?v=792c839c:11984
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 43 more frames
+Show less
+index.tsx:637 TRANSACTIONS API ERROR (/api/v1/admin/transactions): SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+(anonymous) @ index.tsx:637
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19416
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18895
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+(anonymous) @ chunk-XQLYTHWV.js?v=792c839c:18627
+setTimeout (async)
+scheduleFn @ @tanstack_react-query.js?v=792c839c:555
+flush @ @tanstack_react-query.js?v=792c839c:569
+batch @ @tanstack_react-query.js?v=792c839c:587
+dispatch_fn @ @tanstack_react-query.js?v=792c839c:996
+onError @ @tanstack_react-query.js?v=792c839c:861
+reject @ @tanstack_react-query.js?v=792c839c:465
+(anonymous) @ @tanstack_react-query.js?v=792c839c:508
+Promise.catch (async)
+run @ @tanstack_react-query.js?v=792c839c:498
+start @ @tanstack_react-query.js?v=792c839c:536
+fetch @ @tanstack_react-query.js?v=792c839c:926
+executeFetch_fn @ @tanstack_react-query.js?v=792c839c:2211
+onSubscribe @ @tanstack_react-query.js?v=792c839c:1898
+subscribe @ @tanstack_react-query.js?v=792c839c:24
+(anonymous) @ @tanstack_react-query.js?v=792c839c:3022
+subscribeToStore @ chunk-XQLYTHWV.js?v=792c839c:11984
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 43 more frames
+Show less
+index.tsx:640 USERS API ERROR (/api/v1/admin/users): SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+(anonymous) @ index.tsx:640
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19416
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18895
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+(anonymous) @ chunk-XQLYTHWV.js?v=792c839c:18627
+setTimeout (async)
+scheduleFn @ @tanstack_react-query.js?v=792c839c:555
+flush @ @tanstack_react-query.js?v=792c839c:569
+batch @ @tanstack_react-query.js?v=792c839c:587
+dispatch_fn @ @tanstack_react-query.js?v=792c839c:996
+onError @ @tanstack_react-query.js?v=792c839c:861
+reject @ @tanstack_react-query.js?v=792c839c:465
+(anonymous) @ @tanstack_react-query.js?v=792c839c:508
+Promise.catch (async)
+run @ @tanstack_react-query.js?v=792c839c:498
+start @ @tanstack_react-query.js?v=792c839c:536
+fetch @ @tanstack_react-query.js?v=792c839c:926
+executeFetch_fn @ @tanstack_react-query.js?v=792c839c:2211
+onSubscribe @ @tanstack_react-query.js?v=792c839c:1898
+subscribe @ @tanstack_react-query.js?v=792c839c:24
+(anonymous) @ @tanstack_react-query.js?v=792c839c:3022
+subscribeToStore @ chunk-XQLYTHWV.js?v=792c839c:11984
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 43 more frames
+Show less
+index.tsx:643 DASHBOARD API ERROR (/api/v1/admin/dashboard): SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+(anonymous) @ index.tsx:643
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19416
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18895
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+(anonymous) @ chunk-XQLYTHWV.js?v=792c839c:18627
+setTimeout (async)
+scheduleFn @ @tanstack_react-query.js?v=792c839c:555
+flush @ @tanstack_react-query.js?v=792c839c:569
+batch @ @tanstack_react-query.js?v=792c839c:587
+dispatch_fn @ @tanstack_react-query.js?v=792c839c:996
+onError @ @tanstack_react-query.js?v=792c839c:861
+reject @ @tanstack_react-query.js?v=792c839c:465
+(anonymous) @ @tanstack_react-query.js?v=792c839c:508
+Promise.catch (async)
+run @ @tanstack_react-query.js?v=792c839c:498
+start @ @tanstack_react-query.js?v=792c839c:536
+fetch @ @tanstack_react-query.js?v=792c839c:926
+executeFetch_fn @ @tanstack_react-query.js?v=792c839c:2211
+onSubscribe @ @tanstack_react-query.js?v=792c839c:1898
+subscribe @ @tanstack_react-query.js?v=792c839c:24
+(anonymous) @ @tanstack_react-query.js?v=792c839c:3022
+subscribeToStore @ chunk-XQLYTHWV.js?v=792c839c:11984
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 43 more frames
+Show less
+index.tsx:656 Total failed API endpoints: 6
+(anonymous) @ index.tsx:656
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19416
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18895
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+(anonymous) @ chunk-XQLYTHWV.js?v=792c839c:18627
+setTimeout (async)
+scheduleFn @ @tanstack_react-query.js?v=792c839c:555
+flush @ @tanstack_react-query.js?v=792c839c:569
+batch @ @tanstack_react-query.js?v=792c839c:587
+dispatch_fn @ @tanstack_react-query.js?v=792c839c:996
+onError @ @tanstack_react-query.js?v=792c839c:861
+reject @ @tanstack_react-query.js?v=792c839c:465
+(anonymous) @ @tanstack_react-query.js?v=792c839c:508
+Promise.catch (async)
+run @ @tanstack_react-query.js?v=792c839c:498
+start @ @tanstack_react-query.js?v=792c839c:536
+fetch @ @tanstack_react-query.js?v=792c839c:926
+executeFetch_fn @ @tanstack_react-query.js?v=792c839c:2211
+onSubscribe @ @tanstack_react-query.js?v=792c839c:1898
+subscribe @ @tanstack_react-query.js?v=792c839c:24
+(anonymous) @ @tanstack_react-query.js?v=792c839c:3022
+subscribeToStore @ chunk-XQLYTHWV.js?v=792c839c:11984
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 43 more frames
+Show less
+index.tsx:657 All errors: (6) [SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON, SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON, SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON, SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON, SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON, SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON]
+(anonymous) @ index.tsx:657
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19416
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18895
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+(anonymous) @ chunk-XQLYTHWV.js?v=792c839c:18627
+setTimeout (async)
+scheduleFn @ @tanstack_react-query.js?v=792c839c:555
+flush @ @tanstack_react-query.js?v=792c839c:569
+batch @ @tanstack_react-query.js?v=792c839c:587
+dispatch_fn @ @tanstack_react-query.js?v=792c839c:996
+onError @ @tanstack_react-query.js?v=792c839c:861
+reject @ @tanstack_react-query.js?v=792c839c:465
+(anonymous) @ @tanstack_react-query.js?v=792c839c:508
+Promise.catch (async)
+run @ @tanstack_react-query.js?v=792c839c:498
+start @ @tanstack_react-query.js?v=792c839c:536
+fetch @ @tanstack_react-query.js?v=792c839c:926
+executeFetch_fn @ @tanstack_react-query.js?v=792c839c:2211
+onSubscribe @ @tanstack_react-query.js?v=792c839c:1898
+subscribe @ @tanstack_react-query.js?v=792c839c:24
+(anonymous) @ @tanstack_react-query.js?v=792c839c:3022
+subscribeToStore @ chunk-XQLYTHWV.js?v=792c839c:11984
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 43 more frames
+Show less
+App.tsx:372 Current route location: /admin/users
+App.tsx:285 [01:36:43] Route evaluation: authState=authenticated, path=/admin/users
+AuthContext.tsx:74 [01:36:43] Computing redirect: user=admin, path=/admin/users
+AuthContext.tsx:144 [01:36:43] No redirection needed for admin on /admin/users
+AdminLayout.tsx:128 Error fetching pending vendors count: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+fetchPendingVendors @ AdminLayout.tsx:128
+await in fetchPendingVendors (async)
+(anonymous) @ AdminLayout.tsx:133
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 16 more frames
+Show less
+index.tsx:203 Error fetching users: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+fetchUsers @ index.tsx:203
+await in fetchUsers (async)
+(anonymous) @ index.tsx:145
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=792c839c:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=792c839c:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=792c839c:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=792c839c:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=792c839c:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=792c839c:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=792c839c:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=792c839c:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=792c839c:19432
+commitRoot @ chunk-XQLYTHWV.js?v=792c839c:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=792c839c:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=792c839c:18718
+workLoop @ chunk-XQLYTHWV.js?v=792c839c:197
+flushWork @ chunk-XQLYTHWV.js?v=792c839c:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=792c839c:384
+Show 16 more frames
+Show less
+App.tsx:318 [01:36:43] Path /admin/users is valid for user, proceeding to render
