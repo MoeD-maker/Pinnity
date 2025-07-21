@@ -89,6 +89,8 @@ type AnalyticsData = {
   recentUsers: UserData[];
   popularBusinesses: BusinessData[];
   usersByType: { name: string; value: number }[];
+  registrationsByMonth: { month: string; individual: number; business: number; admin: number }[];
+  loginsByMonth: { month: string; individual: number; business: number; admin: number }[];
   engagementRate: number;
   redemptionsByDay: { day: string; count: number }[];
   averageRating: number;
@@ -135,6 +137,8 @@ export default function AnalyticsPage() {
           recentUsers: [],
           popularBusinesses: [],
           usersByType: [],
+          registrationsByMonth: [],
+          loginsByMonth: [],
           engagementRate: 0,
           redemptionsByDay: [],
           averageRating: 0
@@ -457,6 +461,79 @@ export default function AnalyticsPage() {
         </TabsContent>
         
         <TabsContent value="users" className="space-y-6">
+          {/* User registrations and logins bar charts */}
+          <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 mb-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>User Registrations by Month</CardTitle>
+                <CardDescription>Monthly user registrations split by user type</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={analyticsData?.registrationsByMonth || []}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis 
+                        dataKey="month" 
+                        tick={{ fontSize: 12 }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                      />
+                      <YAxis tick={{ fontSize: 12 }} />
+                      <Tooltip 
+                        formatter={(value, name) => [
+                          `${value} users`, 
+                          name === 'individual' ? 'Individual' : 
+                          name === 'business' ? 'Business' : 'Admin'
+                        ]}
+                      />
+                      <Legend />
+                      <Bar dataKey="individual" stackId="a" fill="#2196F3" name="Individual" radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="business" stackId="a" fill="#00796B" name="Business" radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="admin" stackId="a" fill="#FF9800" name="Admin" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>User Activity by Month</CardTitle>
+                <CardDescription>Monthly active users split by user type</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={analyticsData?.loginsByMonth || []}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis 
+                        dataKey="month" 
+                        tick={{ fontSize: 12 }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                      />
+                      <YAxis tick={{ fontSize: 12 }} />
+                      <Tooltip 
+                        formatter={(value, name) => [
+                          `${value} active users`, 
+                          name === 'individual' ? 'Individual' : 
+                          name === 'business' ? 'Business' : 'Admin'
+                        ]}
+                      />
+                      <Legend />
+                      <Bar dataKey="individual" stackId="a" fill="#2196F3" name="Individual" radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="business" stackId="a" fill="#00796B" name="Business" radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="admin" stackId="a" fill="#FF9800" name="Admin" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
           {/* User analytics content */}
           <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
             <Card>

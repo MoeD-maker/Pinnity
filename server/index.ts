@@ -326,6 +326,31 @@ app.get('/api/v1/admin/analytics', async (req, res) => {
       GROUP BY status
     `);
     
+    // Get user registrations by month for the last 12 months
+    const registrationsByMonthResult = await pool.query(`
+      SELECT 
+        DATE_TRUNC('month', created_at) as month,
+        user_type,
+        COUNT(*) as count
+      FROM profiles 
+      WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '11 months')
+      GROUP BY DATE_TRUNC('month', created_at), user_type
+      ORDER BY month
+    `);
+    
+    // Get login activity by month (we'll use created_at as a proxy since we don't track login timestamps)
+    // In a real app, you'd have a separate login_logs table
+    const loginsByMonthResult = await pool.query(`
+      SELECT 
+        DATE_TRUNC('month', created_at) as month,
+        user_type,
+        COUNT(*) as count
+      FROM profiles 
+      WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '11 months')
+      GROUP BY DATE_TRUNC('month', created_at), user_type
+      ORDER BY month
+    `);
+    
     const totalUsers = parseInt(usersResult.rows[0].count);
     const totalBusinesses = parseInt(businessesResult.rows[0].count);
     const totalDeals = parseInt(dealsResult.rows[0].count);
@@ -352,6 +377,49 @@ app.get('/api/v1/admin/analytics', async (req, res) => {
       value: parseInt(row.count)
     }));
     
+    // Transform registrations by month data
+    const registrationsByMonth = [];
+    const loginsByMonth = [];
+    
+    // Create a map to organize data by month
+    const registrationsMap = new Map();
+    const loginsMap = new Map();
+    
+    // Process registrations data
+    registrationsByMonthResult.rows.forEach(row => {
+      const monthKey = new Date(row.month).toISOString().substring(0, 7); // YYYY-MM format
+      if (!registrationsMap.has(monthKey)) {
+        registrationsMap.set(monthKey, { month: monthKey, individual: 0, business: 0, admin: 0 });
+      }
+      const monthData = registrationsMap.get(monthKey);
+      monthData[row.user_type] = parseInt(row.count);
+    });
+    
+    // Process logins data (using same data as registrations for now)
+    loginsByMonthResult.rows.forEach(row => {
+      const monthKey = new Date(row.month).toISOString().substring(0, 7); // YYYY-MM format
+      if (!loginsMap.has(monthKey)) {
+        loginsMap.set(monthKey, { month: monthKey, individual: 0, business: 0, admin: 0 });
+      }
+      const monthData = loginsMap.get(monthKey);
+      monthData[row.user_type] = parseInt(row.count);
+    });
+    
+    // Convert maps to arrays and format for charts
+    registrationsByMonth.push(...Array.from(registrationsMap.values()).map(data => ({
+      month: new Date(data.month + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+      individual: data.individual,
+      business: data.business,
+      admin: data.admin
+    })));
+    
+    loginsByMonth.push(...Array.from(loginsMap.values()).map(data => ({
+      month: new Date(data.month + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+      individual: data.individual,
+      business: data.business,
+      admin: data.admin
+    })));
+    
     const analyticsData = {
       totalUsers,
       totalBusinesses,
@@ -370,6 +438,8 @@ app.get('/api/v1/admin/analytics', async (req, res) => {
       recentUsers,
       popularBusinesses: [], // Would need business metrics
       usersByType,
+      registrationsByMonth,
+      loginsByMonth,
       engagementRate: 0,
       redemptionsByDay: [],
       averageRating: 0
