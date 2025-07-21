@@ -285,6 +285,103 @@ app.get('/api/v1/admin/transactions', async (req, res) => {
   }
 });
 
+app.get('/api/v1/admin/analytics', async (req, res) => {
+  try {
+    const timeRange = req.query.timeRange || '30days';
+    
+    // Calculate date ranges based on timeRange
+    let days = 30;
+    if (timeRange === '7days') days = 7;
+    else if (timeRange === '90days') days = 90;
+    
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    
+    // Get basic counts
+    const usersResult = await pool.query('SELECT COUNT(*) as count FROM profiles');
+    const businessesResult = await pool.query('SELECT COUNT(*) as count FROM businesses_new');
+    const dealsResult = await pool.query('SELECT COUNT(*) as count FROM deals');
+    const transactionsResult = await pool.query('SELECT COUNT(*) as count FROM deal_redemptions');
+    
+    // Get user distribution by type
+    const userTypeResult = await pool.query(`
+      SELECT user_type, COUNT(*) as count 
+      FROM profiles 
+      GROUP BY user_type
+    `);
+    
+    // Get recent users (last 10)
+    const recentUsersResult = await pool.query(`
+      SELECT id, email, first_name, last_name, user_type, created_at
+      FROM profiles 
+      ORDER BY created_at DESC 
+      LIMIT 10
+    `);
+    
+    // Get deals by status (if any exist)
+    const dealsByStatusResult = await pool.query(`
+      SELECT status, COUNT(*) as count 
+      FROM deals 
+      GROUP BY status
+    `);
+    
+    const totalUsers = parseInt(usersResult.rows[0].count);
+    const totalBusinesses = parseInt(businessesResult.rows[0].count);
+    const totalDeals = parseInt(dealsResult.rows[0].count);
+    const totalRedemptions = parseInt(transactionsResult.rows[0].count);
+    
+    // Transform user types data
+    const usersByType = userTypeResult.rows.map(row => ({
+      name: row.user_type,
+      value: parseInt(row.count)
+    }));
+    
+    // Transform recent users data
+    const recentUsers = recentUsersResult.rows.map(user => ({
+      id: user.id,
+      username: user.email, // Use email as username since that's what we have
+      email: user.email,
+      userType: user.user_type,
+      created_at: user.created_at
+    }));
+    
+    // Transform deals by status
+    const dealsByStatus = dealsByStatusResult.rows.map(row => ({
+      name: row.status,
+      value: parseInt(row.count)
+    }));
+    
+    const analyticsData = {
+      totalUsers,
+      totalBusinesses,
+      totalDeals,
+      totalRedemptions,
+      activeDeals: totalDeals, // Assuming all deals are active for now
+      pendingDeals: 0, // No pending deals currently
+      usersGrowth: 0, // Would need historical data
+      businessesGrowth: 0,
+      dealsGrowth: 0,
+      redemptionsGrowth: 0,
+      redemptionsOverTime: [], // Would need time-series data
+      dealsByCategory: [], // Would need category data
+      dealsByStatus,
+      topDeals: [], // Would need deals with metrics
+      recentUsers,
+      popularBusinesses: [], // Would need business metrics
+      usersByType,
+      engagementRate: 0,
+      redemptionsByDay: [],
+      averageRating: 0
+    };
+    
+    res.json(analyticsData);
+  } catch (error) {
+    console.error('Error fetching analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch analytics' });
+  }
+});
+
 app.get('/api/v1/admin/dashboard', async (req, res) => {
   try {
     const [usersResult, businessesResult, dealsResult, pendingResult] = await Promise.all([
