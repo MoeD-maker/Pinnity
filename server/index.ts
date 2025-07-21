@@ -119,6 +119,29 @@ app.post('/api/v1/auth/refresh', (req, res) => {
   res.status(401).json({ message: 'No refresh token available' });
 });
 
+// SMS endpoint for phone verification
+app.post('/api/v1/sms/send', (req, res) => {
+  // For development, return success without actually sending SMS
+  console.log('SMS send request (mocked for development):', req.body);
+  res.json({ 
+    success: true, 
+    message: 'Verification code sent successfully',
+    // In development, return a mock verification code
+    verificationCode: '123456'
+  });
+});
+
+app.post('/api/v1/sms/verify', (req, res) => {
+  // For development, accept any code for verification
+  console.log('SMS verify request (mocked for development):', req.body);
+  const { code } = req.body;
+  if (code === '123456' || code) {
+    res.json({ success: true, message: 'Phone number verified successfully' });
+  } else {
+    res.status(400).json({ success: false, message: 'Invalid verification code' });
+  }
+});
+
 // Gated authentication routes (minimal implementation)
 console.log('🔥 Registering gated authentication routes');
 app.post('/api/auth/gated/register', gatedRegister);
@@ -138,7 +161,7 @@ if (process.env.NODE_ENV === "production") {
   await setupVite(app, server);
 }
 
-const PORT = process.env.PORT || 5000;
+const PORT = parseInt(process.env.PORT || '5000', 10);
 server.listen(PORT, "0.0.0.0", () => {
   log(`serving on port ${PORT}`);
   if (process.env.NODE_ENV === "development") {

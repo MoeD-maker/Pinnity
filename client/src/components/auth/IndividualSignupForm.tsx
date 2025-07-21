@@ -84,7 +84,7 @@ function IndividualSignupForm() {
         `input=${encodeURIComponent(inputValue)}` +
         `&components=country:ca` +
         `&sessiontoken=${sessionToken}` +
-        `&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`
+        `&key=${(import.meta as any).env.VITE_GOOGLE_MAPS_API_KEY}`
       )
         .then(r => r.json())
         .then(d => setPredictions(d.predictions || []))
