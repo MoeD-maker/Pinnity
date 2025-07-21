@@ -51,12 +51,17 @@ export async function sendSMSVerification(phoneNumber: string): Promise<boolean>
     
     // Check if it's a Twilio trial account error for unverified numbers
     if (error && error.code === 21608) {
+      // Generate a code for development since actual SMS couldn't be sent
+      const developmentCode = generateVerificationCode();
+      const expiresAt = Date.now() + (10 * 60 * 1000);
+      verificationCodes.set(phoneNumber, { code: developmentCode, expiresAt });
+      
       console.log('🔧 DEVELOPMENT MODE: Twilio trial account - number not verified');
       console.log('💡 For development: You can use the verification code that was stored');
-      console.log(`🔑 Development verification code for ${phoneNumber}: ${code}`);
-      console.log(`📱 To complete verification, enter this code: ${code}`);
+      console.log(`🔑 Development verification code for ${phoneNumber}: ${developmentCode}`);
+      console.log(`📱 To complete verification, enter this code: ${developmentCode}`);
       console.log('=====================================');
-      console.log(`   VERIFICATION CODE: ${code}`);
+      console.log(`   VERIFICATION CODE: ${developmentCode}`);
       console.log('=====================================');
       
       // In development mode, we keep the code stored so it can be used

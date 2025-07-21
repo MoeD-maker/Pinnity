@@ -25,15 +25,15 @@ import { gatedRegister, gatedLogin } from "./routes/auth.routes.gated.js";
 // import { router as adminRouter } from "./routes/admin.routes.supabase.js";
 // import { router as authRouter } from "./routes/auth.routes.supabase.js";
 // import { router as legacyRoutes } from "./routes/index.js";
-// import { initializeTwilio, twilioLogger } from "./smsService.js";
+import { sendSMSVerification, verifySMSCode } from "./smsService.js";
 // import testTermsRouter from "./test-terms.js";
 
 // Validate environment configuration
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Skip Twilio initialization for now
-console.log("Skipping Twilio initialization");
+// Initialize Twilio for real SMS verification
+console.log("Initializing Twilio for real SMS verification");
 
 // Skip environment validation for now
 // EnvironmentValidator.validateAll();
@@ -119,26 +119,72 @@ app.post('/api/v1/auth/refresh', (req, res) => {
   res.status(401).json({ message: 'No refresh token available' });
 });
 
-// SMS endpoint for phone verification
-app.post('/api/v1/sms/send', (req, res) => {
-  // For development, return success without actually sending SMS
-  console.log('SMS send request (mocked for development):', req.body);
-  res.json({ 
-    success: true, 
-    message: 'Verification code sent successfully',
-    // In development, return a mock verification code
-    verificationCode: '123456'
-  });
+// SMS endpoint for phone verification - REAL TWILIO IMPLEMENTATION
+app.post('/api/v1/sms/send', async (req, res) => {
+  try {
+    const { phoneNumber } = req.body;
+    console.log('SMS send request (real Twilio):', { phoneNumber });
+    
+    if (!phoneNumber) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Phone number is required' 
+      });
+    }
+    
+    const success = await sendSMSVerification(phoneNumber);
+    
+    if (success) {
+      res.json({ 
+        success: true, 
+        message: 'Verification code sent successfully' 
+      });
+    } else {
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to send verification code' 
+      });
+    }
+  } catch (error: any) {
+    console.error('SMS send error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to send verification code' 
+    });
+  }
 });
 
-app.post('/api/v1/sms/verify', (req, res) => {
-  // For development, accept any code for verification
-  console.log('SMS verify request (mocked for development):', req.body);
-  const { code } = req.body;
-  if (code === '123456' || code) {
-    res.json({ success: true, message: 'Phone number verified successfully' });
-  } else {
-    res.status(400).json({ success: false, message: 'Invalid verification code' });
+app.post('/api/v1/sms/verify', async (req, res) => {
+  try {
+    const { phoneNumber, code } = req.body;
+    console.log('SMS verify request (real Twilio):', { phoneNumber, code });
+    
+    if (!phoneNumber || !code) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Phone number and verification code are required' 
+      });
+    }
+    
+    const isValid = await verifySMSCode(phoneNumber, code);
+    
+    if (isValid) {
+      res.json({ 
+        success: true, 
+        message: 'Phone number verified successfully' 
+      });
+    } else {
+      res.status(400).json({ 
+        success: false, 
+        message: 'Invalid or expired verification code' 
+      });
+    }
+  } catch (error: any) {
+    console.error('SMS verify error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to verify code' 
+    });
   }
 });
 
