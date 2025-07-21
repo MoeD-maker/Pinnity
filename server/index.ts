@@ -192,6 +192,10 @@ app.post('/api/v1/sms/verify', async (req, res) => {
 console.log('🔥 Registering gated authentication routes');
 app.post('/api/auth/gated/register', gatedRegister);
 app.post('/api/auth/gated/login', gatedLogin);
+
+// Standard login route that the frontend expects
+app.post('/api/v1/auth/login', gatedLogin);
+
 console.log('✅ Gated authentication routes registered');
 
 // Skip other routes for now
