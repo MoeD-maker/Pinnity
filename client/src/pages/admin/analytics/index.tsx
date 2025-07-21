@@ -482,11 +482,22 @@ export default function AnalyticsPage() {
                       />
                       <YAxis tick={{ fontSize: 12 }} />
                       <Tooltip 
-                        formatter={(value, name) => [
-                          `${value} users`, 
-                          name === 'individual' ? 'Individual' : 
-                          name === 'business' ? 'Business' : 'Admin'
-                        ]}
+                        content={({ active, payload, label }) => {
+                          if (active && payload && payload.length) {
+                            return (
+                              <div className="bg-white p-3 border rounded shadow-lg">
+                                <p className="font-medium">{`Month: ${label}`}</p>
+                                {payload.map((entry, index) => (
+                                  <p key={index} style={{ color: entry.color }}>
+                                    {`${entry.dataKey === 'individual' ? 'Individual' : 
+                                      entry.dataKey === 'business' ? 'Business' : 'Admin'}: ${entry.value} users`}
+                                  </p>
+                                ))}
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
                       />
                       <Legend />
                       <Bar dataKey="individual" stackId="a" fill="#2196F3" name="Individual" radius={[0, 0, 0, 0]} />
@@ -517,11 +528,22 @@ export default function AnalyticsPage() {
                       />
                       <YAxis tick={{ fontSize: 12 }} />
                       <Tooltip 
-                        formatter={(value, name) => [
-                          `${value} active users`, 
-                          name === 'individual' ? 'Individual' : 
-                          name === 'business' ? 'Business' : 'Admin'
-                        ]}
+                        content={({ active, payload, label }) => {
+                          if (active && payload && payload.length) {
+                            return (
+                              <div className="bg-white p-3 border rounded shadow-lg">
+                                <p className="font-medium">{`Month: ${label}`}</p>
+                                {payload.map((entry, index) => (
+                                  <p key={index} style={{ color: entry.color }}>
+                                    {`${entry.dataKey === 'individual' ? 'Individual' : 
+                                      entry.dataKey === 'business' ? 'Business' : 'Admin'}: ${entry.value} active users`}
+                                  </p>
+                                ))}
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
                       />
                       <Legend />
                       <Bar dataKey="individual" stackId="a" fill="#2196F3" name="Individual" radius={[0, 0, 0, 0]} />
