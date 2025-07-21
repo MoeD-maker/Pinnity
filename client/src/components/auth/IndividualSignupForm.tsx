@@ -325,7 +325,7 @@ function IndividualSignupForm() {
           </svg>
         </div>
         <h2 className="text-2xl font-bold text-green-600">Account Created Successfully!</h2>
-        <p className="text-gray-600">Your phone number has been verified. You can now log in to your account.</p>
+        <p className="text-gray-600">We will email you as soon as we go live! Stay tuned :)</p>
         <Button 
           onClick={() => {
             setCurrentStep('form');
