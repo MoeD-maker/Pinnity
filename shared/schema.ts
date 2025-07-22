@@ -25,7 +25,7 @@ export const profiles = pgTable("profiles", {
   first_name: text("first_name"),
   last_name: text("last_name"),
   avatar_url: text("avatar_url"),
-  phone: text("phone"),
+  phone: text("phone"), // Multiple accounts can use the same phone number
   address: text("address"),
   user_type: text("user_type").notNull().default("individual"), // "individual", "business", "admin"
   phone_verified: boolean("phone_verified").notNull().default(false),
