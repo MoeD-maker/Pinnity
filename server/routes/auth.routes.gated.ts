@@ -36,21 +36,21 @@ export async function gatedRegister(req: Request, res: Response) {
   try {
     const validatedData = gatedRegistrationSchema.parse(req.body);
     
-    // Create user with Supabase Auth (without phone to allow shared phone numbers)
+    // Create user with Supabase Auth
     console.log("Creating Supabase user:", validatedData.email, "Role:", validatedData.role);
     const { data: supabaseUser, error: supabaseError } = await supabaseAdmin.auth.admin.createUser({
       email: validatedData.email,
       password: validatedData.password,
-      // Don't store phone in Supabase Auth to allow multiple accounts with same phone
+      phone: validatedData.phone,
       user_metadata: {
         firstName: validatedData.firstName,
         lastName: validatedData.lastName,
+        phone: validatedData.phone,
         address: validatedData.address,
         userType: 'individual',
         role: validatedData.role,
         phoneVerified: validatedData.phoneVerified,
         marketing_consent: validatedData.marketingConsent
-        // Phone stored only in PostgreSQL profiles table
       }
     });
 
