@@ -60,7 +60,7 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
   const [currentStep, setCurrentStep] = useState<'form' | 'phone' | 'complete'>('form');
-  const [skipPhoneVerification] = useState(true); // Temporarily skip phone verification
+  const [skipPhoneVerification] = useState(false); // Phone verification enabled
   const [uploadedFiles, setUploadedFiles] = useState({
     governmentId: null as File | null,
     proofOfAddress: null as File | null,
