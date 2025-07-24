@@ -520,6 +520,8 @@ console.log('✅ Gated authentication routes registered');
 if (process.env.NODE_ENV === "production") {
   serveStatic(app);
 } else {
+  // Serve static files from public directory in development
+  app.use(express.static(path.join(__dirname, '../public')));
   await setupVite(app, server);
 }
 
