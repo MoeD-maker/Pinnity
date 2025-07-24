@@ -177,7 +177,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
               </SheetContent>
             </Sheet>
             <div 
-              className="font-bold text-xl text-primary ml-2 cursor-pointer"
+              className="flex items-center gap-2 ml-2 cursor-pointer"
               onClick={() => {
                 if (user?.userType === 'business') {
                   navigate('/vendor');
@@ -188,7 +188,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 }
               }}
             >
-              Pinnity
+              <img src="/pinnity-logo.jpg" alt="Pinnity" className="w-8 h-8 object-contain" />
+              <span className="font-bold text-xl text-primary">Pinnity</span>
             </div>
           </div>
           
@@ -293,7 +294,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
       <div className="flex-1 flex">
         <nav className="hidden md:flex flex-col fixed w-60 h-screen border-r p-4">
           <div 
-            className="font-bold text-2xl text-primary mb-8 cursor-pointer"
+            className="flex items-center gap-3 mb-8 cursor-pointer"
             onClick={() => {
               if (user?.userType === 'business') {
                 navigate('/vendor');
@@ -304,7 +305,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
               }
             }}
           >
-            Pinnity
+            <img src="/pinnity-logo.jpg" alt="Pinnity" className="w-10 h-10 object-contain" />
+            <span className="font-bold text-2xl text-primary">Pinnity</span>
           </div>
           
           <div className="flex-1 flex flex-col gap-1">

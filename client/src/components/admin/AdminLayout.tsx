@@ -176,7 +176,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <div className="flex flex-col flex-grow pt-5 bg-white border-r">
           <div className="px-4 flex items-center justify-between">
             <div className="flex items-center">
-              <div className="w-8 h-8 rounded-md bg-[#00796B] flex items-center justify-center text-white font-bold mr-2">P</div>
+              <img src="/pinnity-logo.jpg" alt="Pinnity" className="w-8 h-8 mr-2 object-contain" />
               <h1 className="text-xl font-bold">Pinnity Admin</h1>
             </div>
           </div>

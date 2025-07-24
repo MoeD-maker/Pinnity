@@ -1,0 +1,8 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Teal location pin background -->
+  <path d="M16 4C11.581 4 8 7.581 8 12C8 18 16 28 16 28S24 18 24 12C24 7.581 20.419 4 16 4Z" fill="#00796B"/>
+  <!-- White circle inside -->
+  <circle cx="16" cy="12" r="5" fill="white"/>
+  <!-- Orange heart -->
+  <path d="M16 9C14.896 9 14 9.896 14 11C14 12.104 14.896 13 16 13C17.104 13 18 12.104 18 11C18 9.896 17.104 9 16 9Z" fill="#FF9800"/>
+</svg>

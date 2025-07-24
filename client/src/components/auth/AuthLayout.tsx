@@ -53,7 +53,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
         <div className="h-full flex flex-col justify-between p-8 bg-gradient-to-br from-[#00796B] to-[#004D40]">
           <div className="max-w-lg mx-auto text-center mt-8">
             <div className="mb-6">
-              <MapPin className="h-20 w-20 mx-auto text-white" />
+              <img src="/pinnity-logo.jpg" alt="Pinnity" className="h-32 w-auto mx-auto" />
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">Discover Local</h1>
             <p className="text-[#B2DFDB] text-lg">
