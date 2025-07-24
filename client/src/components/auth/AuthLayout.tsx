@@ -13,10 +13,10 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
         {/* Logo */}
         <div className="mb-8">
           <div className="flex items-center">
-            <img src="/pinnity-logo.png" alt="Pinnity" className="w-12 h-12 mr-3 object-contain" />
+            <img src="/pinnity-logo.png" alt="Pinnity" className="w-20 h-20 mr-4 object-contain" />
             <div>
-              <h1 className="text-2xl font-bold text-gray-700">Pinnity</h1>
-              <p className="text-sm text-gray-400">Discover Local</p>
+              <h1 className="text-3xl font-bold text-gray-700">Pinnity</h1>
+              <p className="text-base text-gray-500 mt-1">Discover Local</p>
             </div>
           </div>
         </div>
@@ -55,7 +55,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
         <div className="h-full flex flex-col justify-between p-8 bg-gradient-to-br from-[#00796B] to-[#004D40]">
           <div className="max-w-lg mx-auto text-center mt-8">
             <div className="mb-6">
-              <img src="/pinnity-logo.png" alt="Pinnity" className="h-32 w-auto mx-auto" />
+              <img src="/pinnity-logo.png" alt="Pinnity" className="h-40 w-auto mx-auto" />
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">Discover Local</h1>
             <p className="text-[#B2DFDB] text-lg">
