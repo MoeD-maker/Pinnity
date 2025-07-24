@@ -13,10 +13,12 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
         {/* Logo */}
         <div className="mb-8">
           <div className="flex items-center">
-            <MapPin className="h-10 w-10 text-[#00796B]" />
-            <h1 className="ml-2 text-2xl font-bold text-gray-700">Pinnity</h1>
+            <img src="/pinnity-logo.png" alt="Pinnity" className="w-12 h-12 mr-3 object-contain" />
+            <div>
+              <h1 className="text-2xl font-bold text-gray-700">Pinnity</h1>
+              <p className="text-sm text-gray-400">Discover Local</p>
+            </div>
           </div>
-          <p className="text-sm text-gray-400 mt-1">Discover Local</p>
         </div>
         
         {/* Mobile brand reinforcement */}
