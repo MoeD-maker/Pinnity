@@ -46,7 +46,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
 
       {/* Right Panel - Brand Image (only on desktop) */}
       <div className="hidden md:block md:w-1/2 xl:w-3/5 bg-[#00796B]">
-        <div className="h-full flex flex-col justify-center p-8 bg-gradient-to-br from-[#00796B] to-[#004D40]">
+        <div className="h-full flex flex-col justify-start pt-32 p-8 bg-gradient-to-br from-[#00796B] to-[#004D40]">
           <div className="max-w-lg mx-auto text-center">
             <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">Discover Local</h1>
             <p className="text-[#B2DFDB] text-lg">
