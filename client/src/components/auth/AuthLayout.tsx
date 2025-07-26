@@ -33,7 +33,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
       <div className="md:w-1/2 bg-white flex flex-col">
         {/* Header with ONLY full logo */}
         <header className="flex justify-center py-8">
-          <FullLogo className="h-20 w-auto object-contain" />
+          <FullLogo className="h-96 w-auto object-contain" />
         </header>
         
         {/* Form Container */}
