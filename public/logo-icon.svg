@@ -1,0 +1,10 @@
+<svg viewBox="0 0 60 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Teal location pin -->
+  <path d="M30 5C20.335 5 12.5 12.835 12.5 22.5C12.5 35 30 75 30 75S47.5 35 47.5 22.5C47.5 12.835 39.665 5 30 5Z" fill="#007C72"/>
+  <!-- White circle inside -->
+  <circle cx="30" cy="22.5" r="8" fill="white"/>
+  <!-- Amber heart -->
+  <path d="M30 16.5C27.515 16.5 25.5 18.515 25.5 21C25.5 23.485 27.515 25.5 30 25.5C32.485 25.5 34.5 23.485 34.5 21C34.5 18.515 32.485 16.5 30 16.5Z" fill="#FFC107"/>
+  <!-- Small accent dot -->
+  <circle cx="30" cy="21" r="1.5" fill="#005A50"/>
+</svg>

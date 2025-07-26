@@ -10,38 +10,32 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
     <div className="flex flex-col md:flex-row min-h-screen">
       {/* Left Panel - Form */}
       <div className="w-full md:w-1/2 xl:w-2/5 h-full flex flex-col bg-white">
-        {/* Header with Logo - Above the form */}
-        <div className="flex justify-center items-center py-8 bg-white">
-          <div className="text-center">
-            <img 
-              src="/pinnity-logo-original.jpg" 
-              alt="Pinnity" 
-              className="h-20 md:h-28 w-auto mx-auto object-contain" 
-            />
-            <h1 className="text-2xl md:text-3xl font-bold text-[#334155] mt-4 font-sans">Pinnity</h1>
-            <p className="text-lg text-[#007C72] mt-1 italic tracking-wide">Discover Local</p>
-          </div>
-        </div>
+        {/* Header with Pin Icon - Above the form */}
+        <header className="flex flex-col items-center py-8 bg-white">
+          <img src="/logo-icon.svg" alt="" className="h-24 w-auto mb-3" aria-hidden="true" />
+          <h1 className="text-3xl font-semibold text-gray-800">Pinnity</h1>
+          <p className="mt-1 text-teal-700 italic">Discover Local</p>
+        </header>
         
         {/* Form Container */}
         <div className="flex-grow px-6 md:px-12 pb-8 md:pb-12 flex flex-col">
-          {/* Mobile brand reinforcement */}
-          <div className="md:hidden mt-2 mb-8 bg-[#007C72] text-white p-4 rounded-lg">
-          <h3 className="font-medium">Why Join Pinnity?</h3>
-          <ul className="mt-2 text-sm">
-            <li className="flex items-center mt-2">
-              <MapPin className="h-4 w-4 mr-2 text-[#FFC107]" />
-              <span>Discover local businesses and experiences</span>
-            </li>
-            <li className="flex items-center mt-2">
-              <Tag className="h-4 w-4 mr-2 text-[#FFC107]" />
-              <span>Exclusive deals you won't find anywhere else</span>
-            </li>
-            <li className="flex items-center mt-2">
-              <Star className="h-4 w-4 mr-2 text-[#FFC107]" />
-              <span>Save on your favorite local spots</span>
-            </li>
-          </ul>
+          {/* Mobile marketing section */}
+          <div className="md:hidden mt-2 mb-8 bg-teal-800 text-white p-4 rounded-lg">
+            <h3 className="font-medium">Why Join Pinnity?</h3>
+            <ul className="mt-2 text-sm">
+              <li className="flex items-center mt-2">
+                <MapPin className="h-4 w-4 mr-2 text-[#FFC107]" />
+                <span>Discover local businesses and experiences</span>
+              </li>
+              <li className="flex items-center mt-2">
+                <Tag className="h-4 w-4 mr-2 text-[#FFC107]" />
+                <span>Exclusive deals you won't find anywhere else</span>
+              </li>
+              <li className="flex items-center mt-2">
+                <Star className="h-4 w-4 mr-2 text-[#FFC107]" />
+                <span>Save on your favorite local spots</span>
+              </li>
+            </ul>
           </div>
 
           {/* Auth Container */}
@@ -53,17 +47,13 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
         </div>
       </div>
 
-      {/* Right Panel - Brand Image (only on desktop) */}
-      <div className="hidden md:block md:w-1/2 xl:w-3/5 bg-[#005A50]">
-        <div className="h-full flex flex-col justify-center p-8 bg-gradient-to-br from-[#007C72] to-[#005A50]">
-          <div className="max-w-lg mx-auto text-center">
-            <div className="mb-8">
-              <img src="/pinnity-logo-original.jpg" alt="Pinnity" className="h-32 w-auto mx-auto object-contain" />
-            </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">Discover Local</h1>
-            <p className="text-[#B2DFDB] text-lg">
-              Join the Pinnity community to discover and connect with amazing local businesses and experiences in your area.
-            </p>
+      {/* Right Panel - Marketing (only on desktop) */}
+      <aside className="hidden md:block relative flex-1 bg-teal-800 p-12">
+        <div className="max-w-lg mx-auto text-center">
+          <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">Discover Local</h1>
+          <p className="text-[#B2DFDB] text-lg">
+            Join the Pinnity community to discover and connect with amazing local businesses and experiences in your area.
+          </p>
             <div className="mt-8 space-y-4">
               <div className="flex items-center text-left bg-white bg-opacity-10 p-4 rounded-lg">
                 <div className="shrink-0 mr-4">
@@ -98,9 +88,15 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
               </div>
             </div>
           </div>
-          {/* Removed trust badges as requested */}
-        </div>
-      </div>
+          
+        {/* Decorative pin icon */}
+        <img
+          src="/logo-icon.svg"
+          alt=""
+          className="absolute top-6 right-6 h-16 w-auto opacity-20"
+          aria-hidden="true"
+        />
+      </aside>
     </div>
   );
 }
