@@ -1,0 +1,50 @@
+Fetching all deals for dashboard...
+ Raw response text from /api/v1/deals/featured?limit=3: (length: 33904)
+ Received HTML instead of JSON from /api/v1/deals/featured?limit=3
+(anonymous) @ /src/lib/queryClient.ts:231
+ Error parsing JSON response from /api/v1/deals/featured?limit=3: Error: Received HTML response instead of JSON. The server might be returning an error page.
+    at /src/lib/queryClient.ts:232:17
+    at async queryFn (/src/components/dashboard/FeaturedDeals.tsx:177:26)
+(anonymous) @ /src/lib/queryClient.ts:241
+ Error (server): Object
+handleError @ /src/lib/errorHandling.ts:82
+(anonymous) @ /src/lib/errorHandling.ts:168
+ Error fetching featured deals: Error: The server returned an HTML page instead of JSON data. This may be caused by CSRF token issues or server configuration problems.
+    at /src/lib/queryClient.ts:246:17
+    at async queryFn (/src/components/dashboard/FeaturedDeals.tsx:177:26)
+queryFn @ /src/components/dash…aturedDeals.tsx:187
+2 Error loading featured deals: Error: The server returned an HTML page instead of JSON data. This may be caused by CSRF token issues or server configuration problems.
+    at /src/lib/queryClient.ts:246:17
+    at async queryFn (/src/components/dashboard/FeaturedDeals.tsx:177:26)
+FeaturedDeals @ /src/components/dash…aturedDeals.tsx:197
+renderWithHooks @ /@fs/home/runner/wor…js?v=792c839c:11548
+updateFunctionComponent @ /@fs/home/runner/wor…js?v=792c839c:14582
+beginWork @ /@fs/home/runner/wor…js?v=792c839c:15924
+beginWork$1 @ /@fs/home/runner/wor…js?v=792c839c:19753
+performUnitOfWork @ /@fs/home/runner/wor…js?v=792c839c:19198
+workLoopSync @ /@fs/home/runner/wor…js?v=792c839c:19137
+renderRootSync @ /@fs/home/runner/wor…js?v=792c839c:19116
+performConcurrentWorkOnRoot @ /@fs/home/runner/wor…js?v=792c839c:18678
+workLoop @ /@fs/home/runner/wor…V.js?v=792c839c:197
+flushWork @ /@fs/home/runner/wor…V.js?v=792c839c:176
+performWorkUntilDeadline @ /@fs/home/runner/wor…V.js?v=792c839c:384
+ Error fetching deals: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+queryFn @ /src/pages/dashboard.tsx:115
+ Error loading featured deals: Error: The server returned an HTML page instead of JSON data. This may be caused by CSRF token issues or server configuration problems.
+    at /src/lib/queryClient.ts:246:17
+    at async queryFn (/src/components/dashboard/FeaturedDeals.tsx:177:26)
+FeaturedDeals @ /src/components/dash…aturedDeals.tsx:197
+renderWithHooks @ /@fs/home/runner/wor…js?v=792c839c:11548
+updateFunctionComponent @ /@fs/home/runner/wor…js?v=792c839c:14582
+beginWork @ /@fs/home/runner/wor…js?v=792c839c:15924
+beginWork$1 @ /@fs/home/runner/wor…js?v=792c839c:19753
+performUnitOfWork @ /@fs/home/runner/wor…js?v=792c839c:19198
+workLoopSync @ /@fs/home/runner/wor…js?v=792c839c:19137
+renderRootSync @ /@fs/home/runner/wor…js?v=792c839c:19116
+performSyncWorkOnRoot @ /@fs/home/runner/wor…js?v=792c839c:18874
+flushSyncCallbacks @ /@fs/home/runner/wor….js?v=792c839c:9119
+(anonymous) @ /@fs/home/runner/wor…js?v=792c839c:18627
+ Error loading featured deals: Error: The server returned an HTML page instead of JSON data. This may be caused by CSRF token issues or server configuration problems.
+    at /src/lib/queryClient.ts:246:17
+    at async queryFn (/src/components/dashboard/FeaturedDeals.tsx:177:26)
+FeaturedDeals @ /src/components/dash…aturedDeals.tsx:197
