@@ -199,14 +199,17 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
     }
   };
 
-  const handlePhoneVerificationComplete = (verified: boolean) => {
+  const handlePhoneVerificationComplete = async (verified: boolean) => {
     if (verified) {
       setIsPhoneVerified(true);
-      setCurrentStep('form');
       toast({
         title: "Phone verified!",
-        description: "You can now complete your business registration.",
+        description: "Creating your business account...",
       });
+      
+      // Automatically proceed with business registration after phone verification
+      const formData = form.getValues();
+      await onSubmit(formData);
     }
   };
 

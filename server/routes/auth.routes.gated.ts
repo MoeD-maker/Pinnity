@@ -42,9 +42,13 @@ export async function gatedRegister(req: Request, res: Response) {
   try {
     const validatedData = gatedRegistrationSchema.parse(req.body);
     
-    // Create user with Supabase Auth
+    // Create user with Supabase Auth - handle existing phone numbers
     console.log("Creating Supabase user:", validatedData.email, "Role:", validatedData.role);
-    const { data: supabaseUser, error: supabaseError } = await supabaseAdmin.auth.admin.createUser({
+    let supabaseUser;
+    let supabaseError;
+    
+    // First try with phone number
+    const createUserResult = await supabaseAdmin.auth.admin.createUser({
       email: validatedData.email,
       password: validatedData.password,
       phone: validatedData.phone,
@@ -59,6 +63,31 @@ export async function gatedRegister(req: Request, res: Response) {
         marketing_consent: validatedData.marketingConsent
       }
     });
+    
+    supabaseUser = createUserResult.data;
+    supabaseError = createUserResult.error;
+    
+    // If phone exists, try without phone number
+    if (supabaseError?.code === 'phone_exists') {
+      console.log("Phone exists, creating user without phone number...");
+      const createUserResultNoPhone = await supabaseAdmin.auth.admin.createUser({
+        email: validatedData.email,
+        password: validatedData.password,
+        user_metadata: {
+          firstName: validatedData.firstName,
+          lastName: validatedData.lastName,
+          phone: validatedData.phone,
+          address: validatedData.address,
+          userType: 'individual',
+          role: validatedData.role,
+          phoneVerified: validatedData.phoneVerified,
+          marketing_consent: validatedData.marketingConsent
+        }
+      });
+      
+      supabaseUser = createUserResultNoPhone.data;
+      supabaseError = createUserResultNoPhone.error;
+    }
 
     if (supabaseError || !supabaseUser?.user) {
       console.error("Supabase user creation failed:", supabaseError);
