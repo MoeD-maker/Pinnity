@@ -12,7 +12,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
       <div className="w-full md:w-1/2 xl:w-2/5 h-full px-6 py-8 md:px-12 md:py-12 flex flex-col">
         {/* Logo */}
         <div className="mb-8 flex justify-center">
-          <img src="/pinnity-logo-full.jpg" alt="Pinnity" className="h-32 w-auto object-contain" />
+          <img src="/pinnity-logo-full.jpg" alt="Pinnity" className="h-64 w-auto object-contain" />
         </div>
         
         {/* Mobile brand reinforcement */}
