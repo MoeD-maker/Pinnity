@@ -11,14 +11,8 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
       {/* Left Panel - Form */}
       <div className="w-full md:w-1/2 xl:w-2/5 h-full px-6 py-8 md:px-12 md:py-12 flex flex-col">
         {/* Logo */}
-        <div className="mb-8">
-          <div className="flex items-center">
-            <img src="/pinnity-logo.png" alt="Pinnity" className="w-20 h-20 mr-4 object-contain" />
-            <div>
-              <h1 className="text-3xl font-bold text-gray-700">Pinnity</h1>
-              <p className="text-base text-gray-500 mt-1">Discover Local</p>
-            </div>
-          </div>
+        <div className="mb-8 flex justify-center">
+          <img src="/pinnity-logo-full.jpg" alt="Pinnity" className="h-32 w-auto object-contain" />
         </div>
         
         {/* Mobile brand reinforcement */}
