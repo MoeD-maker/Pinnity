@@ -202,14 +202,18 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
   const handlePhoneVerificationComplete = async (verified: boolean) => {
     if (verified) {
       setIsPhoneVerified(true);
-      toast({
-        title: "Phone verified!",
-        description: "Creating your business account...",
-      });
       
-      // Automatically proceed with business registration after phone verification
-      const formData = form.getValues();
-      await onSubmit(formData);
+      // Don't immediately submit - wait a moment for UI to update
+      setTimeout(async () => {
+        toast({
+          title: "Phone verified!",
+          description: "Creating your business account...",
+        });
+        
+        // Automatically proceed with business registration after phone verification
+        const formData = form.getValues();
+        await onSubmit(formData);
+      }, 500); // Small delay to let the verification UI complete
     }
   };
 
