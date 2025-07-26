@@ -4,15 +4,9 @@ interface AuthLayoutProps {
   children: ReactNode;
 }
 
-// Full wordmark logo (icon + "Pinnity Discover Local")
-const FullLogo = (props: SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 300 130" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
-    <path d="M50 10C34.536 10 22 22.536 22 38C22 58 50 120 50 120S78 58 78 38C78 22.536 65.464 10 50 10Z" fill="#2F9A87"/>
-    <circle cx="50" cy="38" r="18" fill="#1A1A1A"/>
-    <path d="M50 45C46.2 42.8 42 40.2 42 36C42 33.2 44.2 31 47 31C48.4 31 49.6 31.6 50 32.6C50.4 31.6 51.6 31 53 31C55.8 31 58 33.2 58 36C58 40.2 53.8 42.8 50 45Z" fill="#FF9500"/>
-    <text x="110" y="45" fontFamily="Arial, sans-serif" fontSize="28" fontWeight="bold" fill="#334155">Pinnity</text>
-    <text x="110" y="70" fontFamily="Arial, sans-serif" fontSize="16" fontStyle="italic" fill="#007C72">Discover Local</text>
-  </svg>
+// Use your actual PNG logo
+const FullLogo = ({ className, ...props }: { className?: string } & React.ImgHTMLAttributes<HTMLImageElement>) => (
+  <img src="/pinnity-logo-full.png" alt="Pinnity - Discover Local" className={className} {...props} />
 );
 
 // Standalone pin-heart icon for background
@@ -39,7 +33,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
       <div className="md:w-1/2 bg-white flex flex-col">
         {/* Header with ONLY full logo */}
         <header className="flex justify-center py-8">
-          <FullLogo className="h-20 w-auto" aria-label="Pinnity logo" />
+          <FullLogo className="h-20 w-auto object-contain" />
         </header>
         
         {/* Form Container */}
