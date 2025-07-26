@@ -1,12 +1,23 @@
-import { ReactNode } from "react";
+import { ReactNode, SVGProps } from "react";
 
 interface AuthLayoutProps {
   children: ReactNode;
 }
 
-// Use the SVG as a React component
-const PinIcon = () => (
-  <svg viewBox="0 0 100 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+// Full wordmark logo (icon + "Pinnity Discover Local")
+const FullLogo = (props: SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 300 130" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+    <path d="M50 10C34.536 10 22 22.536 22 38C22 58 50 120 50 120S78 58 78 38C78 22.536 65.464 10 50 10Z" fill="#2F9A87"/>
+    <circle cx="50" cy="38" r="18" fill="#1A1A1A"/>
+    <path d="M50 45C46.2 42.8 42 40.2 42 36C42 33.2 44.2 31 47 31C48.4 31 49.6 31.6 50 32.6C50.4 31.6 51.6 31 53 31C55.8 31 58 33.2 58 36C58 40.2 53.8 42.8 50 45Z" fill="#FF9500"/>
+    <text x="110" y="45" fontFamily="Arial, sans-serif" fontSize="28" fontWeight="bold" fill="#334155">Pinnity</text>
+    <text x="110" y="70" fontFamily="Arial, sans-serif" fontSize="16" fontStyle="italic" fill="#007C72">Discover Local</text>
+  </svg>
+);
+
+// Standalone pin-heart icon for background
+const PinIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 100 130" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
     <path d="M50 10C34.536 10 22 22.536 22 38C22 58 50 120 50 120S78 58 78 38C78 22.536 65.464 10 50 10Z" fill="#2F9A87"/>
     <circle cx="50" cy="38" r="18" fill="#1A1A1A"/>
     <path d="M50 45C46.2 42.8 42 40.2 42 36C42 33.2 44.2 31 47 31C48.4 31 49.6 31.6 50 32.6C50.4 31.6 51.6 31 53 31C55.8 31 58 33.2 58 36C58 40.2 53.8 42.8 50 45Z" fill="#FF9500"/>
@@ -17,12 +28,10 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
   return (
     <div className="md:flex min-h-screen">
       {/* Left Panel - Form */}
-      <div className="md:w-1/2 h-full flex flex-col bg-white">
-        {/* Header with Pin Icon - Above the form */}
+      <div className="md:w-1/2 bg-white h-full flex flex-col">
+        {/* Header with Full Logo - Above the form */}
         <header className="flex flex-col items-center py-8 bg-white">
-          <PinIcon className="h-20 w-auto mb-2" aria-hidden="true" />
-          <h1 className="text-3xl font-semibold text-gray-800">Pinnity</h1>
-          <p className="mt-1 text-teal-700 italic">Discover Local</p>
+          <FullLogo className="h-20 w-auto mb-6" aria-label="Pinnity logo" />
         </header>
         
         {/* Form Container */}
@@ -36,18 +45,18 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
         </div>
       </div>
 
-      {/* Right Panel - Marketing with centered background pin */}
+      {/* Right Panel - Marketing with background pin */}
       <aside className="hidden md:block relative md:w-1/2 bg-teal-800 p-12 flex flex-col justify-center overflow-hidden">
-        {/* large faded pin behind */}
+        {/* background pin, centered */}
         <PinIcon
-          className="absolute inset-0 m-auto h-40 w-auto opacity-10"
+          className="absolute inset-0 m-auto h-32 w-auto opacity-10"
           aria-hidden="true"
         />
 
-        {/* your content on top */}
-        <div className="relative z-10 space-y-6 max-w-lg mx-auto">
+        {/* actual content on top */}
+        <div className="relative z-10 max-w-lg mx-auto space-y-6">
           <h2 className="text-4xl font-bold text-white">Discover Local</h2>
-          <p className="mt-2 text-white/80">
+          <p className="text-white/80">
             Join the Pinnity community to discover and connect with amazing local businesses and experiences in your area.
           </p>
           <ul className="mt-6 space-y-4">
