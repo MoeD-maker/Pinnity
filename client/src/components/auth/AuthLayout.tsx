@@ -14,9 +14,9 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
         <div className="flex justify-center items-center py-8 bg-white">
           <div className="text-center">
             <img 
-              src="/pinnity-logo.svg" 
+              src="/pinnity-logo-original.jpg" 
               alt="Pinnity" 
-              className="h-20 md:h-28 w-auto mx-auto" 
+              className="h-20 md:h-28 w-auto mx-auto object-contain" 
             />
             <h1 className="text-2xl md:text-3xl font-bold text-[#334155] mt-4 font-sans">Pinnity</h1>
             <p className="text-lg text-[#007C72] mt-1 italic tracking-wide">Discover Local</p>
@@ -58,7 +58,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
         <div className="h-full flex flex-col justify-center p-8 bg-gradient-to-br from-[#007C72] to-[#005A50]">
           <div className="max-w-lg mx-auto text-center">
             <div className="mb-8">
-              <img src="/pinnity-logo.svg" alt="Pinnity" className="h-32 w-auto mx-auto" />
+              <img src="/pinnity-logo-original.jpg" alt="Pinnity" className="h-32 w-auto mx-auto object-contain" />
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">Discover Local</h1>
             <p className="text-[#B2DFDB] text-lg">
