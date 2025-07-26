@@ -1,5 +1,4 @@
 import { ReactNode } from "react";
-import { MapPin, Tag, Star } from "lucide-react";
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -7,7 +6,7 @@ interface AuthLayoutProps {
 
 export default function AuthLayout({ children }: AuthLayoutProps) {
   return (
-    <div className="flex flex-col md:flex-row min-h-screen">
+    <div className="md:flex min-h-screen">
       {/* Left Panel - Form */}
       <div className="w-full md:w-1/2 xl:w-2/5 h-full flex flex-col bg-white">
         {/* Header with Pin Icon - Above the form */}
@@ -19,25 +18,6 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
         
         {/* Form Container */}
         <div className="flex-grow px-6 md:px-12 pb-8 md:pb-12 flex flex-col">
-          {/* Mobile marketing section */}
-          <div className="md:hidden mt-2 mb-8 bg-teal-800 text-white p-4 rounded-lg">
-            <h3 className="font-medium">Why Join Pinnity?</h3>
-            <ul className="mt-2 text-sm">
-              <li className="flex items-center mt-2">
-                <MapPin className="h-4 w-4 mr-2 text-[#FFC107]" />
-                <span>Discover local businesses and experiences</span>
-              </li>
-              <li className="flex items-center mt-2">
-                <Tag className="h-4 w-4 mr-2 text-[#FFC107]" />
-                <span>Exclusive deals you won't find anywhere else</span>
-              </li>
-              <li className="flex items-center mt-2">
-                <Star className="h-4 w-4 mr-2 text-[#FFC107]" />
-                <span>Save on your favorite local spots</span>
-              </li>
-            </ul>
-          </div>
-
           {/* Auth Container */}
           <div className="flex-grow flex flex-col">
             <div className="min-h-[600px] w-full flex flex-col">
@@ -47,56 +27,72 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
         </div>
       </div>
 
-      {/* Right Panel - Marketing (only on desktop) */}
-      <aside className="hidden md:block relative flex-1 bg-teal-800 p-12">
-        <div className="max-w-lg mx-auto text-center">
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">Discover Local</h1>
-          <p className="text-[#B2DFDB] text-lg">
-            Join the Pinnity community to discover and connect with amazing local businesses and experiences in your area.
-          </p>
-            <div className="mt-8 space-y-4">
-              <div className="flex items-center text-left bg-white bg-opacity-10 p-4 rounded-lg">
-                <div className="shrink-0 mr-4">
-                  <MapPin className="h-8 w-8 text-[#FFC107]" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-white">Explore Your Neighborhood</h3>
-                  <p className="text-sm text-[#B2DFDB]">Find hidden gems and local favorites right around the corner.</p>
-                </div>
-              </div>
-              <div className="flex items-center text-left bg-white bg-opacity-10 p-4 rounded-lg">
-                <div className="shrink-0 mr-4">
-                  <svg className="w-8 h-8 text-[#FFC107]" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.87 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z"></path>
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-medium text-white">Support Local Businesses</h3>
-                  <p className="text-sm text-[#B2DFDB]">Help your community thrive by supporting local entrepreneurs.</p>
-                </div>
-              </div>
-              <div className="flex items-center text-left bg-white bg-opacity-10 p-4 rounded-lg">
-                <div className="shrink-0 mr-4">
-                  <svg className="w-8 h-8 text-[#FFC107]" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM13 17.5l-9-9 1.41-1.42L13 14.67l6.59-6.59L21 9.5l-8 8z"></path>
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-medium text-white">Win-Win Discounts</h3>
-                  <p className="text-sm text-[#B2DFDB]">Get exclusive deals directly from businesses, supporting them while you save.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-        {/* Decorative pin icon */}
+      {/* Right Panel - Marketing with centered background pin */}
+      <aside className="hidden md:block relative flex-1 bg-teal-800 p-12 flex flex-col justify-center overflow-hidden">
+        {/* BACKGROUND PIN */}
         <img
           src="/logo-icon.svg"
           alt=""
-          className="absolute top-6 right-6 h-16 w-auto opacity-20"
+          className="absolute inset-0 m-auto h-40 w-auto opacity-10"
           aria-hidden="true"
         />
+
+        {/* CONTENT (on top of pin) */}
+        <div className="relative z-10 space-y-8 max-w-lg">
+          <h2 className="text-4xl font-bold text-white">Discover Local</h2>
+          <p className="mt-2 text-white/80">
+            Join the Pinnity community to discover and connect with amazing local businesses and experiences in your area.
+          </p>
+          <ul className="mt-6 space-y-4">
+            <li className="flex items-start bg-teal-700 rounded-lg p-4">
+              <span className="flex-shrink-0 text-amber-400">
+                <img src="/logo-icon.svg" alt="" className="h-6 w-auto" />
+              </span>
+              <div className="ml-3">
+                <h3 className="font-semibold text-white">Explore Your Neighborhood</h3>
+                <p className="text-white/80 text-sm">Find hidden gems and local favorites right around the corner.</p>
+              </div>
+            </li>
+            <li className="flex items-start bg-teal-700 rounded-lg p-4">
+              <span className="flex-shrink-0 text-amber-400">
+                <img src="/logo-icon.svg" alt="" className="h-6 w-auto" />
+              </span>
+              <div className="ml-3">
+                <h3 className="font-semibold text-white">Support Local Businesses</h3>
+                <p className="text-white/80 text-sm">Help your community thrive by supporting local entrepreneurs.</p>
+              </div>
+            </li>
+            <li className="flex items-start bg-teal-700 rounded-lg p-4">
+              <span className="flex-shrink-0 text-amber-400">
+                <img src="/logo-icon.svg" alt="" className="h-6 w-auto" />
+              </span>
+              <div className="ml-3">
+                <h3 className="font-semibold text-white">Win-Win Discounts</h3>
+                <p className="text-white/80 text-sm">Get exclusive deals directly from businesses, supporting them while you save.</p>
+              </div>
+            </li>
+          </ul>
+        </div>
       </aside>
+
+      {/* Mobile marketing section (below form on mobile) */}
+      <div className="block md:hidden bg-teal-800 text-white p-6">
+        <h3 className="text-lg font-semibold mb-4">Why Join Pinnity?</h3>
+        <ul className="space-y-3">
+          <li className="flex items-center">
+            <img src="/logo-icon.svg" alt="" className="h-5 w-auto mr-3 text-amber-400" />
+            <span className="text-sm">Discover local businesses and experiences</span>
+          </li>
+          <li className="flex items-center">
+            <img src="/logo-icon.svg" alt="" className="h-5 w-auto mr-3 text-amber-400" />
+            <span className="text-sm">Exclusive deals you won't find anywhere else</span>
+          </li>
+          <li className="flex items-center">
+            <img src="/logo-icon.svg" alt="" className="h-5 w-auto mr-3 text-amber-400" />
+            <span className="text-sm">Save on your favorite local spots</span>
+          </li>
+        </ul>
+      </div>
     </div>
   );
 }
