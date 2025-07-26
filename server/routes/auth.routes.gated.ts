@@ -10,7 +10,7 @@ import { generateToken } from '../auth';
 import { setAuthCookie } from '../utils/cookieUtils';
 import { authCookieConfig, withCustomAge } from '../utils/cookieConfig';
 
-// Enhanced validation schemas with role field
+// Enhanced validation schemas with role field and business data
 const gatedRegistrationSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
@@ -20,7 +20,13 @@ const gatedRegistrationSchema = z.object({
   address: z.string().min(1, "Address is required"),
   phoneVerified: z.boolean().optional().default(false),
   marketingConsent: z.boolean().optional().default(false),
-  role: z.enum(["individual", "vendor"]).optional().default("individual")
+  role: z.enum(["individual", "vendor"]).optional().default("individual"),
+  // Business-specific fields (optional for individual users)
+  businessName: z.string().optional(),
+  businessCategory: z.string().optional(),
+  city: z.string().optional(),
+  province: z.string().optional(),
+  postalCode: z.string().optional()
 });
 
 const gatedLoginSchema = z.object({
@@ -81,9 +87,26 @@ export async function gatedRegister(req: Request, res: Response) {
 
     console.log("Profile created:", profile.id, "Role:", profile.role, "Is Live:", profile.is_live);
 
+    // If this is a vendor registration, create a business record
+    let businessId = null;
+    if (validatedData.role === 'vendor' && validatedData.businessName && validatedData.businessCategory) {
+      try {
+        const business = await createBusiness(profile.id, {
+          businessName: validatedData.businessName,
+          businessCategory: validatedData.businessCategory,
+          verificationStatus: 'pending' // Business needs verification
+        });
+        businessId = business.id;
+        console.log("Business created:", businessId);
+      } catch (businessError) {
+        console.error("Failed to create business:", businessError);
+        // Don't fail the entire registration if business creation fails
+      }
+    }
+
     // Generate JWT token for our app
     const token = generateToken({
-      id: profile.id.toString(),
+      id: profile.id,
       email: profile.email,
       userType: profile.user_type
     });
@@ -97,7 +120,8 @@ export async function gatedRegister(req: Request, res: Response) {
       userId: profile.id,
       userType: profile.user_type,
       role: profile.role,
-      is_live: profile.is_live
+      is_live: profile.is_live,
+      businessId: businessId
     });
 
   } catch (error) {
@@ -180,7 +204,7 @@ export async function gatedLogin(req: Request, res: Response) {
 
     // Generate JWT token for our app  
     const token = generateToken({
-      id: userProfile.id.toString(),
+      id: userProfile.id,
       email: userProfile.email,
       userType: userProfile.user_type
     });

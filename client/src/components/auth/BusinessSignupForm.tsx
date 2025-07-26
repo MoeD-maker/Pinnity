@@ -119,35 +119,33 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
         return;
       }
 
-      // Create form data with all business registration info and documents
-      const formData = new FormData();
-      
-      // Add business data
-      formData.append('businessName', data.businessName);
-      formData.append('businessCategory', data.category);
-      formData.append('firstName', data.firstName);
-      formData.append('lastName', data.lastName);
-      formData.append('email', data.email);
-      formData.append('password', data.password);
-      formData.append('phone', data.phone);
-      formData.append('address', data.address);
-      formData.append('city', data.city || '');
-      formData.append('province', data.province || '');
-      formData.append('postalCode', data.postalCode || '');
-      formData.append('termsAccepted', 'true');
-      formData.append('marketingConsent', data.marketingConsent ? 'true' : 'false');
-      formData.append('role', data.role || 'vendor');
-      
-      // Add documents
-      formData.append('governmentId', uploadedFiles.governmentId);
-      formData.append('proofOfAddress', uploadedFiles.proofOfAddress);
-      formData.append('proofOfBusiness', uploadedFiles.proofOfBusiness);
+      // Prepare JSON data for registration
+      const registrationData = {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        password: data.password,
+        phone: data.phone,
+        address: data.address,
+        phoneVerified: isPhoneVerified,
+        marketingConsent: data.marketingConsent || false,
+        role: 'vendor',
+        // Business-specific fields
+        businessName: data.businessName,
+        businessCategory: data.category,
+        city: data.city || '',
+        province: data.province || '',
+        postalCode: data.postalCode || ''
+      };
 
       // Register business using our gated backend endpoint (handles role-based gating)
       const response = await fetch('/api/auth/gated/register', {
         method: 'POST',
         credentials: 'include',
-        body: formData
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(registrationData)
       });
 
       let result: any;
