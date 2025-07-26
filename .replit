@@ -40,6 +40,3 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "bash verify.sh && npm run dev"
 waitForPort = 5000
-
-[agent]
-integrations = ["javascript_supabase==1.0.0"]
