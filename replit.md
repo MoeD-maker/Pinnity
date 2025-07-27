@@ -138,7 +138,7 @@ Recent Changes:
   - **Complete Integration**: Marketing preferences now stored and synchronized across both database systems
 - July 19, 2025: **COMPLETE SUPABASE SYNCHRONIZATION IMPLEMENTED**
   - **Data Cleanup**: Removed all test users and businesses except admin (cleared 18 users, 2 businesses)  
-  - **Admin Migration**: Successfully migrated admin user to Supabase Auth (Password: AdminPassword123!)
+  - **Admin Migration**: Successfully migrated admin user to Supabase Auth (Password: AdminAlbe@123)
   - **Complete Legacy Removal**: Eliminated legacy `users` table - now 100% Supabase system
   - **Primary System**: Made Supabase the main authentication system at `/api/auth/*` endpoints
   - **Full Sync Implementation**: All user/business operations now sync between PostgreSQL and Supabase
