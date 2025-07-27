@@ -274,7 +274,7 @@ export function userRoutes(app: Express): void {
     validate(userSchemas.getUserFavorites),
     async (req: Request, res: Response) => {
       try {
-        const userId = parseInt(req.params.userId);
+        const userId = req.params.userId; // Keep as string (UUID)
         
         const favorites = await storage.getUserFavorites(userId);
         return res.status(200).json(favorites);
@@ -293,7 +293,7 @@ export function userRoutes(app: Express): void {
     validate(userSchemas.getUserFavorites),
     async (req: Request, res: Response) => {
       try {
-        const userId = parseInt(req.params.userId);
+        const userId = req.params.userId; // Keep as string (UUID)
         
         const favorites = await storage.getUserFavorites(userId);
         return res.status(200).json(favorites);
@@ -312,7 +312,7 @@ export function userRoutes(app: Express): void {
     validate(userSchemas.addUserFavorite),
     async (req: Request, res: Response) => {
       try {
-        const userId = parseInt(req.params.userId);
+        const userId = req.params.userId; // Keep as string (UUID)
         const { dealId } = req.body;
         
         const favorite = await storage.addUserFavorite(userId, dealId);
@@ -336,7 +336,7 @@ export function userRoutes(app: Express): void {
     validate(userSchemas.addUserFavorite),
     async (req: Request, res: Response) => {
       try {
-        const userId = parseInt(req.params.userId);
+        const userId = req.params.userId; // Keep as string (UUID)
         const { dealId } = req.body;
         
         const favorite = await storage.addUserFavorite(userId, dealId);
@@ -362,7 +362,7 @@ export function userRoutes(app: Express): void {
     validate(userSchemas.removeUserFavorite),
     async (req: Request, res: Response) => {
       try {
-        const userId = parseInt(req.params.userId);
+        const userId = req.params.userId; // Keep as string (UUID)
         const dealId = parseInt(req.params.dealId);
         
         await storage.removeUserFavorite(userId, dealId);
@@ -382,7 +382,7 @@ export function userRoutes(app: Express): void {
     validate(userSchemas.removeUserFavorite),
     async (req: Request, res: Response) => {
       try {
-        const userId = parseInt(req.params.userId);
+        const userId = req.params.userId; // Keep as string (UUID)
         const dealId = parseInt(req.params.dealId);
         
         await storage.removeUserFavorite(userId, dealId);
