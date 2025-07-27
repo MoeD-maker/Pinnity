@@ -209,14 +209,17 @@ export function dealRoutes(app: Express): void {
 
   // Get featured deals
   const [vFeaturedDealsPath, lFeaturedDealsPath] = createVersionedRoutes('/deals/featured');
+  console.log(`DEAL ROUTES: Registering featured deals routes: ${vFeaturedDealsPath} and ${lFeaturedDealsPath}`);
   
   app.get(vFeaturedDealsPath, versionHeadersMiddleware(), async (req: Request, res: Response) => {
     try {
+      console.log(`FEATURED DEALS API: GET ${req.path} called with limit: ${req.query.limit}`);
       // Get limit from query params or use default
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
       
       // Get featured deals from storage
       const featuredDeals = await storage.getFeaturedDeals(limit);
+      console.log(`FEATURED DEALS API: Found ${featuredDeals.length} featured deals`);
       
       // Add availability information for recurring deals
       const currentDayOfWeek = new Date().getDay();

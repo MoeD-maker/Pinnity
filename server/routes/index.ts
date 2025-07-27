@@ -52,10 +52,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // LEGACY: Register old routes first to ensure they work
   console.log('⚠️ Registering LEGACY routes for compatibility');
   adminRoutes(app);
+  console.log('✅ Admin routes registered');
   authRoutes(app);  // Legacy auth routes
+  console.log('✅ Auth routes registered');
   userRoutes(app);
+  console.log('✅ User routes registered');
   dealRoutes(app);
+  console.log('✅ Deal routes registered');
   businessRoutes(app);
+  console.log('✅ Business routes registered');
 
   // PRIMARY: Register Supabase routes as additional authentication system
   console.log('🔥 Registering PRIMARY Supabase authentication system');

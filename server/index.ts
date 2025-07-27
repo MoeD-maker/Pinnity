@@ -244,6 +244,50 @@ app.get('/api/v1/admin/deals', async (req, res) => {
   }
 });
 
+// Featured deals endpoint - PUBLIC (no auth required)
+app.get('/api/v1/deals/featured', async (req, res) => {
+  try {
+    console.log(`FEATURED DEALS API: GET ${req.path} called with limit: ${req.query.limit}`);
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+    
+    const result = await pool.query(`
+      SELECT d.*, b.business_name, b.business_category, b.address, b.city, b.state
+      FROM deals d
+      LEFT JOIN businesses_new b ON d.business_id = b.id
+      WHERE d.status = 'approved' AND d.is_featured = true
+      ORDER BY d.created_at DESC
+      LIMIT $1
+    `, [limit]);
+    
+    console.log(`FEATURED DEALS API: Found ${result.rows.length} featured deals`);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Featured deals error:', error);
+    res.status(500).json({ error: 'Failed to fetch featured deals' });
+  }
+});
+
+// All deals endpoint - PUBLIC (no auth required)
+app.get('/api/v1/deals', async (req, res) => {
+  try {
+    console.log(`DEALS API: GET ${req.path} called`);
+    
+    const result = await pool.query(`
+      SELECT d.*, b.business_name, b.business_category, b.address, b.city, b.state
+      FROM deals d
+      LEFT JOIN businesses_new b ON d.business_id = b.id
+      WHERE d.status = 'approved'
+      ORDER BY d.created_at DESC
+    `);
+    
+    console.log(`DEALS API: Found ${result.rows.length} deals`);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Deals error:', error);
+    res.status(500).json({ error: 'Failed to fetch deals' });
+  }
+});
+
 app.get('/api/v1/admin/users', async (req, res) => {
   try {
     const result = await pool.query(`
