@@ -188,7 +188,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 }
               }}
             >
-              <img src="/pinnity-logo-full.jpg" alt="Pinnity" className="h-16 w-auto object-contain" />
+              <img src="/pinnity-logo-full.jpg" alt="Pinnity" className="h-48 w-auto object-contain" />
             </div>
           </div>
           
@@ -304,7 +304,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
               }
             }}
           >
-            <img src="/pinnity-logo-full.jpg" alt="Pinnity" className="h-16 w-auto object-contain" />
+            <img src="/pinnity-logo-full.jpg" alt="Pinnity" className="h-48 w-auto object-contain" />
           </div>
           
           <div className="flex-1 flex flex-col gap-1">
