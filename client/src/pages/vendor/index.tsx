@@ -703,10 +703,21 @@ export default function VendorDashboard() {
                     const isPending = deal.status === 'pending';
                     const isApproved = deal.status === 'approved';
                     
-                    // Deal time-based status
-                    const isTimeActive = new Date(deal.endDate) >= new Date() && new Date(deal.startDate) <= new Date();
-                    const isUpcoming = new Date(deal.startDate) > new Date();
-                    const isExpired = new Date(deal.endDate) < new Date();
+                    // Deal time-based status - with safe date handling
+                    let isTimeActive = false, isUpcoming = false, isExpired = false;
+                    try {
+                      const startDate = new Date(deal.startDate || deal.start_date);
+                      const endDate = new Date(deal.endDate || deal.end_date);
+                      const now = new Date();
+                      
+                      if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+                        isTimeActive = endDate >= now && startDate <= now;
+                        isUpcoming = startDate > now;
+                        isExpired = endDate < now;
+                      }
+                    } catch (error) {
+                      console.error('Date processing error in table:', error, deal);
+                    }
                     
                     // Determine overall status and style
                     let statusClass, statusText;
@@ -754,7 +765,22 @@ export default function VendorDashboard() {
                         </td>
                         <td className="px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm">{deal.dealType?.replace('_', ' ') || '-'}</td>
                         <td className="px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm whitespace-nowrap">
-                          {format(new Date(deal.startDate), 'MM/dd/yy')} - {format(new Date(deal.endDate), 'MM/dd/yy')}
+                          {(() => {
+                            try {
+                              const startDate = new Date(deal.startDate || deal.start_date);
+                              const endDate = new Date(deal.endDate || deal.end_date);
+                              
+                              // Check if dates are valid
+                              if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                                return 'Invalid dates';
+                              }
+                              
+                              return `${format(startDate, 'MM/dd/yy')} - ${format(endDate, 'MM/dd/yy')}`;
+                            } catch (error) {
+                              console.error('Date formatting error:', error, deal);
+                              return 'Invalid dates';
+                            }
+                          })()}
                         </td>
                         <td className="px-3 sm:px-4 py-3 sm:py-4">
                           <div className="flex items-center space-x-2">
