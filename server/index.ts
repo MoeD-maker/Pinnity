@@ -563,6 +563,77 @@ app.get('/api/v1/user/:id', async (req, res) => {
   }
 });
 
+// ADD MISSING FAVORITES API ROUTES
+// User favorites routes (requires authentication)
+app.get('/api/v1/user/:userId/favorites', async (req, res) => {
+  try {
+    const userId = req.params.userId; // UUID string
+    console.log(`FAVORITES API: GET favorites for user ${userId}`);
+    
+    const result = await pool.query(`
+      SELECT f.deal_id, d.*, b.business_name, b.business_category
+      FROM user_favorites f
+      LEFT JOIN deals d ON f.deal_id = d.id
+      LEFT JOIN businesses_new b ON d.business_id = b.id
+      WHERE f.user_id = $1 AND d.id IS NOT NULL
+      ORDER BY f.created_at DESC
+    `, [userId]);
+    
+    console.log(`FAVORITES API: Found ${result.rows.length} favorites for user ${userId}`);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get favorites error:', error);
+    res.status(500).json({ error: 'Failed to fetch favorites' });
+  }
+});
+
+app.post('/api/v1/user/:userId/favorites/:dealId', async (req, res) => {
+  try {
+    const userId = req.params.userId; // UUID string
+    const dealId = parseInt(req.params.dealId);
+    console.log(`FAVORITES API: POST add favorite user ${userId}, deal ${dealId}`);
+    
+    // Check if favorite already exists
+    const existingResult = await pool.query(
+      'SELECT id FROM user_favorites WHERE user_id = $1 AND deal_id = $2',
+      [userId, dealId]
+    );
+    
+    if (existingResult.rows.length > 0) {
+      return res.status(409).json({ message: 'Deal already favorited' });
+    }
+    
+    // Add new favorite
+    await pool.query(
+      'INSERT INTO user_favorites (user_id, deal_id, created_at) VALUES ($1, $2, NOW())',
+      [userId, dealId]
+    );
+    
+    res.status(201).json({ message: 'Favorite added successfully' });
+  } catch (error) {
+    console.error('Add favorite error:', error);
+    res.status(500).json({ error: 'Failed to add favorite' });
+  }
+});
+
+app.delete('/api/v1/user/:userId/favorites/:dealId', async (req, res) => {
+  try {
+    const userId = req.params.userId; // UUID string  
+    const dealId = parseInt(req.params.dealId);
+    console.log(`FAVORITES API: DELETE remove favorite user ${userId}, deal ${dealId}`);
+    
+    const result = await pool.query(
+      'DELETE FROM user_favorites WHERE user_id = $1 AND deal_id = $2',
+      [userId, dealId]
+    );
+    
+    res.json({ message: 'Favorite removed successfully' });
+  } catch (error) {
+    console.error('Remove favorite error:', error);
+    res.status(500).json({ error: 'Failed to remove favorite' });
+  }
+});
+
 console.log('✅ Gated authentication routes registered');
 
 // Skip other routes for now
