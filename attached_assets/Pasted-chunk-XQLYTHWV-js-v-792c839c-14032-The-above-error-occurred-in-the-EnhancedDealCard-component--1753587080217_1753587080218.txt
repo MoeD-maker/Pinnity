@@ -1,0 +1,90 @@
+chunk-XQLYTHWV.js?v=792c839c:14032 The above error occurred in the <EnhancedDealCard> component:
+
+    at EnhancedDealCard (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/components/shared/EnhancedDealCard.tsx:40:3)
+    at div
+    at DealGrid (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/components/dashboard/DealGrid.tsx:37:3)
+    at div
+    at Dashboard (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/pages/dashboard.tsx:72:41)
+    at div
+    at div
+    at main
+    at div
+    at div
+    at MainLayout (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/components/layout/MainLayout.tsx:52:38)
+    at PresenceChild (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js?v=792c839c:121:24)
+    at AnimatePresence (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js?v=792c839c:210:26)
+    at AuthenticatedRoute (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/App.tsx?v=Efo3t20k0do4oaT40P1zy:271:42)
+    at Route (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=792c839c:323:16)
+    at Switch (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=792c839c:379:17)
+    at Router (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/App.tsx?v=Efo3t20k0do4oaT40P1zy:388:22)
+    at div
+    at Provider (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-GZH67F7E.js?v=792c839c:38:15)
+    at Provider (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-MSSVGQUS.js?v=792c839c:28:15)
+    at CollectionProvider (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-MSSVGQUS.js?v=792c839c:89:13)
+    at ToastProvider (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-toast.js?v=792c839c:59:5)
+    at AuthProvider (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/contexts/AuthContext.tsx:80:32)
+    at QueryClientProvider (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=792c839c:2805:3)
+    at App (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/App.tsx?v=Efo3t20k0do4oaT40P1zy:912:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-XQLYTHWV.js?v=792c839c:14032
+Show 1 more frame
+Show less
+main.tsx:11 Global error caught: TypeError: Cannot read properties of undefined (reading 'businessName')
+    at EnhancedDealCard.tsx:185:38
+    at EnhancedDealCard (EnhancedDealCard.tsx:190:13)
+    at renderWithHooks (chunk-XQLYTHWV.js?v=792c839c:11548:26)
+    at mountIndeterminateComponent (chunk-XQLYTHWV.js?v=792c839c:14926:21)
+    at beginWork (chunk-XQLYTHWV.js?v=792c839c:15914:22)
+    at beginWork$1 (chunk-XQLYTHWV.js?v=792c839c:19753:22)
+    at performUnitOfWork (chunk-XQLYTHWV.js?v=792c839c:19198:20)
+    at workLoopSync (chunk-XQLYTHWV.js?v=792c839c:19137:13)
+    at renderRootSync (chunk-XQLYTHWV.js?v=792c839c:19116:15)
+    at recoverFromConcurrentError (chunk-XQLYTHWV.js?v=792c839c:18736:28)
+(anonymous) @ main.tsx:11
+chunk-XQLYTHWV.js?v=792c839c:9129 Uncaught TypeError: Cannot read properties of undefined (reading 'businessName')
+    at EnhancedDealCard.tsx:185:38
+    at EnhancedDealCard (EnhancedDealCard.tsx:190:13)
+    at renderWithHooks (chunk-XQLYTHWV.js?v=792c839c:11548:26)
+    at mountIndeterminateComponent (chunk-XQLYTHWV.js?v=792c839c:14926:21)
+    at beginWork (chunk-XQLYTHWV.js?v=792c839c:15914:22)
+    at beginWork$1 (chunk-XQLYTHWV.js?v=792c839c:19753:22)
+    at performUnitOfWork (chunk-XQLYTHWV.js?v=792c839c:19198:20)
+    at workLoopSync (chunk-XQLYTHWV.js?v=792c839c:19137:13)
+    at renderRootSync (chunk-XQLYTHWV.js?v=792c839c:19116:15)
+    at recoverFromConcurrentError (chunk-XQLYTHWV.js?v=792c839c:18736:28)
+chunk-XQLYTHWV.js?v=792c839c:14032 The above error occurred in the <App> component:
+
+    at App (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/App.tsx?v=Efo3t20k0do4oaT40P1zy:912:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-XQLYTHWV.js?v=792c839c:14032
+Show 1 more frame
+Show less
+main.tsx:11 Global error caught: DOMException: Failed to execute 'removeChild' on 'Node': The node to be removed is not a child of this node.
+    at removeChildFromContainer (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:8462:23)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17508:21)
+    at recursivelyTraverseDeletionEffects (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17486:13)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17610:15)
+    at recursivelyTraverseDeletionEffects (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17486:13)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17577:15)
+    at recursivelyTraverseDeletionEffects (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17486:13)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17610:15)
+    at recursivelyTraverseDeletionEffects (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17486:13)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17577:15)
+(anonymous) @ main.tsx:11
+chunk-XQLYTHWV.js?v=792c839c:9129 Uncaught DOMException: Failed to execute 'removeChild' on 'Node': The node to be removed is not a child of this node.
+    at removeChildFromContainer (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:8462:23)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17508:21)
+    at recursivelyTraverseDeletionEffects (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17486:13)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17610:15)
+    at recursivelyTraverseDeletionEffects (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17486:13)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17577:15)
+    at recursivelyTraverseDeletionEffects (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17486:13)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17610:15)
+    at recursivelyTraverseDeletionEffects (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17486:13)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17577:15)
+service-worker.js:135 [Service Worker] Fetch event https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/
+service-worker.js:135 [Service Worker] Fetch event https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/manifest.json

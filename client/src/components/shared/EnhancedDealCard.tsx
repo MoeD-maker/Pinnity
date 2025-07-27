@@ -79,16 +79,18 @@ const EnhancedDealCard: React.FC<EnhancedDealCardProps> = ({
   const discount = deal.discount || '';
   
   // Check if the deal is ending soon (less than 3 days)
-  const endDate = new Date(deal.endDate);
+  const endDate = new Date(deal.endDate || deal.end_date);
   const today = new Date();
   const daysLeft = differenceInDays(endDate, today);
   const isEndingSoon = daysLeft >= 0 && daysLeft < 3;
   
   // Check if deal is popular (more than 50 redemptions)
-  const isPopular = (deal.redemptionCount || 0) > 50;
+  const redemptionCount = deal.redemptionCount || deal.redemption_count || 0;
+  const isPopular = redemptionCount > 50;
   
   // Get recurring days text
-  const recurringDaysText = deal.isRecurring && deal.availability?.availableDayNames?.length 
+  const isRecurring = deal.isRecurring || deal.is_recurring;
+  const recurringDaysText = isRecurring && deal.availability?.availableDayNames?.length 
     ? `Available on: ${deal.availability.availableDayNames.join(' & ')}` 
     : '';
 
@@ -101,7 +103,7 @@ const EnhancedDealCard: React.FC<EnhancedDealCardProps> = ({
       {inView ? (
         <div className="aspect-video relative overflow-hidden">
           <img 
-            src={deal.imageUrl || 'https://images.unsplash.com/photo-1556742111-a301076d9d18?ixlib=rb-4.0.3'} 
+            src={deal.imageUrl || deal.image_url || 'https://images.unsplash.com/photo-1556742111-a301076d9d18?ixlib=rb-4.0.3'} 
             alt={deal.title}
             className="w-full h-full object-cover transition-transform hover:scale-105"
           />
@@ -152,20 +154,15 @@ const EnhancedDealCard: React.FC<EnhancedDealCardProps> = ({
               const isValidDataUrl = isDataUrl && url.includes('base64') && url.length < 100000;
               const shouldShowImage = url && (!isDataUrl || isValidDataUrl);
               
-              // Debugging logs to console
-              console.log("Business name:", deal.business?.businessName);
-              console.log("Has URL:", !!url);
-              console.log("Is data URL:", isDataUrl);
-              console.log("Is valid data URL:", isValidDataUrl);
-              console.log("Should show image:", shouldShowImage);
-              console.log("URL start:", url ? url.substring(0, 30) + "..." : "No URL");
+              // Get business name from the correct field
+              const businessName = deal.business?.businessName || deal.business_name || 'Business';
               
               return (
                 <>
                   {shouldShowImage ? (
                     <img
                       src={url}
-                      alt={deal.business.businessName}
+                      alt={businessName}
                       className="h-full w-full object-cover"
                       onError={(e) => {
                         // hide broken image
@@ -176,13 +173,13 @@ const EnhancedDealCard: React.FC<EnhancedDealCardProps> = ({
                         if (fallback) {
                           fallback.classList.remove('hidden');
                         }
-                        console.error("Logo failed to load for:", deal.business.businessName);
+                        console.error("Logo failed to load for:", businessName);
                       }}
                     />
                   ) : (
                     // initials fallback when no URL available
                     <div className="h-full w-full flex items-center justify-center bg-primary/10 text-primary font-semibold">
-                      {deal.business.businessName.substring(0, 2).toUpperCase()}
+                      {businessName.substring(0, 2).toUpperCase()}
                     </div>
                   )}
                 </>
@@ -190,11 +187,11 @@ const EnhancedDealCard: React.FC<EnhancedDealCardProps> = ({
             })()}
             {/* This div is the fallback for when image loading fails */}
             <div className="initials-fallback h-full w-full flex items-center justify-center bg-primary/10 text-primary font-semibold hidden">
-              {deal.business.businessName.substring(0, 2).toUpperCase()}
+              {(deal.business?.businessName || deal.business_name || 'Business').substring(0, 2).toUpperCase()}
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-sm line-clamp-1">{deal.business.businessName}</p>
+            <p className="font-medium text-sm line-clamp-1">{deal.business?.businessName || deal.business_name || 'Business'}</p>
             <div className="flex items-center gap-1.5">
               <Badge variant="outline" className="text-xs h-5 px-1.5">
                 {deal.category}
@@ -202,7 +199,7 @@ const EnhancedDealCard: React.FC<EnhancedDealCardProps> = ({
               {isPopular && (
                 <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-200 text-xs h-5 px-1.5 flex items-center gap-1">
                   <ThumbsUp className="h-3 w-3" />
-                  <span>{deal.redemptionCount}+ redeemed</span>
+                  <span>{redemptionCount}+ redeemed</span>
                 </Badge>
               )}
             </div>
@@ -230,7 +227,7 @@ const EnhancedDealCard: React.FC<EnhancedDealCardProps> = ({
           </div>
           
           {/* Recurring deal days indicator - new addition */}
-          {deal.isRecurring && recurringDaysText && (
+          {isRecurring && recurringDaysText && (
             <div className="flex items-center text-xs text-muted-foreground">
               <CalendarDays className="h-3 w-3 mr-1.5" />
               <span>{recurringDaysText}</span>
