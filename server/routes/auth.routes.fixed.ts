@@ -377,18 +377,18 @@ export function authRoutes(app: Express): void {
           });
         }
 
-        // Get temporary file paths from pending uploads
-        const tempGovernmentIdPath = files.governmentId[0].supabasePath || files.governmentId[0].filename;
-        const tempProofOfAddressPath = files.proofOfAddress[0].supabasePath || files.proofOfAddress[0].filename;
-        const tempProofOfBusinessPath = files.proofOfBusiness[0].supabasePath || files.proofOfBusiness[0].filename;
+        // Get uploaded file paths from Supabase upload middleware
+        const governmentIdPath = files.governmentId[0].supabasePath || files.governmentId[0].filename;
+        const proofOfAddressPath = files.proofOfAddress[0].supabasePath || files.proofOfAddress[0].filename;
+        const proofOfBusinessPath = files.proofOfBusiness[0].supabasePath || files.proofOfBusiness[0].filename;
         
-        console.log('📂 Temporary file paths:', {
-          governmentId: tempGovernmentIdPath,
-          proofOfAddress: tempProofOfAddressPath,
-          proofOfBusiness: tempProofOfBusinessPath
+        console.log('📂 Uploaded file paths from Supabase:', {
+          governmentId: governmentIdPath,
+          proofOfAddress: proofOfAddressPath,
+          proofOfBusiness: proofOfBusinessPath
         });
         
-        // Create user with business first
+        // Create user with business using the actual uploaded file paths
         const user = await storage.createBusinessUser(
           {
             firstName,
@@ -401,40 +401,13 @@ export function authRoutes(app: Express): void {
           {
             businessName,
             businessCategory,
-            governmentId: 'pending', // Temporary placeholder
-            proofOfAddress: 'pending',
-            proofOfBusiness: 'pending'
+            governmentId: governmentIdPath, // Use actual Supabase path
+            proofOfAddress: proofOfAddressPath,
+            proofOfBusiness: proofOfBusinessPath
           }
         );
         
-        // Move files from pending to user-specific folder
-        try {
-          const { moveFilesToUserFolder, generateSignedUrlsForPaths } = await import('../fileManager');
-          
-          const filesToMove = [tempGovernmentIdPath, tempProofOfAddressPath, tempProofOfBusinessPath];
-          // Use business name for folder organization instead of user ID
-          const sanitizedBusinessName = businessName.replace(/[^a-zA-Z0-9\-_]/g, '_');
-          const movedFiles = await moveFilesToUserFolder(filesToMove, sanitizedBusinessName);
-          
-          // Generate signed URLs for the moved files
-          const signedUrls = await generateSignedUrlsForPaths(Object.values(movedFiles));
-          
-          // Update business with actual file paths (need to get business ID first)
-          const business = await storage.getBusinessByUserId(user.id);
-          if (business) {
-            await storage.updateBusiness(business.id, {
-              governmentId: Object.values(movedFiles)[0],
-              proofOfAddress: Object.values(movedFiles)[1], 
-              proofOfBusiness: Object.values(movedFiles)[2]
-            });
-          }
-          
-          console.log('✅ Files successfully moved to user folder:', Object.values(movedFiles));
-          
-        } catch (fileError) {
-          console.error('❌ Failed to move files to user folder:', fileError);
-          // Don't fail the registration, but log the issue
-        }
+        console.log('✅ Business user created with uploaded document paths');
         
         // Generate JWT token
         const token = generateToken(user);
