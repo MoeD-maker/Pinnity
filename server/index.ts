@@ -197,6 +197,16 @@ app.post('/api/auth/gated/login', gatedLogin);
 // Standard login route that the frontend expects
 app.post('/api/v1/auth/login', gatedLogin);
 
+// Import and register the full auth routes for business registration
+console.log('🔥 Importing business registration routes...');
+try {
+  const { authRoutes } = await import('./routes/auth.routes.fixed.js');
+  authRoutes(app);
+  console.log('✅ Business registration routes registered');
+} catch (error) {
+  console.error('❌ Failed to import business registration routes:', error);
+}
+
 // Admin API endpoints that the dashboard needs
 app.get('/api/v1/admin/businesses', async (req, res) => {
   try {

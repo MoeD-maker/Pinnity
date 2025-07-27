@@ -378,9 +378,9 @@ export function authRoutes(app: Express): void {
         }
 
         // Get uploaded file paths from Supabase upload middleware
-        const governmentIdPath = files.governmentId[0].supabasePath || files.governmentId[0].filename;
-        const proofOfAddressPath = files.proofOfAddress[0].supabasePath || files.proofOfAddress[0].filename;
-        const proofOfBusinessPath = files.proofOfBusiness[0].supabasePath || files.proofOfBusiness[0].filename;
+        const governmentIdPath = (files.governmentId[0] as any).supabasePath || files.governmentId[0].filename;
+        const proofOfAddressPath = (files.proofOfAddress[0] as any).supabasePath || files.proofOfAddress[0].filename;
+        const proofOfBusinessPath = (files.proofOfBusiness[0] as any).supabasePath || files.proofOfBusiness[0].filename;
         
         console.log('📂 Uploaded file paths from Supabase:', {
           governmentId: governmentIdPath,
@@ -496,9 +496,9 @@ export function authRoutes(app: Express): void {
         }
 
         // Get file paths/URLs (legacy route - now using Supabase signed URLs)
-        const governmentIdPath = files.governmentId[0].signedUrl || files.governmentId[0].path;
-        const proofOfAddressPath = files.proofOfAddress[0].signedUrl || files.proofOfAddress[0].path;
-        const proofOfBusinessPath = files.proofOfBusiness[0].signedUrl || files.proofOfBusiness[0].path;
+        const governmentIdPath = (files.governmentId[0] as any).signedUrl || files.governmentId[0].path;
+        const proofOfAddressPath = (files.proofOfAddress[0] as any).signedUrl || files.proofOfAddress[0].path;
+        const proofOfBusinessPath = (files.proofOfBusiness[0] as any).signedUrl || files.proofOfBusiness[0].path;
         
         // Create user with business
         const user = await storage.createBusinessUser(
