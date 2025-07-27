@@ -586,22 +586,37 @@ export default function VendorDashboard() {
                 } else {
                   // Determine a more appropriate status based on dates
                   const now = new Date();
-                  const isTimeActive = new Date(deal.endDate) >= now && new Date(deal.startDate) <= now;
-                  const isUpcoming = new Date(deal.startDate) > now;
-                  const isExpired = new Date(deal.endDate) < now;
-                  
-                  if (isExpired) {
+                  try {
+                    const startDate = new Date(deal.startDate || deal.start_date);
+                    const endDate = new Date(deal.endDate || deal.end_date);
+                    
+                    // Check if dates are valid before using them
+                    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                      statusClass = 'bg-gray-100 text-gray-800';
+                      statusText = 'Invalid Dates';
+                    } else {
+                      const isTimeActive = endDate >= now && startDate <= now;
+                      const isUpcoming = startDate > now;
+                      const isExpired = endDate < now;
+                      
+                      if (isExpired) {
+                        statusClass = 'bg-gray-100 text-gray-800';
+                        statusText = 'Expired';
+                      } else if (isUpcoming) {
+                        statusClass = 'bg-blue-100 text-blue-800';
+                        statusText = 'Upcoming';
+                      } else if (isTimeActive) {
+                        statusClass = 'bg-green-100 text-green-800';
+                        statusText = 'Active';
+                      } else {
+                        statusClass = 'bg-gray-100 text-gray-800';
+                        statusText = deal.status || 'Inactive';
+                      }
+                    }
+                  } catch (error) {
+                    console.error('Date processing error:', error, deal);
                     statusClass = 'bg-gray-100 text-gray-800';
-                    statusText = 'Expired';
-                  } else if (isUpcoming) {
-                    statusClass = 'bg-blue-100 text-blue-800';
-                    statusText = 'Upcoming';
-                  } else if (isTimeActive) {
-                    statusClass = 'bg-green-100 text-green-800';
-                    statusText = 'Active';
-                  } else {
-                    statusClass = 'bg-gray-100 text-gray-800';
-                    statusText = deal.status || 'Inactive';
+                    statusText = 'Error';
                   }
                 }
                 
@@ -613,7 +628,24 @@ export default function VendorDashboard() {
                       <div>{deal.dealType?.replace('_', ' ') || '-'}</div>
                       
                       <div className="font-medium text-gray-500">Dates:</div>
-                      <div>{format(new Date(deal.startDate), 'MM/dd/yy')} - {format(new Date(deal.endDate), 'MM/dd/yy')}</div>
+                      <div>
+                        {(() => {
+                          try {
+                            const startDate = new Date(deal.startDate || deal.start_date);
+                            const endDate = new Date(deal.endDate || deal.end_date);
+                            
+                            // Check if dates are valid
+                            if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                              return 'Invalid dates';
+                            }
+                            
+                            return `${format(startDate, 'MM/dd/yy')} - ${format(endDate, 'MM/dd/yy')}`;
+                          } catch (error) {
+                            console.error('Date formatting error:', error, deal);
+                            return 'Invalid dates';
+                          }
+                        })()}
+                      </div>
                       
                       <div className="font-medium text-gray-500">PIN:</div>
                       <div className="flex items-center">

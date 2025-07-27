@@ -1,0 +1,183 @@
+Current route location: /vendor
+2AuthContext.tsx:513 [04:24:39] Auth status check completed
+AuthContext.tsx:682 [04:24:34] Redirection completed, returning to authenticated state
+App.tsx:285 [04:24:39] Route evaluation: authState=authenticated, path=/vendor
+AuthContext.tsx:74 [04:24:39] Computing redirect: user=business, path=/vendor
+AuthContext.tsx:144 [04:24:39] No redirection needed for business on /vendor
+App.tsx:318 [04:24:39] Path /vendor is valid for user, proceeding to render
+service-worker.js:135 [Service Worker] Fetch event https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/pages/vendor/index.tsx
+service-worker.js:135 [Service Worker] Fetch event https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/components/ui/separator.tsx
+service-worker.js:135 [Service Worker] Fetch event https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/components/ui/progress.tsx
+service-worker.js:135 [Service Worker] Fetch event https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/components/ratings/BusinessRatingSummary.tsx
+service-worker.js:135 [Service Worker] Fetch event https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/components/vendor/DealFilterDialog.tsx
+service-worker.js:135 [Service Worker] Fetch event https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-progress.js?v=792c839c
+service-worker.js:135 [Service Worker] Fetch event https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/hooks/use-ratings.ts
+service-worker.js:135 [Service Worker] Fetch event https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-separator.js?v=792c839c
+service-worker.js:135 [Service Worker] Fetch event https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-datepicker.js?v=792c839c
+service-worker.js:135 [Service Worker] Fetch event https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/react-datepicker/dist/react-datepicker.css
+queryClient.ts:214 Making GET request to /api/business/user/aec90b3d-9514-4c60-b8de-4830b5e47921 undefined
+service-worker.js:135 [Service Worker] Fetch event https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/api/business/user/aec90b3d-9514-4c60-b8de-4830b5e47921
+queryClient.ts:292 Raw response text from /api/business/user/aec90b3d-9514-4c60-b8de-4830b5e47921: (length: 506)
+queryClient.ts:316 Parsed response from /api/business/user/aec90b3d-9514-4c60-b8de-4830b5e47921: Object
+queryClient.ts:214 Making GET request to /api/business/4/deals undefined
+service-worker.js:135 [Service Worker] Fetch event https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/api/business/4/deals
+queryClient.ts:292 Raw response text from /api/business/4/deals: (length: 2492)
+queryClient.ts:316 Parsed response from /api/business/4/deals: Array(3)
+index.tsx:106 Original dealsArray with status: Array(3)
+index.tsx:110 Processed deals array: Array(3)
+main.tsx:11 Global error caught: RangeError: Invalid time value
+    at format (chunk-XB7COY3D.js?v=792c839c:2295:11)
+    at index.tsx:616:29
+    at Array.map (<anonymous>)
+    at VendorDashboard (index.tsx:560:41)
+    at renderWithHooks (chunk-XQLYTHWV.js?v=792c839c:11548:26)
+    at updateFunctionComponent (chunk-XQLYTHWV.js?v=792c839c:14582:28)
+    at beginWork (chunk-XQLYTHWV.js?v=792c839c:15924:22)
+    at HTMLUnknownElement.callCallback2 (chunk-XQLYTHWV.js?v=792c839c:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-XQLYTHWV.js?v=792c839c:3699:24)
+    at invokeGuardedCallback (chunk-XQLYTHWV.js?v=792c839c:3733:39)
+(anonymous) @ main.tsx:11
+chunk-XB7COY3D.js?v=792c839c:2295 Uncaught RangeError: Invalid time value
+    at format (chunk-XB7COY3D.js?v=792c839c:2295:11)
+    at index.tsx:616:29
+    at Array.map (<anonymous>)
+    at VendorDashboard (index.tsx:560:41)
+    at renderWithHooks (chunk-XQLYTHWV.js?v=792c839c:11548:26)
+    at updateFunctionComponent (chunk-XQLYTHWV.js?v=792c839c:14582:28)
+    at beginWork (chunk-XQLYTHWV.js?v=792c839c:15924:22)
+    at HTMLUnknownElement.callCallback2 (chunk-XQLYTHWV.js?v=792c839c:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-XQLYTHWV.js?v=792c839c:3699:24)
+    at invokeGuardedCallback (chunk-XQLYTHWV.js?v=792c839c:3733:39)
+main.tsx:11 Global error caught: RangeError: Invalid time value
+    at format (chunk-XB7COY3D.js?v=792c839c:2295:11)
+    at index.tsx:616:29
+    at Array.map (<anonymous>)
+    at VendorDashboard (index.tsx:560:41)
+    at renderWithHooks (chunk-XQLYTHWV.js?v=792c839c:11548:26)
+    at updateFunctionComponent (chunk-XQLYTHWV.js?v=792c839c:14582:28)
+    at beginWork (chunk-XQLYTHWV.js?v=792c839c:15924:22)
+    at HTMLUnknownElement.callCallback2 (chunk-XQLYTHWV.js?v=792c839c:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-XQLYTHWV.js?v=792c839c:3699:24)
+    at invokeGuardedCallback (chunk-XQLYTHWV.js?v=792c839c:3733:39)
+(anonymous) @ main.tsx:11
+chunk-XB7COY3D.js?v=792c839c:2295 Uncaught RangeError: Invalid time value
+    at format (chunk-XB7COY3D.js?v=792c839c:2295:11)
+    at index.tsx:616:29
+    at Array.map (<anonymous>)
+    at VendorDashboard (index.tsx:560:41)
+    at renderWithHooks (chunk-XQLYTHWV.js?v=792c839c:11548:26)
+    at updateFunctionComponent (chunk-XQLYTHWV.js?v=792c839c:14582:28)
+    at beginWork (chunk-XQLYTHWV.js?v=792c839c:15924:22)
+    at HTMLUnknownElement.callCallback2 (chunk-XQLYTHWV.js?v=792c839c:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-XQLYTHWV.js?v=792c839c:3699:24)
+    at invokeGuardedCallback (chunk-XQLYTHWV.js?v=792c839c:3733:39)
+main.tsx:11 Global error caught: DOMException: Failed to execute 'removeChild' on 'Node': The node to be removed is not a child of this node.
+    at removeChildFromContainer (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:8462:23)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17508:21)
+    at recursivelyTraverseDeletionEffects (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17486:13)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17610:15)
+    at recursivelyTraverseDeletionEffects (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17486:13)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17577:15)
+    at recursivelyTraverseDeletionEffects (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17486:13)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17610:15)
+    at recursivelyTraverseDeletionEffects (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17486:13)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17577:15)
+(anonymous) @ main.tsx:11
+chunk-XQLYTHWV.js?v=792c839c:16670 Uncaught DOMException: Failed to execute 'removeChild' on 'Node': The node to be removed is not a child of this node.
+    at removeChildFromContainer (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:8462:23)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17508:21)
+    at recursivelyTraverseDeletionEffects (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17486:13)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17610:15)
+    at recursivelyTraverseDeletionEffects (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17486:13)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17577:15)
+    at recursivelyTraverseDeletionEffects (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17486:13)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17610:15)
+    at recursivelyTraverseDeletionEffects (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17486:13)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17577:15)
+chunk-XQLYTHWV.js?v=792c839c:14032 The above error occurred in the <VendorDashboard> component:
+
+    at VendorDashboard (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/pages/vendor/index.tsx:74:20)
+    at div
+    at div
+    at main
+    at div
+    at div
+    at MainLayout (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/components/layout/MainLayout.tsx:52:38)
+    at PresenceChild (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js?v=792c839c:121:24)
+    at AnimatePresence (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js?v=792c839c:210:26)
+    at AuthenticatedRoute (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/App.tsx?v=f6x2hFTPaCJF7SQl16Mtw:271:42)
+    at Suspense
+    at Route (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=792c839c:323:16)
+    at Switch (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=792c839c:379:17)
+    at Router (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/App.tsx?v=f6x2hFTPaCJF7SQl16Mtw:388:22)
+    at div
+    at Provider (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-GZH67F7E.js?v=792c839c:38:15)
+    at Provider (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-MSSVGQUS.js?v=792c839c:28:15)
+    at CollectionProvider (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-MSSVGQUS.js?v=792c839c:89:13)
+    at ToastProvider (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-toast.js?v=792c839c:59:5)
+    at AuthProvider (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/contexts/AuthContext.tsx:80:32)
+    at QueryClientProvider (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=792c839c:2805:3)
+    at App (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/App.tsx?v=f6x2hFTPaCJF7SQl16Mtw:912:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-XQLYTHWV.js?v=792c839c:14032
+Show 1 more frame
+Show less
+main.tsx:11 Global error caught: RangeError: Invalid time value
+    at format (chunk-XB7COY3D.js?v=792c839c:2295:11)
+    at index.tsx:616:29
+    at Array.map (<anonymous>)
+    at VendorDashboard (index.tsx:560:41)
+    at renderWithHooks (chunk-XQLYTHWV.js?v=792c839c:11548:26)
+    at updateFunctionComponent (chunk-XQLYTHWV.js?v=792c839c:14582:28)
+    at beginWork (chunk-XQLYTHWV.js?v=792c839c:15924:22)
+    at beginWork$1 (chunk-XQLYTHWV.js?v=792c839c:19753:22)
+    at performUnitOfWork (chunk-XQLYTHWV.js?v=792c839c:19198:20)
+    at workLoopSync (chunk-XQLYTHWV.js?v=792c839c:19137:13)
+(anonymous) @ main.tsx:11
+chunk-XQLYTHWV.js?v=792c839c:19413 Uncaught RangeError: Invalid time value
+    at format (chunk-XB7COY3D.js?v=792c839c:2295:11)
+    at index.tsx:616:29
+    at Array.map (<anonymous>)
+    at VendorDashboard (index.tsx:560:41)
+    at renderWithHooks (chunk-XQLYTHWV.js?v=792c839c:11548:26)
+    at updateFunctionComponent (chunk-XQLYTHWV.js?v=792c839c:14582:28)
+    at beginWork (chunk-XQLYTHWV.js?v=792c839c:15924:22)
+    at beginWork$1 (chunk-XQLYTHWV.js?v=792c839c:19753:22)
+    at performUnitOfWork (chunk-XQLYTHWV.js?v=792c839c:19198:20)
+    at workLoopSync (chunk-XQLYTHWV.js?v=792c839c:19137:13)
+chunk-XQLYTHWV.js?v=792c839c:14032 The above error occurred in the <App> component:
+
+    at App (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/src/App.tsx?v=f6x2hFTPaCJF7SQl16Mtw:912:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-XQLYTHWV.js?v=792c839c:14032
+Show 1 more frame
+Show less
+main.tsx:11 Global error caught: DOMException: Failed to execute 'removeChild' on 'Node': The node to be removed is not a child of this node.
+    at removeChildFromContainer (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:8462:23)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17508:21)
+    at recursivelyTraverseDeletionEffects (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17486:13)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17610:15)
+    at recursivelyTraverseDeletionEffects (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17486:13)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17577:15)
+    at recursivelyTraverseDeletionEffects (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17486:13)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17610:15)
+    at recursivelyTraverseDeletionEffects (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17486:13)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17577:15)
+(anonymous) @ main.tsx:11
+chunk-XQLYTHWV.js?v=792c839c:9129 Uncaught DOMException: Failed to execute 'removeChild' on 'Node': The node to be removed is not a child of this node.
+    at removeChildFromContainer (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:8462:23)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17508:21)
+    at recursivelyTraverseDeletionEffects (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17486:13)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17610:15)
+    at recursivelyTraverseDeletionEffects (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17486:13)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17577:15)
+    at recursivelyTraverseDeletionEffects (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17486:13)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17610:15)
+    at recursivelyTraverseDeletionEffects (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17486:13)
+    at commitDeletionEffectsOnFiber (https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XQLYTHWV.js?v=792c839c:17577:15)
+service-worker.js:135 [Service Worker] Fetch event https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/vendor
+service-worker.js:135 [Service Worker] Fetch event https://6e0675a6-f74a-4e18-95c8-dfc61752a42c-00-1gl126mzbjdro.worf.replit.dev/manifest.json
