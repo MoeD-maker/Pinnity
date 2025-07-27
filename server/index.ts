@@ -518,6 +518,17 @@ app.get('/api/v1/admin/dashboard', async (req, res) => {
   }
 });
 
+// User favorites endpoint - MUST come before parameterized routes
+app.get('/api/v1/user/favorites', async (req, res) => {
+  try {
+    // For now, return empty array since we need authentication to get user favorites
+    res.json([]);
+  } catch (error) {
+    console.error('Error fetching user favorites:', error);
+    res.status(500).json({ error: 'Failed to fetch favorites' });
+  }
+});
+
 // User data endpoint
 app.get('/api/v1/user/:id', async (req, res) => {
   const userId = req.params.id;
