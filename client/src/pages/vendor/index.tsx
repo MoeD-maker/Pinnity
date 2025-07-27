@@ -374,7 +374,12 @@ export default function VendorDashboard() {
               Your business profile is currently under review. You'll be able to create deals once approved.
               <div className="mt-2 flex items-center">
                 <span className="text-sm mr-2">Estimated time: 1-2 business days</span>
-                <Button variant="outline" size="sm" className="h-7 ml-auto">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-7 ml-auto"
+                  onClick={() => window.location.href = 'mailto:hello@pinnity.ca?subject=Vendor Support Request&body=Hello, I need assistance with my vendor account.'}
+                >
                   <HelpCircle className="h-3.5 w-3.5 mr-1.5" /> Contact Support
                 </Button>
               </div>

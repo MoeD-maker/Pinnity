@@ -52,7 +52,7 @@ export default function AuthPage() {
         <p className="text-sm text-gray-600">
           Need help?{" "}
           <a 
-            href="mailto:hello@pinnity.com" 
+            href="mailto:hello@pinnity.ca" 
             className="text-blue-600 hover:text-blue-800 underline transition-colors"
           >
             Contact us
