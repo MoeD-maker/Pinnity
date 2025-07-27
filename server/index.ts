@@ -200,12 +200,28 @@ app.post('/api/v1/auth/login', gatedLogin);
 // Admin API endpoints that the dashboard needs
 app.get('/api/v1/admin/businesses', async (req, res) => {
   try {
+    console.log('Admin businesses endpoint called');
     const result = await pool.query(`
-      SELECT b.*, p.email, p.first_name, p.last_name, p.phone, p.created_at
+      SELECT 
+        b.id,
+        b.business_name,
+        b.business_category,
+        b.business_description,
+        b.verification_status,
+        b.created_at as applied_date,
+        b.updated_at,
+        p.email,
+        p.first_name,
+        p.last_name,
+        p.phone,
+        p.created_at,
+        p.address
       FROM businesses_new b
       LEFT JOIN profiles p ON b.profile_id = p.id
       ORDER BY b.created_at DESC
     `);
+    
+    console.log(`Found ${result.rows.length} businesses`);
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching businesses:', error);
@@ -215,13 +231,29 @@ app.get('/api/v1/admin/businesses', async (req, res) => {
 
 app.get('/api/v1/admin/businesses/pending', async (req, res) => {
   try {
+    console.log('Admin pending businesses endpoint called');
     const result = await pool.query(`
-      SELECT b.*, p.email, p.first_name, p.last_name, p.phone, p.created_at
+      SELECT 
+        b.id,
+        b.business_name,
+        b.business_category,
+        b.business_description,
+        b.verification_status,
+        b.created_at as applied_date,
+        b.updated_at,
+        p.email,
+        p.first_name,
+        p.last_name,
+        p.phone,
+        p.created_at,
+        p.address
       FROM businesses_new b
       LEFT JOIN profiles p ON b.profile_id = p.id
       WHERE b.verification_status = 'pending'
       ORDER BY b.created_at DESC
     `);
+    
+    console.log(`Found ${result.rows.length} pending businesses`);
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching pending businesses:', error);

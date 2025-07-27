@@ -330,15 +330,15 @@ export default function VendorsPage() {
           // Transform the data to match our interface if needed
           const formattedBusinesses = response.map((business: any) => ({
             id: business.id,
-            businessName: business.businessName,
-            businessCategory: business.businessCategory || "Other",
-            appliedDate: business.user?.created_at || new Date().toISOString(),
+            businessName: business.business_name || business.businessName || "Unknown Business",
+            businessCategory: business.business_category || business.businessCategory || "Other",
+            appliedDate: business.applied_date || business.user?.created_at || business.created_at || new Date().toISOString(),
             status: business.status || "new",
-            verificationStatus: business.verificationStatus || "pending",
-            email: business.user?.email || "",
+            verificationStatus: business.verification_status || business.verificationStatus || "pending",
+            email: business.email || business.user?.email || "",
             phone: business.phone || "",
             address: business.address || "",
-            description: business.description || ""
+            description: business.business_description || business.description || ""
           }));
           
           console.log(`Loaded ${formattedBusinesses.length} businesses, including ${formattedBusinesses.filter((b: any) => b.verificationStatus === 'pending').length} pending`);
