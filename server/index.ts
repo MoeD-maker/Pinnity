@@ -351,6 +351,59 @@ app.post('/api/v1/admin/businesses/:id/reject', async (req, res) => {
   }
 });
 
+// Document viewing/download endpoint
+app.get('/api/v1/admin/documents/:businessId/:documentType', async (req, res) => {
+  try {
+    const { businessId, documentType } = req.params;
+    console.log(`Document request for business ${businessId}, type: ${documentType}`);
+    
+    // Get the document path from database
+    const columnMap = {
+      'government_id': 'government_id',
+      'proof_of_address': 'proof_of_address', 
+      'proof_of_business': 'proof_of_business'
+    };
+    
+    const column = columnMap[documentType];
+    if (!column) {
+      return res.status(400).json({ error: 'Invalid document type' });
+    }
+    
+    const result = await pool.query(
+      `SELECT ${column} as document_url FROM businesses_new WHERE id = $1`,
+      [businessId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+    
+    const documentUrl = result.rows[0].document_url;
+    
+    // Check if it's a placeholder URL or real Supabase path
+    if (!documentUrl || documentUrl.includes('example.com')) {
+      return res.status(404).json({ error: 'Document not found or not uploaded' });
+    }
+    
+    // If it's already a signed URL, return it
+    if (documentUrl.includes('supabase')) {
+      return res.json({ url: documentUrl });
+    }
+    
+    // For now, since we have placeholder URLs, return a mock response
+    // In production, this would generate signed URLs from Supabase Storage
+    res.json({ 
+      url: documentUrl,
+      message: 'Document is available but stored with placeholder URL',
+      type: documentType
+    });
+    
+  } catch (error) {
+    console.error('Error fetching document:', error);
+    res.status(500).json({ error: 'Failed to fetch document' });
+  }
+});
+
 app.get('/api/v1/admin/deals', async (req, res) => {
   try {
     const result = await pool.query(`

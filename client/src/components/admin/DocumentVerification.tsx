@@ -173,7 +173,7 @@ export default function DocumentVerification({ businessId, documents, onDocument
                 >
                   <div className="flex items-start gap-3">
                     <div className="h-14 w-14 bg-muted rounded-md flex items-center justify-center flex-shrink-0 overflow-hidden border border-gray-200">
-                      {document.filePath ? (
+                      {document.filePath && !document.filePath.includes('example.com') ? (
                         <img 
                           src={document.filePath} 
                           alt={document.name}
@@ -184,7 +184,7 @@ export default function DocumentVerification({ businessId, documents, onDocument
                             e.currentTarget.parentElement?.classList.add('fallback-icon');
                           }}
                         />
-                      ) : document.thumbUrl ? (
+                      ) : document.thumbUrl && !document.thumbUrl.includes('example.com') ? (
                         <img 
                           src={document.thumbUrl} 
                           alt={document.name}
@@ -196,7 +196,14 @@ export default function DocumentVerification({ businessId, documents, onDocument
                           }}
                         />
                       ) : (
-                        <FileText className="h-5 w-5 text-muted-foreground" />
+                        <div className="flex flex-col items-center justify-center w-full h-full">
+                          <FileText className="h-5 w-5 text-muted-foreground" />
+                          {(document.filePath?.includes('example.com') || document.thumbUrl?.includes('example.com')) && (
+                            <div className="text-xs text-orange-500 mt-1 text-center leading-tight">
+                              Placeholder
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                     <div>
@@ -306,8 +313,8 @@ export default function DocumentVerification({ businessId, documents, onDocument
           
           <div className="py-4">
             <div className="border rounded-lg overflow-hidden bg-muted">
-              {selectedDocument?.filePath ? (
-                // Check if it's an image or PDF 
+              {selectedDocument?.filePath && !selectedDocument.filePath.includes('example.com') ? (
+                // Only try to display if it's not a placeholder URL
                 selectedDocument.filePath.match(/\.(jpe?g|png|gif|webp)$/i) ? (
                   // For images, display an img tag
                   <div className="aspect-[4/3] bg-muted flex items-center justify-center">
@@ -315,6 +322,14 @@ export default function DocumentVerification({ businessId, documents, onDocument
                       src={selectedDocument.filePath} 
                       alt={selectedDocument.name}
                       className="max-w-full max-h-full object-contain"
+                      onError={(e) => {
+                        // If image fails to load, show placeholder
+                        e.currentTarget.style.display = 'none';
+                        const fallback = document.createElement('div');
+                        fallback.className = 'w-full h-full flex items-center justify-center flex-col gap-4';
+                        fallback.innerHTML = '<svg class="h-16 w-16 text-muted-foreground opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg><p class="text-sm text-muted-foreground">Failed to load document</p>';
+                        e.currentTarget.parentElement?.appendChild(fallback);
+                      }}
                     />
                   </div>
                 ) : selectedDocument.filePath.match(/\.pdf$/i) ? (
@@ -324,6 +339,17 @@ export default function DocumentVerification({ businessId, documents, onDocument
                       src={`https://docs.google.com/viewer?url=${encodeURIComponent(selectedDocument.filePath)}&embedded=true`}
                       className="w-full h-full"
                       title={selectedDocument.name}
+                      onLoad={(e) => {
+                        // Check if iframe loaded successfully
+                        try {
+                          const iframe = e.currentTarget;
+                          if (!iframe.contentDocument && !iframe.contentWindow) {
+                            throw new Error('PDF loading failed');
+                          }
+                        } catch (error) {
+                          console.log('PDF preview failed, showing fallback');
+                        }
+                      }}
                     />
                   </div>
                 ) : (
@@ -336,19 +362,18 @@ export default function DocumentVerification({ businessId, documents, onDocument
                     />
                   </div>
                 )
-              ) : selectedDocument?.thumbUrl ? (
-                // If no filePath but has thumbnail
-                <div className="aspect-[4/3] bg-muted flex items-center justify-center">
-                  <img 
-                    src={selectedDocument.thumbUrl} 
-                    alt={selectedDocument.name}
-                    className="max-w-full max-h-full object-contain"
-                  />
-                </div>
               ) : (
+                // Show placeholder message for fake URLs or missing documents
                 <div className="aspect-[4/3] bg-muted flex items-center justify-center flex-col gap-4">
                   <FileText className="h-16 w-16 text-muted-foreground opacity-20" />
-                  <p className="text-sm text-muted-foreground">Document preview not available</p>
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground mb-2">No preview available</p>
+                    {selectedDocument?.filePath?.includes('example.com') && (
+                      <p className="text-xs text-orange-600 bg-orange-50 px-3 py-2 rounded-md border border-orange-200">
+                        This vendor has placeholder document URLs. Real documents need to be uploaded to view them.
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
