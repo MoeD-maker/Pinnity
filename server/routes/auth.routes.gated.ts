@@ -204,30 +204,33 @@ export async function gatedLogin(req: Request, res: Response) {
       });
     }
 
-    // Verify password with Supabase Auth by getting user and checking password
-    const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    // CRITICAL: Verify password with Supabase Auth using client-side flow
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabaseClient = createClient(
+      process.env.VITE_SUPABASE_URL!,
+      process.env.VITE_SUPABASE_ANON_KEY!
+    );
     
-    if (listError) {
-      console.error("Error listing Supabase users:", listError);
-      return res.status(500).json({ 
-        message: "Authentication error"
-      });
-    }
+    const { data: signInData, error: signInError } = await supabaseClient.auth.signInWithPassword({
+      email: validatedData.email,
+      password: validatedData.password
+    });
 
-    // Find user by email in Supabase
-    const supabaseUser = listData.users.find(u => u.email === validatedData.email);
-    
-    if (!supabaseUser) {
-      console.log("No Supabase user found for:", validatedData.email);
+    if (signInError) {
+      console.error("Password verification failed:", signInError.message);
       return res.status(401).json({ 
         message: "Invalid email or password"
       });
     }
-
-    // For now, we'll trust the user exists in Supabase and validate via our profile
-    // In production, you'd want to verify the password against Supabase
-    // Since Supabase admin API doesn't have direct password verification,
-    // we'll use a simplified approach for admin access
+    
+    if (!signInData.user) {
+      console.error("Password verification failed: No user returned");
+      return res.status(401).json({ 
+        message: "Invalid email or password"
+      });
+    }
+    
+    console.log("Password verification successful for:", validatedData.email);
 
     console.log("Login successful for user:", userProfile.email, "Role:", userProfile.role, "Is Live:", userProfile.is_live, "Admin:", isAdmin);
 
