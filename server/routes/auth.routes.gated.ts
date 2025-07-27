@@ -47,11 +47,12 @@ export async function gatedRegister(req: Request, res: Response) {
     let supabaseUser;
     let supabaseError;
     
-    // First try with phone number
+    // First try with phone number - auto-confirm email since we use phone verification
     const createUserResult = await supabaseAdmin.auth.admin.createUser({
       email: validatedData.email,
       password: validatedData.password,
       phone: validatedData.phone,
+      email_confirm: true, // Auto-confirm email since we only require phone verification
       user_metadata: {
         firstName: validatedData.firstName,
         lastName: validatedData.lastName,
@@ -73,6 +74,7 @@ export async function gatedRegister(req: Request, res: Response) {
       const createUserResultNoPhone = await supabaseAdmin.auth.admin.createUser({
         email: validatedData.email,
         password: validatedData.password,
+        email_confirm: true, // Auto-confirm email since we only require phone verification
         user_metadata: {
           firstName: validatedData.firstName,
           lastName: validatedData.lastName,
@@ -204,13 +206,35 @@ export async function gatedLogin(req: Request, res: Response) {
       });
     }
 
-    // CRITICAL: Verify password with Supabase Auth using client-side flow
+    // CRITICAL: Verify password with Supabase Auth - using client with bypass for email confirmation
     const { createClient } = await import('@supabase/supabase-js');
     const supabaseClient = createClient(
       process.env.VITE_SUPABASE_URL!,
       process.env.VITE_SUPABASE_ANON_KEY!
     );
     
+    // First, ensure the user's email is confirmed in Supabase (required for signIn to work)
+    const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    if (listError) {
+      console.error("Error listing users:", listError);
+      return res.status(500).json({ message: "Authentication error" });
+    }
+    
+    const supabaseUser = listData.users.find(u => u.email === validatedData.email);
+    if (!supabaseUser) {
+      console.log("No Supabase user found for:", validatedData.email);
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+    
+    // Auto-confirm email if not confirmed (since we only require phone verification)
+    if (!supabaseUser.email_confirmed_at) {
+      await supabaseAdmin.auth.admin.updateUserById(supabaseUser.id, {
+        email_confirm: true
+      });
+      console.log("Auto-confirmed email for phone-verified user:", validatedData.email);
+    }
+    
+    // Now verify the password
     const { data: signInData, error: signInError } = await supabaseClient.auth.signInWithPassword({
       email: validatedData.email,
       password: validatedData.password
@@ -218,16 +242,12 @@ export async function gatedLogin(req: Request, res: Response) {
 
     if (signInError) {
       console.error("Password verification failed:", signInError.message);
-      return res.status(401).json({ 
-        message: "Invalid email or password"
-      });
+      return res.status(401).json({ message: "Invalid email or password" });
     }
     
     if (!signInData.user) {
       console.error("Password verification failed: No user returned");
-      return res.status(401).json({ 
-        message: "Invalid email or password"
-      });
+      return res.status(401).json({ message: "Invalid email or password" });
     }
     
     console.log("Password verification successful for:", validatedData.email);
