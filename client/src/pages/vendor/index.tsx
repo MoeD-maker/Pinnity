@@ -1159,10 +1159,15 @@ function DealCard({ deal }: { deal: any }) {
 }
 
 function VerificationRequirements({ business }: { business: any }) {
+  // Check for actual document URLs from the database
+  const hasBusinessLicense = business?.government_id || business?.governmentId;
+  const hasProofOfAddress = business?.proof_of_address || business?.proofOfAddress; 
+  const hasGovernmentId = business?.proof_of_business || business?.proofOfBusiness;
+  
   const documents = [
-    { id: 'business_license', name: 'Business License', status: business?.governmentId ? 'completed' : 'missing' },
-    { id: 'identity', name: 'Government-issued ID', status: business?.proofOfAddress ? 'completed' : 'missing' },
-    { id: 'proof_address', name: 'Proof of Address', status: business?.proofOfBusiness ? 'completed' : 'missing' }
+    { id: 'business_license', name: 'Business License', status: hasBusinessLicense ? 'completed' : 'missing' },
+    { id: 'identity', name: 'Government-issued ID', status: hasGovernmentId ? 'completed' : 'missing' },
+    { id: 'proof_address', name: 'Proof of Address', status: hasProofOfAddress ? 'completed' : 'missing' }
   ];
 
   const completedCount = documents.filter(doc => doc.status === 'completed').length;

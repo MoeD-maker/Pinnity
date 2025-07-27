@@ -662,6 +662,10 @@ app.get('/api/business/user/:userId', async (req, res) => {
       businessCategory: business.business_category,
       verificationStatus: business.verification_status,
       createdAt: business.created_at,
+      // Document fields
+      government_id: business.government_id,
+      proof_of_address: business.proof_of_address,
+      proof_of_business: business.proof_of_business,
       // Profile data
       email: business.email,
       firstName: business.first_name,
@@ -675,6 +679,24 @@ app.get('/api/business/user/:userId', async (req, res) => {
   } catch (error) {
     console.error('Get business error:', error);
     res.status(500).json({ error: 'Failed to fetch business data' });
+  }
+});
+
+// Business deals route for vendor dashboard
+app.get('/api/business/:businessId/deals', async (req, res) => {
+  try {
+    const businessId = req.params.businessId; // business ID number
+    console.log(`DEALS API: GET deals for business ${businessId}`);
+    
+    const result = await pool.query(`
+      SELECT * FROM deals WHERE business_id = $1 ORDER BY created_at DESC
+    `, [businessId]);
+    
+    console.log(`DEALS API: Found ${result.rows.length} deals for business ${businessId}`);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get business deals error:', error);
+    res.status(500).json({ error: 'Failed to fetch business deals' });
   }
 });
 
