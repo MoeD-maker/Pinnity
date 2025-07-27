@@ -338,7 +338,7 @@ export default function VendorsPage() {
             email: business.email || business.user?.email || "",
             phone: business.phone || "",
             address: business.address || "",
-            description: business.business_description || business.description || ""
+            description: business.description || ""
           }));
           
           console.log(`Loaded ${formattedBusinesses.length} businesses, including ${formattedBusinesses.filter((b: any) => b.verificationStatus === 'pending').length} pending`);
