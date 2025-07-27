@@ -259,6 +259,98 @@ app.get('/api/v1/admin/businesses/pending', async (req, res) => {
   }
 });
 
+// Individual business detail endpoint
+app.get('/api/v1/admin/business/:id', async (req, res) => {
+  try {
+    const businessId = req.params.id;
+    console.log(`Fetching business details for ID: ${businessId}`);
+    
+    const result = await pool.query(`
+      SELECT 
+        b.id,
+        b.business_name,
+        b.business_category,
+        b.verification_status,
+        b.government_id,
+        b.proof_of_address,
+        b.proof_of_business,
+        b.created_at as applied_date,
+        b.updated_at,
+        p.email,
+        p.first_name,
+        p.last_name,
+        p.phone,
+        p.created_at,
+        p.address,
+        p.user_type
+      FROM businesses_new b
+      LEFT JOIN profiles p ON b.profile_id = p.id
+      WHERE b.id = $1
+    `, [businessId]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+    
+    console.log(`Found business: ${result.rows[0].business_name}`);
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error fetching business details:', error);
+    res.status(500).json({ error: 'Failed to fetch business details' });
+  }
+});
+
+// Admin business approval endpoint
+app.post('/api/v1/admin/businesses/:id/approve', async (req, res) => {
+  try {
+    const businessId = req.params.id;
+    console.log(`Approving business ID: ${businessId}`);
+    
+    const result = await pool.query(`
+      UPDATE businesses_new 
+      SET verification_status = 'approved', updated_at = NOW()
+      WHERE id = $1
+      RETURNING *
+    `, [businessId]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+    
+    console.log(`Approved business: ${result.rows[0].business_name}`);
+    res.json({ message: 'Business approved successfully', business: result.rows[0] });
+  } catch (error) {
+    console.error('Error approving business:', error);
+    res.status(500).json({ error: 'Failed to approve business' });
+  }
+});
+
+// Admin business rejection endpoint
+app.post('/api/v1/admin/businesses/:id/reject', async (req, res) => {
+  try {
+    const businessId = req.params.id;
+    const { reason } = req.body;
+    console.log(`Rejecting business ID: ${businessId}, reason: ${reason}`);
+    
+    const result = await pool.query(`
+      UPDATE businesses_new 
+      SET verification_status = 'rejected', updated_at = NOW()
+      WHERE id = $1
+      RETURNING *
+    `, [businessId]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+    
+    console.log(`Rejected business: ${result.rows[0].business_name}`);
+    res.json({ message: 'Business rejected successfully', business: result.rows[0] });
+  } catch (error) {
+    console.error('Error rejecting business:', error);
+    res.status(500).json({ error: 'Failed to reject business' });
+  }
+});
+
 app.get('/api/v1/admin/deals', async (req, res) => {
   try {
     const result = await pool.query(`

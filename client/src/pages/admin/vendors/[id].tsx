@@ -113,37 +113,47 @@ export default function VendorDetailPage() {
       // For now, use mock data for demonstration purposes
       
       // Attempt to fetch from API first
-      const response = await apiRequest(`/api/business/${params.id}`);
+      const response = await apiRequest(`/api/v1/admin/business/${params.id}`);
       
       if (response) {
-        // Transform the data to include any additional fields we need for UI
-        const businessData = {
-          ...response,
-          id: parseInt(params.id),
-          appliedDate: response.user?.created_at || new Date().toISOString(),
+        // Transform the data to match our interface (API returns snake_case, we need camelCase)
+        const businessData: Business = {
+          id: response.id,
+          businessName: response.business_name || "Unknown Business",
+          businessCategory: response.business_category || "Other",
+          appliedDate: response.applied_date || response.created_at || new Date().toISOString(),
           status: response.status || "new",
-          email: response.user?.email || "",
+          verificationStatus: response.verification_status || "pending",
+          email: response.email || "",
+          phone: response.phone || "",
+          address: response.address || "",
+          description: response.description || "",
+          websiteUrl: response.website_url || "",
+          // Map document URLs if they exist
+          governmentId: response.government_id || "",
+          proofOfAddress: response.proof_of_address || "",
+          proofOfBusiness: response.proof_of_business || "",
           documents: [
             {
               id: 1,
-              name: "Business License",
-              type: "license",
-              status: "pending",
-              uploadDate: new Date().toISOString()
+              name: "Government ID",
+              type: "government_id",
+              status: response.government_id ? "verified" : "pending",
+              uploadDate: response.applied_date || new Date().toISOString()
             },
             {
               id: 2,
-              name: "Government ID",
-              type: "id",
-              status: "pending",
-              uploadDate: new Date().toISOString()
+              name: "Proof of Address",
+              type: "proof_of_address",
+              status: response.proof_of_address ? "verified" : "pending",
+              uploadDate: response.applied_date || new Date().toISOString()
             },
             {
               id: 3,
-              name: "Proof of Address",
-              type: "address",
-              status: "pending",
-              uploadDate: new Date().toISOString()
+              name: "Proof of Business",
+              type: "proof_of_business",
+              status: response.proof_of_business ? "verified" : "pending",
+              uploadDate: response.applied_date || new Date().toISOString()
             }
           ]
         };
