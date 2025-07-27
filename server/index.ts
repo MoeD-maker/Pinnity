@@ -634,6 +634,50 @@ app.delete('/api/v1/user/:userId/favorites/:dealId', async (req, res) => {
   }
 });
 
+// ADD MISSING BUSINESS API ROUTES
+// Business profile route for vendor dashboard
+app.get('/api/business/user/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId; // UUID string
+    console.log(`BUSINESS API: GET business profile for user ${userId}`);
+    
+    const result = await pool.query(`
+      SELECT b.*, p.email, p.first_name, p.last_name, p.phone, p.address, p.created_at
+      FROM businesses_new b
+      LEFT JOIN profiles p ON b.profile_id = p.id
+      WHERE b.profile_id = $1
+    `, [userId]);
+    
+    if (result.rows.length === 0) {
+      console.log(`BUSINESS API: No business found for user ${userId}`);
+      return res.status(404).json({ error: 'Business not found' });
+    }
+    
+    const business = result.rows[0];
+    // Convert snake_case to camelCase for frontend
+    const businessData = {
+      id: business.id,
+      userId: business.profile_id,
+      businessName: business.business_name,
+      businessCategory: business.business_category,
+      verificationStatus: business.verification_status,
+      createdAt: business.created_at,
+      // Profile data
+      email: business.email,
+      firstName: business.first_name,
+      lastName: business.last_name,
+      phone: business.phone, // From profiles table
+      address: business.address // From profiles table
+    };
+    
+    console.log(`BUSINESS API: Found business data for user ${userId}`);
+    res.json(businessData);
+  } catch (error) {
+    console.error('Get business error:', error);
+    res.status(500).json({ error: 'Failed to fetch business data' });
+  }
+});
+
 console.log('✅ Gated authentication routes registered');
 
 // Skip other routes for now
