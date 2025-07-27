@@ -173,7 +173,7 @@ export default function DocumentVerification({ businessId, documents, onDocument
                 >
                   <div className="flex items-start gap-3">
                     <div className="h-14 w-14 bg-muted rounded-md flex items-center justify-center flex-shrink-0 overflow-hidden border border-gray-200">
-                      {document.filePath && !document.filePath.includes('example.com') ? (
+                      {document.filePath && document.filePath !== 'null' && !document.filePath.includes('example.com') ? (
                         <img 
                           src={document.filePath} 
                           alt={document.name}
@@ -184,7 +184,7 @@ export default function DocumentVerification({ businessId, documents, onDocument
                             e.currentTarget.parentElement?.classList.add('fallback-icon');
                           }}
                         />
-                      ) : document.thumbUrl && !document.thumbUrl.includes('example.com') ? (
+                      ) : document.thumbUrl && document.thumbUrl !== 'null' && !document.thumbUrl.includes('example.com') ? (
                         <img 
                           src={document.thumbUrl} 
                           alt={document.name}
@@ -198,9 +198,10 @@ export default function DocumentVerification({ businessId, documents, onDocument
                       ) : (
                         <div className="flex flex-col items-center justify-center w-full h-full">
                           <FileText className="h-5 w-5 text-muted-foreground" />
-                          {(document.filePath?.includes('example.com') || document.thumbUrl?.includes('example.com')) && (
+                          {(!document.filePath || document.filePath === 'null' || document.filePath.includes('example.com') || 
+                            !document.thumbUrl || document.thumbUrl === 'null' || document.thumbUrl?.includes('example.com')) && (
                             <div className="text-xs text-orange-500 mt-1 text-center leading-tight">
-                              Placeholder
+                              Missing
                             </div>
                           )}
                         </div>
@@ -313,7 +314,7 @@ export default function DocumentVerification({ businessId, documents, onDocument
           
           <div className="py-4">
             <div className="border rounded-lg overflow-hidden bg-muted">
-              {selectedDocument?.filePath && !selectedDocument.filePath.includes('example.com') ? (
+              {selectedDocument?.filePath && selectedDocument.filePath !== 'null' && !selectedDocument.filePath.includes('example.com') ? (
                 // Only try to display if it's not a placeholder URL
                 selectedDocument.filePath.match(/\.(jpe?g|png|gif|webp)$/i) ? (
                   // For images, display an img tag
@@ -368,9 +369,9 @@ export default function DocumentVerification({ businessId, documents, onDocument
                   <FileText className="h-16 w-16 text-muted-foreground opacity-20" />
                   <div className="text-center">
                     <p className="text-sm text-muted-foreground mb-2">No preview available</p>
-                    {selectedDocument?.filePath?.includes('example.com') && (
+                    {(!selectedDocument?.filePath || selectedDocument.filePath === 'null' || selectedDocument.filePath.includes('example.com')) && (
                       <p className="text-xs text-orange-600 bg-orange-50 px-3 py-2 rounded-md border border-orange-200">
-                        This vendor has placeholder document URLs. Real documents need to be uploaded to view them.
+                        No documents have been uploaded for this vendor. They need to upload their verification documents.
                       </p>
                     )}
                   </div>
