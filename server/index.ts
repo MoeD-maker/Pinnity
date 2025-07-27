@@ -251,10 +251,10 @@ app.get('/api/v1/deals/featured', async (req, res) => {
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
     
     const result = await pool.query(`
-      SELECT d.*, b.business_name, b.business_category, b.address, b.city, b.state
+      SELECT d.*, b.business_name, b.business_category
       FROM deals d
       LEFT JOIN businesses_new b ON d.business_id = b.id
-      WHERE d.status = 'approved' AND d.is_featured = true
+      WHERE d.status = 'approved' AND d.featured = true
       ORDER BY d.created_at DESC
       LIMIT $1
     `, [limit]);
@@ -273,7 +273,7 @@ app.get('/api/v1/deals', async (req, res) => {
     console.log(`DEALS API: GET ${req.path} called`);
     
     const result = await pool.query(`
-      SELECT d.*, b.business_name, b.business_category, b.address, b.city, b.state
+      SELECT d.*, b.business_name, b.business_category
       FROM deals d
       LEFT JOIN businesses_new b ON d.business_id = b.id
       WHERE d.status = 'approved'
