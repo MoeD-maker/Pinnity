@@ -15,6 +15,7 @@ import {
   deprecationMiddleware
 } from "../../src/utils/routeVersioning";
 import { supabaseAdmin } from "../supabaseAdmin";
+import { createProfile, createBusiness } from "../supabaseQueries";
 
 /**
  * Authentication routes for login and registration
@@ -339,6 +340,8 @@ export function authRoutes(app: Express): void {
     ]),
     async (req: Request, res: Response) => {
       try {
+        console.info("[BUSINESS REGISTER] handler hit @", __filename);
+        
         // File upload verification completed - logs removed after successful audit
         
         // Handle form data
@@ -390,24 +393,66 @@ export function authRoutes(app: Express): void {
           proofOfBusiness: proofOfBusinessPath
         });
         
-        // Create user with business using the actual uploaded file paths
-        const user = await storage.createBusinessUser(
-          {
-            firstName,
-            lastName,
-            email,
-            password,
-            phone,
-            address
-          },
-          {
-            businessName,
-            businessCategory,
-            governmentId: governmentIdPath, // Use actual Supabase path
-            proofOfAddress: proofOfAddressPath,
-            proofOfBusiness: proofOfBusinessPath
+        // Create user with Supabase Auth
+        console.log("Creating Supabase user for business:", email);
+        const { data: supabaseUser, error: supabaseError } = await supabaseAdmin.auth.admin.createUser({
+          email: email,
+          password: password,
+          phone: phone,
+          user_metadata: {
+            firstName: firstName,
+            lastName: lastName,
+            phone: phone,
+            address: address,
+            userType: 'business',
+            phoneVerified: true,
+            businessName: businessName,
+            businessCategory: businessCategory
           }
-        );
+        });
+
+        if (supabaseError || !supabaseUser?.user) {
+          console.error("Supabase user creation failed:", supabaseError);
+          throw new Error(supabaseError?.message || "Failed to create user account");
+        }
+
+        console.log("Supabase user created:", supabaseUser.user.id);
+
+        // Create profile in our PostgreSQL database
+        const profile = await createProfile(supabaseUser.user.id, {
+          email: email,
+          firstName: firstName,
+          lastName: lastName,
+          phone: phone,
+          address: address,
+          userType: 'business',
+          phoneVerified: true
+        });
+
+        console.log("Profile created:", profile.id);
+
+        // Create business record in businesses_new table
+        const business = await createBusiness(profile.id, {
+          businessName: businessName,
+          businessCategory: businessCategory,
+          governmentId: governmentIdPath,
+          proofOfAddress: proofOfAddressPath,
+          proofOfBusiness: proofOfBusinessPath
+        });
+
+        console.log("Business created in businesses_new:", business.id);
+        console.info("[BUSINESS REGISTER] created", {
+          businessId: business.id, 
+          profileId: profile.id, 
+          email: email
+        });
+
+        // Simulate the expected user object structure
+        const user = {
+          id: profile.id,
+          email: profile.email,
+          userType: 'business'
+        };
         
         console.log('✅ Business user created with uploaded document paths');
         
@@ -502,25 +547,55 @@ export function authRoutes(app: Express): void {
         const proofOfAddressPath = (files.proofOfAddress[0] as any).signedUrl || files.proofOfAddress[0].path;
         const proofOfBusinessPath = (files.proofOfBusiness[0] as any).signedUrl || files.proofOfBusiness[0].path;
         
-        // Create user with business
-        const user = await storage.createBusinessUser(
-          {
-            firstName,
-            lastName,
-            email,
-            password,
-            phone,
-            address
-          },
-          {
-            businessName,
-            businessCategory,
-            governmentId: governmentIdPath,
-            proofOfAddress: proofOfAddressPath,
-            proofOfBusiness: proofOfBusinessPath,
-            
+        // Create user with Supabase Auth (legacy route)
+        console.log("Creating Supabase user for business (legacy):", email);
+        const { data: supabaseUser, error: supabaseError } = await supabaseAdmin.auth.admin.createUser({
+          email: email,
+          password: password,
+          phone: phone,
+          user_metadata: {
+            firstName: firstName,
+            lastName: lastName,
+            phone: phone,
+            address: address,
+            userType: 'business',
+            phoneVerified: true,
+            businessName: businessName,
+            businessCategory: businessCategory
           }
-        );
+        });
+
+        if (supabaseError || !supabaseUser?.user) {
+          console.error("Supabase user creation failed:", supabaseError);
+          throw new Error(supabaseError?.message || "Failed to create user account");
+        }
+
+        // Create profile in our PostgreSQL database
+        const profile = await createProfile(supabaseUser.user.id, {
+          email: email,
+          firstName: firstName,
+          lastName: lastName,
+          phone: phone,
+          address: address,
+          userType: 'business',
+          phoneVerified: true
+        });
+
+        // Create business record in businesses_new table
+        const business = await createBusiness(profile.id, {
+          businessName: businessName,
+          businessCategory: businessCategory,
+          governmentId: governmentIdPath,
+          proofOfAddress: proofOfAddressPath,
+          proofOfBusiness: proofOfBusinessPath
+        });
+
+        // Simulate the expected user object structure
+        const user = {
+          id: profile.id,
+          email: profile.email,
+          userType: 'business'
+        };
         
         // Generate JWT token
         const token = generateToken(user);

@@ -200,7 +200,7 @@ app.post('/api/v1/auth/login', gatedLogin);
 // Import and register the full auth routes for business registration
 console.log('🔥 Importing business registration routes...');
 try {
-  const { authRoutes } = await import('./routes/auth.routes.fixed.js');
+  const { authRoutes } = await import('./routes/auth.routes.fixed.ts');
   authRoutes(app);
   console.log('✅ Business registration routes registered');
 } catch (error) {

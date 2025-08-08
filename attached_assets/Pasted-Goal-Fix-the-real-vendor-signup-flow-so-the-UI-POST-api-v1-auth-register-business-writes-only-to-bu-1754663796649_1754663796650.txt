@@ -1,0 +1,76 @@
+Goal
+Fix the real vendor signup flow so the UI POST /api/v1/auth/register/business writes only to businesses_new and never touches businesses. The trigger error proves the current path still writes to businesses.
+
+Rules
+
+No manual SQL row edits or direct inserts for the proof.
+
+Keep the legacy trigger enabled.
+
+Step 1 — Trace the exact handler the UI hits
+
+Show the mount for /api/v1/auth/register/business in server/index.ts (file and line).
+
+Show which routes file implements that handler (open file and function).
+
+At the top of that handler, add:
+
+ts
+Copy
+Edit
+console.info("[BUSINESS REGISTER] handler hit @", __filename);
+Restart and reproduce the UI submit once to confirm the log appears. If it doesn’t, you’re in the wrong routes file.
+
+Step 2 — Find and remove the legacy insert on this code path
+
+In the same handler and any helper it calls, grep for all writes:
+
+INSERT INTO businesses
+
+db.insert(businesses // Drizzle
+
+Paste the exact lines found.
+
+Replace those writes with a single write to businesses_new using the existing “new-table” function you already have (e.g., createBusiness() that targets businesses_new). If there are two different helpers (legacy vs new), ensure the handler uses the new one.
+
+Step 3 — Keep the rest of the flow intact
+
+Keep multer upload, Supabase Storage uploads, CSRF, and any auth-user creation exactly as-is.
+
+On success, return 201 as before.
+
+Step 4 — Black-box UI proof (no manual DB writes)
+
+Hard refresh. Use the UI to register a vendor with email mohamad.diab+auto${Date.now()}@outlook.com.
+
+Provide:
+
+Server logs showing [BUSINESS REGISTER] handler hit @ <file>
+
+Status code 201 for POST /api/v1/auth/register/business.
+
+SQL:
+
+sql
+Copy
+Edit
+-- must be 1 row in the new table
+SELECT business_name, business_category, government_id, proof_of_address, proof_of_business, created_at
+FROM businesses_new
+WHERE lower(email) = lower('<the new email>') OR business_name ILIKE '%auto%'
+ORDER BY created_at DESC
+LIMIT 1;
+
+-- must be 0 in legacy
+SELECT COUNT(*) AS legacy_count
+FROM businesses
+WHERE lower(email) = lower('<the new email>');
+GET /api/v1/admin/businesses/pending snippet showing exactly one entry for that business.
+
+Then log in via the UI with the same credentials and show POST /api/v1/auth/login 200 plus the [LOGIN] success log.
+
+Step 5 — Remove the temporary console.info lines once proof is captured.
+
+If you still get the trigger error
+
+You’re still calling a legacy helper. Show the call graph from the handler to the insert and replace it with the businesses_new insert.
