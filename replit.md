@@ -1,230 +1,60 @@
 # Pinnity - Local Deal Discovery Platform
 
 ## Overview
+Pinnity is a comprehensive full-stack web application designed to connect local businesses with customers through deal discovery. The platform enables businesses to create and manage promotional deals, while providing customers with an intuitive interface to browse, favorite, and redeem local offers. The project's vision is to become the leading platform for local deal discovery, fostering community engagement and supporting local economies by making promotional offers easily accessible and manageable.
 
-Pinnity is a comprehensive full-stack web application that connects local businesses with customers through deal discovery. The platform enables businesses to create and manage promotional deals while providing customers with an intuitive interface to browse, favorite, and redeem local offers. Built with modern TypeScript/React frontend and Express.js backend, the application emphasizes security, user experience, and scalable architecture.
+## User Preferences
+Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
 ### Frontend Architecture
-- **Framework**: React with TypeScript for type safety
-- **Styling**: Tailwind CSS with shadcn/ui component library
-- **State Management**: TanStack React Query for server state management
-- **Build Tool**: Vite for fast development and optimized builds
-- **UI Components**: Radix UI primitives for accessible, composable components
+- **Framework**: React with TypeScript
+- **Styling**: Tailwind CSS with shadcn/ui component library, using Radix UI primitives
+- **State Management**: TanStack React Query
+- **Build Tool**: Vite
 
 ### Backend Architecture
-- **Runtime**: Node.js with Express.js framework
-- **Language**: TypeScript for full-stack type safety
+- **Runtime**: Node.js with Express.js
+- **Language**: TypeScript
 - **Database ORM**: Drizzle ORM with PostgreSQL
-- **Authentication**: JWT-based auth with secure cookie storage
-- **File Upload**: Multer with Cloudinary integration
-- **Security**: Comprehensive middleware stack including CSRF protection, rate limiting, and input validation
+- **Authentication**: JWT-based authentication with secure cookie storage
+- **File Upload**: Multer with integrated storage (Supabase Storage)
+- **Security**: CSRF protection, rate limiting, input validation, bcrypt password hashing
 
 ### Database Design
-- **Primary Database**: PostgreSQL with Supabase hosting
-- **Schema Management**: Drizzle Kit for migrations and schema evolution
+- **Primary Database**: PostgreSQL hosted on Supabase
+- **Schema Management**: Drizzle Kit for migrations
 - **Key Tables**: Users, Businesses, Deals, Favorites, Redemptions, Approvals
-- **Location Data**: Latitude/longitude coordinates for mapping functionality
+- **Location Data**: Latitude/longitude coordinates for mapping
 
-## Key Components
+### Key Components
+- **Authentication & Authorization System**: Multi-tier user system (individuals, businesses, admins) with JWT and secure cookies.
+- **Business Verification System**: Document upload and validation workflow with admin approval and verification status tracking.
+- **Deal Management System**: Rich deal creation, image uploads, categorization, temporal validity, and admin moderation.
+- **File Upload & Processing**: Secure file validation (magic number), image resizing/optimization (Cloudinary initially, migrated to Supabase Storage), PDF processing, and sanitized filename handling.
+- **Location & Mapping**: Geospatial data storage for businesses and map-based deal discovery.
 
-### Authentication & Authorization System
-- Multi-tier user system (individuals, businesses, admins)
-- JWT tokens with secure httpOnly cookies
-- CSRF protection with token validation
-- Rate limiting for security endpoints
-- Bcrypt password hashing with configurable rounds
-
-### Business Verification System
-- Document upload and validation workflow
-- Admin approval process for business accounts
-- File type validation and security scanning
-- Verification status tracking (pending, verified, rejected)
-
-### Deal Management System
-- Rich deal creation with image uploads and cropping
-- Category-based organization
-- Temporal deal validity (start/end dates)
-- Admin moderation workflow
-- Deal statistics and analytics
-
-### File Upload & Processing
-- Secure file validation by magic number detection
-- Image resizing and optimization via Cloudinary
-- PDF document processing for business verification
-- Sanitized filename handling and storage
-
-### Location & Mapping
-- Geospatial data storage for businesses
-- Map-based deal discovery interface
-- Location-based filtering and search
-
-## Data Flow
-
-### User Registration Flow
-1. User submits registration form with validation
-2. Server validates input and checks for existing accounts
-3. Password hashing and secure storage
-4. For businesses: document upload and verification queue
-5. Email/SMS verification (configurable)
-6. Account activation and JWT token generation
-
-### Deal Creation Flow
-1. Authenticated business user creates deal
-2. Image upload and processing through Cloudinary
-3. Deal data validation and sanitization
-4. Storage in pending status
-5. Admin review and approval process
-6. Publication to public deal feed
-
-### Deal Discovery Flow
-1. Public API serves approved deals with business data
-2. Frontend renders deals in list/map views
-3. User interactions (favorites, views) tracked
-4. Real-time filtering and search capabilities
+### Data Flow Highlights
+- **User Registration**: Validation, secure password storage, document upload for businesses, and account activation with JWT.
+- **Deal Creation**: Business user creation, image processing, validation, and admin approval before publication.
+- **Deal Discovery**: Public API for approved deals, frontend rendering, and real-time filtering/search.
 
 ## External Dependencies
 
 ### Infrastructure Services
-- **Supabase**: PostgreSQL database hosting with real-time capabilities
-- **Cloudinary**: Image upload, processing, and CDN
-- **Replit**: Development and hosting environment
+- **Supabase**: PostgreSQL database hosting, authentication, and storage (for file uploads).
+- **Cloudinary**: Image upload, processing, and CDN (initially, largely replaced by Supabase Storage).
+- **Replit**: Development and hosting environment.
 
 ### Third-Party Integrations
-- **Twilio**: SMS verification services (configured but optional)
-- **File Processing**: pdf-parse for document validation
-- **Image Processing**: file-type for security validation
+- **Twilio**: SMS verification services.
+- **pdf-parse**: For PDF document validation.
+- **file-type**: For secure file type validation.
 
-### Security & Monitoring
-- **bcryptjs**: Password hashing
-- **jsonwebtoken**: JWT token management
-- **csurf**: CSRF protection
-- **express-rate-limit**: Rate limiting middleware
-
-## Deployment Strategy
-
-### Development Environment
-- Replit-based development with hot reloading
-- Supabase PostgreSQL for database development
-- Environment-based configuration management
-- Comprehensive logging and debugging tools
-
-### Production Deployment
-- Cloud Run deployment target (configured)
-- Environment variable validation at startup
-- Secure secret management
-- Database migration automation
-
-### Build Process
-- Vite production build for frontend assets
-- esbuild for server-side TypeScript compilation
-- Asset optimization and minification
-- Static file serving configuration
-
-## User Preferences
-
-Preferred communication style: Simple, everyday language.
-
-## Recent Changes
-
-Recent Changes:
-- July 27, 2025: **BUSINESS REGISTRATION FILE UPLOAD SYSTEM COMPLETELY FIXED**
-  - **Fixed Server Routing**: Added missing business registration routes to server/index.ts to ensure API endpoints work properly
-  - **Updated File Upload Logic**: Modified auth.routes.fixed.ts to use actual Supabase Storage paths instead of placeholder values
-  - **Resolved TypeScript Issues**: Fixed file property access with proper type assertions for Supabase middleware
-  - **Tested End-to-End**: Confirmed new business registrations now upload files to Supabase Storage with proper validation
-  - **Document Storage Working**: Test business (ID: 58) successfully created with real document URLs in business-documents/pending/ folder
-  - **Admin Dashboard Ready**: Future vendor documents will now display properly instead of showing "Missing" status
-  - **Upload Flow Confirmed**: Files go through complete validation -> Supabase upload -> signed URL generation -> database storage
-- July 20, 2025: **MARKETING CONSENT SUPABASE SYNCHRONIZATION COMPLETED**
-  - **Fixed Marketing Consent Display**: Resolved admin dashboard showing incorrect "Opted Out" status for users who selected marketing opt-in
-  - **Database Consistency**: Fixed supabaseQueries.ts to include marketing_consent field in all user data mappings
-  - **Supabase Metadata Sync**: Synced existing marketing consent data to Supabase Auth user_metadata for full visibility
-  - **Registration Enhancement**: Updated registration process to include marketing consent in both PostgreSQL profiles and Supabase Auth metadata
-  - **Data Verification**: Confirmed mohamad.diab@hotmail.com now correctly shows "Opted In" status (was previously incorrectly showing "Opted Out")
-  - **Complete Integration**: Marketing preferences now stored and synchronized across both database systems
-- July 19, 2025: **COMPLETE SUPABASE SYNCHRONIZATION IMPLEMENTED**
-  - **Data Cleanup**: Removed all test users and businesses except admin (cleared 18 users, 2 businesses)  
-  - **Admin Migration**: Successfully migrated admin user to Supabase Auth (Password: AdminAlbe@123)
-  - **Complete Legacy Removal**: Eliminated legacy `users` table - now 100% Supabase system
-  - **Primary System**: Made Supabase the main authentication system at `/api/auth/*` endpoints
-  - **Full Sync Implementation**: All user/business operations now sync between PostgreSQL and Supabase
-  - **Registration Sync**: New users created in both Supabase Auth + PostgreSQL profiles
-  - **Update Sync**: Profile/business updates sync to Supabase Auth metadata
-  - **Deletion Sync**: Comprehensive cleanup from both PostgreSQL and Supabase Auth  
-  - **Legacy Compatibility**: Old routes still work for backward compatibility
-  - **Enhanced Logging**: Full visibility into sync operations across both systems
-- July 18, 2025: Completed Unified Supabase + PostgreSQL User Management System Implementation
-  - **Database Schema**: Created new `profiles` and `businesses_new` tables with proper foreign key relationships
-  - **Migration Success**: Migrated 19 existing users and 2 businesses to the new unified system
-  - **Supabase Integration**: Implemented Supabase Auth + PostgreSQL profiles for unified user management
-  - **New API Endpoints**: Built comprehensive auth.routes.supabase.ts and admin.routes.supabase.ts with full CRUD operations
-  - **Database Queries**: Created server/supabaseQueries.ts with optimized PostgreSQL queries using connection pooling
-  - **Migration Framework**: Developed complete migration scripts and Jest test suite for system validation
-  - **Sync Status**: System now tracks sync between Supabase Auth (3 users) and local profiles (19 users)
-  - **Admin Dashboard Integration**: Updated client/src/pages/admin/users/index.tsx to use new unified endpoint with fallback to legacy API
-  - **Frontend Compatibility**: Enhanced admin users page with support for both legacy and unified API response formats
-  - **Testing Suite**: Created comprehensive test scripts to validate unified system functionality
-  - **Future-Proof Architecture**: Easy to extend with additional Supabase features like real-time subscriptions
-- January 22, 2025: Re-enabled Phone Verification for All Users
-  - **Full SMS Verification**: Phone verification now enabled for both individual and business users
-  - **Twilio Integration**: Complete SMS verification flow using Twilio service with real phone number validation
-  - **6-digit Codes**: Users receive SMS codes with 10-minute expiration for security
-  - **Production Ready**: Twilio credentials configured and working (Account SID, Auth Token, Phone Number all present)
-  - **Seamless Flow**: Users must verify phone numbers before completing registration
-- July 15, 2025: Enhanced User Experience with Automatic Homepage Redirect
-  - **Standardized Redirect Flow**: Both individual and business users now redirect to homepage after successful signup and phone verification
-  - **Improved Success Messages**: Added consistent welcome messages for both user types before redirect
-  - **Optimized Timing**: Set 1.5-second delay before redirect to allow users to see success confirmation
-  - **Enhanced UX**: Users now automatically signed in and redirected to main app after registration completion
-  - **Consistent Experience**: Both signup flows now provide identical post-registration experience
-- July 15, 2025: Complete File Organization Fix for Business Registration
-  - **Fixed Upload Path Issue**: Files now correctly upload to "pending" folder instead of "anonymous" during registration
-  - **Implemented File Movement System**: Added moveFilesToUserFolder() function that automatically moves files from pending to user-specific folders after user creation
-  - **Enhanced File Manager**: Created server/fileManager.ts with utilities for file organization and signed URL generation
-  - **Resolved Username Constraints**: Fixed duplicate username errors by adding timestamp suffixes to business usernames
-  - **Improved Registration Flow**: Business registration now creates user first, then moves files to proper user folder and updates business record
-  - **Added Comprehensive Testing**: Created test scripts to verify file organization and business registration end-to-end functionality
-  - **Enhanced Error Handling**: Added graceful error handling for file operations and better logging throughout the process
-- July 13, 2025: Fixed Business Signup Form Implementation
-  - **Corrected Form Submission**: Fixed BusinessSignupForm to use single backend endpoint instead of dual Supabase + backend approach
-  - **Added JSON Response Parsing**: Implemented proper JSON response parsing for business registration endpoint
-  - **Enhanced Error Handling**: Added comprehensive error handling with user-friendly toast notifications
-  - **File Upload Validation**: Ensured all required documents are validated before submission
-  - **Simplified Architecture**: Removed conflicting dual registration approach that was causing data inconsistencies
-- July 12, 2025: Complete Migration from Cloudinary to Supabase Storage
-  - **Private Storage Bucket**: Created 'user-docs' private bucket with signed URL access and edge CDN delivery
-  - **Upload Middleware**: Replaced server/uploadMiddleware.ts with server/uploadMiddleware.supabase.ts for Supabase Storage
-  - **File Management**: Implemented server/supabaseStorage.ts with upload, signed URL generation, and cleanup utilities
-  - **Security Preservation**: Maintained all existing file validation, MIME type checking, and security features
-  - **Server Integration**: Added storage initialization to server startup with automatic bucket creation
-  - **Route Updates**: Updated auth.routes.fixed.ts to use Supabase signed URLs instead of Cloudinary URLs
-  - **CDN Performance**: Enabled edge CDN with cache optimization for improved file delivery speed
-- July 12, 2025: Complete Supabase Auth Integration - Server-side Implementation
-  - **Server Admin SDK**: Implemented Supabase Admin SDK in server/supabaseAdmin.ts for user creation
-  - **Authentication Routes**: Updated auth.routes.fixed.ts with Supabase user creation before local database storage
-  - **Dual Authentication**: Users now created in both Supabase (primary) and local database (compatibility)
-  - **UUID Implementation**: Server now returns Supabase UUID as primary user ID instead of local database ID
-  - **Environment Variables**: Added SUPABASE_SERVICE_ROLE_KEY for server-side admin operations
-  - **Error Handling**: Added comprehensive error handling for Supabase user creation with file cleanup
-- January 12, 2025: Migrated from Neon Database to Supabase PostgreSQL
-  - **Database Migration**: Switched from @neondatabase/serverless to standard pg client with Supabase
-  - **Infrastructure Update**: Updated database connection to use Supabase PostgreSQL instead of Neon
-  - **Environment Variables**: Added VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY for frontend Supabase client
-  - **Documentation Update**: Updated replit.md to reflect Supabase as primary database provider
-  - **Client Setup**: Created src/lib/supabaseClient.ts for frontend Supabase integration
-- June 23, 2025: Complete TypeScript compilation error resolution across entire application
-  - **Client-side fixes (45+ errors)**: useOfflineFormPersistence hook signature, Deal/Favorite/Business type imports, ImageCropper zoom parameters, ValidatedFormField array types, admin users page error handling, vendor profile Image constructor conflicts, vendor deals edit Calendar imports/API calls
-  - **Server-side fixes (164+ errors)**: Extended schema definitions for insertUserSchema (phoneVerified), insertBusinessSchema (verificationStatus, phone, address, etc.), insertDealApprovalSchema (status, reviewerId, feedback), and insertPasswordResetTokenSchema (ipAddress, userAgent)
-  - **Zod schema fixes**: Applied const assertions to all .omit() calls (15 locations) to resolve "boolean is not assignable to type 'never'" errors
-  - **Admin API fixes**: Removed status property from createDealApproval calls to match DealApprovalInsert type requirements
-  - **Type safety achievement**: Zero compilation errors across client and server with complete type safety
-  - **Application status**: Fully operational with admin dashboard showing live data (5 pending vendors, 20 users)
-  - All core functionality restored including authentication, deal management, image processing, and admin controls
-- June 16, 2025: Initial setup
-
-## Changelog
-
-Changelog:
-- June 16, 2025. Initial setup
+### Security Libraries
+- **bcryptjs**: Password hashing.
+- **jsonwebtoken**: JWT token management.
+- **csurf**: CSRF protection.
+- **express-rate-limit**: Rate limiting middleware.
+```

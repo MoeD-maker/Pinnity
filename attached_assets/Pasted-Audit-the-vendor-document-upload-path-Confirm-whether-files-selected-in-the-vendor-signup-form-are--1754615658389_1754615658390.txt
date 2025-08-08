@@ -1,0 +1,161 @@
+Audit the vendor document upload path. Confirm whether files selected in the vendor signup form are received by the server via multer and uploaded to Supabase Storage. If not, provide a minimal patch.
+
+Scope
+Client: vendor signup form and any helpers that build the request
+
+Server: routes that handle vendor registration, multer config, Supabase upload helpers
+
+Storage: bucket, key naming, and whether uploads are public or private
+
+Files to inspect
+client/src/pages/auth/BusinessSignupForm.tsx
+
+client/src/lib/api.ts and any API helpers used by the signup form
+
+client/src/components/auth/TwilioPhoneVerification.tsx and client/src/lib/smsService.ts only if they block submission
+
+server/routes/unified-routes.ts
+
+server/routes/auth.routes.supabase.ts
+
+server/routes/auth.routes.gated.ts
+
+server/index.ts or main router where routes are mounted
+
+server/storage.ts or Supabase wrapper utilities
+
+shared/schema.ts if request validation touches upload fields
+
+What to verify
+Frontend uses FormData for vendor signup and does not set Content-Type manually.
+
+Frontend submits to a route that has multer attached. Field names must match multer config exactly: govId, proofAddress, proofBusiness.
+
+Server mounts a route with multer.memoryStorage() and upload.fields([{name:'govId'},{name:'proofAddress'},{name:'proofBusiness'}]).
+
+Inside the handler, req.files is defined and each of the three fields has exactly one file.
+
+Handler reads buffer, originalname, mimetype from req.files[...] and calls a Supabase upload helper with proper bucket and key.
+
+Supabase bucket exists. Bucket access is private. The handler stores only object keys in DB and returns no permanent public URLs. Signed URLs are generated only on read.
+
+Error handling: if any file is missing or upload fails, the handler returns an error with an actionable message and no partial DB writes.
+
+Add temporary diagnostics
+In the signup submit handler, log fd.get('govId') types and sizes before sending.
+
+In the server route, add logs:
+
+start of handler
+
+Object.keys(req.files || {})
+
+for each expected field, log file originalname, mimetype, size = buffer.length
+
+In the Supabase upload helper, log the final bucket and key, and the response error if any.
+
+Remove logs after verification.
+
+Black box tests
+FormData sanity check with curl
+
+ruby
+Copy
+Edit
+curl -i -X POST http://localhost:3000/api/auth/register/business/unified \
+  -H "Cookie: <if CSRF required, include cookie>" \
+  -F "businessName=Test Co" \
+  -F "ownerName=Tester" \
+  -F "email=tester@example.com" \
+  -F "phone=+16475550123" \
+  -F "govId=@/tmp/govid.png" \
+  -F "proofAddress=@/tmp/address.pdf" \
+  -F "proofBusiness=@/tmp/proof.pdf"
+Expected:
+
+200 or 201
+
+Server logs show three files with nonzero sizes
+
+Response JSON includes DB ids and stored object keys, not public URLs
+
+Frontend E2E
+
+In the app, go to vendor signup, select three files, submit.
+
+Check server logs for the three files.
+
+Confirm Supabase bucket now contains three new objects under a path like vendor-docs/{businessId}/....
+
+If you have Cypress, add an e2e that stubs the files with attachFile and asserts the server received req.files with three entries.
+
+Code smells to look for
+JSON submission to a route that expects multipart. If JSON.stringify is used, files are never sent.
+
+Posting to /api/auth/gated/register while multer is only attached on a different route such as /api/auth/register/business/unified or /auth/register/business/supabase.
+
+Manually setting Content-Type: multipart/form-data on fetch. This breaks boundary formation. The browser must set it.
+
+Returning raw Supabase public URLs from the create handler. Prefer storing keys and generating signed URLs on read.
+
+No CSRF coverage on this POST while other POSTs use a helper. Align behavior.
+
+Acceptance criteria
+Vendor signup uses FormData and hits a multer-enabled route.
+
+req.files.govId[0].buffer.length > 0, same for proofAddress and proofBusiness.
+
+Supabase upload returns object keys. Keys are stored. No permanent public URLs are returned.
+
+On retry or duplicate submits, uploads are idempotent per business by using stable keys or by de-duplicating.
+
+If broken, propose minimal fix
+Client
+
+In BusinessSignupForm.tsx, replace JSON submit with:
+
+go
+Copy
+Edit
+const fd = new FormData();
+fd.append('businessName', data.businessName);
+fd.append('ownerName', data.ownerName);
+fd.append('email', data.email);
+fd.append('phone', normalizedPhone);
+fd.append('govId', data.govId[0]);
+fd.append('proofAddress', data.proofAddress[0]);
+fd.append('proofBusiness', data.proofBusiness[0]);
+await fetch('/api/auth/register/business/unified', { method: 'POST', body: fd, credentials: 'include' });
+Server
+
+In unified-routes.ts or the actual mounted file, attach:
+
+php
+Copy
+Edit
+const upload = multer({ storage: multer.memoryStorage() });
+router.post('/auth/register/business/unified',
+  upload.fields([
+    { name: 'govId', maxCount: 1 },
+    { name: 'proofAddress', maxCount: 1 },
+    { name: 'proofBusiness', maxCount: 1 },
+  ]),
+  registerBusinessUnified
+);
+In the handler, for each file:
+
+php
+Copy
+Edit
+const file = (req.files as any).govId?.[0];
+await supabase.storage.from('vendor-docs').upload(key, file.buffer, { contentType: file.mimetype, upsert: true });
+Final confirmation steps
+Create a test vendor in the UI and upload three small test files.
+
+Verify server logs show three files received with sizes.
+
+Open Supabase Studio and confirm objects exist under the expected path.
+
+Try to fetch a signed URL from your admin read endpoint to prove private access.
+
+Remove temporary logs. Commit the changes.

@@ -119,33 +119,33 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
         return;
       }
 
-      // Prepare JSON data for registration
-      const registrationData = {
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        password: data.password,
-        phone: data.phone,
-        address: data.address,
-        phoneVerified: isPhoneVerified,
-        marketingConsent: data.marketingConsent || false,
-        role: 'vendor',
-        // Business-specific fields
-        businessName: data.businessName,
-        businessCategory: data.category,
-        city: data.city || '',
-        province: data.province || '',
-        postalCode: data.postalCode || ''
-      };
+      // Verified: FormData contains all required files with proper types and sizes
 
-      // Register business using our gated backend endpoint (handles role-based gating)
-      const response = await fetch('/api/auth/gated/register', {
+      // Prepare FormData for registration with file uploads
+      const formData = new FormData();
+      
+      // Add text fields
+      formData.append('firstName', data.firstName);
+      formData.append('lastName', data.lastName);
+      formData.append('email', data.email);
+      formData.append('password', data.password);
+      formData.append('phone', data.phone);
+      formData.append('address', data.address);
+      formData.append('businessName', data.businessName);
+      formData.append('businessCategory', data.category);
+      formData.append('termsAccepted', 'true');
+      
+      // Add file uploads with exact field names that match multer config
+      formData.append('governmentId', uploadedFiles.governmentId);
+      formData.append('proofOfAddress', uploadedFiles.proofOfAddress);
+      formData.append('proofOfBusiness', uploadedFiles.proofOfBusiness);
+
+      // Use the working business registration endpoint with file upload support
+      const response = await fetch('/api/v1/auth/register/business', {
         method: 'POST',
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(registrationData)
+        // Don't set Content-Type header - let browser set it with boundary
+        body: formData
       });
 
       let result: any;
