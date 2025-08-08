@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
+import { queryClient } from "@/lib/queryClient";
 import TwilioPhoneVerification from "./TwilioPhoneVerification";
 import { Eye, EyeOff, Upload } from "lucide-react";
 
@@ -110,12 +111,24 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = form;
 
+  const handleSignupSuccess = (vendor: any) => {
+    console.info("[BusinessSignupForm] Signup success, redirecting to /vendor");
+    // Existing success actions (toast, cache update, etc.)
+    toast({
+      title: "Signup successful!",
+      description: "Welcome to Pinnity! Your business account has been created.",
+    });
+    queryClient.invalidateQueries(["vendor"]);
+    setLocation("/vendor");
+  };
+
   const onSubmit = async (data: BusinessSignupData, verifiedOverride: boolean = false) => {
+    pendingDataRef.current = data;
+    console.info("[BusinessSignupForm] Saved form data in pendingDataRef before verification:", pendingDataRef.current);
     console.info('onSubmit called, override=', verifiedOverride, ' isPhoneVerified=', isPhoneVerified);
     
     // If phone not verified yet and we're not overriding, save form and show verify step
     if (!verifiedOverride && !skipPhoneVerification && !isPhoneVerified) {
-      pendingDataRef.current = data;
       setCurrentStep('phone');
       return;
     }
@@ -203,16 +216,8 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
       // Move to completion step
       setCurrentStep('complete');
       
-      // Show success message and redirect to home page
-      toast({
-        title: "Business registration successful!",
-        description: "Welcome to Pinnity! Your business is now registered and you're signed in.",
-      });
-      
-      setTimeout(() => {
-        console.log("Redirecting business user to vendor dashboard...");
-        setLocation('/vendor');
-      }, 1500); // Small delay to show the success message
+      // Handle success using the centralized function
+      handleSignupSuccess(result);
       
     } catch (error) {
       console.error("Registration error:", error);
@@ -239,6 +244,7 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
 
     const saved = pendingDataRef.current;
     if (saved) {
+      console.info("[BusinessSignupForm] Calling override submit with data:", pendingDataRef.current);
       // Bypass the early return using the override flag
       await onSubmit(saved, true);
       pendingDataRef.current = null;
