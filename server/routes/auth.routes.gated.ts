@@ -175,6 +175,8 @@ export async function gatedRegister(req: Request, res: Response) {
  */
 export async function gatedLogin(req: Request, res: Response) {
   try {
+    console.info("[LOGIN] handler hit");
+    
     const validatedData = gatedLoginSchema.parse(req.body);
     
     console.log("Login attempt for:", validatedData.email);
@@ -200,8 +202,9 @@ export async function gatedLogin(req: Request, res: Response) {
     // For admin users, allow login regardless of gating
     const isAdmin = userProfile.user_type === 'admin' || userProfile.role === 'admin';
     
-    // Check if individual user is gated (but allow admin always)
-    if (!isAdmin && userProfile.role === 'individual' && !userProfile.is_live) {
+    // Check if individual user is gated (but allow admin and business users always)
+    const isBusiness = userProfile.user_type === 'business' || userProfile.role === 'vendor';
+    if (!isAdmin && !isBusiness && userProfile.role === 'individual' && !userProfile.is_live) {
       return res.status(403).json({ 
         message: 'Thank you for signing up! We will email you as soon as we are live!'
       });
@@ -322,6 +325,8 @@ export async function gatedLogin(req: Request, res: Response) {
     );
     setAuthCookie(res, 'auth_token', token, cookieOptions);
 
+    console.info("[LOGIN] success", validatedData.email);
+    
     return res.status(200).json({
       message: "Login successful",
       userId: userProfile.id,
@@ -330,12 +335,12 @@ export async function gatedLogin(req: Request, res: Response) {
       is_live: userProfile.is_live
     });
 
-  } catch (error) {
-    console.error("Login error:", error);
-    if (error instanceof z.ZodError) {
+  } catch (err: any) {
+    console.error("[LOGIN] error", { name: err.name, msg: err.message, code: err.code, stack: err.stack });
+    if (err instanceof z.ZodError) {
       return res.status(400).json({ 
         message: "Validation error",
-        errors: error.errors
+        errors: err.errors
       });
     }
     return res.status(500).json({ 
