@@ -339,6 +339,8 @@ export function authRoutes(app: Express): void {
     ]),
     async (req: Request, res: Response) => {
       try {
+        // File upload verification completed - logs removed after successful audit
+        
         // Handle form data
         const businessName = req.body.businessName;
         const businessCategory = req.body.businessCategory;

@@ -1,0 +1,141 @@
+Goal:
+Audit the vendor document upload flow from the client to Supabase Storage. Confirm whether files selected in BusinessSignupForm.tsx are received by the server, handled by multer, uploaded to Supabase, and stored in the database.
+If not, identify exactly where the break occurs and provide a minimal fix. Do not skip any steps.
+
+Step 1 — Client form submission
+Open client/src/components/auth/BusinessSignupForm.tsx.
+
+Find the form submit handler.
+
+Confirm:
+
+It creates a FormData object (not JSON).
+
+It appends the three document files with the exact field names: governmentId, proofOfAddress, proofOfBusiness.
+
+It appends all required text fields (name, email, phone, etc.).
+
+It posts to exactly /api/v1/auth/register/business (or whatever the actual path is).
+
+Write down the exact field names and POST path you find.
+
+Step 2 — Server route mounting
+Open server/index.ts.
+
+Search for the POST path found in Step 1.
+
+Confirm:
+
+That path is actually mounted in Express.
+
+It is not commented out.
+
+It is not pointing to a placeholder or JSON-only route.
+
+If the route is missing:
+
+Note that the client is calling an endpoint that does not exist.
+
+Do not “fix” yet — just record that fact.
+
+Step 3 — Multer configuration
+If the route exists, open the file where its handler is defined.
+
+Likely server/routes/auth.routes.supabase.ts or server/routes/unified-routes.ts.
+
+Check for a multer instance:
+
+ts
+Copy
+Edit
+import multer from 'multer';
+const upload = multer({ storage: multer.memoryStorage() });
+Confirm:
+
+The route uses upload.fields([...]).
+
+The field names in upload.fields exactly match the client’s field names from Step 1.
+
+If no multer is attached, note it — this means req.files will always be empty.
+
+Step 4 — Handler logic
+In the route handler (e.g. registerBusiness), check:
+
+Does it read req.files for each of the three fields?
+
+Does it log or validate originalname, mimetype, and buffer.length?
+
+Does it upload those buffers to Supabase using supabase.storage.from(...).upload(...)?
+
+Does it store object keys (not public URLs) in the database?
+
+If it references supabasePath on the file without actually calling upload, note that — it means the upload step is missing.
+
+Step 5 — Supabase storage configuration
+Open server/storage.ts.
+
+Find the function used for uploading vendor docs.
+
+Confirm:
+
+It writes to a private bucket (e.g. vendor-docs).
+
+It uses upsert: true or equivalent to handle re-uploads.
+
+Note the bucket name and key pattern.
+
+Step 6 — Database persistence
+Find the Drizzle schema for businesses_new in shared/schema.ts.
+
+Identify the columns that store the three doc paths.
+
+Confirm the handler in Step 4 writes to those columns.
+
+If nulls are written instead, record that as a failure.
+
+Step 7 — Manual verification logs
+Before attempting a fix, add temporary logs at the top of the handler:
+
+ts
+Copy
+Edit
+console.log("files keys:", Object.keys(req.files || {}));
+['governmentId','proofOfAddress','proofOfBusiness'].forEach(k => {
+  const f = (req.files as any)?.[k]?.[0];
+  console.log(k, f?.originalname, f?.mimetype, f?.buffer?.length);
+});
+These must run in a real server request to prove files are received.
+
+Step 8 — Black-box cURL test
+Run a test against the dev server:
+
+bash
+Copy
+Edit
+curl -i -X POST http://localhost:3000/api/v1/auth/register/business \
+  -F "businessName=Test Co" \
+  -F "ownerName=Tester" \
+  -F "email=test@example.com" \
+  -F "phone=+16475550123" \
+  -F "governmentId=@/tmp/govid.png" \
+  -F "proofOfAddress=@/tmp/address.pdf" \
+  -F "proofOfBusiness=@/tmp/proof.pdf"
+Check:
+
+Response code is 200 or 201.
+
+Logs from Step 7 show three files with nonzero sizes.
+
+Database row for this business contains three non-null keys.
+
+Supabase bucket contains three matching objects.
+
+Step 9 — Report findings
+Clearly state for each step whether it passed or failed.
+
+If a step failed, explain the reason and point to the exact line/file causing it.
+
+Only after the full trace is complete, propose the smallest fix that makes all steps pass.
+
+Do not skip any steps.
+Do not claim uploads work without proving Step 8 succeeds with logs + DB + Supabase confirmation.
