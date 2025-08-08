@@ -520,6 +520,10 @@ export function authRoutes(app: Express): void {
 
         if (requirePhone) {
           const normalizedPhone = normalizeToE164(phone);
+          if (!normalizedPhone) {
+            console.warn(`[Phone Verification] Blocked - Invalid phone format for ${normalizedEmail}`);
+            return res.status(400).json({ error: 'Invalid phone number format' });
+          }
           const verified = await isPhoneVerifiedInBackend(normalizedPhone);
           if (!verified) {
             console.warn(`[Phone Verification] Blocked - Phone not verified for ${normalizedEmail}`);
@@ -702,6 +706,10 @@ export function authRoutes(app: Express): void {
 
         if (requirePhone) {
           const normalizedPhone = normalizeToE164(phone);
+          if (!normalizedPhone) {
+            console.warn(`[Phone Verification] Blocked - Invalid phone format for ${normalizedEmail}`);
+            return res.status(400).json({ error: 'Invalid phone number format' });
+          }
           const verified = await isPhoneVerifiedInBackend(normalizedPhone);
           if (!verified) {
             console.warn(`[Phone Verification] Blocked - Phone not verified for ${normalizedEmail}`);
