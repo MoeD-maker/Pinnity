@@ -175,11 +175,9 @@ export async function gatedRegister(req: Request, res: Response) {
  */
 export async function gatedLogin(req: Request, res: Response) {
   try {
-    console.info("[LOGIN] handler hit");
-    
     const validatedData = gatedLoginSchema.parse(req.body);
     
-    console.log("Login attempt for:", validatedData.email);
+    console.info('[LOGIN] handler hit for', validatedData.email);
 
     // Get the user profile from our database first
     const userProfile = await getUserByEmail(validatedData.email);
@@ -202,9 +200,22 @@ export async function gatedLogin(req: Request, res: Response) {
     // For admin users, allow login regardless of gating
     const isAdmin = userProfile.user_type === 'admin' || userProfile.role === 'admin';
     
-    // Check if individual user is gated (but allow admin and business users always)
-    const isBusiness = userProfile.user_type === 'business' || userProfile.role === 'vendor';
-    if (!isAdmin && !isBusiness && userProfile.role === 'individual' && !userProfile.is_live) {
+    // Check if user is a vendor or has a business
+    const isVendor = userProfile.role === 'vendor';
+    const { rows: businessRows } = await pool.query(
+      'SELECT 1 FROM businesses_new WHERE profile_id = $1 LIMIT 1',
+      [userProfile.id]
+    );
+    const hasBusiness = businessRows.length > 0;
+    
+    console.info('[LOGIN] gate decision', { 
+      role: userProfile.role, 
+      is_live: userProfile.is_live, 
+      hasBusiness: !!hasBusiness 
+    });
+    
+    // Allow admin, vendors, or users with businesses to bypass gating
+    if (!isAdmin && !isVendor && !hasBusiness && userProfile.role === 'individual' && !userProfile.is_live) {
       return res.status(403).json({ 
         message: 'Thank you for signing up! We will email you as soon as we are live!'
       });
@@ -325,7 +336,7 @@ export async function gatedLogin(req: Request, res: Response) {
     );
     setAuthCookie(res, 'auth_token', token, cookieOptions);
 
-    console.info("[LOGIN] success", validatedData.email);
+    console.info('[LOGIN] success', validatedData.email);
     
     return res.status(200).json({
       message: "Login successful",

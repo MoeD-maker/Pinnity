@@ -1,0 +1,77 @@
+Run these exact queries to verify the new row:
+
+sql
+Copy
+Edit
+SELECT b.id, b.business_name, b.business_category,
+       b.government_id, b.proof_of_address, b.proof_of_business,
+       b.created_at, p.email
+FROM businesses_new b
+JOIN profiles p ON p.id = b.profile_id
+WHERE b.profile_id = '815ceff1-0b78-49ae-b639-7372843a4f10';
+
+SELECT COUNT(*) AS legacy_count
+FROM businesses
+WHERE user_id::text = '815ceff1-0b78-49ae-b639-7372843a4f10';
+Do not search by business_name. Use the profileId from the handler log.
+
+B) Fix gated login so vendors can log in
+Goal: Vendors should be able to log in even if is_live = false. Keep the gate for normal users.
+
+Prompt
+
+Open server/routes/auth.routes.gated.ts. In gatedLogin:
+
+After you load the profile, determine role. If the role is vendor or there exists a row in businesses_new with profile_id = profile.id, bypass the is_live check.
+
+Pseudocode:
+
+ts
+Copy
+Edit
+const isVendor = profile.role === 'vendor';
+const hasBusiness = await db.oneOrNone(
+  'SELECT 1 FROM businesses_new WHERE profile_id = $1 LIMIT 1',
+  [profile.id]
+);
+if (isVendor || hasBusiness) {
+  // proceed with password compare and session issue
+} else {
+  if (!profile.is_live) return res.status(403).json({message: gateMsg});
+}
+Keep CSRF and rate limit. Ensure the route is not behind an auth-required middleware.
+
+Add temporary logs:
+
+ts
+Copy
+Edit
+console.info('[LOGIN] handler hit for', email);
+console.info('[LOGIN] gate decision', { role: profile.role, is_live: profile.is_live, hasBusiness: !!hasBusiness });
+console.info('[LOGIN] success', email);
+Migration for existing vendors: set is_live = true for profiles that already have businesses, so the behavior is consistent:
+
+sql
+Copy
+Edit
+UPDATE profiles
+SET is_live = TRUE
+WHERE id IN (SELECT profile_id FROM businesses_new);
+Show the row count affected.
+
+C) Black-box proof
+Prompt
+
+Restart server.
+
+Log in with the same test email mohamad.diab+auto1754664703@outlook.com.
+
+Provide:
+
+Server logs showing [LOGIN] handler hit, [LOGIN] gate decision ... hasBusiness: true, and [LOGIN] success.
+
+Network status for POST /api/v1/auth/login → 200 with Set-Cookie.
+
+Try wrong password once → expect 401.
+
+Remove the temporary console logs.
