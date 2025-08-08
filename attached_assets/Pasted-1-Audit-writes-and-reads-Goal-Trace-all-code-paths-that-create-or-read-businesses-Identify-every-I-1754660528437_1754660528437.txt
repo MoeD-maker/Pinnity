@@ -1,0 +1,123 @@
+1) Audit writes and reads
+Goal
+Trace all code paths that create or read businesses. Identify every INSERT/UPDATE into businesses or businesses_new, and what the admin dashboard queries. Do not change data.
+
+Tasks
+
+Search the codebase for INSERT INTO businesses and INSERT INTO businesses_new and show each call site file/line.
+
+Open the handler for POST /api/v1/auth/register/business and show the exact table it writes to.
+
+Open the admin list endpoint and show the exact table or view it reads from.
+
+Report: which table is written at signup, which one the admin reads.
+
+2) Make signup write to the new table only
+Goal
+Change vendor signup to write only to businesses_new and never to businesses. Keep the same columns used by the admin.
+
+Tasks
+
+In the signup handler, replace any legacy write with a single INSERT INTO businesses_new (...) VALUES (...) including profile_id, business_name, business_category, the 3 storage keys, and verification_status='pending'.
+
+Remove any remaining insert/update to businesses.
+
+Add a unit test or a log proving the handler writes businesses_new and not businesses.
+
+3) Add a unified view and switch the admin to it
+Goal
+Admin sees all businesses during migration.
+
+Tasks
+
+Create the SQL view v_businesses_unified exactly as below (types aligned so UNION works):
+
+sql
+Copy
+Edit
+CREATE OR REPLACE VIEW v_businesses_unified AS
+SELECT 
+  id::text AS id, business_name, NULL::uuid AS profile_id,
+  user_id::text AS foreign_key, verification_status, created_at, updated_at
+FROM businesses
+UNION ALL
+SELECT 
+  id::text AS id, business_name, profile_id,
+  profile_id::text AS foreign_key, verification_status, created_at, updated_at
+FROM businesses_new;
+Change the admin list endpoint to select from v_businesses_unified.
+
+Prove with a query that both your legacy “Moe’s Store” and any new signups appear.
+
+4) Migrate legacy rows forward
+Goal
+Copy all rows from businesses to businesses_new with correct foreign keys and doc keys.
+
+Tasks
+
+Show me the column map: businesses -> businesses_new.
+
+If profile_id is not directly available, join via email from profiles to derive the correct profile_id.
+
+Write a one-time migration SQL like:
+
+sql
+Copy
+Edit
+INSERT INTO businesses_new (profile_id, business_name, business_category,
+  verification_status, government_id, proof_of_address, proof_of_business,
+  created_at, updated_at)
+SELECT p.id AS profile_id, b.business_name, COALESCE(b.category,'retail'),
+  COALESCE(b.verification_status,'pending'),
+  b.government_id_key, b.proof_of_address_key, b.proof_of_business_key,
+  b.created_at, b.updated_at
+FROM businesses b
+JOIN profiles p ON lower(p.email)=lower(b.email)
+WHERE NOT EXISTS (
+  SELECT 1 FROM businesses_new bn 
+  WHERE bn.profile_id=p.id
+);
+Run it in dev, then show counts before and after.
+
+5) Block legacy writes
+Goal
+Prevent future inserts into businesses.
+
+Tasks
+
+Revoke app role write access to businesses:
+
+sql
+Copy
+Edit
+REVOKE INSERT, UPDATE ON businesses FROM app_role;
+Or add a trigger that raises an exception on insert/update.
+
+Show that a test insert fails while businesses_new insert succeeds.
+
+6) Supabase checks
+Goal
+Confirm the flow is actually creating users and uploading files.
+
+Tasks
+
+For a fresh signup, verify the row exists in businesses_new and not in businesses.
+
+In Supabase Storage, list the 3 objects for that business path and confirm private bucket.
+
+If using Supabase Auth or your own users table, show the user row for the signup email. Make sure email normalization keeps the +v1 tag.
+
+Provide screenshots or CLI listings.
+
+Acceptance criteria
+New signups write to businesses_new only.
+
+Admin reads from v_businesses_unified now, then later from businesses_new once migration is complete.
+
+Legacy businesses is read-only for the app role.
+
+One migration moved old rows forward with correct profile_id and doc keys.
+
+Supabase shows the 3 uploaded objects, and the user exists in the auth store the login uses.
+
+No manual SQL patches needed for new vendors.

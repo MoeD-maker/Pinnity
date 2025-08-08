@@ -213,21 +213,22 @@ app.get('/api/v1/admin/businesses', async (req, res) => {
     console.log('Admin businesses endpoint called');
     const result = await pool.query(`
       SELECT 
-        b.id,
-        b.business_name,
-        b.business_category,
-        b.verification_status,
-        b.created_at as applied_date,
-        b.updated_at,
-        p.email,
-        p.first_name,
-        p.last_name,
-        p.phone,
-        p.created_at,
-        p.address
-      FROM businesses_new b
-      LEFT JOIN profiles p ON b.profile_id = p.id
-      ORDER BY b.created_at DESC
+        v.id,
+        v.business_name,
+        v.business_category,
+        v.verification_status,
+        COALESCE(v.created_at, '2024-01-01'::timestamp) as applied_date,
+        COALESCE(v.updated_at, '2024-01-01'::timestamp) as updated_at,
+        COALESCE(p.email, u.email) as email,
+        COALESCE(p.first_name, u.first_name) as first_name,
+        COALESCE(p.last_name, u.last_name) as last_name,
+        COALESCE(p.phone, u.phone) as phone,
+        COALESCE(p.created_at, u.created_at::timestamp with time zone) as created_at,
+        COALESCE(p.address, u.address) as address
+      FROM v_businesses_unified v
+      LEFT JOIN profiles p ON v.profile_id = p.id
+      LEFT JOIN users u ON v.foreign_key = u.id::text AND v.profile_id IS NULL
+      ORDER BY v.business_name
     `);
     
     console.log(`Found ${result.rows.length} businesses`);
@@ -243,22 +244,23 @@ app.get('/api/v1/admin/businesses/pending', async (req, res) => {
     console.log('Admin pending businesses endpoint called');
     const result = await pool.query(`
       SELECT 
-        b.id,
-        b.business_name,
-        b.business_category,
-        b.verification_status,
-        b.created_at as applied_date,
-        b.updated_at,
-        p.email,
-        p.first_name,
-        p.last_name,
-        p.phone,
-        p.created_at,
-        p.address
-      FROM businesses_new b
-      LEFT JOIN profiles p ON b.profile_id = p.id
-      WHERE b.verification_status = 'pending'
-      ORDER BY b.created_at DESC
+        v.id,
+        v.business_name,
+        v.business_category,
+        v.verification_status,
+        COALESCE(v.created_at, '2024-01-01'::timestamp) as applied_date,
+        COALESCE(v.updated_at, '2024-01-01'::timestamp) as updated_at,
+        COALESCE(p.email, u.email) as email,
+        COALESCE(p.first_name, u.first_name) as first_name,
+        COALESCE(p.last_name, u.last_name) as last_name,
+        COALESCE(p.phone, u.phone) as phone,
+        COALESCE(p.created_at, u.created_at::timestamp with time zone) as created_at,
+        COALESCE(p.address, u.address) as address
+      FROM v_businesses_unified v
+      LEFT JOIN profiles p ON v.profile_id = p.id
+      LEFT JOIN users u ON v.foreign_key = u.id::text AND v.profile_id IS NULL
+      WHERE v.verification_status = 'pending'
+      ORDER BY v.business_name
     `);
     
     console.log(`Found ${result.rows.length} pending businesses`);
