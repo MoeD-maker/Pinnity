@@ -110,12 +110,14 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = form;
 
-  const onSubmit = async (data: BusinessSignupData) => {
-    // If phone is not verified yet, save the form and show the verify step
-    if (!skipPhoneVerification && !isPhoneVerified) {
-      pendingDataRef.current = data;     // keep what the user filled
-      setCurrentStep('phone');           // show verification UI
-      return;                            // stop here for now
+  const onSubmit = async (data: BusinessSignupData, verifiedOverride: boolean = false) => {
+    console.info('onSubmit called, override=', verifiedOverride, ' isPhoneVerified=', isPhoneVerified);
+    
+    // If phone not verified yet and we're not overriding, save form and show verify step
+    if (!verifiedOverride && !skipPhoneVerification && !isPhoneVerified) {
+      pendingDataRef.current = data;
+      setCurrentStep('phone');
+      return;
     }
     
     setIsSubmitting(true);
@@ -224,14 +226,22 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
     }
   };
 
+  // Wrapper function for form submission (to satisfy handleSubmit type requirements)
+  const onFormSubmit = async (data: BusinessSignupData) => {
+    await onSubmit(data, false);
+  };
+
   const handleVerificationComplete = async (ok: boolean) => {
+    console.info('verify->complete ok=', ok, ' saved?', !!pendingDataRef.current);
     if (!ok) return;
     setIsPhoneVerified(true);
     setCurrentStep('form');
+
     const saved = pendingDataRef.current;
     if (saved) {
-      await onSubmit(saved);           // finish the signup automatically
-      pendingDataRef.current = null;   // clear it
+      // Bypass the early return using the override flag
+      await onSubmit(saved, true);
+      pendingDataRef.current = null;
     }
   };
 
@@ -356,7 +366,7 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
         )}
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="businessName">Business Name</Label>
           <Input

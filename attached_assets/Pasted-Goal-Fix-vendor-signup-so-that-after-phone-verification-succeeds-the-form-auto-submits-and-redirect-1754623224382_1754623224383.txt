@@ -1,0 +1,105 @@
+Goal
+Fix vendor signup so that after phone verification succeeds, the form auto-submits and redirects to /vendor. Avoid stale React state by adding a verifiedOverride flag. Do not change unrelated code.
+
+Target file
+client/src/components/auth/BusinessSignupForm.tsx
+
+Exact edits
+
+Change onSubmit signature and early check
+
+Find:
+
+ts
+Copy
+Edit
+const onSubmit = async (data: BusinessSignupData) => {
+Replace with:
+
+ts
+Copy
+Edit
+const onSubmit = async (data: BusinessSignupData, verifiedOverride: boolean = false) => {
+Then, at the very top of onSubmit, replace the current phone-verification guard with this block:
+
+ts
+Copy
+Edit
+// If phone not verified yet and we're not overriding, save form and show verify step
+if (!verifiedOverride && !skipPhoneVerification && !isPhoneVerified) {
+  pendingDataRef.current = data;
+  setCurrentStep('phone');
+  return;
+}
+Call onSubmit with override after verification
+
+Locate the handler that runs when verification completes. If you added handleVerificationComplete earlier, modify it like this:
+
+ts
+Copy
+Edit
+const handleVerificationComplete = async (ok: boolean) => {
+  if (!ok) return;
+  setIsPhoneVerified(true);
+  setCurrentStep('form');
+
+  const saved = pendingDataRef.current;
+  if (saved) {
+    // Bypass the early return using the override flag
+    await onSubmit(saved, true);
+    pendingDataRef.current = null;
+  }
+};
+If the handler is still named handlePhoneVerificationComplete, either rename it to handleVerificationComplete or apply the same change there. Ensure the TwilioPhoneVerification JSX passes onVerificationComplete={handleVerificationComplete}.
+
+Temporary diagnostics (remove after test)
+
+Right at the start of handleVerificationComplete, add:
+
+ts
+Copy
+Edit
+console.info('verify->complete ok=', ok, ' saved?', !!pendingDataRef.current);
+At the start of onSubmit, add:
+
+ts
+Copy
+Edit
+console.info('onSubmit called, override=', verifiedOverride, ' isPhoneVerified=', isPhoneVerified);
+Keep prop names correct
+If your verification component expects phoneNumber prop, make sure the JSX reads:
+
+tsx
+Copy
+Edit
+<TwilioPhoneVerification
+  phoneNumber={watch('phone')}
+  onVerificationComplete={handleVerificationComplete}
+/>
+If it expects phone, keep phone={watch('phone')}. Use the one defined in TwilioPhoneVerification.tsx.
+
+Verification steps
+
+Hard refresh the app.
+
+Fill the vendor form with 3 small files. Submit.
+
+Enter the SMS code.
+
+Expected console sequence:
+
+verify->complete ok= true saved? true
+
+onSubmit called, override= true isPhoneVerified= <true or false>
+
+Network tab shows a POST /api/v1/auth/register/business fired after verification.
+
+You should be redirected to /vendor.
+
+After it works, remove the two console.info lines.
+
+Deliverables
+
+Diff of BusinessSignupForm.tsx showing the new verifiedOverride param and the override call.
+
+Confirmation that the POST happens after verification and the UI redirects to /vendor.
