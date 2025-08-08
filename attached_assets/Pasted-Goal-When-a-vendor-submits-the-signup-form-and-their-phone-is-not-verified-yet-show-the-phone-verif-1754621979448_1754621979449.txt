@@ -1,0 +1,106 @@
+Goal
+When a vendor submits the signup form and their phone is not verified yet, show the phone verify step, then automatically finish the signup after verification succeeds. Do not change unrelated code.
+
+Target file
+client/src/components/auth/BusinessSignupForm.tsx
+
+Make these exact edits
+
+Ensure imports include useRef and useState
+At the top import line from React, include useRef and useState. Example:
+
+ts
+Copy
+Edit
+import React, { useRef, useState } from "react";
+If they are already imported, leave them.
+
+Add a place to stash the form data
+Inside the component, near other hooks, add:
+
+ts
+Copy
+Edit
+const pendingDataRef = useRef<BusinessSignupData | null>(null);
+Modify the start of onSubmit
+Find:
+
+ts
+Copy
+Edit
+const onSubmit = async (data: BusinessSignupData) => {
+At the top of that function, insert this block exactly and keep the rest of onSubmit unchanged:
+
+ts
+Copy
+Edit
+// If phone is not verified yet, save the form and show the verify step
+if (!skipPhoneVerification && !isPhoneVerified) {
+  pendingDataRef.current = data;     // keep what the user filled
+  setCurrentStep('phone');           // show verification UI
+  return;                            // stop here for now
+}
+Add a handler to resume submission after verification
+Inside the same component, add this helper function (place it above the JSX return). If a handler with the same purpose exists, replace it with this version.
+
+ts
+Copy
+Edit
+const handleVerificationComplete = async (ok: boolean) => {
+  if (!ok) return;
+  setIsPhoneVerified(true);
+  setCurrentStep('form');
+  const saved = pendingDataRef.current;
+  if (saved) {
+    await onSubmit(saved);           // finish the signup automatically
+    pendingDataRef.current = null;   // clear it
+  }
+};
+Pass the handler to the verification component
+Find where TwilioPhoneVerification is rendered. Replace that JSX with this, keeping any other props you already pass:
+
+tsx
+Copy
+Edit
+<TwilioPhoneVerification
+  phone={watch('phone')}
+  onVerificationComplete={handleVerificationComplete}
+/>
+Remove any console logs that print file names or PII in this file
+Delete lines that log file.name, governmentId, proofOfAddress, proofOfBusiness, or the full data object. Do not add new logs.
+
+Verification steps
+
+A) Static check
+
+Confirm useRef is imported.
+
+Confirm pendingDataRef exists.
+
+Confirm the onSubmit early return block is present.
+
+Confirm handleVerificationComplete exists and calls onSubmit(saved).
+
+Confirm TwilioPhoneVerification receives onVerificationComplete={handleVerificationComplete} and phone={watch('phone')}.
+
+B) Runtime test
+
+Start the app.
+
+Go to vendor signup.
+
+Fill the form with valid data and three small PDFs or images.
+
+Submit. It should switch to the Verify screen.
+
+Enter the code.
+
+Expected result: the form completes automatically and you are redirected to /vendor.
+
+Deliverables
+
+Show the diff for client/src/components/auth/BusinessSignupForm.tsx.
+
+Paste a short console output or screenshot proving the redirect to /vendor after verification.
+
+Do not change any server files. Do not alter field names or the POST endpoint.

@@ -1,4 +1,4 @@
-import { useState, Dispatch, SetStateAction } from "react";
+import { useState, useRef, Dispatch, SetStateAction } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -78,6 +78,7 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
   const [currentStep, setCurrentStep] = useState<'form' | 'phone' | 'complete'>('form');
   const [skipPhoneVerification] = useState(false); // Phone verification enabled
+  const pendingDataRef = useRef<BusinessSignupData | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState({
     governmentId: null as File | null,
     proofOfAddress: null as File | null,
@@ -110,16 +111,11 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
   const { register, handleSubmit, setValue, watch, formState: { errors } } = form;
 
   const onSubmit = async (data: BusinessSignupData) => {
-    console.log("Uploaded files:", {
-      governmentId: uploadedFiles.governmentId?.name,
-      proofOfAddress: uploadedFiles.proofOfAddress?.name,
-      proofOfBusiness: uploadedFiles.proofOfBusiness?.name
-    });
-    
-    // Skip phone verification if disabled for testing
+    // If phone is not verified yet, save the form and show the verify step
     if (!skipPhoneVerification && !isPhoneVerified) {
-      setCurrentStep('phone');
-      return;
+      pendingDataRef.current = data;     // keep what the user filled
+      setCurrentStep('phone');           // show verification UI
+      return;                            // stop here for now
     }
     
     setIsSubmitting(true);
@@ -228,21 +224,14 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
     }
   };
 
-  const handlePhoneVerificationComplete = async (verified: boolean) => {
-    if (verified) {
-      setIsPhoneVerified(true);
-      
-      // Don't immediately submit - wait a moment for UI to update
-      setTimeout(async () => {
-        toast({
-          title: "Phone verified!",
-          description: "Creating your business account...",
-        });
-        
-        // Automatically proceed with business registration after phone verification
-        const formData = form.getValues();
-        await onSubmit(formData);
-      }, 500); // Small delay to let the verification UI complete
+  const handleVerificationComplete = async (ok: boolean) => {
+    if (!ok) return;
+    setIsPhoneVerified(true);
+    setCurrentStep('form');
+    const saved = pendingDataRef.current;
+    if (saved) {
+      await onSubmit(saved);           // finish the signup automatically
+      pendingDataRef.current = null;   // clear it
     }
   };
 
@@ -291,7 +280,6 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
         ...prev,
         [fileType]: file
       }));
-      console.log(`${fileType} uploaded:`, file.name);
       
       toast({
         title: "File uploaded",
@@ -310,9 +298,8 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
         </div>
 
         <TwilioPhoneVerification
-          phoneNumber={watch("phone")}
-          onVerificationComplete={handlePhoneVerificationComplete}
-          onPhoneChange={(phone) => setValue("phone", phone)}
+          phoneNumber={watch('phone')}
+          onVerificationComplete={handleVerificationComplete}
         />
 
         <div className="flex justify-center">
