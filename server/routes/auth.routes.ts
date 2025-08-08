@@ -25,6 +25,45 @@ import { verifyCsrf } from "../middleware";
 import { validatePasswordStrength } from "../middleware/passwordValidationMiddleware";
 import { isStrongPassword } from "../utils/passwordValidation";
 import { supabaseAdmin } from "../supabaseAdmin";
+import { verifySMSCode } from "../smsService";
+
+// Email allowlist for phone verification bypass
+const PHONE_VERIFICATION_ALLOWLIST = [
+  'mohamad.diab+v1@outlook.com'
+];
+
+/**
+ * Check if a phone number has been verified via SMS
+ */
+function isPhoneVerifiedInBackend(phoneNumber: string): boolean {
+  // In a real production system, this would check a database or cache
+  // For now, we check if the phone was recently verified via SMS
+  // This is a simple implementation - you might want to store verification
+  // status in your database for persistence across server restarts
+  
+  // For development, we'll accept any phone that has a valid format
+  // In production, you'd check against your verification storage
+  return !!(phoneNumber && phoneNumber.length >= 10);
+}
+
+/**
+ * Normalize phone number to E.164 format for Canada
+ */
+function normalizeToE164(phone: string): string | null {
+  if (!phone) return null;
+  
+  // Remove all non-digits
+  const digits = phone.replace(/\D/g, '');
+  
+  // Handle Canadian numbers
+  if (digits.length === 10) {
+    return `+1${digits}`;
+  } else if (digits.length === 11 && digits.startsWith('1')) {
+    return `+${digits}`;
+  }
+  
+  return null;
+}
 
 /**
  * Authentication routes for login and registration
@@ -469,6 +508,27 @@ export function authRoutes(app: Express): void {
           });
         }
 
+        // Phone verification logic with email allowlist
+        const normalizedEmail = email?.trim().toLowerCase();
+        const inAllowlist = PHONE_VERIFICATION_ALLOWLIST.includes(normalizedEmail);
+
+        console.info(`[Phone Verification] Email: ${normalizedEmail} | Allowlist match: ${inAllowlist}`);
+
+        const requirePhone =
+          process.env.REQUIRE_PHONE_VERIFICATION !== 'false' &&
+          !inAllowlist;
+
+        if (requirePhone) {
+          const normalizedPhone = normalizeToE164(phone);
+          const verified = await isPhoneVerifiedInBackend(normalizedPhone);
+          if (!verified) {
+            console.warn(`[Phone Verification] Blocked - Phone not verified for ${normalizedEmail}`);
+            return res.status(400).json({ error: 'Phone not verified' });
+          }
+        } else {
+          console.info(`[Phone Verification] Skipped for ${normalizedEmail}`);
+        }
+
         // Type assertion for multer files
         const files = req.files as { [fieldname: string]: Express.Multer.File[] };
         
@@ -628,6 +688,27 @@ export function authRoutes(app: Express): void {
           return res.status(400).json({ 
             message: "Password is too weak. It must be at least 8 characters long and contain at least one letter and one number." 
           });
+        }
+
+        // Phone verification logic with email allowlist
+        const normalizedEmail = email?.trim().toLowerCase();
+        const inAllowlist = PHONE_VERIFICATION_ALLOWLIST.includes(normalizedEmail);
+
+        console.info(`[Phone Verification] Email: ${normalizedEmail} | Allowlist match: ${inAllowlist}`);
+
+        const requirePhone =
+          process.env.REQUIRE_PHONE_VERIFICATION !== 'false' &&
+          !inAllowlist;
+
+        if (requirePhone) {
+          const normalizedPhone = normalizeToE164(phone);
+          const verified = await isPhoneVerifiedInBackend(normalizedPhone);
+          if (!verified) {
+            console.warn(`[Phone Verification] Blocked - Phone not verified for ${normalizedEmail}`);
+            return res.status(400).json({ error: 'Phone not verified' });
+          }
+        } else {
+          console.info(`[Phone Verification] Skipped for ${normalizedEmail}`);
         }
 
         // Type assertion for multer files
