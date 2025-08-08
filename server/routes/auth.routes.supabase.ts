@@ -132,6 +132,8 @@ export async function registerIndividual(req: Request, res: Response) {
  */
 export async function registerBusiness(req: Request, res: Response) {
   try {
+    console.info("[BUSINESS REGISTER] handler hit");
+    
     // Handle form data from multer
     const businessName = req.body.businessName;
     const businessCategory = req.body.businessCategory;
@@ -221,6 +223,11 @@ export async function registerBusiness(req: Request, res: Response) {
     });
 
     console.log("Business created:", business.id);
+    console.info("[BUSINESS REGISTER] created", {
+      businessId: business.id, 
+      profileId: profile.id, 
+      email: email
+    });
 
     // Generate JWT token for our app
     const token = generateToken({
@@ -314,6 +321,7 @@ export async function login(req: Request, res: Response) {
     }
 
     console.log("Login successful for:", validatedData.email);
+    console.info("[LOGIN] success", validatedData.email);
 
     // Generate JWT token for our app
     const token = generateToken({

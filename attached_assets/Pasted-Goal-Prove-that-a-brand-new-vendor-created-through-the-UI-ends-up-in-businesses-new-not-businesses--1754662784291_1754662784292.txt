@@ -1,0 +1,76 @@
+Goal
+Prove that a brand-new vendor created through the UI ends up in businesses_new (not businesses), can log in immediately, and appears once in the admin endpoint. No manual SQL inserts or direct DB writes are allowed for the main test.
+
+Instrumentation (temporary, remove after)
+
+In the handler for POST /api/v1/auth/register/business, at the top add:
+
+ts
+Copy
+Edit
+console.info("[BUSINESS REGISTER] handler hit");
+After successful insert, add:
+
+ts
+Copy
+Edit
+console.info("[BUSINESS REGISTER] created", {businessId, profileId, email});
+In the login handler POST /api/v1/auth/login, after success add:
+
+ts
+Copy
+Edit
+console.info("[LOGIN] success", email);
+Black-box UI test
+
+Hard refresh, then use the UI to register:
+
+Email: mohamad.diab+auto${Date.now()}@outlook.com
+
+Password: TestPassword123!
+
+3 small PDFs
+
+Complete any phone step or use allowlist if configured.
+
+Required artifacts from that single UI signup
+
+Server logs showing:
+
+[BUSINESS REGISTER] handler hit
+
+[BUSINESS REGISTER] created { businessId: ..., profileId: ..., email: "<the new email>" }
+
+SQL:
+
+SELECT id,business_name,profile_id,created_at FROM businesses_new WHERE lower(email)=lower('<new email>') OR business_name ILIKE '%auto%' ORDER BY created_at DESC LIMIT 1;
+
+SELECT COUNT(*) FROM businesses WHERE lower(email)=lower('<new email>'); → must be 0
+
+Admin API:
+
+GET /api/v1/admin/businesses/pending response snippet containing exactly one entry for that business.
+
+Login proof for the same credentials:
+
+POST /api/v1/auth/login → 200 and Set-Cookie
+
+Server log [LOGIN] success <new email>
+
+Disallow
+
+No direct INSERT INTO businesses_new for this test.
+
+No manual row edits to “make it appear.”
+
+Cleanup
+
+Remove the temporary console.info lines when done.
+
+If the handler logs don’t appear
+
+Show the exact route mount and middleware stack. Fix the mounting or path mismatch before repeating the test.
+
+If login returns 401
+
+Show the code path that creates the auth user during signup (bcrypt hash or Supabase Auth). Align signup and login to the same store and hashing, then redo the UI test.
