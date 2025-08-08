@@ -25,12 +25,13 @@ Preferred communication style: Simple, everyday language.
 ### Database Design
 - **Primary Database**: PostgreSQL hosted on Supabase
 - **Schema Management**: Drizzle Kit for migrations
-- **Key Tables**: Users, Businesses, Deals, Favorites, Redemptions, Approvals
+- **Key Tables**: Users, Businesses (legacy), Businesses_new (active), Deals, Favorites, Redemptions, Approvals
+- **Business Architecture**: Dual-table system with v_businesses_unified view for admin visibility and legacy data protection
 - **Location Data**: Latitude/longitude coordinates for mapping
 
 ### Key Components
 - **Authentication & Authorization System**: Multi-tier user system (individuals, businesses, admins) with JWT and secure cookies.
-- **Business Verification System**: Document upload and validation workflow with admin approval and verification status tracking.
+- **Business Verification System**: Document upload and validation workflow with admin approval and verification status tracking. Dual-table architecture with legacy protection and unified admin visibility.
 - **Deal Management System**: Rich deal creation, image uploads, categorization, temporal validity, and admin moderation.
 - **File Upload & Processing**: Secure file validation (magic number), image resizing/optimization (Cloudinary initially, migrated to Supabase Storage), PDF processing, and sanitized filename handling.
 - **Location & Mapping**: Geospatial data storage for businesses and map-based deal discovery.
