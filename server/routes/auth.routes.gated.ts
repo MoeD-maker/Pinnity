@@ -9,6 +9,7 @@ import { createProfile, getUserByEmail, createBusiness } from '../supabaseQuerie
 import { generateToken } from '../auth';
 import { setAuthCookie } from '../utils/cookieUtils';
 import { authCookieConfig, withCustomAge } from '../utils/cookieConfig';
+import { pool } from '../db';
 
 // Enhanced validation schemas with role field and business data
 const gatedRegistrationSchema = z.object({
@@ -223,7 +224,60 @@ export async function gatedLogin(req: Request, res: Response) {
     const supabaseUser = listData.users.find(u => u.email === validatedData.email);
     if (!supabaseUser) {
       console.log("No Supabase user found for:", validatedData.email);
-      return res.status(401).json({ message: "Invalid email or password" });
+      console.log("Attempting legacy password verification...");
+      
+      // Fall back to legacy password verification for existing users
+      const bcrypt = await import('bcryptjs');
+      
+      // Check legacy users table for password
+      const { rows: legacyUsers } = await pool.query(
+        'SELECT id, email, password, user_type FROM users WHERE email = $1',
+        [validatedData.email]
+      );
+      
+      if (legacyUsers.length === 0 || !legacyUsers[0].password) {
+        console.log("No legacy user found or no password set");
+        return res.status(401).json({ 
+          message: "Invalid email or password"
+        });
+      }
+      
+      const legacyUser = legacyUsers[0];
+      const isValidPassword = await bcrypt.compare(validatedData.password, legacyUser.password);
+      
+      if (!isValidPassword) {
+        console.log("Legacy password verification failed");
+        return res.status(401).json({ 
+          message: "Invalid email or password"
+        });
+      }
+      
+      console.log("Legacy password verification successful for:", validatedData.email);
+      
+      // Skip Supabase auth for legacy users, proceed to generate token
+      console.log("Login successful for legacy user:", userProfile.email, "Role:", userProfile.role, "Is Live:", userProfile.is_live, "Admin:", isAdmin);
+
+      // Generate JWT token for our app  
+      const token = generateToken({
+        id: userProfile.id,
+        email: userProfile.email,
+        userType: userProfile.user_type
+      });
+
+      // Set secure cookie
+      const cookieOptions = withCustomAge(
+        authCookieConfig, 
+        validatedData.rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000
+      );
+      setAuthCookie(res, 'auth_token', token, cookieOptions);
+
+      return res.status(200).json({
+        message: "Login successful",
+        userId: userProfile.id,
+        userType: userProfile.user_type,
+        role: userProfile.role,
+        is_live: userProfile.is_live
+      });
     }
     
     // Auto-confirm email if not confirmed (since we only require phone verification)

@@ -586,15 +586,40 @@ export function authRoutes(app: Express): void {
           throw new Error("Failed to create user");
         }
 
-        // Create user record in our database for compatibility and local operations
+        // Create user profile in the profiles table for gated login compatibility
+        // Use normalized email for consistency with login
+        const normalizedEmail = email.trim().toLowerCase();
+        
+        // Import the profile creation functions
+        const { createProfile } = await import('../supabaseQueries.js');
+        
+        // Create profile in our PostgreSQL database with correct parameters
+        const profile = await createProfile(supabaseUser.user.id, {
+          email: normalizedEmail,
+          firstName: firstName,
+          lastName: lastName,
+          phone: phone,
+          address: address,
+          userType: 'business',
+          role: 'vendor', // Business users are vendors
+          isLive: true, // Business users should not be gated
+          phoneVerified: true, // Since they passed phone verification or are allowlisted
+          marketingConsent: true, // Default for business users
+        });
+
+        console.log("Profile created for business user:", profile.id);
+
+        // Also create business record linked to the profile 
+        // Note: businesses table still references legacy users table, but this maintains compatibility
         const user = await storage.createBusinessUser(
           {
             firstName,
             lastName,
-            email,
+            email: normalizedEmail,
             password,
             phone,
-            address
+            address,
+            phoneVerified: true,
           },
           {
             businessName,
@@ -602,7 +627,6 @@ export function authRoutes(app: Express): void {
             governmentId: governmentIdPath,
             proofOfAddress: proofOfAddressPath,
             proofOfBusiness: proofOfBusinessPath,
-            
           }
         );
         
@@ -739,14 +763,16 @@ export function authRoutes(app: Express): void {
         const proofOfBusinessPath = files.proofOfBusiness[0].path;
         
         // Create user with business (via legacy route)
+        // Use the same normalized email for consistency  
         const user = await storage.createBusinessUser(
           {
             firstName,
             lastName,
-            email,
+            email: normalizedEmail, // Use the already normalized email from phone verification
             password,
             phone,
-            address
+            address,
+            phoneVerified: true, // Since they passed phone verification or are allowlisted
           },
           {
             businessName,
