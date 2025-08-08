@@ -54,6 +54,23 @@ const businessCategories = [
   "Other"
 ];
 
+// Phone normalization helper for Canadian numbers
+function toE164Canada(input: string): string | null {
+  const digits = input.replace(/\D/g, "");
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  if (digits.length === 10) return `+1${digits}`;
+  if (/^\+1\d{10}$/.test(input)) return input;
+  return null;
+}
+
+// CSRF token utility
+function getCsrfToken(): string | null {
+  const meta = document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null;
+  if (meta?.content) return meta.content;
+  const m = document.cookie.match(/(?:^|;\s*)csrfToken=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
 function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -93,7 +110,6 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
   const { register, handleSubmit, setValue, watch, formState: { errors } } = form;
 
   const onSubmit = async (data: BusinessSignupData) => {
-    console.log("SUBMISSION PAYLOAD:", data);
     console.log("Uploaded files:", {
       governmentId: uploadedFiles.governmentId?.name,
       proofOfAddress: uploadedFiles.proofOfAddress?.name,
@@ -129,11 +145,22 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
       formData.append('lastName', data.lastName);
       formData.append('email', data.email);
       formData.append('password', data.password);
-      formData.append('phone', data.phone);
+      const e164 = toE164Canada(data.phone);
+      if (!e164) {
+        form.setError("phone", { type: "manual", message: "Enter a valid Canadian phone number" });
+        setIsSubmitting(false);
+        return;
+      }
+      formData.append('phone', e164);
       formData.append('address', data.address);
       formData.append('businessName', data.businessName);
       formData.append('businessCategory', data.category);
       formData.append('termsAccepted', 'true');
+      
+      // Optional fields - only append if they have values
+      if (data.postalCode) formData.append('postalCode', data.postalCode);
+      if (data.city) formData.append('city', data.city);
+      if (data.province) formData.append('province', data.province);
       
       // Add file uploads with exact field names that match multer config
       formData.append('governmentId', uploadedFiles.governmentId);
@@ -141,9 +168,11 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
       formData.append('proofOfBusiness', uploadedFiles.proofOfBusiness);
 
       // Use the working business registration endpoint with file upload support
+      const csrf = getCsrfToken();
       const response = await fetch('/api/v1/auth/register/business', {
         method: 'POST',
         credentials: 'include',
+        headers: csrf ? { 'X-CSRF-Token': csrf } : undefined,
         // Don't set Content-Type header - let browser set it with boundary
         body: formData
       });
@@ -183,8 +212,8 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
       });
       
       setTimeout(() => {
-        console.log("Redirecting business user to homepage...");
-        setLocation('/');
+        console.log("Redirecting business user to vendor dashboard...");
+        setLocation('/vendor');
       }, 1500); // Small delay to show the success message
       
     } catch (error) {

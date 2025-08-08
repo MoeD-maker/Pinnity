@@ -1,0 +1,190 @@
+Goal: Apply the following client-side fixes in client/src/components/auth/BusinessSignupForm.tsx. Do not change unrelated code. Make each edit exactly as requested, then run the verification steps.
+
+Edits to implement
+Remove password logging
+
+Find any console.log that prints the form data or includes password.
+
+Delete those lines.
+
+Post-signup redirect
+
+In the success path of the vendor signup submission, change the redirect target from / to /vendor.
+
+Only change the redirect for this signup, not for other flows.
+
+Business category key
+
+In the FormData building section, you currently append businessCategory. Confirm the server expects businessCategory. If the server expects category instead, change the key to category. Do not append both.
+
+Record which key is used in the final code.
+
+Phone number normalization to E.164
+
+Before appending phone to FormData, normalize it to E.164 for Canada by:
+
+Remove all non-digits.
+
+If it starts with 1 and total digits are 11, prefix with +.
+
+If it starts with a 10-digit Canadian number, prefix with +1.
+
+If it already starts with +1 and 11 digits, keep as is.
+
+Reject anything that cannot be normalized and show a user-facing error near the phone input.
+
+Implement a small helper inside this file, for example:
+
+ts
+Copy
+Edit
+function toE164Canada(input: string): string | null {
+  const digits = input.replace(/\D/g, "");
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  if (digits.length === 10) return `+1${digits}`;
+  if (/^\+1\d{10}$/.test(input)) return input;
+  return null;
+}
+Use it before fd.append('phone', ...).
+
+CSRF token on POST
+
+If the app already sets a CSRF cookie or meta tag, include it in this POST.
+
+Add logic to read CSRF token from either:
+
+A cookie named csrfToken, or
+
+A <meta name="csrf-token" content="..."> tag
+
+Add a headers field to fetch with {"X-CSRF-Token": token} only if a token is found.
+
+Do not set Content-Type for multipart requests.
+
+Optional fields
+
+Only if the server requires them, append postalCode, city, and province to FormData. If the form does not collect them, skip. Do not invent values.
+
+Exact code changes
+Open client/src/components/auth/BusinessSignupForm.tsx and make these focused edits inside the submit handler:
+
+A) Remove password logging
+
+diff
+Copy
+Edit
+- console.log("signup data", data);
+B) Add the phone normalization helper near the top of the file
+
+ts
+Copy
+Edit
+function toE164Canada(input: string): string | null {
+  const digits = input.replace(/\D/g, "");
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  if (digits.length === 10) return `+1${digits}`;
+  if (/^\+1\d{10}$/.test(input)) return input;
+  return null;
+}
+C) Normalize phone before appending to FormData
+
+diff
+Copy
+Edit
+- fd.append('phone', data.phone);
++ const e164 = toE164Canada(data.phone);
++ if (!e164) {
++   setError("phone", { type: "manual", message: "Enter a valid Canadian phone number" });
++   setSubmitting(false);
++   return;
++ }
++ fd.append('phone', e164);
+D) Category field name fix
+
+diff
+Copy
+Edit
+- fd.append('businessCategory', data.businessCategory);
++ // If server expects 'category', use that key. Otherwise keep 'businessCategory'.
++ fd.append('businessCategory', data.businessCategory);
+If the server expects category, change that single line to:
+
+ts
+Copy
+Edit
+fd.append('category', data.businessCategory);
+E) CSRF header inclusion without breaking multipart
+Add this small util in the same file:
+
+ts
+Copy
+Edit
+function getCsrfToken(): string | null {
+  const meta = document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null;
+  if (meta?.content) return meta.content;
+  const m = document.cookie.match(/(?:^|;\s*)csrfToken=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+Then update the fetch call:
+
+diff
+Copy
+Edit
+- const res = await fetch('/api/v1/auth/register/business', {
+-   method: 'POST',
+-   body: fd,
+-   credentials: 'include',
+- });
++ const csrf = getCsrfToken();
++ const res = await fetch('/api/v1/auth/register/business', {
++   method: 'POST',
++   body: fd,
++   credentials: 'include',
++   headers: csrf ? { 'X-CSRF-Token': csrf } : undefined,
++ });
+F) Redirect target
+
+diff
+Copy
+Edit
+- navigate('/');
++ navigate('/vendor');
+G) Optional fields
+Only add these if your form collects them and the server expects them:
+
+ts
+Copy
+Edit
+if (data.postalCode) fd.append('postalCode', data.postalCode);
+if (data.city) fd.append('city', data.city);
+if (data.province) fd.append('province', data.province);
+Verification steps
+Static checks
+
+Confirm there is no console.log of data that contains password.
+
+Confirm the submit code uses toE164Canada and blocks invalid numbers.
+
+Confirm the fetch includes headers: {'X-CSRF-Token': token} only when a token exists.
+
+Confirm the redirect goes to /vendor.
+
+Runtime checks
+
+Try phone inputs: 6475550123, (647) 555-0123, +1 647 555 0123, +16475550123. All must submit with the normalized +16475550123.
+
+Try 5550123 or +999 and verify the form shows the error and does not submit.
+
+Submit a valid signup. Confirm you land on /vendor.
+
+No regressions
+
+Confirm fetch still omits Content-Type so the browser sets the multipart boundary.
+
+Confirm file fields are still appended exactly as:
+
+governmentId
+
+proofOfAddress
+
+proofOfBusiness
