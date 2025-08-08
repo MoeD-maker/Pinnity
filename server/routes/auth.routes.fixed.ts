@@ -340,7 +340,7 @@ export function authRoutes(app: Express): void {
     ]),
     async (req: Request, res: Response) => {
       try {
-        console.info("[BUSINESS REGISTER] handler hit @", __filename);
+        console.info("[BUSINESS REGISTER] handler hit");
         
         // File upload verification completed - logs removed after successful audit
         
