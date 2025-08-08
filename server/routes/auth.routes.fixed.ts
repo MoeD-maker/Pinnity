@@ -3,6 +3,7 @@ import { storage } from "../storage";
 import { z } from "zod";
 import { generateToken, generateRefreshToken } from "../auth";
 import { getUploadMiddleware } from "../uploadMiddleware.supabase";
+import { secureUploadMiddleware, handleSecureUploadError, validateFileContent } from "../uploadMiddleware.secure";
 import fs from 'fs';
 import { validate } from "../middleware/validationMiddleware";
 import { authSchemas } from "../schemas";
@@ -16,6 +17,7 @@ import {
 } from "../../src/utils/routeVersioning";
 import { supabaseAdmin } from "../supabaseAdmin";
 import { createProfile, createBusiness } from "../supabaseQueries";
+import { uploadBufferToSupabase } from "../supabaseStorage";
 
 /**
  * Authentication routes for login and registration
@@ -333,11 +335,13 @@ export function authRoutes(app: Express): void {
     versionedBusinessRegPath,
     versionHeadersMiddleware(),
     authRateLimiter, // Apply rate limiting to business registration endpoint
-    getUploadMiddleware().fields([
+    secureUploadMiddleware.fields([
       { name: 'governmentId', maxCount: 1 },
       { name: 'proofOfAddress', maxCount: 1 },
       { name: 'proofOfBusiness', maxCount: 1 }
     ]),
+    handleSecureUploadError,
+    validateFileContent,
     async (req: Request, res: Response) => {
       try {
         console.info("[BUSINESS REGISTER] handler hit");
@@ -382,16 +386,18 @@ export function authRoutes(app: Express): void {
           });
         }
 
-        // Get uploaded file paths from Supabase upload middleware
-        const governmentIdPath = (files.governmentId[0] as any).supabasePath || files.governmentId[0].filename;
-        const proofOfAddressPath = (files.proofOfAddress[0] as any).supabasePath || files.proofOfAddress[0].filename;
-        const proofOfBusinessPath = (files.proofOfBusiness[0] as any).supabasePath || files.proofOfBusiness[0].filename;
+        // Upload files to Supabase storage and get storage keys
+        const timestamp = Date.now();
+        const sanitizedBusinessName = businessName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
         
-        console.log('📂 Uploaded file paths from Supabase:', {
-          governmentId: governmentIdPath,
-          proofOfAddress: proofOfAddressPath,
-          proofOfBusiness: proofOfBusinessPath
-        });
+        const governmentIdKey = `business-documents/pending/${timestamp}_${sanitizedBusinessName}_gov.${files.governmentId[0].originalname.split('.').pop()}`;
+        const proofOfAddressKey = `business-documents/pending/${timestamp}_${sanitizedBusinessName}_addr.${files.proofOfAddress[0].originalname.split('.').pop()}`;
+        const proofOfBusinessKey = `business-documents/pending/${timestamp}_${sanitizedBusinessName}_biz.${files.proofOfBusiness[0].originalname.split('.').pop()}`;
+        
+        // Upload each file to Supabase storage
+        await uploadBufferToSupabase(files.governmentId[0].buffer, governmentIdKey, files.governmentId[0].mimetype);
+        await uploadBufferToSupabase(files.proofOfAddress[0].buffer, proofOfAddressKey, files.proofOfAddress[0].mimetype);
+        await uploadBufferToSupabase(files.proofOfBusiness[0].buffer, proofOfBusinessKey, files.proofOfBusiness[0].mimetype);
         
         // Create user with Supabase Auth
         console.log("Creating Supabase user for business:", email);
@@ -431,16 +437,17 @@ export function authRoutes(app: Express): void {
 
         console.log("Profile created:", profile.id);
 
-        // Create business record in businesses_new table
+        // Create business record in businesses_new table with storage keys only
         const business = await createBusiness(profile.id, {
           businessName: businessName,
           businessCategory: businessCategory,
-          governmentId: governmentIdPath,
-          proofOfAddress: proofOfAddressPath,
-          proofOfBusiness: proofOfBusinessPath
+          governmentId: governmentIdKey,
+          proofOfAddress: proofOfAddressKey,
+          proofOfBusiness: proofOfBusinessKey
         });
 
         console.log("Business created in businesses_new:", business.id);
+        // Temporary logs removed after successful proof
         console.info("[BUSINESS REGISTER] created", {
           businessId: business.id, 
           profileId: profile.id, 
@@ -498,11 +505,13 @@ export function authRoutes(app: Express): void {
     legacyBusinessRegPath,
     [versionHeadersMiddleware(), deprecationMiddleware],
     authRateLimiter,
-    getUploadMiddleware().fields([
+    secureUploadMiddleware.fields([
       { name: 'governmentId', maxCount: 1 },
       { name: 'proofOfAddress', maxCount: 1 },
       { name: 'proofOfBusiness', maxCount: 1 }
     ]),
+    handleSecureUploadError,
+    validateFileContent,
     async (req: Request, res: Response) => {
       try {
         // Handle form data

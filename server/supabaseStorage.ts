@@ -77,6 +77,56 @@ export async function initializeBucket(): Promise<void> {
 }
 
 /**
+ * Upload file buffer to Supabase Storage with custom path
+ */
+export async function uploadBufferToSupabase(
+  buffer: Buffer,
+  filePath: string,
+  mimeType: string
+): Promise<{ path: string; signedUrl: string }> {
+  try {
+    console.log(`📤 Uploading buffer to Supabase Storage: ${filePath}`);
+
+    // Upload file buffer to Supabase Storage
+    const { data, error } = await supabaseAdmin.storage
+      .from(BUCKET_NAME)
+      .upload(filePath, buffer, {
+        contentType: mimeType,
+        cacheControl: '3600', // 1 hour cache
+        upsert: false // Don't overwrite existing files
+      });
+
+    if (error) {
+      console.error('Supabase upload error:', error);
+      throw new Error(`Upload failed: ${error.message}`);
+    }
+
+    console.log(`✅ File uploaded successfully: ${data.path}`);
+
+    // Generate signed URL for access (valid for 1 hour)
+    const { data: signedUrlData, error: urlError } = await supabaseAdmin.storage
+      .from(BUCKET_NAME)
+      .createSignedUrl(data.path, 3600); // 1 hour expiry
+
+    if (urlError) {
+      console.error('Error generating signed URL:', urlError);
+      throw new Error(`Failed to generate signed URL: ${urlError.message}`);
+    }
+
+    console.log(`🔗 Generated signed URL for: ${data.path}`);
+
+    return {
+      path: data.path,
+      signedUrl: signedUrlData.signedUrl
+    };
+
+  } catch (error) {
+    console.error('Error uploading to Supabase Storage:', error);
+    throw error;
+  }
+}
+
+/**
  * Upload file to Supabase Storage with security validation
  */
 export async function uploadFileToSupabase(

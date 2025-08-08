@@ -1,0 +1,122 @@
+Goal
+Make the vendor signup upload path safe and predictable. Enforce size and MIME limits at the server, and prove they work with curl. Do not change any client code.
+
+Scope
+Route: POST /api/v1/auth/register/business in server/routes/auth.routes.fixed.ts
+Upload middleware factory: wherever getUploadMiddleware() lives.
+Storage: keep private bucket. DB must store storage keys only.
+
+Tasks
+
+In the upload middleware used by register/business, enforce:
+
+Memory storage
+
+limits: { fileSize: 10 * 1024 * 1024 } // 10 MB per file
+
+MIME allowlist: application/pdf, image/png, image/jpeg, image/webp
+
+Reject all others with HTTP 400 and a clear message.
+Field names remain:
+
+governmentId maxCount 1
+
+proofOfAddress maxCount 1
+
+proofOfBusiness maxCount 1
+
+In the handler, do not log PII or file names. If validation fails, return 400 with a short message like:
+
+{"error":"Invalid file type"}
+
+{"error":"File too large"}
+
+Keep uploads in a private bucket. Store only object keys in businesses_new (no public URLs).
+
+Add two temporary logs for test only and remove them after proof:
+
+ts
+Copy
+Edit
+console.info("[DOC UPLOAD] start");
+console.info("[DOC UPLOAD] saved", { businessId, hasGov: !!key1, hasAddr: !!key2, hasBiz: !!key3 });
+Proof steps
+After implementing, restart the server and run these black-box tests from the Replit shell. Use a fresh email each time.
+
+bash
+Copy
+Edit
+# Prep three tiny PDF files
+printf '%%PDF-1.4\n' > /tmp/govid.pdf
+cp /tmp/govid.pdf /tmp/address.pdf
+cp /tmp/govid.pdf /tmp/business.pdf
+
+# 1) Happy path: should return 201
+ts=$(date +%s)
+email="mohamad.diab+ul${ts}@outlook.com"
+curl -i -X POST http://localhost:5000/api/v1/auth/register/business \
+ -F "businessName=Auto UL ${ts}" \
+ -F "businessCategory=retail" \
+ -F "firstName=Auto" \
+ -F "lastName=Test" \
+ -F "email=${email}" \
+ -F "password=TestPassword123!" \
+ -F "phone=+14161234567" \
+ -F "address=123 Test St" \
+ -F "phoneVerified=true" \
+ -F "governmentId=@/tmp/govid.pdf;type=application/pdf" \
+ -F "proofOfAddress=@/tmp/address.pdf;type=application/pdf" \
+ -F "proofOfBusiness=@/tmp/business.pdf;type=application/pdf"
+
+# 2) Type rejection: should return 400 Invalid file type
+echo 'not an image' > /tmp/bad.exe
+curl -i -X POST http://localhost:5000/api/v1/auth/register/business \
+ -F "businessName=BadType ${ts}" \
+ -F "businessCategory=retail" \
+ -F "firstName=Auto" \
+ -F "lastName=Test" \
+ -F "email=mohamad.diab+badtype${ts}@outlook.com" \
+ -F "password=TestPassword123!" \
+ -F "phone=+14161234567" \
+ -F "address=123 Test St" \
+ -F "phoneVerified=true" \
+ -F "governmentId=@/tmp/bad.exe;type=application/octet-stream" \
+ -F "proofOfAddress=@/tmp/address.pdf;type=application/pdf" \
+ -F "proofOfBusiness=@/tmp/business.pdf;type=application/pdf"
+
+# 3) Size rejection: should return 400 File too large
+dd if=/dev/zero of=/tmp/huge.pdf bs=1M count=12
+curl -i -X POST http://localhost:5000/api/v1/auth/register/business \
+ -F "businessName=TooBig ${ts}" \
+ -F "businessCategory=retail" \
+ -F "firstName=Auto" \
+ -F "lastName=Test" \
+ -F "email=mohamad.diab+toobig${ts}@outlook.com" \
+ -F "password=TestPassword123!" \
+ -F "phone=+14161234567" \
+ -F "address=123 Test St" \
+ -F "phoneVerified=true" \
+ -F "governmentId=@/tmp/huge.pdf;type=application/pdf" \
+ -F "proofOfAddress=@/tmp/address.pdf;type=application/pdf" \
+ -F "proofOfBusiness=@/tmp/business.pdf;type=application/pdf"
+Then run these SQL checks for the happy path email printed in the first curl:
+
+sql
+Copy
+Edit
+-- Must be exactly one row in businesses_new with storage keys, and zero in legacy
+SELECT b.id, b.business_name, b.government_id, b.proof_of_address, b.proof_of_business, p.email
+FROM businesses_new b
+JOIN profiles p ON p.id = b.profile_id
+WHERE lower(p.email) = lower('<happy-path-email>');
+
+SELECT COUNT(*) AS legacy_count
+FROM businesses
+WHERE user_id::text = (SELECT id::text FROM profiles WHERE lower(email)=lower('<happy-path-email>') LIMIT 1);
+Finally, paste back:
+
+Status code for each of the three curl requests
+
+The two [DOC UPLOAD] log lines for the happy path
+
+The two SQL outputs above
