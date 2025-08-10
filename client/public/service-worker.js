@@ -139,7 +139,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // Special handling for deal API requests with TTL
+  // Skip ALL API requests to ensure proper server handling
+  if (event.request.url.includes('/api/')) {
+    console.log('[Service Worker] Skipping API request:', event.request.url);
+    return;
+  }
+  
+  // Special handling for deal API requests with TTL (legacy code - now bypassed above)
   if (event.request.url.includes('/api/deals')) {
     event.respondWith(
       fetch(event.request)

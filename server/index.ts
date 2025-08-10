@@ -363,6 +363,65 @@ app.post('/api/v1/admin/businesses/:id/reject', async (req, res) => {
   }
 });
 
+// Admin business deletion endpoint with CSRF protection
+app.delete('/api/v1/admin/businesses/:id', async (req, res) => {
+  try {
+    const businessId = parseInt(req.params.id);
+    if (isNaN(businessId)) {
+      return res.status(400).json({ error: 'Invalid business ID' });
+    }
+    
+    console.log(`Admin DELETE: Attempting to delete business ID: ${businessId}`);
+    
+    // Check if business exists first by searching both tables
+    let business = null;
+    let businessName = 'Unknown';
+    
+    try {
+      // Try businesses_new first
+      let result = await pool.query('SELECT id, business_name FROM businesses_new WHERE id = $1', [businessId]);
+      if (result.rows.length > 0) {
+        business = result.rows[0];
+        businessName = business.business_name;
+        
+        // Delete from businesses_new
+        await pool.query('DELETE FROM businesses_new WHERE id = $1', [businessId]);
+        console.log(`Admin DELETE: Deleted business "${businessName}" from businesses_new table`);
+      } else {
+        // Try legacy businesses table
+        result = await pool.query('SELECT id, business_name FROM businesses WHERE id = $1', [businessId]);
+        if (result.rows.length > 0) {
+          business = result.rows[0];
+          businessName = business.business_name;
+          
+          // Delete from legacy businesses table
+          await pool.query('DELETE FROM businesses WHERE id = $1', [businessId]);
+          console.log(`Admin DELETE: Deleted business "${businessName}" from legacy businesses table`);
+        }
+      }
+    } catch (dbError) {
+      console.error('Admin DELETE: Database error:', dbError);
+      return res.status(500).json({ error: 'Database error during deletion' });
+    }
+
+    if (!business) {
+      console.log(`Admin DELETE: Business ID ${businessId} not found`);
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    console.log(`Admin DELETE: Successfully deleted business "${businessName}" (ID: ${businessId})`);
+    return res.status(200).json({ 
+      ok: true,
+      deletedId: businessId,
+      message: 'Business deleted successfully',
+      deletedBusinessName: businessName
+    });
+  } catch (err) {
+    console.error('Admin DELETE: Unexpected error:', err);
+    return res.status(500).json({ error: 'Unable to delete business' });
+  }
+});
+
 // Document viewing/download endpoint
 app.get('/api/v1/admin/documents/:businessId/:documentType', async (req, res) => {
   try {

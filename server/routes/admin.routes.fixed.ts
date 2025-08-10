@@ -1,6 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { storage } from "../storage";
-import { authenticate, authorize } from "../middleware";
+import { authenticate, authorize, verifyCsrf } from "../middleware";
 import { validate } from "../middleware/validationMiddleware";
 import { adminSchemas } from "../schemas";
 import { 
@@ -1269,6 +1269,7 @@ export function adminRoutes(app: Express): void {
     versionHeadersMiddleware(),
     authenticate,
     authorize(['admin']),
+    verifyCsrf,
     async (req: Request, res: Response) => {
       try {
         const businessId = parseInt(req.params.id);
@@ -1289,8 +1290,9 @@ export function adminRoutes(app: Express): void {
         }
 
         return res.status(200).json({ 
+          ok: true,
+          deletedId: businessId,
           message: "Business deleted successfully",
-          deletedBusinessId: businessId,
           deletedBusinessName: business.businessName
         });
       } catch (err) {
@@ -1304,6 +1306,7 @@ export function adminRoutes(app: Express): void {
     [versionHeadersMiddleware(), deprecationMiddleware],
     authenticate,
     authorize(['admin']),
+    verifyCsrf,
     async (req: Request, res: Response) => {
       try {
         const businessId = parseInt(req.params.id);
@@ -1324,8 +1327,9 @@ export function adminRoutes(app: Express): void {
         }
 
         return res.status(200).json({ 
+          ok: true,
+          deletedId: businessId,
           message: "Business deleted successfully",
-          deletedBusinessId: businessId,
           deletedBusinessName: business.businessName
         });
       } catch (err) {

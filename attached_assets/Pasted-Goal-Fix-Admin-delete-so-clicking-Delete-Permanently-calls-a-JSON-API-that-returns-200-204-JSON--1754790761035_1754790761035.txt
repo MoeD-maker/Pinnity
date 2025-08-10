@@ -1,0 +1,48 @@
+Goal
+Fix Admin delete so clicking “Delete Permanently” calls a JSON API that returns 200/204 JSON (not HTML), with CSRF handled. Do not change client forms; keep the current admin UI, but ensure it uses our CSRF-aware fetch.
+
+What to do
+
+1) Server route
+- Find the handler for DELETE /api/v1/admin/businesses/:id.
+- If no dedicated DELETE exists, create one under the admin routes.
+- The handler must:
+  a) Check admin auth (same guard as other admin endpoints).
+  b) Accept a numeric or UUID :id (whatever we use in the list).
+  c) In a transaction:
+     - Delete from businesses_new where id=:id
+       OR if we store only profile_id in UI, delete by profile_id=:id
+     - Optionally delete legacy businesses row if exists.
+     - Optionally delete the profile (ONLY if the product decision is full purge).
+  d) Return JSON: { ok: true, deletedId: <id> } with status 200, or 204 with no body.
+- Ensure the route never redirects to an HTML page on error. On errors, return JSON { error: "...", code: ... }.
+
+2) CSRF and session
+- Confirm the DELETE route is behind the same CSRF middleware used by POST/PUT.
+- Confirm the client sends the CSRF token and cookies to this route (credentials: 'include').
+- If our client admin page is calling fetch directly, switch it to our existing fetchWithCSRF/apiDelete helper.
+
+3) Client call
+- In the Admin Vendors list component:
+  - Locate handleDeleteBusiness(id).
+  - Ensure it calls our apiDelete('/api/v1/admin/businesses/' + id) or fetchWithCSRF with:
+    method: 'DELETE', credentials: 'include', and X-CSRF-Token header.
+  - After success, invalidate the vendors list query and show a success toast.
+
+4) Service worker
+- Ensure the service worker does not intercept this API request.
+- Add a rule to bypass SW caching for paths that start with /api/.
+
+5) Tests (run and paste results)
+- curl -i -X DELETE http://localhost:5000/api/v1/admin/businesses/<EXAMPLE_ID> -b cookies.txt
+  Expect: 200/204, Content-Type: application/json (or no content).
+- Try deleting a non-existent ID; expect 404 JSON { error: 'not found' }.
+- From the UI, click Delete Permanently:
+  a) No red banner.
+  b) Row disappears after refetch.
+  c) Network tab shows DELETE 200/204 with JSON (not HTML).
+
+6) Report back
+- Paste the exact route file/line, and the JSON sample response.
+- Confirm the client uses apiDelete/fetchWithCSRF with credentials + CSRF header.
+- Confirm the service worker bypass is in place for /api/.
