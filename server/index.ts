@@ -213,6 +213,10 @@ try {
   console.error('❌ Failed to import business registration routes:', error);
 }
 
+// Import and register verify routes
+import verifyRoutes from "./routes/verify.routes.js";
+app.use("/api/v1/verify", verifyRoutes);
+
 // Admin API endpoints that the dashboard needs
 app.get('/api/v1/admin/businesses', async (req, res) => {
   try {

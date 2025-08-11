@@ -50,10 +50,16 @@ export function TwilioPhoneVerification({
     try {
       console.log('Sending SMS to:', phoneNumber);
 
-      // Send SMS using Twilio
-      const success = await sendSMSVerification(phoneNumber);
-      
-      if (success) {
+      // Send SMS using new Twilio Verify endpoint
+      const response = await fetch('/api/v1/verify/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phone: phoneNumber }),
+      });
+
+      if (response.ok) {
         setStep('code');
         setTimeLeft(60); // 60 second cooldown
 
@@ -62,7 +68,8 @@ export function TwilioPhoneVerification({
           description: `Verification code sent to ${formatPhoneForDisplay(phoneNumber)}`,
         });
       } else {
-        throw new Error('Failed to send SMS');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to send SMS');
       }
     } catch (error) {
       console.error('SMS sending error:', error);
