@@ -1,0 +1,58 @@
+Please implement full cross-system sync (Supabase Auth ↔ App DB) for ALL vendor actions.
+
+A) Create a server-only sync service
+- New file: server/sync/VendorSyncService.ts
+- Export functions (all return structured results and log one line):
+  - createVendorWithAuth(input)
+  - updateVendorEmail({ profileId, newEmail })
+  - updateVendorPhone({ profileId, newPhoneE164 })
+  - setVendorPassword({ profileId, newPassword })
+  - setVendorStatus({ profileId, status }) // approved, pending, rejected, deactivated
+  - deleteVendorFully({ businessId }) // cascade storage, businesses, profile if orphaned, Auth user
+- Inside, use the service-role Supabase client for Auth admin ops:
+  supabaseAdmin.auth.admin.createUser / updateUserById / deleteUser
+- The service must:
+  1) Always operate by profileId -> look up profiles.auth_user_id (and email/phone).
+  2) When an action touches both Auth and DB, do “two-phase with retry”:
+     - Try Auth first, then DB (or vice versa when appropriate).
+     - If the second step fails, insert a row in a new table `sync_outbox`
+       columns: id, type, payload(jsonb), attempts int default 0, last_error text, created_at, updated_at
+     - Add a tiny worker (node-cron every minute) to retry `sync_outbox` items up to N times with backoff.
+- Add a helper `getAuthIdByProfileId(profileId)` (joins profiles), and `getProfileByBusinessId`.
+
+B) DB hardening & constraints
+- Ensure profiles has column auth_user_id (text or uuid) NOT NULL UNIQUE.
+- Backfill auth_user_id for existing rows by joining profiles.email to auth.users.email.
+- Add a DB check or server validation so profiles cannot be created without auth_user_id.
+- Ensure businesses_new.profile_id references profiles(id) ON DELETE CASCADE.
+
+C) Route integration (NO direct writes elsewhere)
+- Update all routes that currently create/update/delete vendor data to call VendorSyncService only:
+  - Signup route(s)
+  - Admin: approve/reject/deactivate/reactivate/delete vendor
+  - Profile: email/phone/password updates
+- Remove or forbid any direct Auth or DB mutations outside the service. If necessary, wrap legacy routes but make them call the service now.
+- For deleteEndpoint: call deleteVendorFully({ businessId }) and return JSON with { ok, deletedBusinessId, partial:false/true }.
+
+D) Reconciliation endpoint (admin-only)
+- GET /api/v1/admin/tools/reconcile-auth → returns arrays:
+  - profiles_without_auth
+  - auth_users_without_profiles
+  - profiles_with_email_mismatch_vs_auth
+- POST /api/v1/admin/tools/reconcile-auth/fix
+  accepts { mode, auth_user_id?, profile_id? } and performs a targeted fix:
+  - delete dangling profile or delete dangling auth user or relink if safe.
+
+E) Tests + logs + audit
+- Minimal script (server/scripts/smokeSync.ts): creates a temp vendor, updates email & phone, changes password, deactivates/reactivates, deletes; asserts both DB and Auth are consistent.
+- Every sync function logs one concise line: action, profileId, auth_user_id, result, outboxUsed:boolean.
+- Keep existing CSRF and RLS behavior intact.
+
+F) Frontend
+- Update admin/user profile forms to call the new endpoints (no direct supabase-js Auth calls from client for vendor management—always via server).
+- Show user-friendly toasts on success/fail. If partial:true, show “Change applied, background sync pending”.
+
+After implementation, run:
+1) the smoke script,
+2) a manual UI test,
+and paste outputs in the console.

@@ -19,6 +19,7 @@ import { setupVite, serveStatic, log } from "./vite.js";
 // Skip environment validator for now
 // import { EnvironmentValidator } from "./utils/environmentValidator.js";
 import { initializeSupabaseStorage } from "./supabaseStorage.js";
+import { startSyncWorker } from "./sync/SyncWorker.js";
 // Simplified imports for minimal server startup
 import { gatedRegister, gatedLogin } from "./routes/auth.routes.gated.js";
 import { pool } from "./db.js";
@@ -27,6 +28,7 @@ import { pool } from "./db.js";
 // import { router as authRouter } from "./routes/auth.routes.supabase.js";
 // import { router as legacyRoutes } from "./routes/index.js";
 import { sendSMSVerification, verifySMSCode } from "./smsService.js";
+import adminReconcileRouter from "./routes/admin.reconcile.js";
 // import testTermsRouter from "./test-terms.js";
 
 // Validate environment configuration
@@ -363,7 +365,7 @@ app.post('/api/v1/admin/businesses/:id/reject', async (req, res) => {
   }
 });
 
-// Admin business deletion endpoint with CSRF protection
+// Admin business deletion endpoint with CSRF protection and Supabase sync
 app.delete('/api/v1/admin/businesses/:id', async (req, res) => {
   try {
     const businessId = parseInt(req.params.id);
@@ -373,49 +375,29 @@ app.delete('/api/v1/admin/businesses/:id', async (req, res) => {
     
     console.log(`Admin DELETE: Attempting to delete business ID: ${businessId}`);
     
-    // Check if business exists first by searching both tables
-    let business = null;
-    let businessName = 'Unknown';
+    // Import VendorSyncService dynamically to avoid circular imports
+    const { deleteVendorFully } = await import('./sync/VendorSyncService.js');
     
-    try {
-      // Try businesses_new first
-      let result = await pool.query('SELECT id, business_name FROM businesses_new WHERE id = $1', [businessId]);
-      if (result.rows.length > 0) {
-        business = result.rows[0];
-        businessName = business.business_name;
-        
-        // Delete from businesses_new
-        await pool.query('DELETE FROM businesses_new WHERE id = $1', [businessId]);
-        console.log(`Admin DELETE: Deleted business "${businessName}" from businesses_new table`);
-      } else {
-        // Try legacy businesses table
-        result = await pool.query('SELECT id, business_name FROM businesses WHERE id = $1', [businessId]);
-        if (result.rows.length > 0) {
-          business = result.rows[0];
-          businessName = business.business_name;
-          
-          // Delete from legacy businesses table
-          await pool.query('DELETE FROM businesses WHERE id = $1', [businessId]);
-          console.log(`Admin DELETE: Deleted business "${businessName}" from legacy businesses table`);
-        }
-      }
-    } catch (dbError) {
-      console.error('Admin DELETE: Database error:', dbError);
-      return res.status(500).json({ error: 'Database error during deletion' });
+    // Use the sync service for coordinated deletion
+    const result = await deleteVendorFully({ businessId });
+    
+    if (result.success) {
+      console.log(`Admin DELETE: Successfully deleted business ID: ${businessId}, partial: ${result.partial || false}`);
+      return res.status(200).json({ 
+        ok: true,
+        deletedBusinessId: businessId,
+        message: 'Business deleted successfully',
+        partial: result.partial || false,
+        profileDeleted: !!result.profileId,
+        authUserDeleted: !!result.authUserId
+      });
+    } else {
+      console.log(`Admin DELETE: Failed to delete business ID: ${businessId}, error: ${result.error}`);
+      return res.status(500).json({ 
+        error: result.error || 'Failed to delete business',
+        partial: result.partial || false
+      });
     }
-
-    if (!business) {
-      console.log(`Admin DELETE: Business ID ${businessId} not found`);
-      return res.status(404).json({ error: 'Business not found' });
-    }
-
-    console.log(`Admin DELETE: Successfully deleted business "${businessName}" (ID: ${businessId})`);
-    return res.status(200).json({ 
-      ok: true,
-      deletedId: businessId,
-      message: 'Business deleted successfully',
-      deletedBusinessName: businessName
-    });
   } catch (err) {
     console.error('Admin DELETE: Unexpected error:', err);
     return res.status(500).json({ error: 'Unable to delete business' });
@@ -948,6 +930,10 @@ app.get('/api/business/:businessId/deals', async (req, res) => {
 
 console.log('✅ Gated authentication routes registered');
 
+// Register admin reconcile routes
+app.use('/api/v1/admin/tools', adminReconcileRouter);
+console.log('✅ Admin reconcile routes registered');
+
 // Skip other routes for now
 // app.use('/api/auth', authRouter);
 // app.use('/api/admin', adminRouter);
@@ -974,4 +960,7 @@ server.listen(PORT, "0.0.0.0", () => {
       log(`→ This terminal's port forwarding: http://localhost:${PORT}`);
     }
   }
+  
+  // Start the sync worker for background sync operations
+  startSyncWorker();
 });

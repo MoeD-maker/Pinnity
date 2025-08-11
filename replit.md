@@ -21,13 +21,15 @@ Preferred communication style: Simple, everyday language.
 - **Authentication**: JWT-based authentication with secure cookie storage
 - **File Upload**: Multer with integrated storage (Supabase Storage)
 - **Security**: CSRF protection, rate limiting, input validation, bcrypt password hashing
+- **Sync System**: Comprehensive bidirectional sync between Local PostgreSQL and Supabase Auth with outbox pattern for reliability
 
 ### Database Design
 - **Primary Database**: PostgreSQL hosted on Supabase
 - **Schema Management**: Drizzle Kit for migrations
-- **Key Tables**: Users, Businesses (legacy), Businesses_new (active), Deals, Favorites, Redemptions, Approvals
+- **Key Tables**: Users, Businesses (legacy), Businesses_new (active), Deals, Favorites, Redemptions, Approvals, Profiles, sync_outbox, sync_status
 - **Business Architecture**: Dual-table system with v_businesses_unified view for admin visibility and legacy data protection
 - **Location Data**: Latitude/longitude coordinates for mapping
+- **Sync Architecture**: Outbox pattern with retry mechanisms, fallback handling, and comprehensive reconciliation tools
 
 ### Key Components
 - **Authentication & Authorization System**: Multi-tier user system (individuals, businesses, admins) with JWT and secure cookies.
@@ -35,6 +37,7 @@ Preferred communication style: Simple, everyday language.
 - **Deal Management System**: Rich deal creation, image uploads, categorization, temporal validity, and admin moderation.
 - **File Upload & Processing**: Secure file validation (magic number), image resizing/optimization (Cloudinary initially, migrated to Supabase Storage), PDF processing, and sanitized filename handling.
 - **Location & Mapping**: Geospatial data storage for businesses and map-based deal discovery.
+- **Vendor Sync System**: Complete CRUD synchronization between local database and Supabase Auth with VendorSyncService.ts, automated background sync worker, outbox pattern for reliability, and admin reconciliation tools.
 
 ### Data Flow Highlights
 - **User Registration**: Validation, secure password storage, document upload for businesses, and account activation with JWT.
