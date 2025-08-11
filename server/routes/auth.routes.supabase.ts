@@ -257,10 +257,13 @@ export async function registerBusiness(req: Request, res: Response) {
  */
 export async function login(req: Request, res: Response) {
   try {
-    const validatedData = loginSchema.parse(req.body);
+    const email = String(req.body.email || "").trim().toLowerCase();
+    const password = String(req.body.password || "");
+    
+    const validatedData = loginSchema.parse({ email, password });
     
     // Find user in our profiles table
-    const user = await getUserByEmail(validatedData.email);
+    const user = await getUserByEmail(email);
     
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
@@ -276,8 +279,8 @@ export async function login(req: Request, res: Response) {
       );
       
       const { data: signInData, error: signInError } = await supabaseClient.auth.signInWithPassword({
-        email: validatedData.email,
-        password: validatedData.password
+        email: email,
+        password: password
       });
 
       if (signInError) {
@@ -285,10 +288,10 @@ export async function login(req: Request, res: Response) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
       
-      console.log("Supabase login successful for:", validatedData.email);
+      console.log("Supabase login successful for:", email);
     } else {
       // Local user - check for password in businesses_new or legacy users table
-      console.log("Local user login attempt for:", validatedData.email);
+      console.log("Local user login attempt for:", email);
       
       let isValidPassword = false;
       
@@ -297,12 +300,12 @@ export async function login(req: Request, res: Response) {
         console.log("Checking legacy users table");
         const { rows: legacyUsers } = await pool.query(
           'SELECT id, email, password, first_name, last_name, user_type FROM users WHERE lower(email) = lower($1)',
-          [validatedData.email]
+          [email]
         );
         
         if (legacyUsers.length > 0 && legacyUsers[0].password) {
           const legacyUser = legacyUsers[0];
-          isValidPassword = await bcrypt.compare(validatedData.password, legacyUser.password);
+          isValidPassword = await bcrypt.compare(password, legacyUser.password);
           
           if (isValidPassword) {
             console.log("Legacy password verification successful");
@@ -318,13 +321,13 @@ export async function login(req: Request, res: Response) {
       }
       
       if (!isValidPassword) {
-        console.error("Password verification failed for user:", validatedData.email);
+        console.error("Password verification failed for user:", email);
         return res.status(401).json({ message: "Invalid email or password" });
       }
     }
 
-    console.log("Login successful for:", validatedData.email);
-    console.info("[LOGIN] success", validatedData.email);
+    console.log("Login successful for:", email);
+    console.info("[LOGIN] success", email);
 
     // Generate JWT token for our app
     const token = generateToken({
