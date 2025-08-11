@@ -38,7 +38,7 @@ async function migrateExistingData() {
     for (const user of oldUsers) {
       try {
         // Check if user already exists in profiles
-        const existingProfileQuery = `SELECT id FROM profiles WHERE email = $1`;
+        const existingProfileQuery = `SELECT id FROM profiles WHERE lower(email) = lower($1)`;
         const existingProfile = await db.execute(existingProfileQuery, [user.email]);
         
         if (existingProfile.rows.length > 0) {
