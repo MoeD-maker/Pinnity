@@ -287,37 +287,59 @@ export async function login(req: Request, res: Response) {
       
       console.log("Supabase login successful for:", validatedData.email);
     } else {
-      // Legacy user - check the old users table
-      console.log("Legacy user login attempt for:", validatedData.email);
+      // Local user - check for password in businesses_new or legacy users table
+      console.log("Local user login attempt for:", validatedData.email);
       
-      // Query the legacy users table
-      const { rows: legacyUsers } = await pool.query(
-        'SELECT id, email, password, first_name, last_name, user_type FROM users WHERE email = $1',
-        [validatedData.email]
-      );
+      let isValidPassword = false;
       
-      if (legacyUsers.length === 0 || !legacyUsers[0].password) {
-        console.error("Legacy user not found or has no password");
-        return res.status(401).json({ message: "Invalid credentials" });
+      // First check if this is a business user with password in businesses_new table
+      if (user.user_type === 'business' && user.business) {
+        const { rows: businessUsers } = await pool.query(
+          'SELECT password_hash FROM businesses_new WHERE profile_id = $1 AND password_hash IS NOT NULL',
+          [user.id]
+        );
+        
+        if (businessUsers.length > 0 && businessUsers[0].password_hash) {
+          console.log("Business user found with password hash");
+          isValidPassword = await bcrypt.compare(validatedData.password, businessUsers[0].password_hash);
+          
+          if (isValidPassword) {
+            console.log("Business password verification successful");
+          } else {
+            console.log("Business password verification failed");
+          }
+        }
       }
       
-      const legacyUser = legacyUsers[0];
-      // bcrypt is already imported at the top
-      const isValidPassword = await bcrypt.compare(validatedData.password, legacyUser.password);
+      // If not a business user or business password failed, try legacy users table
+      if (!isValidPassword) {
+        console.log("Checking legacy users table");
+        const { rows: legacyUsers } = await pool.query(
+          'SELECT id, email, password, first_name, last_name, user_type FROM users WHERE email = $1',
+          [validatedData.email]
+        );
+        
+        if (legacyUsers.length > 0 && legacyUsers[0].password) {
+          const legacyUser = legacyUsers[0];
+          isValidPassword = await bcrypt.compare(validatedData.password, legacyUser.password);
+          
+          if (isValidPassword) {
+            console.log("Legacy password verification successful");
+            // Update the user object to use legacy user data
+            user.email = legacyUser.email;
+            user.first_name = legacyUser.first_name;
+            user.last_name = legacyUser.last_name;
+            user.user_type = legacyUser.user_type;
+          } else {
+            console.log("Legacy password verification failed");
+          }
+        }
+      }
       
       if (!isValidPassword) {
-        console.error("Legacy password verification failed");
-        return res.status(401).json({ message: "Invalid credentials" });
+        console.error("Password verification failed for user:", validatedData.email);
+        return res.status(401).json({ message: "Invalid email or password" });
       }
-      
-      console.log("Legacy login successful for:", validatedData.email);
-      
-      // Update the user object to use legacy user data
-      user.id = user.id; // Keep the profiles table ID
-      user.email = legacyUser.email;
-      user.first_name = legacyUser.first_name;
-      user.last_name = legacyUser.last_name;
-      user.user_type = legacyUser.user_type;
     }
 
     console.log("Login successful for:", validatedData.email);

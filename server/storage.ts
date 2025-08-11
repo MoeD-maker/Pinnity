@@ -1846,12 +1846,56 @@ export class DatabaseStorage implements IStorage {
     // Make email lookup case-insensitive to avoid login issues with different case
     const normalizedEmail = email.toLowerCase();
     
-    // Use SQL LOWER function for case-insensitive comparison
+    // First check the legacy users table
     const [user] = await db.select().from(users).where(
       sql`LOWER(${users.email}) = LOWER(${normalizedEmail})`
     );
     
-    return user || undefined;
+    if (user) {
+      return user;
+    }
+    
+    // If not found in legacy users table, check the new profile/business structure
+    try {
+      const profileQuery = `
+        SELECT 
+          p.id,
+          p.email,
+          p.first_name,
+          p.last_name,
+          p.user_type,
+          p.phone_verified,
+          b.password_hash
+        FROM profiles p
+        LEFT JOIN businesses_new b ON p.id = b.profile_id
+        WHERE LOWER(p.email) = LOWER($1)
+      `;
+      
+      const result = await db.execute(sql.raw(profileQuery, [normalizedEmail]));
+      const profileRow = result.rows[0] as any;
+      
+      if (profileRow) {
+        // Convert profile data to User format for compatibility
+        const profileUser: User = {
+          id: profileRow.id,
+          email: profileRow.email,
+          username: profileRow.email.split('@')[0], // Generate username from email
+          password: profileRow.password_hash || '', // Use business password hash if available
+          firstName: profileRow.first_name || '',
+          lastName: profileRow.last_name || '',
+          userType: profileRow.user_type as 'individual' | 'business' | 'admin',
+          phoneVerified: profileRow.phone_verified || false,
+          created_at: new Date().toISOString()
+        };
+        
+        console.log(`Found profile user: ${profileUser.email}, userType: ${profileUser.userType}, hasPassword: ${!!profileUser.password}`);
+        return profileUser;
+      }
+    } catch (error) {
+      console.error('Error querying profiles table:', error);
+    }
+    
+    return undefined;
   }
 
   async getUserBySupabaseId(supabaseId: string): Promise<User | undefined> {

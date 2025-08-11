@@ -236,9 +236,16 @@ export async function gatedLogin(req: Request, res: Response) {
     }
     
     const supabaseUser = listData.users.find(u => u.email === validatedData.email);
+    console.log("Supabase user lookup result for", validatedData.email, ":", !!supabaseUser);
+    
     if (!supabaseUser) {
       console.log("No Supabase user found for:", validatedData.email);
       console.log("Attempting legacy password verification...");
+      console.log("User profile details:", {
+        id: userProfile.id,
+        user_type: userProfile.user_type,
+        email: userProfile.email
+      });
       
       // Fall back to legacy password verification for existing users
       const bcrypt = await import('bcryptjs');
@@ -249,18 +256,48 @@ export async function gatedLogin(req: Request, res: Response) {
         [validatedData.email]
       );
       
-      if (legacyUsers.length === 0 || !legacyUsers[0].password) {
-        console.log("No legacy user found or no password set");
-        return res.status(401).json({ 
-          message: "Invalid email or password"
-        });
+      console.log("🔍 DEBUG: Legacy users query result:", legacyUsers.length, "rows");
+      let isValidPassword = false;
+      
+      // Try legacy users table first
+      if (legacyUsers.length > 0 && legacyUsers[0].password) {
+        const legacyUser = legacyUsers[0];
+        isValidPassword = await bcrypt.compare(validatedData.password, legacyUser.password);
+        if (isValidPassword) {
+          console.log("Legacy password verification successful");
+        }
       }
       
-      const legacyUser = legacyUsers[0];
-      const isValidPassword = await bcrypt.compare(validatedData.password, legacyUser.password);
+      // If legacy verification failed or no legacy user found, try business table
+      if (!isValidPassword && userProfile.user_type === 'business') {
+        console.log("Checking business password in businesses_new table for profile_id:", userProfile.id);
+        const { rows: businessUsers } = await pool.query(
+          'SELECT password_hash FROM businesses_new WHERE profile_id = $1',
+          [userProfile.id]
+        );
+        
+        console.log("Business query result:", businessUsers.length, "rows found");
+        if (businessUsers.length > 0) {
+          console.log("Business row password_hash exists:", !!businessUsers[0].password_hash);
+          if (businessUsers[0].password_hash) {
+            console.log("Comparing password for business user...");
+            isValidPassword = await bcrypt.compare(validatedData.password, businessUsers[0].password_hash);
+            console.log("Business password comparison result:", isValidPassword);
+            if (isValidPassword) {
+              console.log("✅ Business password verification successful");
+            } else {
+              console.log("❌ Business password verification failed");
+            }
+          } else {
+            console.log("Business user found but no password_hash set");
+          }
+        } else {
+          console.log("No business record found for profile_id:", userProfile.id);
+        }
+      }
       
       if (!isValidPassword) {
-        console.log("Legacy password verification failed");
+        console.log("Password verification failed: Invalid login credentials");
         return res.status(401).json({ 
           message: "Invalid email or password"
         });
