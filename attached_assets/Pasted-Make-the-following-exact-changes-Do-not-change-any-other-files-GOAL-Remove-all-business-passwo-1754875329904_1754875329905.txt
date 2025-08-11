@@ -1,0 +1,49 @@
+Make the following exact changes. Do not change any other files.
+
+GOAL
+Remove all business password storage from the sync layer and use Supabase Auth exclusively for password creation/updates.
+- No INSERT/UPDATE of businesses_new.password_hash.
+- On vendor create: create or fetch Supabase user, store supabase_user_id on profiles, do NOT store any password in businesses_new.
+- On password update: call Supabase Admin password update API, do NOT write to DB.
+
+1) server/sync/VendorSyncService.ts
+- Remove any imports/usages of bcrypt for business passwords.
+- In vendor creation code, delete password_hash from the INSERT into businesses_new. The columns should NOT include password or password_hash.
+- If the create path currently expects a password for the business row, instead:
+  a) Normalize email: const email = emailInput.trim().toLowerCase();
+  b) Use Supabase Admin to create or fetch the auth user:
+     const { createClient } = await import('@supabase/supabase-js');
+     const admin = createClient(process.env.VITE_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+     // Try to find existing user by email
+     const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+     const existing = list?.users?.find(u => (u.email||'').toLowerCase() === email);
+     let userId = existing?.id;
+     if (!userId) {
+       const { data: created, error: createErr } = await admin.auth.admin.createUser({
+         email,
+         email_confirm: true,
+         phone: phoneInput || undefined,
+         phone_confirm: false,
+         password: initialPassword || undefined
+       });
+       if (createErr) throw createErr;
+       userId = created.user.id;
+     }
+  c) Upsert profile with supabase_user_id = userId (no fabricated IDs).
+  d) Insert into businesses_new with profile_id FK and NO password fields.
+- In any password update method, replace DB UPDATE with:
+     await admin.auth.admin.updateUserById(userId, { password: newPassword });
+  where userId comes from the linked profile.supabase_user_id.
+- Remove any SQL that references businesses_new.password_hash.
+
+2) server/sync/SyncWorker.ts
+- Remove any INSERT that includes password_hash in businesses_new; delete that column and value from the SQL.
+- Remove any UPDATE to set businesses_new.password_hash.
+- Remove any bcrypt usage.
+- If the worker retries “password sync”, replace with Supabase Admin:
+     await admin.auth.admin.updateUserById(userId, { password: payload.password });
+  and ensure the outbox payload contains userId OR resolvable profile->supabase_user_id.
+
+3) After edits, print the changed SQL snippets for INSERT/UPDATE into businesses_new so we can verify they contain no password fields.
+
+Then restart the server and stop.

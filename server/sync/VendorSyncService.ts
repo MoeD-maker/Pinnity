@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { Pool } from 'pg';
-import bcrypt from 'bcryptjs';
+
 import { randomUUID } from 'crypto';
 
 // Initialize Supabase admin client for Auth operations
@@ -142,19 +142,18 @@ export async function createVendorWithAuth(input: VendorCreateInput): Promise<Sy
 
       const profileId = profileResult.rows[0].id;
 
-      // 3. Create business
-      const hashedPassword = await bcrypt.hash(input.password, 12);
+      // 3. Create business (NO password storage)
       const businessResult = await client.query(`
         INSERT INTO businesses_new (
           profile_id, business_name, business_category,
-          email, phone, password_hash, verification_status,
+          email, phone, verification_status,
           government_id, proof_of_address, proof_of_business,
           created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, 'pending', $7, $8, $9, NOW(), NOW())
+        ) VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7, $8, NOW(), NOW())
         RETURNING id
       `, [
         profileId, input.businessName, input.businessCategory,
-        input.email, input.phone || null, hashedPassword,
+        input.email, input.phone || null,
         input.documents?.governmentId || null,
         input.documents?.proofOfAddress || null,
         input.documents?.proofOfBusiness || null
@@ -331,26 +330,9 @@ export async function setVendorPassword({ profileId, newPassword }: { profileId:
       console.log(`VendorSync: setVendorPassword simulated auth update - profileId:${profileId} authUserId:${authUserId}`);
     }
 
-    try {
-      // 2. Update local database
-      const hashedPassword = await bcrypt.hash(newPassword, 12);
-      await pool.query(`
-        UPDATE businesses_new SET password_hash = $1, updated_at = NOW() WHERE profile_id = $2
-      `, [hashedPassword, profileId]);
-
-      console.log(`VendorSync: setVendorPassword success - profileId:${profileId} authUserId:${authUserId} outboxUsed:false`);
-      return { success: true, profileId, authUserId, partial: false, outboxUsed: false };
-
-    } catch (dbError) {
-      await addToSyncOutbox('update_password_db_retry', {
-        profileId,
-        authUserId,
-        hashedPassword: await bcrypt.hash(newPassword, 12)
-      }, (dbError as Error).message);
-
-      console.log(`VendorSync: setVendorPassword partial failure - profileId:${profileId} authUserId:${authUserId} error:${(dbError as Error).message} outboxUsed:true`);
-      return { success: true, profileId, authUserId, partial: true, outboxUsed: true };
-    }
+    // Password is now stored only in Supabase Auth, no local DB update needed
+    console.log(`VendorSync: setVendorPassword success - profileId:${profileId} authUserId:${authUserId} outboxUsed:false`);
+    return { success: true, profileId, authUserId, partial: false, outboxUsed: false };
 
   } catch (error) {
     console.log(`VendorSync: setVendorPassword failed - profileId:${profileId} error:${(error as Error).message} outboxUsed:false`);

@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import { Pool } from 'pg';
 import { createClient } from '@supabase/supabase-js';
-import bcrypt from 'bcryptjs';
+
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -124,18 +124,17 @@ async function retryCreateVendorDB(payload: any): Promise<boolean> {
 
     const profileId = profileResult.rows[0].id;
 
-    // Create business
-    const hashedPassword = await bcrypt.hash(input.password, 12);
+    // Create business (NO password storage)
     await client.query(`
       INSERT INTO businesses_new (
         profile_id, business_name, business_category,
-        email, phone, password_hash, verification_status,
+        email, phone, verification_status,
         government_id, proof_of_address, proof_of_business,
         created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, 'pending', $7, $8, $9, NOW(), NOW())
+      ) VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7, $8, NOW(), NOW())
     `, [
       profileId, input.businessName, input.businessCategory,
-      input.email, input.phone || null, hashedPassword,
+      input.email, input.phone || null,
       input.documents?.governmentId || null,
       input.documents?.proofOfAddress || null,
       input.documents?.proofOfBusiness || null
@@ -169,10 +168,14 @@ async function retryUpdatePhoneDB(payload: any): Promise<boolean> {
   return true;
 }
 
-async function retryUpdatePasswordDB(payload: any): Promise<boolean> {
-  const { profileId, hashedPassword } = payload;
+async function retryUpdatePasswordAuth(payload: any): Promise<boolean> {
+  const { authUserId, password } = payload;
   
-  await pool.query('UPDATE businesses_new SET password_hash = $1, updated_at = NOW() WHERE profile_id = $2', [hashedPassword, profileId]);
+  const { createClient } = await import('@supabase/supabase-js');
+  const admin = createClient(process.env.VITE_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+  
+  const { error } = await admin.auth.admin.updateUserById(authUserId, { password });
+  if (error) throw new Error(error.message);
   
   return true;
 }
