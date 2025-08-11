@@ -11,6 +11,7 @@ import { setAuthCookie } from '../utils/cookieUtils';
 import { authCookieConfig, withCustomAge } from '../utils/cookieConfig';
 import { moveFilesToUserFolder } from '../fileManager';
 import { pool } from '../db';
+import { provisionSupabaseUser } from '../services/AuthProvisioner';
 
 // Validation schemas
 const individualRegistrationSchema = z.object({
@@ -134,14 +135,16 @@ export async function registerBusiness(req: Request, res: Response) {
   try {
     console.info("[BUSINESS REGISTER] handler hit");
     
+    // Normalize input data at handler entry
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const password = String(req.body.password || '');
+    const phone = String(req.body.phone || '').trim();
+    
     // Handle form data from multer
     const businessName = req.body.businessName;
     const businessCategory = req.body.businessCategory;
     const firstName = req.body.firstName;
     const lastName = req.body.lastName;
-    const email = req.body.email;
-    const password = req.body.password;
-    const phone = req.body.phone;
     const address = req.body.address;
     const phoneVerified = req.body.phoneVerified === 'true' || false;
 
@@ -153,6 +156,14 @@ export async function registerBusiness(req: Request, res: Response) {
       });
     }
 
+    // SERVER-SIDE phone verification check
+    const mode = process.env.EMAIL_CONFIRM_MODE || 'auto_on_phone_verify';
+    if (!phoneVerified && mode === 'auto_on_phone_verify') {
+      return res.status(400).json({ 
+        message: 'Phone must be verified'
+      });
+    }
+
     // Validate file uploads
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
     if (!files.governmentId?.[0] || !files.proofOfAddress?.[0] || !files.proofOfBusiness?.[0]) {
@@ -161,45 +172,36 @@ export async function registerBusiness(req: Request, res: Response) {
       });
     }
 
-    // Create user with Supabase Auth
-    console.log("Creating Supabase user for business:", email);
-    const { data: supabaseUser, error: supabaseError } = await supabaseAdmin.auth.admin.createUser({
-      email: email,
-      password: password,
-      phone: phone,
-      user_metadata: {
-        firstName: firstName,
-        lastName: lastName,
-        phone: phone,
-        address: address,
-        userType: 'business',
-        phoneVerified: phoneVerified,
-        businessName: businessName,
-        businessCategory: businessCategory
-      }
+    // Provision Supabase user with email confirmation based on phone verification
+    console.log("Provisioning Supabase user for business:", email);
+    const { userId, email_confirmed } = await provisionSupabaseUser({
+      email,
+      password,
+      phone,
+      phoneVerified
     });
 
-    if (supabaseError || !supabaseUser?.user) {
-      console.error("Supabase user creation failed:", supabaseError);
-      return res.status(400).json({ 
-        message: supabaseError?.message || "Failed to create user account"
-      });
-    }
+    console.log("Supabase user provisioned:", userId, "email_confirmed:", email_confirmed);
 
-    console.log("Supabase user created:", supabaseUser.user.id);
-
-    // Create profile in our PostgreSQL database
-    const profile = await createProfile(supabaseUser.user.id, {
-      email: email,
-      firstName: firstName,
-      lastName: lastName,
-      phone: phone,
-      address: address,
-      userType: 'business',
-      phoneVerified: phoneVerified
-    });
-
-    console.log("Profile created:", profile.id);
+    // Upsert profile in PostgreSQL database with conflict resolution
+    const client = await pool.connect();
+    try {
+      const profileResult = await client.query(`
+        INSERT INTO profiles (
+          supabase_user_id, email, first_name, last_name, phone, address, 
+          user_type, phone_verified, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, 'business', $7, NOW(), NOW())
+        ON CONFLICT (email) 
+        DO UPDATE SET 
+          supabase_user_id = EXCLUDED.supabase_user_id,
+          updated_at = NOW()
+        RETURNING id, email
+      `, [userId, email, firstName, lastName, phone, address, phoneVerified]);
+      
+      const profile = profileResult.rows[0];
+      console.log("Profile created/updated:", profile.id);
+      
+      var profileId = profile.id;
 
     // Get uploaded file paths
     const tempGovernmentIdPath = files.governmentId[0].supabasePath || files.governmentId[0].filename;
@@ -213,27 +215,38 @@ export async function registerBusiness(req: Request, res: Response) {
 
     console.log("Files moved:", Object.values(movedFiles));
 
-    // Create business record
-    const business = await createBusiness(profile.id, {
-      businessName: businessName,
-      businessCategory: businessCategory,
-      governmentId: Object.values(movedFiles)[0],
-      proofOfAddress: Object.values(movedFiles)[1],
-      proofOfBusiness: Object.values(movedFiles)[2]
-    });
-
-    console.log("Business created:", business.id);
-    console.info("[BUSINESS REGISTER] created", {
-      businessId: business.id, 
-      profileId: profile.id, 
-      email: email
-    });
+      // Create business record (NO password fields)
+      const businessResult = await client.query(`
+        INSERT INTO businesses_new (
+          profile_id, business_name, business_category, email, phone,
+          verification_status, government_id, proof_of_address, proof_of_business,
+          created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7, $8, NOW(), NOW())
+        RETURNING id
+      `, [
+        profileId, businessName, businessCategory, email, phone,
+        Object.values(movedFiles)[0],
+        Object.values(movedFiles)[1], 
+        Object.values(movedFiles)[2]
+      ]);
+      
+      const businessId = businessResult.rows[0].id;
+      console.log("Business created:", businessId);
+      console.info("[BUSINESS REGISTER] created", {
+        businessId, 
+        profileId, 
+        email
+      });
+      
+    } finally {
+      client.release();
+    }
 
     // Generate JWT token for our app
     const token = generateToken({
-      id: profile.id,
-      email: profile.email,
-      userType: profile.user_type
+      id: profileId,
+      email: email,
+      userType: 'business'
     });
 
     // Set secure cookie
@@ -242,8 +255,9 @@ export async function registerBusiness(req: Request, res: Response) {
 
     return res.status(201).json({
       message: "Business registration successful",
-      userId: profile.id,
-      userType: profile.user_type
+      profileId: profileId,
+      userId: userId,
+      emailConfirmed: email_confirmed
     });
 
   } catch (error) {

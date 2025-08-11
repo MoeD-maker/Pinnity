@@ -1,0 +1,57 @@
+Make the following minimal, production-safe changes. Only edit the mentioned files.
+
+GOAL
+Every new signup is provisioned in Supabase Auth with a confirmed email IF the phone is verified (server-checked). Dev auto-confirms always. No business passwords are stored locally.
+
+ENV FLAGS
+- EMAIL_CONFIRM_MODE: one of
+  - "auto_on_phone_verify"  (recommended for prod)
+  - "link"                  (require user to click email)
+  - "auto_always"           (dev only)
+Default to "auto_on_phone_verify" if unset.
+
+1) Create server/services/AuthProvisioner.ts
+- Export async function provisionSupabaseUser({ email, password, phone, phoneVerified }):
+  - Normalize: email = email.trim().toLowerCase()
+  - Create admin client with SERVICE_ROLE key:
+      const { createClient } = await import('@supabase/supabase-js');
+      const admin = createClient(process.env.VITE_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+  - Find existing user by email (listUsers perPage=200 and match on .email?.toLowerCase()).
+  - Decide confirm flag:
+      const mode = process.env.EMAIL_CONFIRM_MODE || 'auto_on_phone_verify';
+      const email_confirm =
+        mode === 'auto_always' ? true :
+        mode === 'auto_on_phone_verify' ? !!phoneVerified :
+        false; // 'link'
+  - If not found: create via admin.auth.admin.createUser({ email, password, email_confirm, phone, phone_confirm: false })
+  - If found:
+      - If mode !== 'link' and email_confirm === true: await admin.auth.admin.updateUserById(user.id, { email_confirm: true })
+      - If password provided: await admin.auth.admin.updateUserById(user.id, { password })
+  - Return { userId, email_confirmed: finalConfirmState }
+
+2) Update the actual vendor signup handler used by BusinessSignupForm
+- File: server/routes/auth.routes.fixed.ts   (if your current vendor registration lives elsewhere, update that one)
+- At the top of the handler:
+    const email = String(req.body.email||'').trim().toLowerCase();
+    const password = String(req.body.password||'');
+    const phone = String(req.body.phone||'').trim();
+- SERVER-SIDE phone verification check:
+    - If you already store a verification token/result from Twilio for this session, validate it here, or
+    - If you currently set a boolean on the server for allowlisted phones in dev, keep that. Name it phoneVerified.
+    - If phoneVerified is false and EMAIL_CONFIRM_MODE === 'auto_on_phone_verify', return 400 { message: 'Phone must be verified' }.
+- Call provisionSupabaseUser({ email, password, phone, phoneVerified }) to get userId.
+- Upsert profiles:
+    insert on conflict(email) do update set supabase_user_id=excluded.supabase_user_id
+    with email stored lowercased and supabase_user_id=userId.
+- Insert businesses_new row linked by profile_id (NO password fields). Keep your existing docs upload flow.
+- Return 201 with { profileId, userId, emailConfirmed }.
+
+3) Make sure the User-side signup path mirrors the same behavior:
+- If you have a separate user signup route, add the same call to provisionSupabaseUser and the same phone-verified gate.
+
+4) Do NOT modify login. It already routes to Supabase when supabase_user_id exists.
+5) Add a precise error when Supabase returns "email not confirmed" in gatedLogin:
+   - If signInWithPassword fails with error message containing 'Email not confirmed', return 403 { message: 'Email not confirmed. Please verify your email or complete phone verification.' }
+   - Otherwise keep 401 for generic invalid credentials.
+
+Save, typecheck, restart.

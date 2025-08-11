@@ -7,6 +7,7 @@ import bcrypt from 'bcryptjs';
 import { supabaseAdmin } from '../supabaseAdmin';
 import { createProfile, getUserByEmail, createBusiness } from '../supabaseQueries';
 import { generateToken } from '../auth';
+import { provisionSupabaseUser } from '../services/AuthProvisioner';
 import { setAuthCookie } from '../utils/cookieUtils';
 import { authCookieConfig, withCustomAge } from '../utils/cookieConfig';
 import { pool } from '../db';
@@ -43,87 +44,63 @@ export async function gatedRegister(req: Request, res: Response) {
   try {
     const validatedData = gatedRegistrationSchema.parse(req.body);
     
-    // Create user with Supabase Auth - handle existing phone numbers
-    console.log("Creating Supabase user:", validatedData.email, "Role:", validatedData.role);
-    let supabaseUser;
-    let supabaseError;
+    // Normalize input data 
+    const email = validatedData.email.trim().toLowerCase();
+    const password = validatedData.password;
+    const phone = validatedData.phone.trim();
+    const phoneVerified = validatedData.phoneVerified;
     
-    // First try with phone number - auto-confirm email since we use phone verification
-    const createUserResult = await supabaseAdmin.auth.admin.createUser({
-      email: validatedData.email,
-      password: validatedData.password,
-      phone: validatedData.phone,
-      email_confirm: true, // Auto-confirm email since we only require phone verification
-      user_metadata: {
-        firstName: validatedData.firstName,
-        lastName: validatedData.lastName,
-        phone: validatedData.phone,
-        address: validatedData.address,
-        userType: 'individual',
-        role: validatedData.role,
-        phoneVerified: validatedData.phoneVerified,
-        marketing_consent: validatedData.marketingConsent
-      }
-    });
-    
-    supabaseUser = createUserResult.data;
-    supabaseError = createUserResult.error;
-    
-    // If phone exists, try without phone number
-    if (supabaseError?.code === 'phone_exists') {
-      console.log("Phone exists, creating user without phone number...");
-      const createUserResultNoPhone = await supabaseAdmin.auth.admin.createUser({
-        email: validatedData.email,
-        password: validatedData.password,
-        email_confirm: true, // Auto-confirm email since we only require phone verification
-        user_metadata: {
-          firstName: validatedData.firstName,
-          lastName: validatedData.lastName,
-          phone: validatedData.phone,
-          address: validatedData.address,
-          userType: 'individual',
-          role: validatedData.role,
-          phoneVerified: validatedData.phoneVerified,
-          marketing_consent: validatedData.marketingConsent
-        }
-      });
-      
-      supabaseUser = createUserResultNoPhone.data;
-      supabaseError = createUserResultNoPhone.error;
-    }
-
-    if (supabaseError || !supabaseUser?.user) {
-      console.error("Supabase user creation failed:", supabaseError);
+    // SERVER-SIDE phone verification check
+    const mode = process.env.EMAIL_CONFIRM_MODE || 'auto_on_phone_verify';
+    if (!phoneVerified && mode === 'auto_on_phone_verify') {
       return res.status(400).json({ 
-        message: supabaseError?.message || "Failed to create user account"
+        message: 'Phone must be verified'
       });
     }
-
-    console.log("Supabase user created:", supabaseUser.user.id);
-
-    // Create profile in our PostgreSQL database
-    // Individual users are gated (is_live: false), vendors are live (is_live: true)
-    const isLive = validatedData.role === 'vendor';
-    const profile = await createProfile(supabaseUser.user.id, {
-      email: validatedData.email,
-      firstName: validatedData.firstName,
-      lastName: validatedData.lastName,
-      phone: validatedData.phone,
-      address: validatedData.address,
-      userType: 'individual',
-      role: validatedData.role,
-      isLive: isLive,
-      phoneVerified: validatedData.phoneVerified,
-      marketingConsent: validatedData.marketingConsent
+    
+    // Provision Supabase user with email confirmation based on phone verification
+    console.log("Provisioning Supabase user:", email, "Role:", validatedData.role);
+    const { userId, email_confirmed } = await provisionSupabaseUser({
+      email,
+      password,
+      phone,
+      phoneVerified
     });
 
-    console.log("Profile created:", profile.id, "Role:", profile.role, "Is Live:", profile.is_live);
+    console.log("Supabase user provisioned:", userId, "email_confirmed:", email_confirmed);
+
+    // Upsert profile in PostgreSQL database with conflict resolution
+    const isLive = validatedData.role === 'vendor';
+    const client = await pool.connect();
+    let profileId;
+    
+    try {
+      const profileResult = await client.query(`
+        INSERT INTO profiles (
+          supabase_user_id, email, first_name, last_name, phone, address, 
+          user_type, phone_verified, role, is_live, marketing_consent, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, 'individual', $7, $8, $9, $10, NOW(), NOW())
+        ON CONFLICT (email) 
+        DO UPDATE SET 
+          supabase_user_id = EXCLUDED.supabase_user_id,
+          updated_at = NOW()
+        RETURNING id
+      `, [userId, email, validatedData.firstName, validatedData.lastName, phone, 
+          validatedData.address, phoneVerified, validatedData.role, isLive, 
+          validatedData.marketingConsent]);
+      
+      profileId = profileResult.rows[0].id;
+      console.log("Profile created/updated:", profileId, "Role:", validatedData.role, "Is Live:", isLive);
+      
+    } finally {
+      client.release();
+    }
 
     // If this is a vendor registration, create a business record
     let businessId = null;
     if (validatedData.role === 'vendor' && validatedData.businessName && validatedData.businessCategory) {
       try {
-        const business = await createBusiness(profile.id, {
+        const business = await createBusiness(profileId, {
           businessName: validatedData.businessName,
           businessCategory: validatedData.businessCategory,
           verificationStatus: 'pending' // Business needs verification
@@ -137,11 +114,20 @@ export async function gatedRegister(req: Request, res: Response) {
     }
 
     // Generate JWT token for our app
-    const token = generateToken({
-      id: profile.id,
-      email: profile.email,
-      userType: profile.user_type
-    });
+    const userForToken = {
+      id: profileId,
+      email: email,
+      userType: 'individual',
+      firstName: validatedData.firstName,
+      lastName: validatedData.lastName,
+      password: '', // Not needed for token generation
+      phone: phone,
+      address: validatedData.address,
+      phoneVerified: phoneVerified,
+      username: email, // Use email as username
+      created_at: new Date().toISOString()
+    };
+    const token = generateToken(userForToken);
 
     // Set secure cookie
     const cookieOptions = withCustomAge(authCookieConfig, 24 * 60 * 60 * 1000);
@@ -149,10 +135,11 @@ export async function gatedRegister(req: Request, res: Response) {
 
     return res.status(201).json({
       message: "Registration successful",
-      userId: profile.id,
-      userType: profile.user_type,
-      role: profile.role,
-      is_live: profile.is_live,
+      profileId: profileId,
+      userId: userId,
+      emailConfirmed: email_confirmed,
+      userType: 'individual',
+      role: validatedData.role,
       businessId: businessId
     });
 
@@ -237,6 +224,14 @@ export async function gatedLogin(req: Request, res: Response) {
       
       if (error || !data.user) {
         console.error("Supabase authentication failed:", error?.message);
+        
+        // Handle specific email confirmation error
+        if (error?.message?.includes('Email not confirmed')) {
+          return res.status(403).json({ 
+            message: 'Email not confirmed. Please verify your email or complete phone verification.' 
+          });
+        }
+        
         return res.status(401).json({ message: "Invalid email or password" });
       }
       
@@ -273,11 +268,20 @@ export async function gatedLogin(req: Request, res: Response) {
     console.log("Login successful for user:", userProfile.email, "Role:", userProfile.role, "Is Live:", userProfile.is_live, "Admin:", isAdmin);
 
     // Generate JWT token for our app  
-    const token = generateToken({
-      id: userProfile.id,
+    const userForToken = {
+      id: parseInt(userProfile.id.toString()),
       email: userProfile.email,
-      userType: userProfile.user_type
-    });
+      userType: userProfile.user_type,
+      firstName: userProfile.first_name || '',
+      lastName: userProfile.last_name || '',
+      password: '', // Not needed for token generation
+      phone: userProfile.phone || '',
+      address: userProfile.address || '',
+      phoneVerified: userProfile.phone_verified || false,
+      username: userProfile.email, // Use email as username
+      created_at: userProfile.created_at || new Date().toISOString()
+    };
+    const token = generateToken(userForToken);
 
     // Set secure cookie
     const cookieOptions = withCustomAge(

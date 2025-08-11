@@ -167,6 +167,7 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
       formData.append('businessName', data.businessName);
       formData.append('businessCategory', data.category);
       formData.append('termsAccepted', 'true');
+      formData.append('phoneVerified', isPhoneVerified.toString());
       
       // Optional fields - only append if they have values
       if (data.postalCode) formData.append('postalCode', data.postalCode);
