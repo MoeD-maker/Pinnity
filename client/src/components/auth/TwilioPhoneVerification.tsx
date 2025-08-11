@@ -10,6 +10,7 @@ interface PhoneVerificationProps {
   phoneNumber: string;
   onVerificationComplete: (verified: boolean) => void;
   onPhoneChange?: (phone: string) => void;
+  onOtpChange?: (otp: string) => void;
   disabled?: boolean;
 }
 
@@ -17,6 +18,7 @@ export function TwilioPhoneVerification({
   phoneNumber, 
   onVerificationComplete, 
   onPhoneChange,
+  onOtpChange,
   disabled = false 
 }: PhoneVerificationProps) {
   const [step, setStep] = useState<'phone' | 'code'>('phone');
@@ -200,7 +202,11 @@ export function TwilioPhoneVerification({
           type="text"
           placeholder="123456"
           value={verificationCode}
-          onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+          onChange={(e) => {
+            const code = e.target.value.replace(/\D/g, '').slice(0, 6);
+            setVerificationCode(code);
+            onOtpChange?.(code);
+          }}
           disabled={disabled || isLoading}
           maxLength={6}
           className="text-center text-lg tracking-widest"

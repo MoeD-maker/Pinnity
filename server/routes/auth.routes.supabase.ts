@@ -135,33 +135,35 @@ export async function registerBusiness(req: Request, res: Response) {
   try {
     console.info("[BUSINESS REGISTER] handler hit");
     
-    // Normalize input data at handler entry
+    // Extract required fields as per specification
     const email = String(req.body.email || '').trim().toLowerCase();
     const password = String(req.body.password || '');
     const phone = String(req.body.phone || '').trim();
+    const otp = String(req.body.otp || '');
     
-    // Handle form data from multer
+    // Handle other form data from multer
     const businessName = req.body.businessName;
     const businessCategory = req.body.businessCategory;
     const firstName = req.body.firstName;
     const lastName = req.body.lastName;
     const address = req.body.address;
-    const phoneVerified = req.body.phoneVerified === 'true' || false;
 
     // Validate required fields
-    if (!businessName || !businessCategory || !firstName || !lastName || 
-        !email || !password || !phone || !address) {
-      return res.status(400).json({ 
-        message: "Missing required fields"
-      });
+    if (!email || !password || !phone || !otp) {
+      return res.status(400).json({ message: "Missing required fields" });
     }
 
-    // SERVER-SIDE phone verification check
-    const mode = process.env.EMAIL_CONFIRM_MODE || 'auto_on_phone_verify';
-    if (!phoneVerified && mode === 'auto_on_phone_verify') {
-      return res.status(400).json({ 
-        message: 'Phone must be verified'
-      });
+    // Validate business-specific required fields
+    if (!businessName || !businessCategory || !firstName || !lastName || !address) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    // Import and use checkOtp function
+    const { checkOtp } = await import('../services/TwilioVerify.js');
+    const phoneVerified = await checkOtp(phone, otp);
+    
+    if (!phoneVerified && (process.env.EMAIL_CONFIRM_MODE || 'auto_on_phone_verify') === 'auto_on_phone_verify') {
+      return res.status(400).json({ message: "Phone must be verified" });
     }
 
     // Validate file uploads
@@ -172,16 +174,15 @@ export async function registerBusiness(req: Request, res: Response) {
       });
     }
 
-    // Provision Supabase user with email confirmation based on phone verification
-    console.log("Provisioning Supabase user for business:", email);
-    const { userId, email_confirmed } = await provisionSupabaseUser({
-      email,
-      password,
-      phone,
-      phoneVerified
+    // Call provisioner with validated phoneVerified
+    const { userId, emailConfirmed } = await provisionSupabaseUser({ 
+      email, 
+      password, 
+      phone, 
+      phoneVerified 
     });
 
-    console.log("Supabase user provisioned:", userId, "email_confirmed:", email_confirmed);
+    console.log("Supabase user provisioned:", userId, "emailConfirmed:", emailConfirmed);
 
     // Upsert profile in PostgreSQL database with conflict resolution
     const client = await pool.connect();

@@ -79,6 +79,7 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
   const [currentStep, setCurrentStep] = useState<'form' | 'phone' | 'complete'>('form');
   const [skipPhoneVerification] = useState(false); // Phone verification enabled
+  const [otpCode, setOtpCode] = useState('');
   const pendingDataRef = useRef<BusinessSignupData | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState({
     governmentId: null as File | null,
@@ -167,12 +168,14 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
       formData.append('businessName', data.businessName);
       formData.append('businessCategory', data.category);
       formData.append('termsAccepted', 'true');
-      formData.append('phoneVerified', isPhoneVerified.toString());
       
       // Optional fields - only append if they have values
       if (data.postalCode) formData.append('postalCode', data.postalCode);
       if (data.city) formData.append('city', data.city);
       if (data.province) formData.append('province', data.province);
+      
+      // Add OTP code
+      formData.append('otp', otpCode);
       
       // Add file uploads with exact field names that match multer config
       formData.append('governmentId', uploadedFiles.governmentId);
@@ -317,6 +320,7 @@ function BusinessSignupForm({ setUserType }: BusinessSignupFormProps = {}) {
         <TwilioPhoneVerification
           phoneNumber={watch('phone')}
           onVerificationComplete={handleVerificationComplete}
+          onOtpChange={setOtpCode}
         />
 
         <div className="flex justify-center">

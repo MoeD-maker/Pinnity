@@ -1,0 +1,47 @@
+Make only these changes.
+
+1) client/src/components/auth/BusinessSignupForm.tsx
+- Remove any field named "phoneVerified".
+- Ensure the form collects the OTP from your TwilioPhoneVerification component into a field named "otp".
+- On submit, include: email, password, phone, otp, firstName, lastName, address, businessName, businessCategory, and the 3 files. Do not include phoneVerified.
+
+2) server/services/TwilioVerify.ts (create if missing)
+- Export:
+   export async function checkOtp(phone: string, code: string): Promise<boolean> {
+     const sid = process.env.TWILIO_ACCOUNT_SID!;
+     const token = process.env.TWILIO_AUTH_TOKEN!;
+     const serviceSid = process.env.TWILIO_SERVICE_SID!;
+     const twilio = (await import("twilio")).default(sid, token);
+     const res = await twilio.verify.v2.services(serviceSid).verificationChecks.create({ to: phone, code });
+     return res.status === "approved";
+   }
+
+3) server/services/AuthProvisioner.ts
+- Keep as-is, using EMAIL_CONFIRM_MODE.
+  email_confirm must be true only when phoneVerified===true and EMAIL_CONFIRM_MODE=auto_on_phone_verify.
+
+4) server/routes/auth.routes.supabase.ts
+- In the /api/v1/auth/register/business handler actually used by BusinessSignupForm:
+   const email = String(req.body.email||"").trim().toLowerCase();
+   const password = String(req.body.password||"");
+   const phone = String(req.body.phone||"").trim();
+   const otp = String(req.body.otp||"");
+   if (!email || !password || !phone || !otp) return res.status(400).json({ message: "Missing required fields" });
+
+   const phoneVerified = await checkOtp(phone, otp);
+   if (!phoneVerified && (process.env.EMAIL_CONFIRM_MODE || "auto_on_phone_verify") === "auto_on_phone_verify") {
+     return res.status(400).json({ message: "Phone must be verified" });
+   }
+
+   // Call provisioner
+   const { userId, emailConfirmed } = await provisionSupabaseUser({ email, password, phone, phoneVerified });
+
+   // Upsert profile with supabase_user_id = userId
+   // Insert businesses_new row linked to that profile (no password fields)
+   // Continue existing secure upload flow unchanged
+
+5) server/routes/auth.routes.gated.ts
+- Keep Supabase signInWithPassword as-is.
+- Map Supabase "Email not confirmed" to HTTP 403 with a clear message. Everything else remains 401.
+
+Save and restart. Do not change any other files.
