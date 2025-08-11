@@ -292,30 +292,11 @@ export async function login(req: Request, res: Response) {
       
       let isValidPassword = false;
       
-      // First check if this is a business user with password in businesses_new table
-      if (user.user_type === 'business' && user.business) {
-        const { rows: businessUsers } = await pool.query(
-          'SELECT password_hash FROM businesses_new WHERE profile_id = $1 AND password_hash IS NOT NULL',
-          [user.id]
-        );
-        
-        if (businessUsers.length > 0 && businessUsers[0].password_hash) {
-          console.log("Business user found with password hash");
-          isValidPassword = await bcrypt.compare(validatedData.password, businessUsers[0].password_hash);
-          
-          if (isValidPassword) {
-            console.log("Business password verification successful");
-          } else {
-            console.log("Business password verification failed");
-          }
-        }
-      }
-      
-      // If not a business user or business password failed, try legacy users table
+      // Try legacy users table only (no business password storage)
       if (!isValidPassword) {
         console.log("Checking legacy users table");
         const { rows: legacyUsers } = await pool.query(
-          'SELECT id, email, password, first_name, last_name, user_type FROM users WHERE email = $1',
+          'SELECT id, email, password, first_name, last_name, user_type FROM users WHERE lower(email) = lower($1)',
           [validatedData.email]
         );
         

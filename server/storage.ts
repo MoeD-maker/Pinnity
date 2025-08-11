@@ -1864,10 +1864,8 @@ export class DatabaseStorage implements IStorage {
           p.first_name,
           p.last_name,
           p.user_type,
-          p.phone_verified,
-          b.password_hash
+          p.phone_verified
         FROM profiles p
-        LEFT JOIN businesses_new b ON p.id = b.profile_id
         WHERE LOWER(p.email) = LOWER($1)
       `;
       
@@ -1880,7 +1878,7 @@ export class DatabaseStorage implements IStorage {
           id: profileRow.id,
           email: profileRow.email,
           username: profileRow.email.split('@')[0], // Generate username from email
-          password: profileRow.password_hash || '', // Use business password hash if available
+          password: '', // No password stored in business tables
           firstName: profileRow.first_name || '',
           lastName: profileRow.last_name || '',
           userType: profileRow.user_type as 'individual' | 'business' | 'admin',
@@ -1888,7 +1886,7 @@ export class DatabaseStorage implements IStorage {
           created_at: new Date().toISOString()
         };
         
-        console.log(`Found profile user: ${profileUser.email}, userType: ${profileUser.userType}, hasPassword: ${!!profileUser.password}`);
+        console.log(`Found profile user: ${profileUser.email}, userType: ${profileUser.userType}`);
         return profileUser;
       }
     } catch (error) {

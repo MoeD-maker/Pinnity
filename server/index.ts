@@ -194,10 +194,14 @@ app.post('/api/v1/sms/verify', async (req, res) => {
 // Gated authentication routes (minimal implementation)
 console.log('🔥 Registering gated authentication routes');
 app.post('/api/auth/gated/register', gatedRegister);
-app.post('/api/auth/gated/login', gatedLogin);
 
-// Standard login route that the frontend expects
+// Only mount one login endpoint
 app.post('/api/v1/auth/login', gatedLogin);
+
+// Guard the older path - only enable in development compatibility mode
+if (process.env.AUTH_DEV_COMPAT === "1") {
+  app.post("/api/auth/gated/login", gatedLogin);
+}
 
 // Import and register the full auth routes for business registration
 console.log('🔥 Importing business registration routes...');

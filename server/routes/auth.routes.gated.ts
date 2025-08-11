@@ -175,15 +175,20 @@ export async function gatedRegister(req: Request, res: Response) {
  */
 export async function gatedLogin(req: Request, res: Response) {
   try {
-    const validatedData = gatedLoginSchema.parse(req.body);
+    // Normalize email to lowercase for case-insensitive matching
+    const email = String(req.body.email || "").trim().toLowerCase();
+    const password = String(req.body.password || "");
     
-    console.info('[LOGIN] handler hit for', validatedData.email);
+    // Validate with normalized data
+    const validatedData = gatedLoginSchema.parse({ email, password, rememberMe: req.body.rememberMe });
+    
+    console.info('[LOGIN] handler hit for', email);
 
-    // Get the user profile from our database first
-    const userProfile = await getUserByEmail(validatedData.email);
+    // Get the user profile from our database first (now case-insensitive)
+    const userProfile = await getUserByEmail(email);
     
     if (!userProfile) {
-      console.log("No user profile found for:", validatedData.email);
+      console.log("No user profile found for:", email);
       return res.status(401).json({ 
         message: "Invalid email or password"
       });
@@ -221,141 +226,49 @@ export async function gatedLogin(req: Request, res: Response) {
       });
     }
 
-    // CRITICAL: Verify password with Supabase Auth - using client with bypass for email confirmation
-    const { createClient } = await import('@supabase/supabase-js');
-    const supabaseClient = createClient(
-      process.env.VITE_SUPABASE_URL!,
-      process.env.VITE_SUPABASE_ANON_KEY!
-    );
-    
-    // First, ensure the user's email is confirmed in Supabase (required for signIn to work)
-    const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-    if (listError) {
-      console.error("Error listing users:", listError);
-      return res.status(500).json({ message: "Authentication error" });
-    }
-    
-    const supabaseUser = listData.users.find(u => u.email === validatedData.email);
-    console.log("Supabase user lookup result for", validatedData.email, ":", !!supabaseUser);
-    
-    if (!supabaseUser) {
-      console.log("No Supabase user found for:", validatedData.email);
-      console.log("Attempting legacy password verification...");
-      console.log("User profile details:", {
-        id: userProfile.id,
-        user_type: userProfile.user_type,
-        email: userProfile.email
-      });
+    // Check authentication path based on Supabase user ID
+    if (userProfile.supabase_user_id) {
+      // Use Supabase Auth for users with Supabase user ID
+      console.log("Authenticating with Supabase for user:", email);
       
-      // Fall back to legacy password verification for existing users
-      const bcrypt = await import('bcryptjs');
+      const { createClient } = await import("@supabase/supabase-js");
+      const supabaseClient = createClient(process.env.VITE_SUPABASE_URL!, process.env.VITE_SUPABASE_ANON_KEY!);
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
       
-      // Check legacy users table for password
+      if (error || !data.user) {
+        console.error("Supabase authentication failed:", error?.message);
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+      
+      console.log("Supabase authentication successful for:", email);
+    } else {
+      // Legacy path for users without Supabase user ID
+      console.log("Using legacy authentication for user:", email);
+      
+      // Lookup in legacy users table only with case-insensitive comparison
       const { rows: legacyUsers } = await pool.query(
-        'SELECT id, email, password, user_type FROM users WHERE email = $1',
-        [validatedData.email]
+        'SELECT id, email, password, user_type FROM users WHERE lower(email) = lower($1)',
+        [email]
       );
       
-      console.log("🔍 DEBUG: Legacy users query result:", legacyUsers.length, "rows");
-      let isValidPassword = false;
-      
-      // Try legacy users table first
-      if (legacyUsers.length > 0 && legacyUsers[0].password) {
-        const legacyUser = legacyUsers[0];
-        isValidPassword = await bcrypt.compare(validatedData.password, legacyUser.password);
-        if (isValidPassword) {
-          console.log("Legacy password verification successful");
-        }
-      }
-      
-      // If legacy verification failed or no legacy user found, try business table
-      if (!isValidPassword && userProfile.user_type === 'business') {
-        console.log("Checking business password in businesses_new table for profile_id:", userProfile.id);
-        const { rows: businessUsers } = await pool.query(
-          'SELECT password_hash FROM businesses_new WHERE profile_id = $1',
-          [userProfile.id]
-        );
-        
-        console.log("Business query result:", businessUsers.length, "rows found");
-        if (businessUsers.length > 0) {
-          console.log("Business row password_hash exists:", !!businessUsers[0].password_hash);
-          if (businessUsers[0].password_hash) {
-            console.log("Comparing password for business user...");
-            isValidPassword = await bcrypt.compare(validatedData.password, businessUsers[0].password_hash);
-            console.log("Business password comparison result:", isValidPassword);
-            if (isValidPassword) {
-              console.log("✅ Business password verification successful");
-            } else {
-              console.log("❌ Business password verification failed");
-            }
-          } else {
-            console.log("Business user found but no password_hash set");
-          }
-        } else {
-          console.log("No business record found for profile_id:", userProfile.id);
-        }
-      }
-      
-      if (!isValidPassword) {
-        console.log("Password verification failed: Invalid login credentials");
-        return res.status(401).json({ 
-          message: "Invalid email or password"
+      if (legacyUsers.length === 0 || !legacyUsers[0].password) {
+        console.log("No legacy user found or no password set for:", email);
+        return res.status(409).json({ 
+          message: "Account needs reconciliation. Please reset your password." 
         });
       }
       
-      console.log("Legacy password verification successful for:", validatedData.email);
+      // Verify password with bcrypt
+      const isValidPassword = await bcrypt.compare(password, legacyUsers[0].password);
+      if (!isValidPassword) {
+        console.log("Legacy password verification failed for:", email);
+        return res.status(409).json({ 
+          message: "Account needs reconciliation. Please reset your password." 
+        });
+      }
       
-      // Skip Supabase auth for legacy users, proceed to generate token
-      console.log("Login successful for legacy user:", userProfile.email, "Role:", userProfile.role, "Is Live:", userProfile.is_live, "Admin:", isAdmin);
-
-      // Generate JWT token for our app  
-      const token = generateToken({
-        id: userProfile.id,
-        email: userProfile.email,
-        userType: userProfile.user_type
-      });
-
-      // Set secure cookie
-      const cookieOptions = withCustomAge(
-        authCookieConfig, 
-        validatedData.rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000
-      );
-      setAuthCookie(res, 'auth_token', token, cookieOptions);
-
-      return res.status(200).json({
-        message: "Login successful",
-        userId: userProfile.id,
-        userType: userProfile.user_type,
-        role: userProfile.role,
-        is_live: userProfile.is_live
-      });
+      console.log("Legacy password verification successful for:", email);
     }
-    
-    // Auto-confirm email if not confirmed (since we only require phone verification)
-    if (!supabaseUser.email_confirmed_at) {
-      await supabaseAdmin.auth.admin.updateUserById(supabaseUser.id, {
-        email_confirm: true
-      });
-      console.log("Auto-confirmed email for phone-verified user:", validatedData.email);
-    }
-    
-    // Now verify the password
-    const { data: signInData, error: signInError } = await supabaseClient.auth.signInWithPassword({
-      email: validatedData.email,
-      password: validatedData.password
-    });
-
-    if (signInError) {
-      console.error("Password verification failed:", signInError.message);
-      return res.status(401).json({ message: "Invalid email or password" });
-    }
-    
-    if (!signInData.user) {
-      console.error("Password verification failed: No user returned");
-      return res.status(401).json({ message: "Invalid email or password" });
-    }
-    
-    console.log("Password verification successful for:", validatedData.email);
 
     console.log("Login successful for user:", userProfile.email, "Role:", userProfile.role, "Is Live:", userProfile.is_live, "Admin:", isAdmin);
 

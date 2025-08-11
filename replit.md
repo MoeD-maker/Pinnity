@@ -70,4 +70,16 @@ Preferred communication style: Simple, everyday language.
 - **Solution**: Enhanced gated authentication system to handle both Supabase and legacy password verification
 - **Test Account Created**: `testbiz@example.com` with full business login functionality
 - **Status**: ✅ Business registration and login working correctly with Supabase integration
+
+### August 11, 2025 - Authentication System Reliability Improvements
+- **IMPLEMENTED**: Reliable login system with case-insensitive email matching
+- **Changes Made**:
+  - Email normalization to lowercase for consistent matching
+  - Supabase Auth-only for users with supabase_user_id
+  - Legacy password verification for users without Supabase ID
+  - Single login endpoint at `/api/v1/auth/login`
+  - Removed all business password storage dependencies
+- **Case-Insensitive Matching**: All email lookups now use `lower(email) = lower($1)`
+- **Authentication Flow**: Clean separation between Supabase and legacy authentication
+- **Status**: ✅ Login reliable for all user types with proper error handling
 ```

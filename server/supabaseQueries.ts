@@ -179,7 +179,7 @@ export async function getUserByEmail(email: string): Promise<UserWithBusiness | 
         b.updated_at as business_updated_at
       FROM profiles p
       LEFT JOIN businesses_new b ON p.id = b.profile_id
-      WHERE p.email = $1
+      WHERE lower(p.email) = lower($1)
     `;
     
     const result = await pool.query(query, [email]);

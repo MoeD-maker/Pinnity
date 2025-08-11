@@ -1,0 +1,65 @@
+You are editing a Node/TypeScript Express app. Apply these exact changes.
+
+GOAL
+Make login reliable for every new user by:
+1) Using Supabase Auth whenever a profile has a Supabase user id.
+2) Removing any password checks from businesses_new.
+3) Making email comparisons case-insensitive.
+4) Exposing only one login route.
+
+FILES TO CHANGE
+
+1) server/supabaseQueries.ts
+- In getUserByEmail(email), change the SQL to use case-insensitive match:
+  FROM:
+    WHERE p.email = $1
+  TO:
+    WHERE lower(p.email) = lower($1)
+
+2) server/routes/auth.routes.gated.ts
+- At the top of the login handler, normalize email:
+    const email = String(req.body.email || "").trim().toLowerCase();
+    const password = String(req.body.password || "");
+- Call getUserByEmail(email). If no profile, return 401 { message: "Invalid email or password" }.
+- If profile.supabase_user_id exists, authenticate only via Supabase:
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabaseClient = createClient(process.env.VITE_SUPABASE_URL!, process.env.VITE_SUPABASE_ANON_KEY!);
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    If error or no data.user, return 401.
+- If profile.supabase_user_id does NOT exist, allow a temporary legacy path:
+    Lookup in legacy users table only:
+      SELECT id, email, password, user_type FROM users WHERE lower(email) = lower($1)
+    If found and bcrypt.compare(password, row.password) passes, proceed.
+    Otherwise return 409 { message: "Account needs reconciliation. Please reset your password." }
+- Remove any code that:
+    a) lists supabase users and matches by exact-case string,
+    b) reads businesses_new.password_hash,
+    c) bcrypt-compares against any businesses_new field.
+- Keep your existing JWT/cookie issuance after a successful auth.
+
+3) server/index.ts
+- Only mount one login endpoint:
+    app.post("/api/v1/auth/login", gatedLogin);
+- Remove or guard the older path:
+    // if (process.env.AUTH_DEV_COMPAT === "1") app.post("/api/auth/gated/login", gatedLogin);
+
+4) Search entire repo and remove any references to businesses_new.password_hash or businesses_new.password.
+- Do not add any password columns in business tables.
+
+5) Ensure all other SQL that finds by email uses case-insensitive comparison.
+- Replace WHERE email = $1 with WHERE lower(email) = lower($1) in this codebase.
+
+DO NOT touch any DB data in code. Only change code as above.
+
+Finally:
+- Run typecheck, restart the server, and print which auth route is mounted under /api/v1/auth/login.
+What this does:
+
+Every login with a Supabase-backed profile uses Supabase Auth only.
+
+No more reading passwords from businesses_new.
+
+Email matching is case-insensitive, so “Peanuts@” vs “peanuts@” will not break login.
+
+Only one login route is active, so there is no ambiguity.
+
