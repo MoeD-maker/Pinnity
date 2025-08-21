@@ -2,13 +2,14 @@ import type { Express, Request, Response, CookieOptions } from "express";
 import { storage } from "../storage";
 import { z } from "zod";
 import { 
-  generateToken, 
-  comparePassword, 
-  hashPassword, 
-  verifyRefreshToken, 
+  generateToken,
+  comparePassword,
+  hashPassword,
+  verifyRefreshToken,
   extractRefreshTokenFromCookies,
   createTokenPair,
-  isTokenAboutToExpire
+  isTokenAboutToExpire,
+  verifyToken
 } from "../auth";
 import { getUploadMiddleware } from "../uploadMiddleware";
 import fs from 'fs';
@@ -75,17 +76,39 @@ export function authRoutes(app: Express): void {
   // Phone verification route
   app.post('/auth/verify-phone', async (req: Request, res: Response) => {
     try {
-      const { phoneNumber } = req.body;
+      const { phoneNumber, code, token } = req.body || {};
+
       if (!phoneNumber) {
         return res.status(400).json({ message: "Missing phone number" });
       }
 
-      const user = await storage.getUserByPhone(phoneNumber);
+      if (!code && !token) {
+        return res.status(400).json({ message: "Missing verification code or token" });
+      }
+
+      const normalizedPhone = normalizeToE164(phoneNumber);
+      if (!normalizedPhone) {
+        return res.status(400).json({ message: "Invalid phone number" });
+      }
+
+      const user = await storage.getUserByPhone(normalizedPhone);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
 
-      await storage.updateUser(user.id, {  });
+      let verified = false;
+      if (code) {
+        verified = verifySMSCode(normalizedPhone, code);
+      } else if (token) {
+        const payload = verifyToken(token);
+        verified = !!payload && (payload.phone === normalizedPhone || payload.phoneNumber === normalizedPhone);
+      }
+
+      if (!verified) {
+        return res.status(400).json({ message: "Invalid verification code or token" });
+      }
+
+      await storage.updateUser(user.id, { phoneVerified: true });
       console.log(`✅ Phone verified for user ${user.id} (${user.phone})`);
 
       return res.status(200).json({ message: "Phone verified successfully" });
