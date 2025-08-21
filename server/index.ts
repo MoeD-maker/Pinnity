@@ -14,6 +14,13 @@ import dotenv from "dotenv";
 // Load environment variables first
 dotenv.config();
 
+// Ensure required environment variables are present
+const COOKIE_SECRET = process.env.COOKIE_SECRET;
+if (!COOKIE_SECRET) {
+  console.error("Missing COOKIE_SECRET environment variable");
+  process.exit(1);
+}
+
 // Import custom modules
 import { setupVite, serveStatic, log } from "./vite.js";
 // Skip environment validator for now
@@ -47,7 +54,7 @@ const server = createServer(app);
 // Express configuration
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use(cookieParser(process.env.COOKIE_SECRET || 'default-secret'));
+app.use(cookieParser(COOKIE_SECRET));
 
 // CORS setup
 const corsOptions = {
