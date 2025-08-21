@@ -1,4 +1,4 @@
-import type { Express, Request, Response, CookieOptions } from "express";
+import type { Express, Request, Response } from "express";
 import { storage } from "../storage";
 import { z } from "zod";
 import { 
@@ -13,17 +13,20 @@ import {
 } from "../auth";
 import { getUploadMiddleware } from "../uploadMiddleware";
 import fs from 'fs';
-import { validate } from "../middleware/validationMiddleware";
 import { authSchemas } from "../schemas";
-import { authRateLimiter, securityRateLimiter } from "../middleware/rateLimit";
 import { setAuthCookie, clearCookie } from "../utils/cookieUtils";
 import { withCustomAge, authCookieConfig } from "../utils/cookieConfig";
-import { 
-  createVersionedRoutes, 
+import {
+  createVersionedRoutes,
   versionHeadersMiddleware
 } from "../../src/utils/routeVersioning";
-import { verifyCsrf } from "../middleware";
-import { validatePasswordStrength } from "../middleware/passwordValidationMiddleware";
+import {
+  authRateLimiter,
+  securityRateLimiter,
+  validate,
+  verifyCsrf,
+  validatePasswordStrength
+} from "../middleware";
 import { isStrongPassword } from "../utils/passwordValidation";
 import { supabaseAdmin } from "../supabaseAdmin";
 import { verifySMSCode } from "../smsService";
@@ -100,7 +103,7 @@ export function authRoutes(app: Express): void {
       if (code) {
         verified = verifySMSCode(normalizedPhone, code);
       } else if (token) {
-        const payload = verifyToken(token);
+        const payload: any = verifyToken(token);
         verified = !!payload && (payload.phone === normalizedPhone || payload.phoneNumber === normalizedPhone);
       }
 
@@ -108,7 +111,7 @@ export function authRoutes(app: Express): void {
         return res.status(400).json({ message: "Invalid verification code or token" });
       }
 
-      await storage.updateUser(user.id, { phoneVerified: true });
+      await storage.updateUser(user.id, { phoneVerified: true } as any);
       console.log(`✅ Phone verified for user ${user.id} (${user.phone})`);
 
       return res.status(200).json({ message: "Phone verified successfully" });
@@ -611,8 +614,7 @@ export function authRoutes(app: Express): void {
 
         // Create user profile in the profiles table for gated login compatibility
         // Use normalized email for consistency with login
-        const normalizedEmail = email.trim().toLowerCase();
-        
+
         // Import the profile creation functions
         const { createProfile } = await import('../supabaseQueries.js');
         
@@ -643,7 +645,7 @@ export function authRoutes(app: Express): void {
             phone,
             address,
             phoneVerified: true,
-          },
+          } as any,
           {
             businessName,
             businessCategory,
@@ -796,14 +798,14 @@ export function authRoutes(app: Express): void {
             phone,
             address,
             phoneVerified: true, // Since they passed phone verification or are allowlisted
-          },
+          } as any,
           {
             businessName,
             businessCategory,
             governmentId: governmentIdPath,
             proofOfAddress: proofOfAddressPath,
             proofOfBusiness: proofOfBusinessPath,
-            
+
           }
         );
         

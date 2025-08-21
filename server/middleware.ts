@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { extractTokenFromHeader, extractTokenFromCookies, JwtPayload } from './auth';
-import { securityRateLimiter, apiRateLimiter } from './middleware/rateLimit';
+import { securityRateLimiter, authRateLimiter, apiRateLimiter } from './middleware/rateLimit';
+import { validate } from './middleware/validationMiddleware';
+import { validatePasswordStrength } from './middleware/passwordValidationMiddleware';
 import { applyCookieSecurityHeaders } from './utils/cookieUtils';
 import { verifyCsrf } from './middleware/csrfMiddleware';
 import { bypassCsrf } from './middleware/bypassCsrfMiddleware';
@@ -208,4 +210,11 @@ export function rateLimitAPI(req: Request, res: Response, next: NextFunction) {
  * This middleware ensures that only requests with valid CSRF tokens are processed
  * It protects against Cross-Site Request Forgery attacks
  */
-export { verifyCsrf, bypassCsrf };
+export {
+  authRateLimiter,
+  securityRateLimiter,
+  validate,
+  validatePasswordStrength,
+  verifyCsrf,
+  bypassCsrf
+};
