@@ -127,11 +127,11 @@ export function authRoutes(app: Express): void {
   
   // Versioned route (primary)
   app.post(
-    versionedLoginPath, 
+    versionedLoginPath,
     versionHeadersMiddleware(),
     verifyCsrf, // CSRF protection for login
-    // authRateLimiter, // Apply rate limiting to login endpoint (temporarily disabled)
-    // securityRateLimiter, // Apply security rate limiting to detect brute force attacks (temporarily disabled)
+    authRateLimiter, // Apply rate limiting to login endpoint
+    securityRateLimiter, // Apply security rate limiting to detect brute force attacks
     validate(authSchemas.login),
     async (req: Request, res: Response) => {
       try {
