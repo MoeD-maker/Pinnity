@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
+import { resetCSRFToken } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +26,7 @@ export default function TestLogin() {
       const csrfResponse = await fetch('/api/csrf-token', { credentials: 'include' });
       const csrfData = await csrfResponse.json();
       console.log('CSRF token obtained:', csrfData.csrfToken ? 'Yes' : 'No');
+      resetCSRFToken(csrfData.csrfToken);
 
       // Make the login request
       const response = await apiRequest('/api/v1/auth/login', {
