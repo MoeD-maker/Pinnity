@@ -2,8 +2,8 @@
  * Unified route handlers that integrate the new Supabase-first system
  */
 import express from 'express';
-import { registerIndividual, registerBusiness, login } from './auth.routes.supabase';
-import { getAllUsers, getPendingVendors, updateBusinessStatus, getDashboardStats } from './admin.routes.supabase';
+import { registerIndividual, registerBusiness, login } from './auth.routes';
+import { getAllUsers, getPendingVendors, updateBusinessStatus, getDashboardStats } from './admin.routes';
 // Remove auth middleware temporarily for testing
 // import { authenticate } from '../middleware/auth';
 // import { uploadMiddleware } from '../uploadMiddleware.supabase';

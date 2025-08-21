@@ -1,233 +1,775 @@
 import type { Express, Request, Response } from "express";
 import { storage } from "../storage";
 import { authenticate, authorize, verifyCsrf } from "../middleware";
-import {
+import { validate } from "../middleware/validationMiddleware";
+import { adminSchemas } from "../schemas";
+import { 
   createVersionedRoutes,
   versionHeadersMiddleware,
-  deprecationMiddleware,
+  deprecationMiddleware
 } from "../../src/utils/routeVersioning";
-import {
-  sanitizeDeal,
-  sanitizeDeals,
-  sanitizeBusiness,
-  sanitizeBusinesses,
-  ensureArray,
-  forceDealArray,
-} from "../utils/sanitize";
-import { apiDealSchema } from "@shared/schema";
+import { type Deal, type Business, type User } from "@shared/schema";
+import { supabaseAdmin } from '../supabaseAdmin';
+import { getAllUsersWithBusinesses, getPendingBusinesses, updateBusiness } from '../supabaseQueries';
+
+/**
+ * Sanitize deals for frontend consumption by removing sensitive data
+ * and ensuring consistent object structure
+ */
+function sanitizeDeals(deals: (Deal & { business?: Business })[]): any[] {
+  return deals.map(deal => {
+    const sanitizedDeal = {
+      id: deal.id,
+      title: deal.title || 'Untitled Deal',
+      description: deal.description || '',
+      category: deal.category || '',
+      imageUrl: deal.imageUrl || '',
+      startDate: deal.startDate || new Date(),
+      endDate: deal.endDate || new Date(),
+      status: deal.status || 'pending',
+      businessId: deal.businessId,
+      businessName: deal.business?.businessName,
+      dealType: deal.dealType || '',
+      discount: deal.discount || '',
+      terms: deal.terms || '',
+      featured: deal.featured || false,
+      createdAt: deal.createdAt || new Date()
+    };
+    
+    return sanitizedDeal;
+  });
+}
+
+/**
+ * Sanitize businesses for frontend consumption by removing sensitive data
+ * and ensuring consistent object structure
+ */
+function sanitizeBusinesses(businesses: (Business & { user: User })[]): any[] {
+  return businesses.map(business => {
+    const { user, ...businessData } = business;
+    const { password, ...userData } = user;
+    
+    return {
+      ...businessData,
+      businessName: business.businessName || 'Unnamed Business',
+      businessCategory: business.businessCategory || 'Other',
+      verificationStatus: business.verificationStatus || 'pending',
+      description: business.description || '',
+      address: business.address || '',
+      phone: business.phone || '',
+      user: userData
+    };
+  });
+}
 
 /**
  * Admin routes for user and business management
  */
 export function adminRoutes(app: Express): void {
-  // Get dashboard stats (versioned endpoint)
-  const [vDashboardPath, lDashboardPath] =
-    createVersionedRoutes("/admin/dashboard");
-
-  // Debugging route to determine exact format issues with deals
-  app.get(
-    "/api/v1/admin/debug/deal-format",
+  // Debug endpoints
+  const [vDebugDealsPath, lDebugDealsPath] = createVersionedRoutes('/admin/debug/deals');
+  
+  // Versioned debug deals endpoint
+  app.get(vDebugDealsPath,
+    versionHeadersMiddleware(),
     authenticate,
-    authorize(["admin"]),
+    authorize(['admin']),
+    async (_req: Request, res: Response) => {
+    try {
+      console.log("DEBUG ENDPOINT: Accessing /admin/debug/deals");
+      // Get all deals
+      const allDeals = await storage.getDeals();
+      
+      // Group them by status
+      const dealsByStatus: Record<string, any[]> = {};
+      
+      // Initialize with empty arrays for common statuses
+      dealsByStatus.pending = [];
+      dealsByStatus.active = [];
+      dealsByStatus.rejected = [];
+      dealsByStatus.expired = [];
+      dealsByStatus.pending_revision = [];
+      
+      // Categorize deals by status
+      allDeals.forEach(deal => {
+        const status = deal.status || 'unknown';
+        if (!dealsByStatus[status]) {
+          dealsByStatus[status] = [];
+        }
+        dealsByStatus[status].push(deal);
+      });
+      
+      // Get statuses distribution
+      const statusCounts: Record<string, number> = {};
+      Object.keys(dealsByStatus).forEach(status => {
+        statusCounts[status] = dealsByStatus[status].length;
+      });
+      
+      return res.status(200).json({
+        totalDeals: allDeals.length,
+        statusCounts,
+        dealsByStatus
+      });
+    } catch (error) {
+      console.error("Error in debug endpoint:", error);
+      return res.status(500).json({ message: "Error in debug endpoint", error: String(error) });
+    }
+  });
+  
+  // Legacy debug deals endpoint
+  app.get(lDebugDealsPath,
+    authenticate,
+    authorize(['admin']),
+    async (_req: Request, res: Response) => {
+    try {
+      // Same implementation as versioned endpoint
+      const allDeals = await storage.getDeals();
+      
+      const dealsByStatus: Record<string, any[]> = {};
+      
+      dealsByStatus.pending = [];
+      dealsByStatus.active = [];
+      dealsByStatus.rejected = [];
+      dealsByStatus.expired = [];
+      dealsByStatus.pending_revision = [];
+      
+      allDeals.forEach(deal => {
+        const status = deal.status || 'unknown';
+        if (!dealsByStatus[status]) {
+          dealsByStatus[status] = [];
+        }
+        dealsByStatus[status].push(deal);
+      });
+      
+      const statusCounts: Record<string, number> = {};
+      Object.keys(dealsByStatus).forEach(status => {
+        statusCounts[status] = dealsByStatus[status].length;
+      });
+      
+      return res.status(200).json({
+        totalDeals: allDeals.length,
+        statusCounts,
+        dealsByStatus
+      });
+    } catch (error) {
+      console.error("Error in debug endpoint:", error);
+      return res.status(500).json({ message: "Error in debug endpoint", error: String(error) });
+    }
+  });
+  
+  // Get dashboard stats
+  const [vDashboardPath, lDashboardPath] = createVersionedRoutes('/admin/dashboard');
+  
+  // Versioned dashboard route
+  app.get(vDashboardPath, 
+    versionHeadersMiddleware(),
+    authenticate, 
+    authorize(['admin']), 
+    async (_req: Request, res: Response) => {
+    try {
+      // Get counts for different entities
+      // For pending, we need to include both 'pending' and 'pending_revision' statuses
+      const pendingDealsResult = await storage.getDealsByStatus('pending');
+      // Already includes pending_revision deals now with our fix
+      const pendingDeals = pendingDealsResult.length;
+      
+      const activeDeals = (await storage.getDealsByStatus('active')).length;
+      const rejectedDeals = (await storage.getDealsByStatus('rejected')).length;
+      const expiredDeals = (await storage.getDealsByStatus('expired')).length;
+      
+      console.log(`DASHBOARD: Found ${pendingDeals} pending deals, ${activeDeals} active deals`);
+      
+      // Get businesses with pending verification
+      const businesses = await storage.getAllBusinesses();
+      // Check for variations in verification status values
+      const verificationStatuses = new Set(businesses.map(b => b.verificationStatus));
+      console.log(`DASHBOARD: Business verification statuses in system: ${Array.from(verificationStatuses).join(', ')}`);
+      
+      // Filter pending vendors (businesses awaiting verification)
+      const pendingVendorsBusiness = businesses.filter(b => 
+        b.verificationStatus === 'pending' || 
+        b.verificationStatus === 'pending_verification'
+      );
+      
+      const pendingVendors = pendingVendorsBusiness.length;
+      
+      console.log(`DASHBOARD: Found ${pendingVendors} pending vendors out of ${businesses.length} total`);
+      
+      // Get total user count
+      const users = await storage.getAllUsers();
+      const totalUsers = users.length;
+      
+      // Get recent activity (newest first, limit 5)
+      // We'll combine different types of activity (deal submissions, vendor applications, etc.)
+      const recentActivity = [];
+      
+      // Get recent deal submissions (5 newest)
+      const deals = await storage.getDeals();
+      const recentDeals = deals
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 5)
+        .map(deal => ({
+          id: deal.id,
+          type: "deal_submission",
+          status: deal.status,
+          title: "New Deal Submitted",
+          description: `${deal.business?.businessName || 'A business'} submitted '${deal.title}'`,
+          timestamp: new Date(deal.createdAt).toISOString()
+        }));
+      
+      recentActivity.push(...recentDeals);
+      
+      console.log(`DASHBOARD: Including ${pendingDealsResult.length} full pending deals and ${pendingVendorsBusiness.length} full pending vendors in response`);
+      
+      // Return the stats along with full pending deals and vendors data
+      return res.status(200).json({
+        stats: {
+          pendingDeals,
+          activeDeals,
+          rejectedDeals,
+          expiredDeals,
+          pendingVendors,
+          totalUsers,
+          alertCount: pendingDeals + pendingVendors // Simple alert count as sum of pending items
+        },
+        recentActivity: recentActivity
+          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+          .slice(0, 5),
+        // Include the full sanitized deals and vendors    
+        pendingDeals: sanitizeDeals(pendingDealsResult),
+        pendingVendors: sanitizeBusinesses(pendingVendorsBusiness)
+      });
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+      return res.status(500).json({ message: "Error fetching dashboard stats" });
+    }
+  });
+  
+  // Legacy dashboard route
+  app.get(lDashboardPath, 
+    authenticate, 
+    authorize(['admin']), 
+    async (_req: Request, res: Response) => {
+    try {
+      // Get counts for different entities
+      const pendingDealsResult = await storage.getDealsByStatus('pending');
+      const pendingDeals = pendingDealsResult.length;
+      const activeDeals = (await storage.getDealsByStatus('active')).length;
+      const rejectedDeals = (await storage.getDealsByStatus('rejected')).length;
+      const expiredDeals = (await storage.getDealsByStatus('expired')).length;
+      
+      // Get businesses with pending verification
+      const businesses = await storage.getAllBusinesses();
+      // Filter pending vendors (businesses awaiting verification)
+      const pendingVendorsBusiness = businesses.filter(b => 
+        b.verificationStatus === 'pending' || 
+        b.verificationStatus === 'pending_verification'
+      );
+      
+      const pendingVendors = pendingVendorsBusiness.length;
+      
+      console.log(`DASHBOARD (legacy): Found ${pendingDeals} pending deals, ${activeDeals} active deals`);
+      console.log(`DASHBOARD (legacy): Found ${pendingVendors} pending vendors out of ${businesses.length} total`);
+      
+      // Get total user count
+      const users = await storage.getAllUsers();
+      const totalUsers = users.length;
+      
+      // Get recent activity (newest first, limit 5)
+      // We'll combine different types of activity (deal submissions, vendor applications, etc.)
+      const recentActivity = [];
+      
+      // Get recent deal submissions (5 newest)
+      const deals = await storage.getDeals();
+      const recentDeals = deals
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 5)
+        .map(deal => ({
+          id: deal.id,
+          type: "deal_submission",
+          status: deal.status,
+          title: "New Deal Submitted",
+          description: `${deal.business?.businessName || 'A business'} submitted '${deal.title}'`,
+          timestamp: new Date(deal.createdAt).toISOString()
+        }));
+      
+      recentActivity.push(...recentDeals);
+      
+      console.log(`DASHBOARD (legacy): Including ${pendingDealsResult.length} full pending deals and ${pendingVendorsBusiness.length} full pending vendors in response`);
+      
+      // Return the stats along with full pending deals and vendors data
+      return res.status(200).json({
+        stats: {
+          pendingDeals,
+          activeDeals,
+          rejectedDeals,
+          expiredDeals,
+          pendingVendors,
+          totalUsers,
+          alertCount: pendingDeals + pendingVendors // Simple alert count as sum of pending items
+        },
+        recentActivity: recentActivity
+          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+          .slice(0, 5),
+        // Include the full sanitized deals and vendors
+        pendingDeals: sanitizeDeals(pendingDealsResult),
+        pendingVendors: sanitizeBusinesses(pendingVendorsBusiness)
+      });
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+      return res.status(500).json({ message: "Error fetching dashboard stats" });
+    }
+  });
+
+  // Get all users (versioned and legacy routes)
+  const [vUsersPath, lUsersPath] = createVersionedRoutes('/admin/users');
+  
+  app.get(vUsersPath, 
+    versionHeadersMiddleware(),
+    authenticate, 
+    authorize(['admin']), 
     async (_req: Request, res: Response) => {
       try {
-        // Get pending deals in their raw format
-        const pendingDeals = await storage.getDealsByStatus("pending");
+        console.log("Admin users endpoint: Using unified Supabase system");
         
-        // Return diagnostic information about the deals
-        return res.status(200).json({
-          pendingDealsType: typeof pendingDeals,
-          isArray: Array.isArray(pendingDeals),
-          hasLength: !!pendingDeals.length,
-          length: pendingDeals.length,
-          firstDeal: pendingDeals.length > 0 ? pendingDeals[0] : null,
-          keys: Object.keys(pendingDeals),
-          rawData: pendingDeals
-        });
+        // Import and use the new unified system
+        const { getAllUsersWithBusinesses } = await import('../supabaseQueries');
+        const users = await getAllUsersWithBusinesses();
+        
+        console.log(`Admin users endpoint: Found ${users.length} users`);
+        console.log("Marketing consent values:", users.map(u => `${u.email}: ${u.marketing_consent}`));
+        
+        // Map to admin dashboard format
+        const sanitizedUsers = users.map(user => ({
+          id: user.id,
+          email: user.email,
+          firstName: user.first_name || '',
+          lastName: user.last_name || '',
+          userType: user.user_type,
+          phoneVerified: user.phone_verified,
+          marketingConsent: user.marketing_consent || false,
+          createdAt: user.created_at,
+          updatedAt: user.updated_at,
+          supabaseUserId: user.supabase_user_id,
+          // Include business info if available
+          businessName: user.business?.business_name || null,
+          businessCategory: user.business?.business_category || null,
+          verificationStatus: user.business?.verification_status || null
+        }));
+        
+        return res.status(200).json(sanitizedUsers);
       } catch (error) {
-        console.error("Debug route error:", error);
-        return res.status(500).json({ error: "Error in debug route" });
+        console.error("Get all users error:", error);
+        return res.status(500).json({ message: "Internal server error" });
       }
     }
   );
 
-  // Versioned dashboard route
-  app.get(
-    vDashboardPath,
-    versionHeadersMiddleware(),
-    authenticate,
-    authorize(["admin"]),
+  app.get(lUsersPath, 
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate, 
+    authorize(['admin']), 
     async (_req: Request, res: Response) => {
       try {
-        // Deals - use our robust array conversion to fix format issues
-        const rawPendingDeals = await storage.getDealsByStatus("pending");
-        const pendingDealsResult = forceDealArray(rawPendingDeals);
-        const pendingDealsCount = pendingDealsResult.length;
-        console.log(`Raw pending deals count: ${pendingDealsCount}`);
-
-        // Always ensure we get arrays for these counts
-        const activeDealsResult = ensureArray(await storage.getDealsByStatus("active"));
-        const activeDealsCount = activeDealsResult.length;
-        console.log(`Active deals count: ${activeDealsCount}`);
+        console.log("Admin users endpoint (legacy): Using unified Supabase system");
         
-        const rejectedDealsResult = ensureArray(await storage.getDealsByStatus("rejected"));
-        const rejectedDealsCount = rejectedDealsResult.length;
-        console.log(`Rejected deals count: ${rejectedDealsCount}`);
+        // Import and use the new unified system
+        const { getAllUsersWithBusinesses } = await import('../supabaseQueries');
+        const users = await getAllUsersWithBusinesses();
         
-        const expiredDealsResult = ensureArray(await storage.getDealsByStatus("expired"));
-        const expiredDealsCount = expiredDealsResult.length;
-        console.log(`Expired deals count: ${expiredDealsCount}`);
+        console.log(`Admin users endpoint (legacy): Found ${users.length} users`);
+        
+        // Map to admin dashboard format
+        const sanitizedUsers = users.map(user => ({
+          id: user.id,
+          email: user.email,
+          firstName: user.first_name || '',
+          lastName: user.last_name || '',
+          userType: user.user_type,
+          phoneVerified: user.phone_verified,
+          marketingConsent: user.marketing_consent || false,
+          createdAt: user.created_at,
+          updatedAt: user.updated_at,
+          supabaseUserId: user.supabase_user_id,
+          // Include business info if available
+          businessName: user.business?.business_name || null,
+          businessCategory: user.business?.business_category || null,
+          verificationStatus: user.business?.verification_status || null
+        }));
+        
+        return res.status(200).json(sanitizedUsers);
+      } catch (error) {
+        console.error("Get all users error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
 
-        console.log(`Found ${pendingDealsCount} pending deals.`);
+  // Create user (versioned and legacy routes)
+  const [vCreateUserPath, lCreateUserPath] = createVersionedRoutes('/admin/users');
+  
+  app.post(vCreateUserPath, 
+    versionHeadersMiddleware(),
+    authenticate, 
+    authorize(['admin']),
+    validate(adminSchemas.createUser),
+    async (req: Request, res: Response) => {
+      try {
+        const { password, ...userData } = req.body;
+        
+        const user = await storage.adminCreateUser(userData, password);
+        
+        // Filter out sensitive data
+        const { password: _, ...sanitizedUser } = user;
+        
+        return res.status(201).json(sanitizedUser);
+      } catch (error) {
+        console.error("Create user error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
 
-        // Businesses
+  app.post(lCreateUserPath, 
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate, 
+    authorize(['admin']),
+    validate(adminSchemas.createUser),
+    async (req: Request, res: Response) => {
+      try {
+        const { password, ...userData } = req.body;
+        
+        const user = await storage.adminCreateUser(userData, password);
+        
+        // Filter out sensitive data
+        const { password: _, ...sanitizedUser } = user;
+        
+        return res.status(201).json(sanitizedUser);
+      } catch (error) {
+        console.error("Create user error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
+  // Get individual user (versioned and legacy routes)
+  const [vGetUserPath, lGetUserPath] = createVersionedRoutes('/admin/users/:id');
+  
+  app.get(vGetUserPath, 
+    versionHeadersMiddleware(),
+    authenticate, 
+    authorize(['admin']), 
+    async (req: Request, res: Response) => {
+      try {
+        const userId = parseInt(req.params.id);
+        if (isNaN(userId)) {
+          return res.status(400).json({ message: "Invalid user ID" });
+        }
+        
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+        
+        // Filter out sensitive data
+        const { password, ...sanitizedUser } = user;
+        
+        return res.status(200).json(sanitizedUser);
+      } catch (error) {
+        console.error("Get user error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
+  app.get(lGetUserPath, 
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate, 
+    authorize(['admin']), 
+    async (req: Request, res: Response) => {
+      try {
+        const userId = parseInt(req.params.id);
+        if (isNaN(userId)) {
+          return res.status(400).json({ message: "Invalid user ID" });
+        }
+        
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+        
+        // Filter out sensitive data
+        const { password, ...sanitizedUser } = user;
+        
+        return res.status(200).json(sanitizedUser);
+      } catch (error) {
+        console.error("Get user error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
+  // Update user (versioned and legacy routes)
+  const [vUpdateUserPath, lUpdateUserPath] = createVersionedRoutes('/admin/users/:id');
+  
+  app.put(vUpdateUserPath, 
+    versionHeadersMiddleware(),
+    authenticate, 
+    authorize(['admin']),
+    validate(adminSchemas.updateUser),
+    async (req: Request, res: Response) => {
+      try {
+        const userId = parseInt(req.params.id);
+        const userData = req.body;
+        
+        const user = await storage.adminUpdateUser(userId, userData);
+        
+        // Filter out sensitive data
+        const { password, ...sanitizedUser } = user;
+        
+        return res.status(200).json(sanitizedUser);
+      } catch (error) {
+        console.error("Update user error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
+  app.put(lUpdateUserPath, 
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate, 
+    authorize(['admin']),
+    validate(adminSchemas.updateUser),
+    async (req: Request, res: Response) => {
+      try {
+        const userId = parseInt(req.params.id);
+        const userData = req.body;
+        
+        const user = await storage.adminUpdateUser(userId, userData);
+        
+        // Filter out sensitive data
+        const { password, ...sanitizedUser } = user;
+        
+        return res.status(200).json(sanitizedUser);
+      } catch (error) {
+        console.error("Update user error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
+  // Delete user (versioned and legacy routes)
+  const [vDeleteUserPath, lDeleteUserPath] = createVersionedRoutes('/admin/users/:id');
+  
+  app.delete(vDeleteUserPath, 
+    versionHeadersMiddleware(),
+    authenticate, 
+    authorize(['admin']), 
+    async (req: Request, res: Response) => {
+      try {
+        const userId = parseInt(req.params.id);
+        
+        await storage.adminDeleteUser(userId);
+        
+        return res.status(200).json({ message: "User deleted successfully" });
+      } catch (error) {
+        console.error("Delete user error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
+  app.delete(lDeleteUserPath, 
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate, 
+    authorize(['admin']), 
+    async (req: Request, res: Response) => {
+      try {
+        const userId = parseInt(req.params.id);
+        
+        await storage.adminDeleteUser(userId);
+        
+        return res.status(200).json({ message: "User deleted successfully" });
+      } catch (error) {
+        console.error("Delete user error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
+  // Create business user (versioned and legacy routes)
+  const [vCreateBusinessPath, lCreateBusinessPath] = createVersionedRoutes('/admin/business-users');
+  
+  app.post(vCreateBusinessPath, 
+    versionHeadersMiddleware(),
+    authenticate, 
+    authorize(['admin']),
+    validate(adminSchemas.createBusinessUser),
+    async (req: Request, res: Response) => {
+      try {
+        const { userData, businessData } = req.body;
+        
+        const user = await storage.adminCreateBusinessUser(userData, businessData);
+        
+        // Filter out sensitive data
+        const { password, ...sanitizedUser } = user;
+        
+        return res.status(201).json(sanitizedUser);
+      } catch (error) {
+        console.error("Create business user error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
+  app.post(lCreateBusinessPath, 
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate, 
+    authorize(['admin']),
+    validate(adminSchemas.createBusinessUser),
+    async (req: Request, res: Response) => {
+      try {
+        const { userData, businessData } = req.body;
+        
+        const user = await storage.adminCreateBusinessUser(userData, businessData);
+        
+        // Filter out sensitive data
+        const { password, ...sanitizedUser } = user;
+        
+        return res.status(201).json(sanitizedUser);
+      } catch (error) {
+        console.error("Create business user error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
+  // Get all businesses (versioned and legacy routes)
+  const [vBusinessesPath, lBusinessesPath] = createVersionedRoutes('/admin/businesses');
+  
+  app.get(vBusinessesPath, 
+    versionHeadersMiddleware(),
+    authenticate, 
+    authorize(['admin']), 
+    async (_req: Request, res: Response) => {
+      try {
         const businesses = await storage.getAllBusinesses();
-        const pendingBusinesses = businesses.filter(
-          (b) =>
-            b.verificationStatus === "pending" ||
-            b.verificationStatus === "pending_verification",
-        );
-        const pendingVendorsCount = pendingBusinesses.length;
         
-        // Count approved vendors
-        const approvedBusinesses = businesses.filter(
-          (b) => b.verificationStatus === "verified" || b.verificationStatus === "approved"
-        );
-        const approvedVendorsCount = approvedBusinesses.length;
-        
-        // Count rejected vendors
-        const rejectedBusinesses = businesses.filter(
-          (b) => b.verificationStatus === "rejected"
-        );
-        const rejectedVendorsCount = rejectedBusinesses.length;
-
-        console.log(`Found ${pendingVendorsCount} pending vendors, ${approvedVendorsCount} approved vendors, and ${rejectedVendorsCount} rejected vendors.`);
-
-        // Users
-        const users = await storage.getAllUsers();
-        const totalUsers = users.length;
-
-        const sanitizedPendingDeals = sanitizeDeals(pendingDealsResult);
-        const sanitizedPendingVendors = sanitizeBusinesses(pendingBusinesses);
-
-        // Prepare Response
-        // Force arrays to be actual arrays (not objects)
-        const sanitizedPendingDealsArray = [...sanitizedPendingDeals];
-        const recentDealsArray = [...sanitizedPendingDeals]
-          .sort(
-            (a, b) =>
-              new Date(b.createdAt).getTime() -
-              new Date(a.createdAt).getTime(),
-          )
-          .slice(0, 5);
-        const sanitizedPendingVendorsArray = [...sanitizedPendingVendors];
-        
-        // Use JSON.stringify to force array encoding
-        const jsonResponse = JSON.stringify({
-          stats: {
-            pendingDeals: pendingDealsCount,
-            activeDeals: activeDealsCount,
-            rejectedDeals: rejectedDealsCount,
-            expiredDeals: expiredDealsCount,
-            pendingVendors: pendingVendorsCount,
-            approvedVendors: approvedVendorsCount,
-            rejectedVendors: rejectedVendorsCount,
-            totalUsers,
-            alertCount: pendingDealsCount + pendingVendorsCount,
-          },
-          recentActivity: recentDealsArray,
-          pendingDeals: sanitizedPendingDealsArray, // ✅ Real pending deals as proper array
-          pendingVendors: sanitizedPendingVendorsArray, // ✅ Real pending vendors as proper array
+        // Filter out sensitive data
+        const sanitizedBusinesses = businesses.map(business => {
+          const { user, ...businessData } = business;
+          const { password, ...userData } = user;
+          
+          return {
+            ...businessData,
+            user: userData
+          };
         });
         
-        return res
-          .setHeader('Content-Type', 'application/json')
-          .send(jsonResponse);
-      } catch (error) {
-        console.error("Admin Dashboard Error:", error);
-        return res
-          .status(500)
-          .json({ error: "Something went wrong loading the dashboard." });
-      }
-    },
-  );
-  // GET /api/v1/admin/vendors
-  app.get(
-    "/api/v1/admin/vendors",
-    versionHeadersMiddleware(),
-    authenticate,
-    authorize(["admin"]),
-    async (_req: Request, res: Response) => {
-      try {
-        const businesses = await storage.getAllBusinesses();
-
-        // Filter only pending or pending_verification businesses
-        const pendingBusinesses = businesses.filter(
-          (b) =>
-            b.verificationStatus === "pending" ||
-            b.verificationStatus === "pending_verification",
-        );
-
-        // Return array directly to match frontend expectations
-        const sanitizedBusinesses = sanitizeBusinesses(pendingBusinesses);
-        console.log(
-          `Returning ${sanitizedBusinesses.length} pending vendors directly as array`,
-        );
         return res.status(200).json(sanitizedBusinesses);
       } catch (error) {
-        console.error("Admin Vendors Fetch Error:", error);
-        return res.status(500).json({ error: "Unable to fetch vendors." });
+        console.error("Get all businesses error:", error);
+        return res.status(500).json({ message: "Internal server error" });
       }
-    },
+    }
   );
-
-  // Versioned GET /api/v1/admin/businesses
-  app.get(
-    "/api/v1/admin/businesses",
+  
+  // Add routes to fetch pending businesses (vendors)
+  const [vPendingBusinessesPath, lPendingBusinessesPath] = createVersionedRoutes('/admin/businesses/pending');
+  
+  // Versioned pending businesses endpoint
+  app.get(vPendingBusinessesPath,
     versionHeadersMiddleware(),
     authenticate,
-    authorize(["admin"]),
+    authorize(['admin']),
+    async (_req: Request, res: Response) => {
+      try {
+        console.log("Admin: Fetching pending businesses");
+        const pendingBusinesses = await storage.getBusinessesByStatus("pending");
+        
+        // Filter out sensitive data
+        const sanitizedBusinesses = pendingBusinesses.map(business => {
+          const { user, ...businessData } = business;
+          const { password, ...userData } = user;
+          
+          return {
+            ...businessData,
+            user: userData
+          };
+        });
+        
+        console.log(`Admin: Found ${sanitizedBusinesses.length} pending businesses`);
+        return res.status(200).json(sanitizedBusinesses);
+      } catch (error) {
+        console.error("Get pending businesses error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
+  // Legacy pending businesses endpoint
+  app.get(lPendingBusinessesPath,
+    authenticate,
+    authorize(['admin']),
+    async (_req: Request, res: Response) => {
+      try {
+        console.log("Admin (legacy): Fetching pending businesses");
+        const pendingBusinesses = await storage.getBusinessesByStatus("pending");
+        
+        // Filter out sensitive data
+        const sanitizedBusinesses = pendingBusinesses.map(business => {
+          const { user, ...businessData } = business;
+          const { password, ...userData } = user;
+          
+          return {
+            ...businessData,
+            user: userData
+          };
+        });
+        
+        console.log(`Admin (legacy): Found ${sanitizedBusinesses.length} pending businesses`);
+        return res.status(200).json(sanitizedBusinesses);
+      } catch (error) {
+        console.error("Get pending businesses error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
+  app.get(lBusinessesPath, 
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate, 
+    authorize(['admin']), 
     async (_req: Request, res: Response) => {
       try {
         const businesses = await storage.getAllBusinesses();
-        return res.status(200).json(sanitizeBusinesses(businesses));
-      } catch (err) {
-        console.error("Admin Businesses Fetch Error:", err);
-        return res.status(500).json({ error: "Unable to fetch businesses." });
-      }
-    },
-  );
-
-  // Legacy GET /api/admin/businesses
-  app.get(
-    "/api/admin/businesses",
-    versionHeadersMiddleware(),
-    authenticate,
-    authorize(["admin"]),
-    async (_req: Request, res: Response) => {
-      try {
-        const all = await storage.getAllBusinesses();
-        const pending = all.filter(
-          (b) =>
-            b.verificationStatus === "pending" ||
-            b.verificationStatus === "pending_verification",
-        );
-        return res.status(200).json({
-          businesses: sanitizeBusinesses(pending),
+        
+        // Filter out sensitive data
+        const sanitizedBusinesses = businesses.map(business => {
+          const { user, ...businessData } = business;
+          const { password, ...userData } = user;
+          
+          return {
+            ...businessData,
+            user: userData
+          };
         });
-      } catch (err) {
-        console.error("Legacy Admin Businesses Fetch Error:", err);
-        return res.status(500).json({ error: "Unable to fetch businesses." });
+        
+        return res.status(200).json(sanitizedBusinesses);
+      } catch (error) {
+        console.error("Get all businesses error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
       }
-    },
+    }
   );
 
-  // GET individual business - versioned route
-  app.get(
-    "/api/v1/admin/businesses/:id",
+  // Get individual business (versioned and legacy routes)
+  const [vGetBusinessPath, lGetBusinessPath] = createVersionedRoutes('/admin/businesses/:id');
+  
+  app.get(vGetBusinessPath,
     versionHeadersMiddleware(),
     authenticate,
-    authorize(["admin"]),
+    authorize(['admin']),
     async (req: Request, res: Response) => {
       try {
         const businessId = parseInt(req.params.id);
@@ -240,20 +782,69 @@ export function adminRoutes(app: Express): void {
           return res.status(404).json({ error: "Business not found" });
         }
 
-        return res.status(200).json(sanitizeBusiness(business));
+        // Get user data for the business
+        const user = await storage.getUser(business.userId);
+        if (!user) {
+          return res.status(404).json({ error: "Business owner not found" });
+        }
+
+        // Filter out sensitive data
+        const { password, ...userData } = user;
+        
+        return res.status(200).json({
+          ...business,
+          user: userData
+        });
       } catch (err) {
         console.error("Admin Business Fetch Error:", err);
         return res.status(500).json({ error: "Unable to fetch business." });
       }
-    },
+    }
   );
 
-  // PUT update business - versioned route
-  app.put(
-    "/api/v1/admin/businesses/:id",
+  app.get(lGetBusinessPath,
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate,
+    authorize(['admin']),
+    async (req: Request, res: Response) => {
+      try {
+        const businessId = parseInt(req.params.id);
+        if (isNaN(businessId)) {
+          return res.status(400).json({ error: "Invalid business ID" });
+        }
+
+        const business = await storage.getBusiness(businessId);
+        if (!business) {
+          return res.status(404).json({ error: "Business not found" });
+        }
+
+        // Get user data for the business
+        const user = await storage.getUser(business.userId);
+        if (!user) {
+          return res.status(404).json({ error: "Business owner not found" });
+        }
+
+        // Filter out sensitive data
+        const { password, ...userData } = user;
+        
+        return res.status(200).json({
+          ...business,
+          user: userData
+        });
+      } catch (err) {
+        console.error("Admin Business Fetch Error (legacy):", err);
+        return res.status(500).json({ error: "Unable to fetch business." });
+      }
+    }
+  );
+
+  // Update individual business (versioned and legacy routes)
+  const [vUpdateBusinessPath, lUpdateBusinessPath] = createVersionedRoutes('/admin/businesses/:id');
+  
+  app.put(vUpdateBusinessPath,
     versionHeadersMiddleware(),
     authenticate,
-    authorize(["admin"]),
+    authorize(['admin']),
     async (req: Request, res: Response) => {
       try {
         const businessId = parseInt(req.params.id);
@@ -273,898 +864,665 @@ export function adminRoutes(app: Express): void {
           return res.status(404).json({ error: "Business not found" });
         }
 
-        return res.status(200).json(sanitizeBusiness(updatedBusiness));
+        // Get user data for the business
+        const user = await storage.getUser(updatedBusiness.userId);
+        if (!user) {
+          return res.status(404).json({ error: "Business owner not found" });
+        }
+
+        // Filter out sensitive data
+        const { password, ...userData } = user;
+
+        return res.status(200).json({
+          ...updatedBusiness,
+          user: userData
+        });
       } catch (err) {
         console.error("Admin Business Update Error:", err);
         return res.status(500).json({ error: "Unable to update business." });
       }
-    },
-  );
-
-  // Create versioned route paths
-  const [vUsersPath, lUsersPath] = createVersionedRoutes("/admin/users");
-
-  // Get all users - versioned route
-  app.get(
-    vUsersPath,
-    authenticate,
-    authorize(["admin"]),
-    async (_req: Request, res: Response) => {
-      try {
-        const users = await storage.getAllUsers();
-        return res.status(200).json(users);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-        return res.status(500).json({ message: "Error fetching users" });
-      }
-    },
-  );
-
-  // Get all users - legacy route
-  app.get(
-    lUsersPath,
-    authenticate,
-    authorize(["admin"]),
-    async (_req: Request, res: Response) => {
-      try {
-        const users = await storage.getAllUsers();
-        return res.status(200).json(users);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-        return res.status(500).json({ message: "Error fetching users" });
-      }
-    },
-  );
-
-  // Create versioned route paths for POST users
-  const [vCreateUserPath, lCreateUserPath] =
-    createVersionedRoutes("/admin/users");
-
-  // Create a user - versioned route
-  app.post(
-    vCreateUserPath,
-    authenticate,
-    authorize(["admin"]),
-    async (req: Request, res: Response) => {
-      try {
-        const userData = req.body;
-
-        if (!userData.password) {
-          return res.status(400).json({ message: "Password is required" });
-        }
-
-        const password = userData.password;
-        delete userData.password;
-
-        const user = await storage.adminCreateUser(userData, password);
-        return res.status(201).json(user);
-      } catch (error) {
-        console.error("Error creating user:", error);
-        if (error instanceof Error) {
-          return res.status(400).json({ message: error.message });
-        }
-        return res.status(500).json({ message: "Error creating user" });
-      }
-    },
-  );
-
-  // Create a user - legacy route
-  app.post(
-    lCreateUserPath,
-    authenticate,
-    authorize(["admin"]),
-    async (req: Request, res: Response) => {
-      try {
-        const userData = req.body;
-
-        if (!userData.password) {
-          return res.status(400).json({ message: "Password is required" });
-        }
-
-        const password = userData.password;
-        delete userData.password;
-
-        const user = await storage.adminCreateUser(userData, password);
-        return res.status(201).json(user);
-      } catch (error) {
-        console.error("Error creating user:", error);
-        if (error instanceof Error) {
-          return res.status(400).json({ message: error.message });
-        }
-        return res.status(500).json({ message: "Error creating user" });
-      }
-    },
-  );
-
-  // Update a user
-  app.put(
-    "/api/admin/users/:id",
-    authenticate,
-    authorize(["admin"]),
-    async (req: Request, res: Response) => {
-      try {
-        const userId = parseInt(req.params.id);
-        const userData = req.body;
-
-        const user = await storage.adminUpdateUser(userId, userData);
-        return res.status(200).json(user);
-      } catch (error) {
-        console.error("Error updating user:", error);
-        if (error instanceof Error) {
-          return res.status(400).json({ message: error.message });
-        }
-        return res.status(500).json({ message: "Error updating user" });
-      }
-    },
-  );
-
-  // Delete a user
-  app.delete(
-    "/api/admin/users/:id",
-    authenticate,
-    authorize(["admin"]),
-    async (req: Request, res: Response) => {
-      try {
-        const userId = parseInt(req.params.id);
-
-        const success = await storage.adminDeleteUser(userId);
-        if (success) {
-          return res.status(200).json({ message: "User deleted successfully" });
-        } else {
-          return res.status(404).json({ message: "User not found" });
-        }
-      } catch (error) {
-        console.error("Error deleting user:", error);
-        return res.status(500).json({ message: "Error deleting user" });
-      }
-    },
-  );
-
-  // Create a business user
-  app.post(
-    "/api/admin/business-users",
-    authenticate,
-    authorize(["admin"]),
-    async (req: Request, res: Response) => {
-      try {
-        const { userData, businessData } = req.body;
-
-        if (!userData.password) {
-          return res.status(400).json({ message: "Password is required" });
-        }
-
-        // Create the business user
-        const user = await storage.adminCreateBusinessUser(
-          userData,
-          businessData,
-        );
-        return res.status(201).json(user);
-      } catch (error) {
-        console.error("Error creating business user:", error);
-        if (error instanceof Error) {
-          return res.status(400).json({ message: error.message });
-        }
-        return res
-          .status(500)
-          .json({ message: "Error creating business user" });
-      }
-    },
-  );
-
-  // Create versioned route paths for businesses
-  const [vBusinessesPath, lBusinessesPath] =
-    createVersionedRoutes("/admin/businesses");
-
-  // Create versioned route paths for pending businesses specifically
-  const [vPendingBusinessesPath, lPendingBusinessesPath] =
-    createVersionedRoutes("/admin/businesses/pending");
-
-  // Get all businesses or filter by status - versioned route
-  app.get(
-    vBusinessesPath,
-    authenticate,
-    authorize(["admin"]),
-    async (req: Request, res: Response) => {
-      try {
-        // Check if status is provided as a query parameter
-        const status = req.query.status as string;
-
-        if (status) {
-          console.log(
-            `Fetching businesses with status: ${status} (versioned route)`,
-          );
-          const businesses = await storage.getBusinessesByStatus(status);
-          const sanitizedBusinesses = sanitizeBusinesses(
-            ensureArray(businesses),
-          );
-          // Return array directly to match frontend expectations
-          console.log(
-            `Returning ${sanitizedBusinesses.length} businesses with status ${status}`,
-          );
-          return res.status(200).json(sanitizedBusinesses);
-        } else {
-          console.log("Fetching all businesses (versioned route)");
-          const businesses = await storage.getAllBusinesses();
-          const sanitizedBusinesses = sanitizeBusinesses(
-            ensureArray(businesses),
-          );
-          // Return array directly to match frontend expectations
-          console.log(
-            `Returning ${sanitizedBusinesses.length} total businesses`,
-          );
-          return res.status(200).json(sanitizedBusinesses);
-        }
-      } catch (error) {
-        console.error("Error fetching businesses:", error);
-        return res.status(500).json({ message: "Error fetching businesses" });
-      }
-    },
-  );
-
-  // Get all businesses or filter by status - legacy route (for backward compatibility)
-  app.get(
-    "/api/admin/businesses",
-    authenticate,
-    authorize(["admin"]),
-    async (req: Request, res: Response) => {
-      try {
-        // Check if status is provided as a query parameter
-        const status = req.query.status as string;
-
-        if (status) {
-          console.log(
-            `Fetching businesses with status: ${status} (legacy route)`,
-          );
-          const businesses = await storage.getBusinessesByStatus(status);
-          const sanitizedBusinesses = sanitizeBusinesses(
-            ensureArray(businesses),
-          );
-          return res.status(200).json(sanitizedBusinesses);
-        } else {
-          console.log("Fetching all businesses (legacy route)");
-          const businesses = await storage.getAllBusinesses();
-          const sanitizedBusinesses = sanitizeBusinesses(
-            ensureArray(businesses),
-          );
-          return res.status(200).json(sanitizedBusinesses);
-        }
-      } catch (error) {
-        console.error("Error fetching businesses:", error);
-        return res.status(500).json({ message: "Error fetching businesses" });
-      }
-    },
-  );
-
-  // Get pending businesses - versioned route (dedicated endpoint)
-  app.get(
-    vPendingBusinessesPath,
-    authenticate,
-    authorize(["admin"]),
-    async (_req: Request, res: Response) => {
-      try {
-        console.log("Fetching pending businesses (versioned dedicated route)");
-        const businesses = await storage.getBusinessesByStatus("pending");
-        console.log(`Found ${businesses.length} pending businesses`);
-
-        // Add more detailed debugging
-        if (businesses.length > 0) {
-          console.log("First pending business:", {
-            id: businesses[0].id,
-            name: businesses[0].businessName,
-            status: businesses[0].verificationStatus,
-          });
-        }
-
-        const sanitizedBusinesses = sanitizeBusinesses(ensureArray(businesses));
-        // Return array directly to match frontend expectations
-        console.log(
-          `Returning ${sanitizedBusinesses.length} sanitized pending businesses`,
-        );
-        return res.status(200).json(sanitizedBusinesses);
-      } catch (error) {
-        console.error("Error fetching pending businesses:", error);
-        return res
-          .status(500)
-          .json({ message: "Error fetching pending businesses" });
-      }
-    },
-  );
-
-  // Get pending businesses - legacy route (dedicated endpoint)
-  app.get(
-    lPendingBusinessesPath,
-    authenticate,
-    authorize(["admin"]),
-    async (_req: Request, res: Response) => {
-      try {
-        console.log("Fetching pending businesses (legacy dedicated route)");
-        const businesses = await storage.getBusinessesByStatus("pending");
-        console.log(
-          `Found ${businesses.length} pending businesses (legacy route)`,
-        );
-
-        // Add more detailed debugging
-        if (businesses.length > 0) {
-          console.log("First pending business (legacy route):", {
-            id: businesses[0].id,
-            name: businesses[0].businessName,
-            status: businesses[0].verificationStatus,
-          });
-        }
-
-        const sanitizedBusinesses = sanitizeBusinesses(ensureArray(businesses));
-        // Return array directly to match frontend expectations
-        console.log(
-          `Returning ${sanitizedBusinesses.length} sanitized pending businesses (legacy route)`,
-        );
-        return res.status(200).json(sanitizedBusinesses);
-      } catch (error) {
-        console.error("Error fetching pending businesses:", error);
-        return res
-          .status(500)
-          .json({ message: "Error fetching pending businesses" });
-      }
-    },
-  );
-
-  // Analytics endpoint for admin dashboard
-  const [vAnalyticsPath, lAnalyticsPath] = createVersionedRoutes("/admin/analytics");
-  
-  // Versioned analytics endpoint
-  app.get(
-    vAnalyticsPath,
-    versionHeadersMiddleware(),
-    authenticate,
-    authorize(["admin"]),
-    async (req: Request, res: Response) => {
-      try {
-        console.log("Fetching analytics data for admin dashboard");
-        const timeRange = req.query.timeRange as string || "30days";
-        console.log(`Time range requested: ${timeRange}`);
-        
-        // Get deal statistics
-        const allDeals = await storage.getDeals();
-        const pendingDeals = await storage.getDealsByStatus("pending");
-        const activeDeals = await storage.getDealsByStatus("active");
-        const rejectedDeals = await storage.getDealsByStatus("rejected");
-        const expiredDeals = await storage.getDealsByStatus("expired");
-        
-        // Get user statistics
-        const allUsers = await storage.getAllUsers();
-        const individualUsers = allUsers.filter(user => user.userType === "individual");
-        const businessUsers = allUsers.filter(user => user.userType === "business");
-        const adminUsers = allUsers.filter(user => user.userType === "admin");
-        
-        // Get business statistics
-        const allBusinesses = await storage.getAllBusinesses();
-        
-        // Calculate total redemptions
-        let totalRedemptions = 0;
-        for (const deal of allDeals) {
-          totalRedemptions += deal.redemptionCount || 0;
-        }
-        
-        // Get deals by category
-        const categoryCounts: Record<string, number> = {};
-        allDeals.forEach(deal => {
-          const category = deal.category || "Uncategorized";
-          categoryCounts[category] = (categoryCounts[category] || 0) + 1;
-        });
-        
-        const dealsByCategory = Object.entries(categoryCounts).map(([name, value]) => ({ name, value }));
-        
-        // Get deals by status
-        const dealsByStatus = [
-          { name: "Active", value: activeDeals.length },
-          { name: "Pending", value: pendingDeals.length },
-          { name: "Rejected", value: rejectedDeals.length },
-          { name: "Expired", value: expiredDeals.length }
-        ];
-        
-        // Get users by type
-        const usersByType = [
-          { name: "Individual", value: individualUsers.length },
-          { name: "Business", value: businessUsers.length },
-          { name: "Admin", value: adminUsers.length }
-        ];
-        
-        // Get top deals by views
-        const topDealsByViews = [...allDeals]
-          .sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
-          .slice(0, 10)
-          .map(deal => ({
-            id: deal.id,
-            title: deal.title,
-            category: deal.category,
-            startDate: deal.startDate.toISOString(),
-            endDate: deal.endDate.toISOString(),
-            views: deal.viewCount || 0,
-            redemptions: deal.redemptionCount || 0,
-            savedCount: deal.saveCount || 0
-          }));
-        
-        // Get recent users
-        const recentUsers = [...allUsers]
-          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-          .slice(0, 10)
-          .map(user => ({
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            userType: user.userType,
-            created_at: user.created_at
-          }));
-        
-        // Get popular businesses (using deals count as popularity metric)
-        const businessPopularity: Record<number, number> = {};
-        allDeals.forEach(deal => {
-          const businessId = deal.businessId;
-          businessPopularity[businessId] = (businessPopularity[businessId] || 0) + 1;
-        });
-        
-        const popularBusinessesIds = Object.entries(businessPopularity)
-          .sort(([, countA], [, countB]) => countB - countA)
-          .slice(0, 10)
-          .map(([id]) => parseInt(id));
-        
-        const popularBusinesses = allBusinesses
-          .filter(business => popularBusinessesIds.includes(business.id))
-          .map(business => ({
-            id: business.id,
-            businessName: business.businessName,
-            businessCategory: business.businessCategory,
-            status: business.verificationStatus
-          }));
-        
-        // Calculate dummy growth metrics based on available data
-        // In a real scenario, we would compare with previous period data
-        const usersGrowth = 5; // 5% growth (placeholder)
-        const businessesGrowth = 8; // 8% growth (placeholder)
-        const dealsGrowth = 12; // 12% growth (placeholder)
-        const redemptionsGrowth = 15; // 15% growth (placeholder)
-        
-        // Build the final response object
-        const analyticsData = {
-          totalUsers: allUsers.length,
-          totalBusinesses: allBusinesses.length,
-          totalDeals: allDeals.length,
-          totalRedemptions,
-          activeDeals: activeDeals.length,
-          pendingDeals: pendingDeals.length,
-          usersGrowth,
-          businessesGrowth,
-          dealsGrowth,
-          redemptionsGrowth,
-          redemptionsOverTime: [], // Would require historical data
-          dealsByCategory,
-          dealsByStatus,
-          topDeals: topDealsByViews,
-          recentUsers,
-          popularBusinesses,
-          usersByType,
-          engagementRate: Math.round((totalRedemptions / (allDeals.reduce((sum, deal) => sum + (deal.viewCount || 0), 0) || 1)) * 100), // Redemptions / Views
-          redemptionsByDay: [], // Would require historical data
-          averageRating: 4.2 // Placeholder until ratings are implemented
-        };
-        
-        console.log("Successfully generated analytics data");
-        return res.status(200).json(analyticsData);
-      } catch (error) {
-        console.error("Error generating analytics data:", error);
-        return res.status(500).json({ message: "Error generating analytics data" });
-      }
-    }
-  );
-  
-  // Legacy analytics endpoint
-  app.get(
-    lAnalyticsPath,
-    authenticate,
-    authorize(["admin"]),
-    async (req: Request, res: Response) => {
-      try {
-        console.log("Fetching analytics data for admin dashboard (legacy route)");
-        const timeRange = req.query.timeRange as string || "30days";
-        
-        // Forward to the versioned implementation
-        const versionedUrl = `/api/v1/admin/analytics?timeRange=${timeRange}`;
-        console.log(`Forwarding to versioned endpoint: ${versionedUrl}`);
-        
-        // This implementation reuses the versioned endpoint
-        const response = await fetch(`http://localhost:${process.env.PORT || 3000}${versionedUrl}`, {
-          headers: {
-            'Cookie': req.headers.cookie || '',
-            'Authorization': req.headers.authorization || ''
-          }
-        });
-        
-        const data = await response.json();
-        return res.status(response.status).json(data);
-      } catch (error) {
-        console.error("Error in legacy analytics endpoint:", error);
-        return res.status(500).json({ message: "Error generating analytics data" });
-      }
     }
   );
 
-  // Debug deals endpoint
-  app.get(
-    "/api/admin/debug/deals",
+  app.put(lUpdateBusinessPath,
+    [versionHeadersMiddleware(), deprecationMiddleware],
     authenticate,
-    authorize(["admin"]),
-    async (_req: Request, res: Response) => {
+    authorize(['admin']),
+    async (req: Request, res: Response) => {
       try {
-        console.log("DEBUG ENDPOINT: Accessing /admin/debug/deals");
-        // Get all deals
-        const allDeals = await storage.getDeals();
+        const businessId = parseInt(req.params.id);
+        if (isNaN(businessId)) {
+          return res.status(400).json({ error: "Invalid business ID" });
+        }
 
-        // Group them by status
-        const dealsByStatus: Record<string, any[]> = {};
+        const updateData = req.body.data || req.body;
+        
+        // Validate required fields
+        if (!updateData.businessName || !updateData.businessCategory) {
+          return res.status(400).json({ error: "Business name and category are required" });
+        }
 
-        // Initialize with empty arrays for common statuses
-        dealsByStatus.pending = [];
-        dealsByStatus.active = [];
-        dealsByStatus.rejected = [];
-        dealsByStatus.expired = [];
-        dealsByStatus.pending_revision = [];
+        const updatedBusiness = await storage.updateBusiness(businessId, updateData);
+        if (!updatedBusiness) {
+          return res.status(404).json({ error: "Business not found" });
+        }
 
-        // Categorize deals by status
-        allDeals.forEach((deal) => {
-          const status = deal.status || "unknown";
-          if (!dealsByStatus[status]) {
-            dealsByStatus[status] = [];
-          }
-          dealsByStatus[status].push(deal);
-        });
+        // Get user data for the business
+        const user = await storage.getUser(updatedBusiness.userId);
+        if (!user) {
+          return res.status(404).json({ error: "Business owner not found" });
+        }
 
-        // Get statuses distribution
-        const statusCounts: Record<string, number> = {};
-        Object.keys(dealsByStatus).forEach((status) => {
-          statusCounts[status] = dealsByStatus[status].length;
-        });
+        // Filter out sensitive data
+        const { password, ...userData } = user;
 
         return res.status(200).json({
-          totalDeals: allDeals.length,
-          statusCounts,
-          dealsByStatus: Object.keys(dealsByStatus).reduce(
-            (acc, status) => {
-              acc[status] = sanitizeDeals(ensureArray(dealsByStatus[status]));
-              return acc;
-            },
-            {} as Record<string, any[]>,
-          ),
+          ...updatedBusiness,
+          user: userData
         });
-      } catch (error) {
-        console.error("Error in debug endpoint:", error);
-        return res
-          .status(500)
-          .json({ message: "Error in debug endpoint", error: String(error) });
+      } catch (err) {
+        console.error("Admin Business Update Error (legacy):", err);
+        return res.status(500).json({ error: "Unable to update business." });
       }
-    },
+    }
   );
 
-  // Deal approval routes
-  app.put(
-    "/api/deal-approvals/:id",
-    authenticate,
-    authorize(["admin"]),
+  // Update deal approval (versioned and legacy routes)
+  const [vUpdateDealApprovalPath, lUpdateDealApprovalPath] = createVersionedRoutes('/deal-approvals/:id');
+  
+  app.put(vUpdateDealApprovalPath, 
+    versionHeadersMiddleware(),
+    authenticate, 
+    authorize(['admin']),
+    validate(adminSchemas.updateDealApproval),
     async (req: Request, res: Response) => {
       try {
         const approvalId = parseInt(req.params.id);
         const { status, feedback } = req.body;
-
-        if (
-          !status ||
-          !["approved", "rejected", "pending_revision"].includes(status)
-        ) {
-          return res.status(400).json({ message: "Invalid status" });
-        }
-
-        // Add reviewer ID from authenticated user
-        const reviewerId = req.user?.userId;
-
-        const approval = await storage.updateDealApproval(
-          approvalId,
-          {
-            status,
-            reviewerId,
-            feedback,
-            reviewedAt: new Date()
-          }
-        );
-
-        // If deal is approved, update the deal status as well
-        if (status === "approved") {
-          await storage.updateDealStatus(approval.dealId, "active");
-        } else if (status === "rejected") {
-          await storage.updateDealStatus(approval.dealId, "rejected");
-        } else if (status === "pending_revision") {
-          await storage.updateDealStatus(approval.dealId, "pending_revision");
-        }
-
-        // Get all deals to find the updated one
-        const allDeals = await storage.getDeals();
-        const updatedDeal = allDeals.find(
-          (deal) => deal.id === approval.dealId,
-        );
-        const sanitizedDeal = updatedDeal ? sanitizeDeal(updatedDeal) : null;
-
-        return res.status(200).json({
-          approval,
-          deal: sanitizedDeal,
-        });
+        const reviewerId = req.user!.userId;
+        
+        const approval = await storage.updateDealApproval(approvalId, status);
+        
+        return res.status(200).json(approval);
       } catch (error) {
-        console.error("Error updating approval:", error);
-        return res.status(500).json({ message: "Error updating approval" });
+        console.error("Update deal approval error:", error);
+        return res.status(500).json({ message: "Internal server error" });
       }
-    },
+    }
   );
 
-  // Get deals by status
-  app.get(
-    "/api/deals/status/:status",
+  app.put(lUpdateDealApprovalPath, 
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate, 
+    authorize(['admin']),
+    validate(adminSchemas.updateDealApproval),
+    async (req: Request, res: Response) => {
+      try {
+        const approvalId = parseInt(req.params.id);
+        const { status, feedback } = req.body;
+        const reviewerId = req.user!.userId;
+        
+        const approval = await storage.updateDealApproval(approvalId, status);
+        
+        return res.status(200).json(approval);
+      } catch (error) {
+        console.error("Update deal approval error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
+  // Test endpoint to verify route registration
+  app.get('/api/v1/admin/test-deals',
+    versionHeadersMiddleware(),
     authenticate,
-    authorize(["admin", "business"]),
+    authorize(['admin']),
+    async (_req: Request, res: Response) => {
+      console.log("TEST DEALS ENDPOINT: Successfully reached");
+      return res.status(200).json({ message: "Test endpoint working", deals: [] });
+    }
+  );
+
+  // Get all deals (versioned and legacy routes)
+  const [vDealsPath, lDealsPath] = createVersionedRoutes('/admin/deals');
+  
+  app.get(vDealsPath,
+    versionHeadersMiddleware(),
+    authenticate,
+    authorize(['admin']),
+    async (_req: Request, res: Response) => {
+      try {
+        console.log("ADMIN DEALS ENDPOINT: Processing GET /api/v1/admin/deals");
+        const deals = await storage.getDeals();
+        console.log(`ADMIN DEALS ENDPOINT: Found ${deals.length} deals`);
+        
+        // Get business info for each deal
+        const dealsWithBusiness = await Promise.all(
+          deals.map(async (deal) => {
+            const business = await storage.getBusiness(deal.businessId);
+            return {
+              ...deal,
+              business: business ? {
+                id: business.id,
+                businessName: business.businessName,
+                businessCategory: business.businessCategory
+              } : null
+            };
+          })
+        );
+        
+        console.log("ADMIN DEALS ENDPOINT: Returning JSON response");
+        return res.status(200).json(dealsWithBusiness);
+      } catch (error) {
+        console.error("Get admin deals error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
+  app.get(lDealsPath,
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate,
+    authorize(['admin']),
+    async (_req: Request, res: Response) => {
+      try {
+        const deals = await storage.getDeals();
+        
+        // Get business info for each deal
+        const dealsWithBusiness = await Promise.all(
+          deals.map(async (deal) => {
+            const business = await storage.getBusiness(deal.businessId);
+            return {
+              ...deal,
+              business: business ? {
+                id: business.id,
+                businessName: business.businessName,
+                businessCategory: business.businessCategory
+              } : null
+            };
+          })
+        );
+        
+        return res.status(200).json(dealsWithBusiness);
+      } catch (error) {
+        console.error("Get admin deals error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
+  // Get all transactions/redemptions (versioned and legacy routes)
+  const [vTransactionsPath, lTransactionsPath] = createVersionedRoutes('/admin/transactions');
+  
+  app.get(vTransactionsPath,
+    versionHeadersMiddleware(),
+    authenticate,
+    authorize(['admin']),
+    async (_req: Request, res: Response) => {
+      try {
+        const redemptions = await storage.getAllRedemptions();
+        
+        // Map redemptions to transaction format for dashboard
+        const transactions = redemptions.map((redemption: any) => ({
+          id: redemption.id,
+          userId: redemption.userId,
+          dealId: redemption.dealId,
+          status: redemption.status,
+          redeemedAt: redemption.redeemedAt,
+          type: 'redemption'
+        }));
+        
+        return res.status(200).json(transactions);
+      } catch (error) {
+        console.error("Get transactions error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
+  app.get(lTransactionsPath,
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate,
+    authorize(['admin']),
+    async (_req: Request, res: Response) => {
+      try {
+        const redemptions = await storage.getAllRedemptions();
+        
+        // Map redemptions to transaction format for dashboard
+        const transactions = redemptions.map((redemption: any) => ({
+          id: redemption.id,
+          userId: redemption.userId,
+          dealId: redemption.dealId,
+          status: redemption.status,
+          redeemedAt: redemption.redeemedAt,
+          type: 'redemption'
+        }));
+        
+        return res.status(200).json(transactions);
+      } catch (error) {
+        console.error("Get transactions error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
+  // Get deals by status (versioned and legacy routes)
+  const [vDealsByStatusPath, lDealsByStatusPath] = createVersionedRoutes('/deals/status/:status');
+  
+  // Add debug route to see all deals in the database with their statuses
+  app.get('/api/v1/admin/debug/deals', 
+    authenticate, 
+    authorize(['admin']),
+    async (_req: Request, res: Response) => {
+      try {
+        const allDeals = await storage.getDeals();
+        
+        // Log detailed info about each deal and its status
+        console.log("All deals in database:");
+        allDeals.forEach(deal => {
+          console.log(`Deal ID: ${deal.id}, Title: ${deal.title}, Status: ${deal.status}, Business: ${deal.business?.businessName || 'Unknown'}`);
+        });
+        
+        // Group deals by status for easier analysis
+        const dealsByStatus = {
+          pending: allDeals.filter(d => d.status === 'pending'),
+          active: allDeals.filter(d => d.status === 'active'),
+          rejected: allDeals.filter(d => d.status === 'rejected'),
+          expired: allDeals.filter(d => d.status === 'expired'),
+          pending_revision: allDeals.filter(d => d.status === 'pending_revision'),
+          other: allDeals.filter(d => !['pending', 'active', 'rejected', 'expired', 'pending_revision'].includes(d.status))
+        };
+        
+        // Log counts by status
+        Object.entries(dealsByStatus).forEach(([status, deals]) => {
+          console.log(`Status "${status}": ${deals.length} deals`);
+        });
+        
+        return res.status(200).json({
+          totalDeals: allDeals.length,
+          dealCounts: {
+            pending: dealsByStatus.pending.length,
+            active: dealsByStatus.active.length,
+            rejected: dealsByStatus.rejected.length,
+            expired: dealsByStatus.expired.length,
+            pending_revision: dealsByStatus.pending_revision.length,
+            other: dealsByStatus.other.length
+          },
+          dealsByStatus
+        });
+      } catch (error) {
+        console.error("Debug route error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+  
+  app.get(vDealsByStatusPath, 
+    versionHeadersMiddleware(),
+    authenticate, 
+    authorize(['admin', 'business']),
     async (req: Request, res: Response) => {
       try {
         const status = req.params.status;
-
-        if (
-          ![
-            "pending",
-            "active",
-            "expired",
-            "rejected",
-            "pending_revision",
-          ].includes(status)
-        ) {
-          return res.status(400).json({ message: "Invalid status" });
-        }
-
+        console.log(`DEBUG: Getting deals with status "${status}" (versioned route)`);
+        
+        // Debug: Get all deals directly for comparison
+        const debug = await storage.getDeals();
+        const pendingCount = debug.filter(d => d.status === "pending").length;
+        const activeCount = debug.filter(d => d.status === "active").length;
+        console.log(`DEBUG: All deals: ${debug.length}, Pending: ${pendingCount}, Active: ${activeCount}`);
+        
         const deals = await storage.getDealsByStatus(status);
-        console.log(`Found ${deals.length} deals with status "${status}"`);
-
-        let resultDeals;
-        // If business user, filter deals to only show their own
-        if (req.user?.userType === "business") {
-          const business = await storage.getBusinessByUserId(req.user.userId);
-          if (!business) {
-            return res.status(404).json({ message: "Business not found" });
-          }
-
-          const filteredDeals = deals.filter(
-            (deal) => deal.business?.id === business.id,
-          );
-          resultDeals = sanitizeDeals(ensureArray(filteredDeals));
-        } else {
-          resultDeals = sanitizeDeals(ensureArray(deals));
-        }
-
-        return res.status(200).json(resultDeals);
-      } catch (error) {
-        console.error("Error fetching deals by status:", error);
-        return res.status(500).json({ message: "Error fetching deals" });
-      }
-    },
-  );
-
-  // Update deal status with feedback
-  app.put(
-    "/api/deals/:id/status",
-    authenticate,
-    authorize(["admin"]),
-    async (req: Request, res: Response) => {
-      try {
-        const dealId = parseInt(req.params.id);
-        const { status, feedback } = req.body;
-
-        if (
-          !status ||
-          ![
-            "pending",
-            "active",
-            "approved", // Allow both "active" and "approved" for consistency
-            "expired",
-            "rejected",
-            "pending_revision",
-          ].includes(status)
-        ) {
-          return res.status(400).json({ message: "Invalid status" });
-        }
+        console.log(`DEBUG: Returned deals with status "${status}": ${deals.length}`);
         
-        console.log(`Updating deal ${dealId} status to ${status} with feedback: ${feedback || "none"}`);
-        
-        // Map "approved" to "active" in the database status
-        const dbStatus = status === "approved" ? "active" : status;
-        
-        // 1. Update the deal status
-        const deal = await storage.updateDealStatus(dealId, dbStatus);
-        
-        // 2. Update the deal approval record with feedback
-        if (feedback || status === "rejected" || status === "pending_revision") {
-          try {
-            // Get the most recent deal approval
-            const approval = await storage.getDealApproval(dealId);
-            
-            if (approval) {
-              // Update the approval record
-              await storage.updateDealApproval(approval.id, {
-                reviewerId: req.user?.userId,
-                status: dbStatus,
-                feedback: feedback || null,
-                reviewedAt: new Date()
-              });
-              console.log(`Updated deal approval record ${approval.id} with feedback`);
-            } else {
-              // Create a new approval record if none exists
-              await storage.createDealApproval({
-                dealId: dealId,
-                submitterId: deal.businessId // Use business ID as submitter
-              });
-              console.log(`Created new deal approval record with feedback`);
-            }
-          } catch (approvalError) {
-            console.error("Error updating deal approval:", approvalError);
-            // Continue even if approval update fails - the deal status is more important
+        if (deals.length === 0) {
+          // Try querying storage directly to check case sensitivity or whitespace issues
+          const allDeals = await storage.getDeals();
+          const matchingDeals = allDeals.filter(d => d.status.toLowerCase().trim() === status.toLowerCase().trim());
+          console.log(`DEBUG: Direct filter found ${matchingDeals.length} deals with status "${status}" (case insensitive)`);
+          
+          if (matchingDeals.length > 0) {
+            console.log(`DEBUG: Status values in database: ${matchingDeals.map(d => `"${d.status}"`).join(', ')}`);
+            return res.status(200).json(matchingDeals);
           }
         }
         
-        const sanitizedDeal = sanitizeDeal(deal);
-        return res.status(200).json(sanitizedDeal);
+        return res.status(200).json(deals);
       } catch (error) {
-        console.error("Error updating deal status:", error);
-        return res.status(500).json({ message: "Error updating deal status" });
+        console.error("Get deals by status error:", error);
+        return res.status(500).json({ message: "Internal server error" });
       }
-    },
+    }
   );
 
-  // Toggle featured status for a deal (admin only)
-  app.put(
-    "/api/deals/:id/featured",
-    authenticate,
-    authorize(["admin"]),
+  app.get(lDealsByStatusPath, 
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate, 
+    authorize(['admin', 'business']),
+    async (req: Request, res: Response) => {
+      try {
+        const status = req.params.status;
+        console.log(`DEBUG: Getting deals with status "${status}" (legacy route)`);
+        
+        // Debug: Get all deals directly for comparison
+        const debug = await storage.getDeals();
+        const pendingCount = debug.filter(d => d.status === "pending").length;
+        const activeCount = debug.filter(d => d.status === "active").length;
+        console.log(`DEBUG: All deals: ${debug.length}, Pending: ${pendingCount}, Active: ${activeCount}`);
+        
+        const deals = await storage.getDealsByStatus(status);
+        console.log(`DEBUG: Returned deals with status "${status}": ${deals.length}`);
+        
+        return res.status(200).json(deals);
+      } catch (error) {
+        console.error("Get deals by status error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
+  // Update deal status (versioned and legacy routes)
+  const [vUpdateDealStatusPath, lUpdateDealStatusPath] = createVersionedRoutes('/deals/:id/status');
+  
+  app.put(vUpdateDealStatusPath, 
+    versionHeadersMiddleware(),
+    authenticate, 
+    authorize(['admin']),
+    validate(adminSchemas.updateDealStatus),
     async (req: Request, res: Response) => {
       try {
         const dealId = parseInt(req.params.id);
-        const { featured } = req.body;
-
-        if (typeof featured !== "boolean") {
-          return res
-            .status(400)
-            .json({ message: "Featured status must be a boolean value" });
-        }
-
-        // Note: Featured status handled separately in storage layer
-        const deal = await storage.getDeal(dealId);
-        const sanitizedDeal = sanitizeDeal(deal);
-        return res.status(200).json(sanitizedDeal);
+        const { status } = req.body;
+        
+        const deal = await storage.updateDealStatus(dealId, status);
+        
+        return res.status(200).json(deal);
       } catch (error) {
-        console.error("Error updating deal featured status:", error);
-        return res
-          .status(500)
-          .json({ message: "Error updating deal featured status" });
+        console.error("Update deal status error:", error);
+        return res.status(500).json({ message: "Internal server error" });
       }
-    },
+    }
   );
 
-  // Create versioned route paths for admin deals
-  const [vAdminDealsPath, lAdminDealsPath] = createVersionedRoutes("/admin/deals");
+  app.put(lUpdateDealStatusPath, 
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate, 
+    authorize(['admin']),
+    validate(adminSchemas.updateDealStatus),
+    async (req: Request, res: Response) => {
+      try {
+        const dealId = parseInt(req.params.id);
+        const { status } = req.body;
+        
+        const deal = await storage.updateDealStatus(dealId, status);
+        
+        return res.status(200).json(deal);
+      } catch (error) {
+        console.error("Update deal status error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
 
-  // Admin create deal - versioned route
-  app.post(
-    vAdminDealsPath,
+  // Delete business (versioned and legacy routes)
+  const [vDeleteBusinessPath, lDeleteBusinessPath] = createVersionedRoutes('/admin/businesses/:id');
+  
+  app.delete(vDeleteBusinessPath,
     versionHeadersMiddleware(),
     authenticate,
-    authorize(["admin"]),
+    authorize(['admin']),
     verifyCsrf,
     async (req: Request, res: Response) => {
       try {
-        const dealData = req.body;
-        
-        console.log("Admin creating deal:", dealData);
-        
-        // Validate deal data
-        try {
-          // Use the API deal schema
-          apiDealSchema.parse(dealData);
-        } catch (validationError) {
-          console.error("Deal validation error:", validationError);
-          return res.status(400).json({ 
-            message: "Validation error", 
-            errors: validationError instanceof Error ? validationError.message : "Unknown validation error" 
-          });
+        const businessId = parseInt(req.params.id);
+        if (isNaN(businessId)) {
+          return res.status(400).json({ error: "Invalid business ID" });
         }
 
-        // Handle special case for manual vendor entry
-        if (dealData.businessId === -1 && dealData.otherBusinessName) {
-          // Create a temporary business for this deal
-          console.log(`Creating temporary business: ${dealData.otherBusinessName}`);
-          const tempBusiness = await storage.createTempBusiness({
-            businessName: dealData.otherBusinessName,
-            userId: req.user!.userId, // Assign to admin user
-            businessCategory: dealData.category || "Other",
-          });
-          
-          // Update the deal with the new business ID
-          dealData.businessId = tempBusiness.id;
+        // Check if business exists first
+        const business = await storage.getBusiness(businessId);
+        if (!business) {
+          return res.status(404).json({ error: "Business not found" });
         }
-        
-        // Set initial status to active for admin-created deals
-        dealData.status = 'active';
-        
-        // Create the deal
-        const deal = await storage.createDeal(dealData);
-        
-        // No need to create approval record since admin-created deals are automatically approved
-        
-        console.log("Admin created deal successfully:", deal.id);
-        return res.status(201).json(deal);
-      } catch (error) {
-        console.error("Error admin creating deal:", error);
-        if (error instanceof Error) {
-          return res.status(400).json({ message: error.message });
+
+        // Delete the business (this should cascade and delete all related data)
+        const success = await storage.deleteBusiness(businessId);
+        if (!success) {
+          return res.status(500).json({ error: "Failed to delete business" });
         }
-        return res.status(500).json({ message: "Internal server error" });
+
+        return res.status(200).json({ 
+          ok: true,
+          deletedId: businessId,
+          message: "Business deleted successfully",
+          deletedBusinessName: business.businessName
+        });
+      } catch (err) {
+        console.error("Admin Business Delete Error:", err);
+        return res.status(500).json({ error: "Unable to delete business." });
       }
     }
   );
 
-  // Admin create deal - legacy route
-  app.post(
-    lAdminDealsPath,
+  app.delete(lDeleteBusinessPath,
+    [versionHeadersMiddleware(), deprecationMiddleware],
     authenticate,
-    authorize(["admin"]),
+    authorize(['admin']),
     verifyCsrf,
     async (req: Request, res: Response) => {
       try {
-        const dealData = req.body;
-        
-        console.log("Admin creating deal (legacy):", dealData);
-        
-        // Validate deal data
-        try {
-          // Use the API deal schema
-          apiDealSchema.parse(dealData);
-        } catch (validationError) {
-          console.error("Deal validation error:", validationError);
-          return res.status(400).json({ 
-            message: "Validation error", 
-            errors: validationError instanceof Error ? validationError.message : "Unknown validation error" 
-          });
+        const businessId = parseInt(req.params.id);
+        if (isNaN(businessId)) {
+          return res.status(400).json({ error: "Invalid business ID" });
         }
 
-        // Handle special case for manual vendor entry
-        if (dealData.businessId === -1 && dealData.otherBusinessName) {
-          // Create a temporary business for this deal
-          console.log(`Creating temporary business: ${dealData.otherBusinessName}`);
-          const tempBusiness = await storage.createTempBusiness({
-            businessName: dealData.otherBusinessName,
-            userId: req.user!.userId, // Assign to admin user
-            businessCategory: dealData.category || "Other",
-            
-          });
-          
-          // Update the deal with the new business ID
-          dealData.businessId = tempBusiness.id;
+        // Check if business exists first
+        const business = await storage.getBusiness(businessId);
+        if (!business) {
+          return res.status(404).json({ error: "Business not found" });
         }
-        
-        // Set initial status to active for admin-created deals
-        dealData.status = 'active';
-        
-        // Create the deal
-        const deal = await storage.createDeal(dealData);
-        
-        // No need to create approval record since admin-created deals are automatically approved
-        
-        console.log("Admin created deal successfully:", deal.id);
-        return res.status(201).json(deal);
-      } catch (error) {
-        console.error("Error admin creating deal:", error);
-        if (error instanceof Error) {
-          return res.status(400).json({ message: error.message });
+
+        // Delete the business (this should cascade and delete all related data)
+        const success = await storage.deleteBusiness(businessId);
+        if (!success) {
+          return res.status(500).json({ error: "Failed to delete business" });
         }
-        return res.status(500).json({ message: "Internal server error" });
+
+        return res.status(200).json({ 
+          ok: true,
+          deletedId: businessId,
+          message: "Business deleted successfully",
+          deletedBusinessName: business.businessName
+        });
+      } catch (err) {
+        console.error("Admin Business Delete Error (legacy):", err);
+        return res.status(500).json({ error: "Unable to delete business." });
       }
     }
   );
+}
+// Supabase-based admin handlers
+/**
+ * Get all users with their business information
+ */
+export async function getAllUsers(req: Request, res: Response) {
+  try {
+    console.log("Fetching all users with businesses from unified system");
+    
+    // Get users from our PostgreSQL profiles table with businesses
+    const users = await getAllUsersWithBusinesses();
+    
+    // Also get Supabase Auth users for comparison/sync
+    const { data: supabaseUsers, error: supabaseError } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (supabaseError) {
+      console.warn("Failed to fetch Supabase users:", supabaseError);
+    }
+
+    console.log(`Found ${users.length} users in profiles table`);
+    console.log(`Found ${supabaseUsers?.users?.length || 0} users in Supabase Auth`);
+    
+    // Map to admin dashboard format
+    const formattedUsers = users.map(user => ({
+      id: user.id,
+      email: user.email,
+      firstName: user.first_name || '',
+      lastName: user.last_name || '',
+      userType: user.user_type,
+      phoneVerified: user.phone_verified,
+      marketingConsent: user.marketing_consent || false,
+      createdAt: user.created_at,
+      // Include business info if available
+      businessName: user.business?.business_name || null,
+      businessCategory: user.business?.business_category || null,
+      verificationStatus: user.business?.verification_status || null
+    }));
+
+    return res.status(200).json({
+      users: formattedUsers,
+      totalUsers: users.length,
+      supabaseUsers: supabaseUsers?.users?.length || 0,
+      syncStatus: {
+        profilesCount: users.length,
+        supabaseCount: supabaseUsers?.users?.length || 0,
+        synced: users.filter(u => u.supabase_user_id).length
+      }
+    });
+
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    return res.status(500).json({ 
+      message: "Failed to fetch users",
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+}
+
+/**
+ * Get pending businesses for approval
+ */
+export async function getPendingVendors(req: Request, res: Response) {
+  try {
+    console.log("Fetching pending businesses for approval");
+    
+    const pendingBusinesses = await getPendingBusinesses();
+    
+    console.log(`Found ${pendingBusinesses.length} pending businesses`);
+    
+    // Map to admin dashboard format
+    const formattedPendingVendors = pendingBusinesses.map(user => ({
+      id: user.id,
+      email: user.email,
+      firstName: user.first_name || '',
+      lastName: user.last_name || '',
+      businessName: user.business?.business_name || '',
+      businessCategory: user.business?.business_category || '',
+      verificationStatus: user.business?.verification_status || 'pending',
+      createdAt: user.created_at,
+      businessId: user.business?.id,
+      documents: {
+        governmentId: user.business?.government_id,
+        proofOfAddress: user.business?.proof_of_address,
+        proofOfBusiness: user.business?.proof_of_business
+      }
+    }));
+
+    return res.status(200).json({
+      pendingVendors: formattedPendingVendors,
+      totalPending: pendingBusinesses.length
+    });
+
+  } catch (error) {
+    console.error("Error fetching pending vendors:", error);
+    return res.status(500).json({ 
+      message: "Failed to fetch pending vendors",
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+}
+
+/**
+ * Approve or reject a business
+ */
+export async function updateBusinessStatus(req: Request, res: Response) {
+  try {
+    const { businessId } = req.params;
+    const { status, feedback } = req.body;
+    
+    if (!businessId || !status) {
+      return res.status(400).json({ message: "Business ID and status are required" });
+    }
+    
+    if (!['verified', 'rejected'].includes(status)) {
+      return res.status(400).json({ message: "Status must be 'verified' or 'rejected'" });
+    }
+    
+    console.log(`Updating business ${businessId} status to ${status}`);
+    
+    const updatedBusiness = await updateBusiness(parseInt(businessId), {
+      verification_status: status
+    });
+    
+    console.log(`Business ${businessId} status updated successfully`);
+    
+    return res.status(200).json({
+      message: `Business ${status} successfully`,
+      business: updatedBusiness
+    });
+
+  } catch (error) {
+    console.error("Error updating business status:", error);
+    return res.status(500).json({ 
+      message: "Failed to update business status",
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+}
+
+/**
+ * Get admin dashboard statistics
+ */
+export async function getDashboardStats(req: Request, res: Response) {
+  try {
+    console.log("Fetching admin dashboard statistics");
+    
+    // Get all users and businesses
+    const allUsers = await getAllUsersWithBusinesses();
+    const pendingBusinesses = await getPendingBusinesses();
+    
+    // Calculate statistics
+    const totalUsers = allUsers.length;
+    const individualUsers = allUsers.filter(u => u.user_type === 'individual').length;
+    const businessUsers = allUsers.filter(u => u.user_type === 'business').length;
+    const verifiedBusinesses = allUsers.filter(u => u.business?.verification_status === 'verified').length;
+    const pendingBusinessesCount = pendingBusinesses.length;
+    const rejectedBusinesses = allUsers.filter(u => u.business?.verification_status === 'rejected').length;
+    
+    // Get Supabase sync status
+    const { data: supabaseUsers, error: supabaseError } = await supabaseAdmin.auth.admin.listUsers();
+    const supabaseUserCount = supabaseUsers?.users?.length || 0;
+    const syncedUsers = allUsers.filter(u => u.supabase_user_id).length;
+
+    return res.status(200).json({
+      totalUsers,
+      individualUsers,
+      businessUsers,
+      verifiedBusinesses,
+      pendingBusinesses: pendingBusinessesCount,
+      rejectedBusinesses,
+      syncStatus: {
+        supabaseUsers: supabaseUserCount,
+        profileUsers: totalUsers,
+        syncedUsers,
+        syncPercentage: totalUsers > 0 ? Math.round((syncedUsers / totalUsers) * 100) : 0
+      }
+    });
+
+  } catch (error) {
+    console.error("Error fetching dashboard stats:", error);
+    return res.status(500).json({ 
+      message: "Failed to fetch dashboard statistics",
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
 }
