@@ -64,6 +64,7 @@ interface Business {
   appliedDate: string;
   status: "new" | "in_review" | "approved" | "rejected";
   verificationStatus: string;
+  verificationFeedback?: string;
   email: string;
   phone: string;
   address: string;
@@ -124,6 +125,7 @@ export default function VendorDetailPage() {
           appliedDate: response.applied_date || response.created_at || new Date().toISOString(),
           status: response.status || "new",
           verificationStatus: response.verification_status || "pending",
+          verificationFeedback: response.verification_feedback || "",
           email: response.email || "",
           phone: response.phone || "",
           address: response.address || "",
@@ -169,6 +171,7 @@ export default function VendorDetailPage() {
           appliedDate: new Date().toISOString(),
           status: "new",
           verificationStatus: "pending",
+          verificationFeedback: "",
           email: "vendor@test.com",
           phone: "(555) 123-4567",
           address: "123 Main St, Anytown USA",
@@ -235,11 +238,12 @@ export default function VendorDetailPage() {
         title: "Success",
         description: `Vendor ${status === "approved" ? "approved" : "rejected"} successfully`
       });
-      
+
       // Update local state
       setBusiness({
         ...business,
-        verificationStatus: status
+        verificationStatus: status,
+        verificationFeedback: feedbackText
       });
       setApprovalStatus(status);
       
@@ -458,13 +462,21 @@ export default function VendorDetailPage() {
                   : "Pending Approval"}
               </h3>
               <p className="text-sm text-muted-foreground text-center">
-                {business.verificationStatus === "approved" 
-                  ? "This vendor has been verified and can create deals." 
+                {business.verificationStatus === "approved"
+                  ? "This vendor has been verified and can create deals."
                   : business.verificationStatus === "rejected"
                   ? "This vendor has been rejected and cannot create deals."
                   : "This vendor is waiting for verification."}
               </p>
             </div>
+
+            {business.verificationFeedback && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Verification Feedback</AlertTitle>
+                <AlertDescription>{business.verificationFeedback}</AlertDescription>
+              </Alert>
+            )}
 
             <Separator />
 

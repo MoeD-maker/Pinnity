@@ -230,8 +230,11 @@ export function businessRoutes(app: Express): void {
         }
         
         const updatedBusiness = await storage.updateBusinessVerificationStatus(businessId, status, feedback);
-        
-        return res.status(200).json(updatedBusiness);
+
+        return res.status(200).json({
+          ...updatedBusiness,
+          verificationFeedback: updatedBusiness.verificationFeedback,
+        });
       } catch (error) {
         console.error("Update business verification error:", error);
         return res.status(500).json({ message: "Internal server error" });
@@ -261,8 +264,11 @@ export function businessRoutes(app: Express): void {
         }
         
         const updatedBusiness = await storage.updateBusinessVerificationStatus(businessId, status, feedback);
-        
-        return res.status(200).json(updatedBusiness);
+
+        return res.status(200).json({
+          ...updatedBusiness,
+          verificationFeedback: updatedBusiness.verificationFeedback,
+        });
       } catch (error) {
         console.error("Update business verification error (legacy):", error);
         return res.status(500).json({ message: "Internal server error" });

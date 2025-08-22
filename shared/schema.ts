@@ -46,6 +46,7 @@ export const businesses = pgTable("businesses", {
   proofOfAddress: text("proof_of_address").notNull(), // File path/reference
   proofOfBusiness: text("proof_of_business").notNull(), // File path/reference
   verificationStatus: text("verification_status").notNull().default("pending"), // "pending", "verified", "rejected"
+  verificationFeedback: text("verification_feedback"),
   description: text("description"),
   address: text("address"),
   latitude: doublePrecision("latitude"),
