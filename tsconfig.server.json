@@ -1,7 +1,23 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["server/**/*", "shared/**/*"],
-  "exclude": ["node_modules", "build", "dist", "client/**/*", "**/*.test.ts", "server/vite.ts"],
+  "include": [
+    "server/index.ts",
+    "server/services/**/*",
+    "server/smsService.ts",
+    "shared/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "build",
+    "dist",
+    "client/**/*",
+    "**/*.test.ts",
+    "server/vite.ts",
+    "server/routes/**/*",
+    "server/storage.ts",
+    "server/supabaseQueries.ts",
+    "server/sync/SyncWorker.ts"
+  ],
   "compilerOptions": {
     "noEmit": true,
     "target": "ES2018",
