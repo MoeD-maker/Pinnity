@@ -31,8 +31,7 @@ interface Business {
   businessName: string;
   businessCategory: string;
   appliedDate: string;
-  status: "new" | "in_review" | "approved" | "rejected";
-  verificationStatus: string;
+  verificationStatus: "pending" | "verified" | "rejected";
   verificationFeedback?: string;
   email: string;
   phone: string;
@@ -48,7 +47,7 @@ interface Business {
 
 interface BusinessReviewPanelProps {
   business: Business;
-  onStatusChange?: (status: string, feedback?: string) => void;
+  onStatusChange?: (status: "pending" | "verified" | "rejected", feedback?: string) => void;
 }
 
 export default function BusinessReviewPanel({ business, onStatusChange }: BusinessReviewPanelProps) {
@@ -68,7 +67,7 @@ export default function BusinessReviewPanel({ business, onStatusChange }: Busine
     onSuccess: () => {
       // Call the parent callback
       if (onStatusChange) {
-        onStatusChange("approved", feedbackMessage);
+        onStatusChange("verified", feedbackMessage);
       }
       
       // Close dialog and reset form
@@ -110,7 +109,7 @@ export default function BusinessReviewPanel({ business, onStatusChange }: Busine
     onSuccess: () => {
       // Call the parent callback
       if (onStatusChange) {
-        onStatusChange("in_review", feedbackMessage);
+        onStatusChange("pending", feedbackMessage);
       }
       
       // Close dialog and reset form
@@ -153,12 +152,10 @@ export default function BusinessReviewPanel({ business, onStatusChange }: Busine
   // Status badge helper
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "new":
-        return <Badge variant="outline" className="flex items-center gap-1 bg-yellow-50 text-yellow-700 border-yellow-200"><Clock className="h-3 w-3" /> New</Badge>;
-      case "in_review":
-        return <Badge variant="outline" className="flex items-center gap-1 bg-blue-50 text-blue-700 border-blue-200"><Clock className="h-3 w-3" /> In Review</Badge>;
-      case "approved":
-        return <Badge variant="outline" className="flex items-center gap-1 bg-green-50 text-green-700 border-green-200"><CheckCircle className="h-3 w-3" /> Approved</Badge>;
+      case "pending":
+        return <Badge variant="outline" className="flex items-center gap-1 bg-yellow-50 text-yellow-700 border-yellow-200"><Clock className="h-3 w-3" /> Pending</Badge>;
+      case "verified":
+        return <Badge variant="outline" className="flex items-center gap-1 bg-green-50 text-green-700 border-green-200"><CheckCircle className="h-3 w-3" /> Verified</Badge>;
       case "rejected":
         return <Badge variant="outline" className="flex items-center gap-1 bg-red-50 text-red-700 border-red-200"><XCircle className="h-3 w-3" /> Rejected</Badge>;
       default:
@@ -186,7 +183,7 @@ export default function BusinessReviewPanel({ business, onStatusChange }: Busine
             <div className="flex flex-col space-y-1">
               <div className="text-sm font-medium">Status</div>
               <div>
-                {getStatusBadge(business.status)}
+                {getStatusBadge(business.verificationStatus)}
               </div>
             </div>
             
@@ -296,7 +293,7 @@ export default function BusinessReviewPanel({ business, onStatusChange }: Busine
                     <div className="text-xs text-muted-foreground">{formatDate(business.appliedDate)}</div>
                   </div>
                 </div>
-                {business.status === "in_review" && (
+                {business.verificationStatus === "pending" && (
                   <div className="flex items-center gap-2 py-2">
                     <ClipboardList className="h-4 w-4 text-muted-foreground" />
                     <div>
@@ -311,7 +308,7 @@ export default function BusinessReviewPanel({ business, onStatusChange }: Busine
             </div>
           </div>
         </CardContent>
-        {(business.status === "new" || business.status === "in_review") && (
+        {business.verificationStatus === "pending" && (
           <CardFooter className="flex flex-col sm:flex-row gap-3 border-t pt-6">
             <Button 
               variant="outline" 
@@ -356,9 +353,9 @@ export default function BusinessReviewPanel({ business, onStatusChange }: Busine
               <div className="rounded-md bg-green-50 text-green-700 p-4 flex items-start gap-3">
                 <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h3 className="font-medium">Approval Confirmation</h3>
+                  <h3 className="font-medium">Verification Confirmation</h3>
                   <p className="text-sm">
-                    Please ensure all verification documents have been reviewed and approved 
+                    Please ensure all verification documents have been reviewed and verified
                     before approving this business.
                   </p>
                 </div>

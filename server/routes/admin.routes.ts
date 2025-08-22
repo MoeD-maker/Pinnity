@@ -186,9 +186,8 @@ export function adminRoutes(app: Express): void {
       console.log(`DASHBOARD: Business verification statuses in system: ${Array.from(verificationStatuses).join(', ')}`);
       
       // Filter pending vendors (businesses awaiting verification)
-      const pendingVendorsBusiness = businesses.filter(b => 
-        b.verificationStatus === 'pending' || 
-        b.verificationStatus === 'pending_verification'
+      const pendingVendorsBusiness = businesses.filter(b =>
+        b.verificationStatus === 'pending'
       );
       
       const pendingVendors = pendingVendorsBusiness.length;
@@ -261,9 +260,8 @@ export function adminRoutes(app: Express): void {
       // Get businesses with pending verification
       const businesses = await storage.getAllBusinesses();
       // Filter pending vendors (businesses awaiting verification)
-      const pendingVendorsBusiness = businesses.filter(b => 
-        b.verificationStatus === 'pending' || 
-        b.verificationStatus === 'pending_verification'
+      const pendingVendorsBusiness = businesses.filter(b =>
+        b.verificationStatus === 'pending'
       );
       
       const pendingVendors = pendingVendorsBusiness.length;

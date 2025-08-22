@@ -14,7 +14,6 @@ import {
   XCircle,
   CheckCircle,
   Clock,
-  ShieldAlert,
   ArrowUpDown,
   ExternalLink,
   Eye,
@@ -76,7 +75,6 @@ interface Business {
   businessName: string;
   businessCategory: string;
   appliedDate: string;
-  status: "new" | "in_review" | "verified" | "rejected";
   verificationStatus: string;
   verificationFeedback?: string;
   email: string;
@@ -334,7 +332,6 @@ export default function VendorsPage() {
             businessName: business.business_name || business.businessName || "Unknown Business",
             businessCategory: business.business_category || business.businessCategory || "Other",
             appliedDate: business.applied_date || business.user?.created_at || business.created_at || new Date().toISOString(),
-            status: business.status || "new",
             verificationStatus: business.verification_status || business.verificationStatus || "pending",
             verificationFeedback: business.verification_feedback || business.verificationFeedback || "",
             email: business.email || business.user?.email || "",
@@ -461,12 +458,9 @@ export default function VendorsPage() {
       case "pending":
         return <Badge variant="outline" className="flex items-center gap-1 font-normal text-yellow-600 border-yellow-300 bg-yellow-50"><Clock className="h-3 w-3" /> Pending</Badge>;
       case "verified":
-      case "verified":  // Treat "verified" same as "verified"
         return <Badge variant="outline" className="flex items-center gap-1 font-normal text-green-600 border-green-300 bg-green-50"><CheckCircle className="h-3 w-3" /> Verified</Badge>;
       case "rejected":
         return <Badge variant="outline" className="flex items-center gap-1 font-normal text-red-600 border-red-300 bg-red-50"><XCircle className="h-3 w-3" /> Rejected</Badge>;
-      case "review":
-        return <Badge variant="outline" className="flex items-center gap-1 font-normal text-blue-600 border-blue-300 bg-blue-50"><ShieldAlert className="h-3 w-3" /> In Review</Badge>;
       default:
         return <Badge variant="outline" className="font-normal">{status}</Badge>;
     }
