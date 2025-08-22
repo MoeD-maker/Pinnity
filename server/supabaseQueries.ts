@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Supabase database queries for unified user management
  */

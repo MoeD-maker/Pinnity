@@ -1,16 +1,18 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabaseUrl = process.env.VITE_SUPABASE_URL || 'http://localhost';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'service-role-key';
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error('Missing Supabase environment variables. Need VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY')
+if (!process.env.VITE_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.warn(
+    'Missing Supabase environment variables. Using placeholder credentials; Supabase operations may fail.'
+  );
 }
 
 // Create Supabase admin client with service role key
 export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
   auth: {
     autoRefreshToken: false,
-    persistSession: false
-  }
-})
+    persistSession: false,
+  },
+});

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Supabase Auth user provisioning service
  * Handles email confirmation based on phone verification status

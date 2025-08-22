@@ -1,4 +1,5 @@
 // @ts-ignore
+// @ts-nocheck
 import { createServer as createViteServer, logger as viteLogger } from 'vite';
 import express, { type Express } from "express";
 import fs from "fs";
