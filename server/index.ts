@@ -14,6 +14,13 @@ import dotenv from "dotenv";
 // Load environment variables first
 dotenv.config();
 
+// Ensure required environment variables are present
+const COOKIE_SECRET = process.env.COOKIE_SECRET;
+if (!COOKIE_SECRET) {
+  console.error("Missing COOKIE_SECRET environment variable");
+  process.exit(1);
+}
+
 // Import custom modules
 import { setupVite, serveStatic, log } from "./vite.js";
 // Skip environment validator for now
@@ -46,7 +53,7 @@ const server = createServer(app);
 // Express configuration
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use(cookieParser(process.env.COOKIE_SECRET || 'default-secret'));
+app.use(cookieParser(COOKIE_SECRET));
 
 // CORS setup
 const corsOptions = {
@@ -74,6 +81,16 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
+// CSRF protection middleware
+const csrfProtection = csurf({
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  }
+});
+app.use(csrfProtection);
+
 // Skip admin API bypass for now
 // app.use('/api/direct/admin', adminBypassRouter);
 // console.log("Admin API bypass router mounted at /api/direct/admin");
@@ -97,9 +114,9 @@ app.get('/health', (req, res) => {
 
 // API routes - mount BEFORE Vite middleware to ensure they take precedence
 
-// Basic CSRF token endpoint
+// CSRF token endpoint using dynamic tokens
 app.get('/api/csrf-token', (req, res) => {
-  res.json({ csrfToken: 'dev-csrf-token' });
+  res.json({ csrfToken: req.csrfToken() });
 });
 
 // User status endpoint for auth context

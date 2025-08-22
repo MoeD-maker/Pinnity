@@ -1,3 +1,5 @@
+codex/refactor-route-files-in-server/routes
+ main
 /**
  * Refactored authentication routes using Supabase Auth + PostgreSQL profiles
  */
@@ -131,6 +133,7 @@ export async function registerIndividual(req: Request, res: Response) {
 /**
  * Business user registration
  */
+codex/refactor-route-files-in-server/routes
 export async function registerBusiness(req: Request, res: Response) {
   try {
     console.info("[BUSINESS REGISTER] handler hit");
@@ -151,12 +154,15 @@ export async function registerBusiness(req: Request, res: Response) {
     // Validate required fields
     if (!email || !password || !phone || !otp) {
       return res.status(400).json({ message: "Missing required fields" });
+ main
     }
 
     // Validate business-specific required fields
     if (!businessName || !businessCategory || !firstName || !lastName || !address) {
       return res.status(400).json({ message: "Missing required fields" });
     }
+codex/refactor-route-files-in-server/routes
+ main
 
     // Import and use checkOtp function
     const { checkOtp } = await import('../services/TwilioVerify.js');
