@@ -176,14 +176,19 @@ export async function registerBusiness(req: Request, res: Response) {
     }
 
     // Call provisioner with validated phoneVerified
-    const { userId, emailConfirmed } = await provisionSupabaseUser({ 
-      email, 
-      password, 
-      phone, 
-      phoneVerified 
+    const { userId, email_confirmed } = await provisionSupabaseUser({
+      email,
+      password,
+      phone,
+      phoneVerified
     });
 
-    console.log("Supabase user provisioned:", userId, "emailConfirmed:", emailConfirmed);
+    console.log(
+      "Supabase user provisioned:",
+      userId,
+      "emailConfirmed:",
+      email_confirmed
+    );
 
     // Upsert profile in PostgreSQL database with conflict resolution
     const client = await pool.connect();
