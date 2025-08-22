@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { 
   CheckCircle, 
   XCircle, 
@@ -32,6 +33,7 @@ interface Business {
   appliedDate: string;
   status: "new" | "in_review" | "approved" | "rejected";
   verificationStatus: string;
+  verificationFeedback?: string;
   email: string;
   phone: string;
   address: string;
@@ -195,7 +197,15 @@ export default function BusinessReviewPanel({ business, onStatusChange }: Busine
                 {formatDate(business.appliedDate)}
               </div>
             </div>
-            
+
+            {business.verificationFeedback && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Verification Feedback</AlertTitle>
+                <AlertDescription>{business.verificationFeedback}</AlertDescription>
+              </Alert>
+            )}
+
             <div className="space-y-2">
               <div className="text-sm font-medium">Contact Information</div>
               <div className="rounded-md border p-3 space-y-2">

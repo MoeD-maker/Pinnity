@@ -78,6 +78,7 @@ interface Business {
   appliedDate: string;
   status: "new" | "in_review" | "approved" | "rejected";
   verificationStatus: string;
+  verificationFeedback?: string;
   email: string;
   phone: string;
   address: string;
@@ -335,6 +336,7 @@ export default function VendorsPage() {
             appliedDate: business.applied_date || business.user?.created_at || business.created_at || new Date().toISOString(),
             status: business.status || "new",
             verificationStatus: business.verification_status || business.verificationStatus || "pending",
+            verificationFeedback: business.verification_feedback || business.verificationFeedback || "",
             email: business.email || business.user?.email || "",
             phone: business.phone || "",
             address: business.address || "",
@@ -706,8 +708,8 @@ export default function VendorsPage() {
                   </Button>
                 </TableHead>
                 <TableHead>
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     className="flex items-center gap-1 p-0 hover:bg-transparent"
                     onClick={() => handleSort("verificationStatus")}
                   >
@@ -719,13 +721,14 @@ export default function VendorsPage() {
                     )}
                   </Button>
                 </TableHead>
+                <TableHead>Feedback</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-10">
+                  <TableCell colSpan={7} className="text-center py-10">
                     <div className="flex items-center justify-center">
                       <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
                     </div>
@@ -733,7 +736,7 @@ export default function VendorsPage() {
                 </TableRow>
               ) : filteredBusinesses.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-10">
+                  <TableCell colSpan={7} className="text-center py-10">
                     <div className="flex flex-col items-center justify-center">
                       <Building className="h-12 w-12 text-muted-foreground mb-3" />
                       <p className="text-muted-foreground">No vendors found</p>
@@ -773,6 +776,11 @@ export default function VendorsPage() {
                     </TableCell>
                     <TableCell>{format(new Date(business.appliedDate), "MMM d, yyyy")}</TableCell>
                     <TableCell>{getStatusBadge(business.verificationStatus)}</TableCell>
+                    <TableCell>
+                      <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+                        {business.verificationFeedback || "-"}
+                      </span>
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button 

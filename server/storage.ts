@@ -1001,12 +1001,13 @@ export class MemStorage implements IStorage {
     if (!business) {
       throw new Error("Business not found");
     }
-    
+
     const updatedBusiness: Business = {
       ...business,
       verificationStatus: status,
+      verificationFeedback: feedback ?? null,
     };
-    
+
     this.businesses.set(id, updatedBusiness);
     return updatedBusiness;
   }
@@ -2451,8 +2452,9 @@ export class DatabaseStorage implements IStorage {
 
   async updateBusinessVerificationStatus(id: number, status: string, feedback?: string): Promise<Business> {
     const [updatedBusiness] = await db.update(businesses)
-      .set({ 
-        verificationStatus: status
+      .set({
+        verificationStatus: status,
+        verificationFeedback: feedback ?? null
       })
       .where(eq(businesses.id, id))
       .returning();

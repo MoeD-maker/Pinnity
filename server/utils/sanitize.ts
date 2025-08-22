@@ -83,6 +83,7 @@ export function sanitizeBusiness(business: any): any {
     businessName: business.businessName || "Untitled Business",
     businessCategory: business.businessCategory || "other",
     verificationStatus: business.verificationStatus || "pending",
+    verificationFeedback: business.verificationFeedback || "",
     description: business.description || "",
     address: business.address || "",
     latitude: business.latitude || 0,
