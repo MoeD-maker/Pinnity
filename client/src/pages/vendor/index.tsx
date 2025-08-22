@@ -31,13 +31,11 @@ import {
 
 // Define status colors for consistent use across components
 const statusColors: Record<string, string> = {
-  approved: 'bg-green-100 text-green-800 border-green-200',
   verified: 'bg-green-100 text-green-800 border-green-200',
   pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   rejected: 'bg-red-100 text-red-800 border-red-200',
   draft: 'bg-gray-100 text-gray-700 border-gray-200',
   expired: 'bg-gray-100 text-gray-700 border-gray-200',
-  active: 'bg-blue-100 text-blue-800 border-blue-200'
 };
 
 export default function VendorDashboard() {
@@ -111,7 +109,7 @@ export default function VendorDashboard() {
               
               // Calculate stats
               const activeDeals = dealsArray.filter((deal: any) => 
-                new Date(deal.endDate) >= new Date() && deal.status === 'approved'
+                new Date(deal.endDate) >= new Date() && deal.status === 'verified'
               ).length;
               
               // Sum up counts
@@ -156,7 +154,7 @@ export default function VendorDashboard() {
     );
   }
 
-  const isBusinessApproved = business?.verificationStatus === 'verified';
+  const isBusinessVerified = business?.verificationStatus === 'verified';
   
   // Count active filters for badge display
   const countActiveFilters = (): number => {
@@ -226,7 +224,7 @@ export default function VendorDashboard() {
         }
         
         // Only include deals that match the selected status filters
-        return (filters.status.active && isTimeActive && (deal.status === 'approved' || deal.status === 'active')) ||
+        return (filters.status.active && isTimeActive && (deal.status === 'verified')) ||
                (filters.status.upcoming && isUpcoming) ||
                (filters.status.expired && isExpired) ||
                (filters.status.pending && deal.status === 'pending') ||
@@ -349,7 +347,7 @@ export default function VendorDashboard() {
         onOpenChange={setRedemptionDialogOpen}
       />
       
-      {/* Welcome and approval status banner */}
+      {/* Welcome and verification status banner */}
       <header className="mb-6 sm:mb-8">
         <div className="flex-responsive justify-between sm:items-start mb-4 sm:mb-2 gap-3 sm:gap-0">
           <div>
@@ -358,20 +356,20 @@ export default function VendorDashboard() {
           </div>
           <Button 
             className="bg-[#00796B] hover:bg-[#004D40] sm:mt-0 w-full sm:w-auto"
-            disabled={!isBusinessApproved}
+            disabled={!isBusinessVerified}
             onClick={handleCreateDeal}
           >
             <PlusCircle className="mr-2 h-4 w-4" /> Create Deal
           </Button>
         </div>
 
-        {/* Approval status banner */}
-        {!isBusinessApproved && (
+        {/* Verification status banner */}
+        {!isBusinessVerified && (
           <Alert className="mt-4 border-yellow-200 bg-yellow-50">
             <AlertCircle className="h-5 w-5 text-yellow-700" />
-            <AlertTitle className="text-yellow-800">Approval Pending</AlertTitle>
+            <AlertTitle className="text-yellow-800">Verification Pending</AlertTitle>
             <AlertDescription className="text-yellow-700">
-              Your business profile is currently under review. You'll be able to create deals once approved.
+              Your business profile is currently under review. You'll be able to create deals once verified.
               <div className="mt-2 flex items-center">
                 <span className="text-sm mr-2">Estimated time: 1-2 business days</span>
                 <Button 
@@ -418,7 +416,7 @@ export default function VendorDashboard() {
         />
       </div>
 
-      {!isBusinessApproved && (
+      {!isBusinessVerified && (
         <VerificationRequirements business={business} />
       )}
 
@@ -478,7 +476,7 @@ export default function VendorDashboard() {
               )}
               <Button 
                 className="bg-[#00796B] hover:bg-[#004D40] w-full sm:w-auto"
-                disabled={!isBusinessApproved}
+                disabled={!isBusinessVerified}
                 onClick={handleCreateDeal}
                 size="sm"
               >
@@ -493,7 +491,7 @@ export default function VendorDashboard() {
               description="Create your first deal to start attracting customers"
               actionText="Create Deal"
               onClick={handleCreateDeal}
-              disabled={!isBusinessApproved}
+              disabled={!isBusinessVerified}
             />
           ) : (
             <div className="card-grid">
@@ -535,7 +533,7 @@ export default function VendorDashboard() {
                         const isExpired = new Date(deal.endDate) < now;
                         
                         if (value === 'active') {
-                          return isTimeActive && (deal.status === 'approved' || deal.status === 'active');
+                          return isTimeActive && (deal.status === 'verified');
                         } else if (value === 'upcoming') {
                           return isUpcoming;
                         } else if (value === 'expired') {
@@ -569,11 +567,11 @@ export default function VendorDashboard() {
                 // Same status determination code as in your table rows
                 if (deal.status === 'pending') {
                   statusClass = 'bg-yellow-100 text-yellow-800';
-                  statusText = 'Pending Approval';
-                } else if (deal.status === 'approved' && new Date(deal.endDate) >= new Date() && new Date(deal.startDate) <= new Date()) {
+                  statusText = 'Pending Verification';
+                } else if (deal.status === 'verified' && new Date(deal.endDate) >= new Date() && new Date(deal.startDate) <= new Date()) {
                   statusClass = 'bg-green-100 text-green-800';
                   statusText = 'Active';
-                } else if (deal.status === 'approved' && new Date(deal.startDate) > new Date()) {
+                } else if (deal.status === 'verified' && new Date(deal.startDate) > new Date()) {
                   statusClass = 'bg-blue-100 text-blue-800';
                   statusText = 'Upcoming';
                 } else if (new Date(deal.endDate) < new Date() || deal.status === 'expired') {
@@ -704,9 +702,9 @@ export default function VendorDashboard() {
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                   {deals.length > 0 ? deals.map((deal: any) => {
-                    // Deal approval status (from the backend)
+                    // Deal verification status (from the backend)
                     const isPending = deal.status === 'pending';
-                    const isApproved = deal.status === 'approved';
+                    const isVerified = deal.status === 'verified';
                     
                     // Deal time-based status - with safe date handling
                     let isTimeActive = false, isUpcoming = false, isExpired = false;
@@ -729,11 +727,11 @@ export default function VendorDashboard() {
                     
                     if (isPending) {
                       statusClass = 'bg-yellow-100 text-yellow-800';
-                      statusText = 'Pending Approval';
-                    } else if (isApproved && isTimeActive) {
+                      statusText = 'Pending Verification';
+                    } else if (isVerified && isTimeActive) {
                       statusClass = 'bg-green-100 text-green-800';
                       statusText = 'Active';
-                    } else if (isApproved && isUpcoming) {
+                    } else if (isVerified && isUpcoming) {
                       statusClass = 'bg-blue-100 text-blue-800';
                       statusText = 'Upcoming';
                     } else if (isExpired || deal.status === 'expired') {
@@ -1131,15 +1129,15 @@ function DealCard({ deal }: { deal: any }) {
   const isUpcoming = new Date(deal.startDate) > new Date();
   const isExpired = new Date(deal.endDate) < new Date();
   
-  // Status logic - include pending and approval states
+  // Status logic - include pending and verification states
   let status = deal.status || 'draft';
   
-  // If deal is in 'pending' approval state
+  // If deal is in 'pending' verification state
   const isPending = status === 'pending';
   
-  // Show appropriate status label based on approval state and date
+  // Show appropriate status label based on verification state and date
   let statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
-  if (status === 'approved') {
+  if (status === 'verified') {
     if (isExpired) statusLabel = 'Expired';
     else if (isUpcoming) statusLabel = 'Upcoming';
     else statusLabel = 'Active';
@@ -1174,7 +1172,7 @@ function DealCard({ deal }: { deal: any }) {
             <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
               <div className="bg-white/90 px-3 sm:px-4 py-1.5 sm:py-2 rounded-md flex items-center">
                 <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-yellow-600 mr-1.5 sm:mr-2" />
-                <span className="text-xs sm:text-sm font-medium">Awaiting Approval</span>
+                <span className="text-xs sm:text-sm font-medium">Awaiting Verification</span>
               </div>
             </div>
           )}
@@ -1281,7 +1279,7 @@ function VerificationRequirements({ business }: { business: any }) {
       <CardFooter className="border-t px-4 sm:px-6 pt-3 sm:pt-4 pb-4 sm:pb-5">
         <div className="flex items-start sm:items-center text-xs text-gray-500">
           <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 mt-0.5 sm:mt-0 flex-shrink-0" />
-          <span>Estimated approval: 1-2 business days after all documents are submitted</span>
+          <span>Estimated verification: 1-2 business days after all documents are submitted</span>
         </div>
       </CardFooter>
     </Card>

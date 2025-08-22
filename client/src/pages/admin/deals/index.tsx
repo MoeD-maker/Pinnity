@@ -52,7 +52,7 @@ interface Business {
   address?: string;
   phone?: string;
   email: string;
-  status: "new" | "in_review" | "approved" | "rejected";
+  status: "new" | "in_review" | "verified" | "rejected";
   verificationStatus: string;
 }
 
@@ -66,7 +66,7 @@ interface Deal {
   submissionDate: string;
   dealType: string;
   discount?: string;
-  status: "pending" | "approved" | "rejected" | "expired";
+  status: "pending" | "verified" | "rejected" | "expired";
   imageUrl?: string;
   terms?: string;
   businessId: number;
@@ -144,31 +144,31 @@ export default function DealsPage() {
     }
   });
 
-  // Mutation for approving deals
-  const approveDealMutation = useMutation({
+  // Mutation for verifying deals
+  const verifyDealMutation = useMutation({
     mutationFn: async ({ dealId, feedback }: { dealId: number, feedback?: string }) => {
       // Use the direct API endpoint to bypass middleware issues
-      console.log(`Approving deal ${dealId} with feedback: ${feedback || 'none'}`);
+      console.log(`Verifying deal ${dealId} with feedback: ${feedback || 'none'}`);
       try {
         // First try the direct bypass endpoint
-        console.log("Using direct bypass endpoint for approval");
+        console.log("Using direct bypass endpoint for verification");
         const response = await apiRequest(`/api/direct/admin/deals/${dealId}/status`, {
           method: 'PUT',
           data: { 
-            status: 'active', // 'active' for the deal status, 'approved' for the approval status
+            status: 'verified', // 'verified' status
             feedback: feedback || null
           }
         });
-        console.log("Direct bypass approval response:", response);
+        console.log("Direct bypass verification response:", response);
         return response;
       } catch (error) {
-        console.error("Direct bypass approval failed, falling back to standard endpoint:", error);
+        console.error("Direct bypass verification failed, falling back to standard endpoint:", error);
         
         // Fall back to the standard endpoint if the bypass fails
         const fallbackResponse = await apiRequest(`/api/deals/${dealId}/status`, {
           method: 'PUT',
           data: { 
-            status: 'active',
+            status: 'verified',
             feedback: feedback || null
           }
         });
@@ -177,20 +177,20 @@ export default function DealsPage() {
       }
     },
     onSuccess: (response) => {
-      console.log("Deal approval successful:", response);
+      console.log("Deal verification successful:", response);
       // Invalidate queries to refetch data - invalidate all status filters
       queryClient.invalidateQueries({ queryKey: ['admin', 'deals'] });
       toast({
-        title: "Deal approved",
-        description: "The deal has been approved and is now live.",
+        title: "Deal verified",
+        description: "The deal has been verified and is now live.",
         variant: "default",
       });
     },
     onError: (error) => {
-      console.error("Error approving deal:", error);
+      console.error("Error verifying deal:", error);
       toast({
-        title: "Error approving deal",
-        description: "There was a problem approving the deal. Please try again.",
+        title: "Error verifying deal",
+        description: "There was a problem verifying the deal. Please try again.",
         variant: "destructive",
       });
     }
@@ -452,8 +452,8 @@ export default function DealsPage() {
     switch(status) {
       case "pending":
         return <Badge variant="outline" className="flex items-center gap-1 bg-yellow-50 text-yellow-700 border-yellow-200"><Clock className="h-3 w-3" /> Pending</Badge>;
-      case "approved":
-        return <Badge variant="outline" className="flex items-center gap-1 bg-green-50 text-green-700 border-green-200"><Check className="h-3 w-3" /> Approved</Badge>;
+      case "verified":
+        return <Badge variant="outline" className="flex items-center gap-1 bg-green-50 text-green-700 border-green-200"><Check className="h-3 w-3" /> Verified</Badge>;
       case "rejected":
         return <Badge variant="outline" className="flex items-center gap-1 bg-red-50 text-red-700 border-red-200"><X className="h-3 w-3" /> Rejected</Badge>;
       case "expired":
@@ -476,8 +476,8 @@ export default function DealsPage() {
     }
   };
 
-  const handleApproveDeal = (dealId: number, feedback?: string) => {
-    approveDealMutation.mutate({ dealId, feedback });
+  const handleVerifyDeal = (dealId: number, feedback?: string) => {
+    verifyDealMutation.mutate({ dealId, feedback });
   };
 
   const handleRejectDeal = () => {
@@ -505,7 +505,7 @@ export default function DealsPage() {
 
   // Counts by status
   const pendingDealsCount = deals?.filter((d: Deal) => d.status === "pending").length || 0;
-  const approvedDealsCount = deals?.filter((d: Deal) => d.status === "approved").length || 0;
+  const verifiedDealsCount = deals?.filter((d: Deal) => d.status === "verified").length || 0;
   const rejectedDealsCount = deals?.filter((d: Deal) => d.status === "rejected").length || 0;
   const expiredDealsCount = deals?.filter((d: Deal) => d.status === "expired").length || 0;
 
@@ -563,8 +563,8 @@ export default function DealsPage() {
               </div>
             </div>
             <div className="rounded-lg border border-green-200 bg-green-50 p-3">
-              <div className="text-sm font-medium text-green-700">Approved</div>
-              <div className="text-2xl font-bold text-green-800 mt-1">{approvedDealsCount}</div>
+              <div className="text-sm font-medium text-green-700">Verified</div>
+              <div className="text-2xl font-bold text-green-800 mt-1">{verifiedDealsCount}</div>
               <div className="text-xs text-green-600 mt-1">
                 Live on platform
               </div>
@@ -573,7 +573,7 @@ export default function DealsPage() {
               <div className="text-sm font-medium text-red-700">Rejected</div>
               <div className="text-2xl font-bold text-red-800 mt-1">{rejectedDealsCount}</div>
               <div className="text-xs text-red-600 mt-1">
-                Not approved
+                Not verified
               </div>
             </div>
             <div className="rounded-lg border p-3">
@@ -622,8 +622,8 @@ export default function DealsPage() {
                   <DropdownMenuItem onClick={() => setFilter({...filter, status: "pending"})}>
                     Pending
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setFilter({...filter, status: "approved"})}>
-                    Approved
+                  <DropdownMenuItem onClick={() => setFilter({...filter, status: "verified"})}>
+                    Verified
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setFilter({...filter, status: "rejected"})}>
                     Rejected
@@ -705,9 +705,9 @@ export default function DealsPage() {
                 Pending
                 <Badge variant="outline" className="ml-2">{pendingDealsCount}</Badge>
               </TabsTrigger>
-              <TabsTrigger value="approved">
-                Approved
-                <Badge variant="outline" className="ml-2">{approvedDealsCount}</Badge>
+              <TabsTrigger value="verified">
+                Verified
+                <Badge variant="outline" className="ml-2">{verifiedDealsCount}</Badge>
               </TabsTrigger>
               <TabsTrigger value="rejected">
                 Rejected
@@ -830,10 +830,10 @@ export default function DealsPage() {
                               {deal.status === "pending" && (
                                 <DropdownMenuItem 
                                   className="cursor-pointer text-green-600"
-                                  onClick={() => handleApproveDeal(deal.id, '')}
+                                  onClick={() => handleVerifyDeal(deal.id, '')}
                                 >
                                   <Check className="mr-2 h-4 w-4" />
-                                  <span>Approve</span>
+                                  <span>Verify</span>
                                 </DropdownMenuItem>
                               )}
                               
@@ -846,7 +846,7 @@ export default function DealsPage() {
                                   }}
                                 >
                                   <PenTool className="mr-2 h-4 w-4" />
-                                  <span>Approve with Modifications</span>
+                                  <span>Verify with Modifications</span>
                                 </DropdownMenuItem>
                               )}
                               
@@ -943,12 +943,12 @@ export default function DealsPage() {
                   size="sm"
                   className="text-green-600"
                   onClick={() => {
-                    // Handle bulk approval
-                    selectedDeals.forEach(id => approveDealMutation.mutate({dealId: id}));
+                    // Handle bulk verification
+                    selectedDeals.forEach(id => verifyDealMutation.mutate({dealId: id}));
                   }}
                 >
                   <Check className="mr-2 h-4 w-4" />
-                  Approve Selected
+                  Verify Selected
                 </Button>
                 <Button 
                   variant="outline" 
@@ -1025,9 +1025,9 @@ export default function DealsPage() {
       <Dialog open={modifyDialogOpen} onOpenChange={setModifyDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Approve with Modifications</DialogTitle>
+            <DialogTitle>Verify with Modifications</DialogTitle>
             <DialogDescription>
-              Specify the changes needed before the deal can be approved. The business owner will be notified of these requested changes.
+              Specify the changes needed before the deal can be verified. The business owner will be notified of these requested changes.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -1227,17 +1227,17 @@ export default function DealsPage() {
                   }}
                 >
                   <PenTool className="mr-2 h-4 w-4" />
-                  Approve with Changes
+                  Verify with Changes
                 </Button>
                 <Button 
                   onClick={() => {
-                    handleApproveDeal(selectedDealForDetail.id);
+                    handleVerifyDeal(selectedDealForDetail.id);
                     setDealDetailDialogOpen(false);
                   }}
                   className="text-green-600"
                 >
                   <Check className="mr-2 h-4 w-4" />
-                  Approve
+                  Verify
                 </Button>
               </>
             )}

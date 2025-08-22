@@ -559,7 +559,7 @@ export default function CreateDealPage() {
       if (startDate < tomorrow) {
         form.setError("startDate", {
           type: "manual",
-          message: "Please select a start date at least 24 hours in the future to allow for approval."
+          message: "Please select a start date at least 24 hours in the future to allow for verification."
         });
       }
     }
@@ -808,7 +808,7 @@ export default function CreateDealPage() {
       
       toast({
         title: "Deal created successfully",
-        description: "Your deal has been submitted for approval",
+        description: "Your deal has been submitted for verification",
         variant: "default"
       });
       
@@ -1151,7 +1151,7 @@ export default function CreateDealPage() {
                             if (date < tomorrow) {
                               form.setError("startDate", {
                                 type: "manual",
-                                message: "Please select a start date at least 24 hours in the future to allow for approval."
+                                message: "Please select a start date at least 24 hours in the future to allow for verification."
                               });
                             } else {
                               form.clearErrors("startDate");
@@ -1202,7 +1202,7 @@ export default function CreateDealPage() {
               <Alert className="bg-amber-50 border-amber-200 mt-2">
                 <AlertTriangle className="h-4 w-4 text-amber-500" />
                 <AlertDescription className="text-amber-700 text-sm">
-                  Please allow up to 24 hours for deal approval before your deal goes live.
+                  Please allow up to 24 hours for deal verification before your deal goes live.
                 </AlertDescription>
               </Alert>
               
@@ -1414,7 +1414,7 @@ export default function CreateDealPage() {
               <Alert className="bg-yellow-50 border-yellow-200">
                 <Info className="h-4 w-4 text-yellow-500" />
                 <AlertDescription className="text-yellow-700">
-                  Please review your deal information carefully. All deals require admin approval before becoming active.
+                  Please review your deal information carefully. All deals require admin verification before becoming active.
                 </AlertDescription>
               </Alert>
               
@@ -1668,7 +1668,7 @@ export default function CreateDealPage() {
             {submitting ? 'Processing...' : 
              currentStep < steps.length - 1 ? 'Continue' : 
              csrfLoading ? 'Securing Connection...' : 
-             'Submit Deal for Approval'}
+             'Submit Deal for Verification'}
             {!submitting && currentStep < steps.length - 1 && <ChevronRight className="ml-2 h-4 w-4" />}
           </Button>
         </CardFooter>

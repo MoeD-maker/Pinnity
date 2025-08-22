@@ -155,12 +155,12 @@ export default function AddDealPage() {
   const [previewTerms, setPreviewTerms] = useState("");
   const [manualVendorEntry, setManualVendorEntry] = useState(false);
 
-  // Fetch all vendors (both approved and pending for admin)
+  // Fetch all vendors (both verified and pending for admin)
   const { data: vendors = [], isLoading: vendorsLoading } = useQuery({
     queryKey: ['admin', 'vendors'],
     queryFn: async () => {
       try {
-        // Try to get all vendors - both approved and pending
+        // Try to get all vendors - both verified and pending
         const response = await apiRequest('/api/v1/admin/businesses');
         
         // Handle both array and object response formats
@@ -172,9 +172,8 @@ export default function AddDealPage() {
           vendorsArray = Object.values(response);
         }
         
-        // Filter for approved and pending businesses 
+        // Filter for verified and pending businesses 
         return vendorsArray.filter(vendor => 
-          vendor.verificationStatus === 'approved' || 
           vendor.verificationStatus === 'verified' || 
           vendor.verificationStatus === 'pending'
         );

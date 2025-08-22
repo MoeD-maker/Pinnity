@@ -425,7 +425,7 @@ export function dealRoutes(app: Express): void {
         }
         
         // Ensure the business is verified
-        if (business.verificationStatus !== "verified" && business.verificationStatus !== "approved") {
+        if (business.verificationStatus !== "verified") {
           return res.status(403).json({ 
             message: "Your business must be verified before creating deals",
             verificationStatus: business.verificationStatus 
@@ -439,7 +439,7 @@ export function dealRoutes(app: Express): void {
         const dealData = {
           ...processedBody,
           businessId: business.id,
-          status: "pending" // All deals start as pending until approved
+          status: "pending" // All deals start as pending until verified
         };
         
         const deal = await storage.createDeal(dealData);
@@ -471,8 +471,8 @@ export function dealRoutes(app: Express): void {
           return res.status(404).json({ message: "Business not found for this user" });
         }
         
-        // Ensure the business is verified (accept both "verified" and "approved" status)
-        if (business.verificationStatus !== "verified" && business.verificationStatus !== "approved") {
+        // Ensure the business is verified 
+        if (business.verificationStatus !== "verified") {
           return res.status(403).json({ 
             message: "Your business must be verified before creating deals",
             verificationStatus: business.verificationStatus 
@@ -486,7 +486,7 @@ export function dealRoutes(app: Express): void {
         const dealData = {
           ...processedBody,
           businessId: business.id,
-          status: "pending" // All deals start as pending until approved
+          status: "pending" // All deals start as pending until verified
         };
         
         const deal = await storage.createDeal(dealData);
@@ -661,8 +661,8 @@ export function dealRoutes(app: Express): void {
     }
   );
 
-  // Admin routes for approving/rejecting deals
-  app.patch('/api/v1/admin/deals/:id/approve', 
+  // Admin routes for verifying/rejecting deals
+  app.patch('/api/v1/admin/deals/:id/verify', 
     authenticate, 
     authorize(["admin"]),
     async (req: Request, res: Response) => {
@@ -676,12 +676,12 @@ export function dealRoutes(app: Express): void {
           return res.status(404).json({ message: "Deal not found" });
         }
         
-        // Update the deal status to approved
-        const updatedDeal = await storage.updateDeal(dealId, { status: "approved" });
+        // Update the deal status to verified
+        const updatedDeal = await storage.updateDeal(dealId, { status: "verified" });
         
         return res.status(200).json(updatedDeal);
       } catch (error) {
-        console.error("Approve deal error:", error);
+        console.error("Verify deal error:", error);
         return res.status(500).json({ message: "Internal server error" });
       }
     }
