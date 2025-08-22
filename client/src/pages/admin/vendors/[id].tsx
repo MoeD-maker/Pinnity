@@ -62,7 +62,6 @@ interface Business {
   businessName: string;
   businessCategory: string;
   appliedDate: string;
-  status: "new" | "in_review" | "verified" | "rejected";
   verificationStatus: string;
   verificationFeedback?: string;
   email: string;
@@ -123,7 +122,6 @@ export default function VendorDetailPage() {
           businessName: response.business_name || "Unknown Business",
           businessCategory: response.business_category || "Other",
           appliedDate: response.applied_date || response.created_at || new Date().toISOString(),
-          status: response.status || "new",
           verificationStatus: response.verification_status || "pending",
           verificationFeedback: response.verification_feedback || "",
           email: response.email || "",
@@ -169,7 +167,6 @@ export default function VendorDetailPage() {
           businessName: "Pinnity Coffee",
           businessCategory: "Restaurant",
           appliedDate: new Date().toISOString(),
-          status: "new",
           verificationStatus: "pending",
           verificationFeedback: "",
           email: "vendor@test.com",
