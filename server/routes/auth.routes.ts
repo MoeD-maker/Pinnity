@@ -220,7 +220,20 @@ export async function registerBusiness(req: Request, res: Response) {
     const filesToMove = [tempGovernmentIdPath, tempProofOfAddressPath, tempProofOfBusinessPath];
     const movedFiles = await moveFilesToUserFolder(filesToMove, sanitizedBusinessName);
 
-    console.log("Files moved:", Object.values(movedFiles));
+    const governmentIdPath = movedFiles[tempGovernmentIdPath];
+    const proofOfAddressPath = movedFiles[tempProofOfAddressPath];
+    const proofOfBusinessPath = movedFiles[tempProofOfBusinessPath];
+
+    console.log("Files moved:", {
+      governmentIdPath,
+      proofOfAddressPath,
+      proofOfBusinessPath
+    });
+
+    if (!governmentIdPath || !proofOfAddressPath || !proofOfBusinessPath) {
+      console.error("Missing file paths after moving", movedFiles);
+      return res.status(500).json({ message: "Failed to process uploaded documents" });
+    }
 
       // Create business record (NO password fields)
       const businessResult = await client.query(`
@@ -232,9 +245,9 @@ export async function registerBusiness(req: Request, res: Response) {
         RETURNING id
       `, [
         profileId, businessName, businessCategory, email, phone,
-        Object.values(movedFiles)[0],
-        Object.values(movedFiles)[1], 
-        Object.values(movedFiles)[2]
+        governmentIdPath,
+        proofOfAddressPath,
+        proofOfBusinessPath
       ]);
       
       const businessId = businessResult.rows[0].id;
