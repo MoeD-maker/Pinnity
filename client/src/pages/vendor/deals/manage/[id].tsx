@@ -129,8 +129,7 @@ export default function ManageDealPage() {
     const statusMap: Record<string, string> = {
       'draft': 'bg-gray-100 text-gray-700 border-gray-200',
       'pending': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      'active': 'bg-green-100 text-green-800 border-green-200',
-      'approved': 'bg-green-100 text-green-800 border-green-200',
+      'verified': 'bg-green-100 text-green-800 border-green-200',
       'rejected': 'bg-red-100 text-red-800 border-red-200',
       'pending_revision': 'bg-orange-100 text-orange-800 border-orange-200',
       'expired': 'bg-gray-100 text-gray-700 border-gray-200'
@@ -145,9 +144,8 @@ export default function ManageDealPage() {
     
     const statusTextMap: Record<string, string> = {
       'draft': 'Draft',
-      'pending': 'Pending Approval',
-      'active': 'Active',
-      'approved': 'Approved',
+      'pending': 'Pending Verification',
+        'verified': 'Verified',
       'rejected': 'Rejected',
       'pending_revision': 'Revision Requested',
       'expired': 'Expired'
@@ -182,7 +180,7 @@ export default function ManageDealPage() {
   // Check if deal is active
   const isDealActive = () => {
     if (!dealData) return false;
-    return dealData.status === 'active' || dealData.status === 'approved';
+    return dealData.status === 'verified';
   };
   
   // Check if deal is expired

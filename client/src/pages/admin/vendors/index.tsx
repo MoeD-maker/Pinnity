@@ -76,7 +76,7 @@ interface Business {
   businessName: string;
   businessCategory: string;
   appliedDate: string;
-  status: "new" | "in_review" | "approved" | "rejected";
+  status: "new" | "in_review" | "verified" | "rejected";
   verificationStatus: string;
   verificationFeedback?: string;
   email: string;
@@ -96,7 +96,7 @@ export default function VendorsPage() {
   const [filteredBusinesses, setFilteredBusinesses] = useState<Business[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [pendingCount, setPendingCount] = useState(0);
-  const [approvedCount, setApprovedCount] = useState(0);
+  const [verifiedCount, setVerifiedCount] = useState(0);
   const [rejectedCount, setRejectedCount] = useState(0);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [businessToDelete, setBusinessToDelete] = useState<Business | null>(null);
@@ -398,10 +398,9 @@ export default function VendorsPage() {
 
     // Apply status filter
     if (statusFilter !== "all") {
-      if (statusFilter === "approved") {
-        // When "approved" filter is selected, include both "approved" and "verified" statuses
+      if (statusFilter === "verified") {
+        // When "verified" filter is selected, include only "verified" status
         filtered = filtered.filter(business => 
-          business.verificationStatus === "approved" || 
           business.verificationStatus === "verified"
         );
       } else {
@@ -440,9 +439,9 @@ export default function VendorsPage() {
 
     // Count by status
     setPendingCount(businesses.filter((b: Business) => b.verificationStatus === "pending").length);
-    setApprovedCount(
+    setVerifiedCount(
       businesses.filter(
-        (b: Business) => b.verificationStatus === "approved" || b.verificationStatus === "verified"
+        (b: Business) => b.verificationStatus === "verified"
       ).length
     );
     setRejectedCount(businesses.filter((b: Business) => b.verificationStatus === "rejected").length);
@@ -461,9 +460,9 @@ export default function VendorsPage() {
     switch (status) {
       case "pending":
         return <Badge variant="outline" className="flex items-center gap-1 font-normal text-yellow-600 border-yellow-300 bg-yellow-50"><Clock className="h-3 w-3" /> Pending</Badge>;
-      case "approved":
-      case "verified":  // Treat "verified" same as "approved"
-        return <Badge variant="outline" className="flex items-center gap-1 font-normal text-green-600 border-green-300 bg-green-50"><CheckCircle className="h-3 w-3" /> Approved</Badge>;
+      case "verified":
+      case "verified":  // Treat "verified" same as "verified"
+        return <Badge variant="outline" className="flex items-center gap-1 font-normal text-green-600 border-green-300 bg-green-50"><CheckCircle className="h-3 w-3" /> Verified</Badge>;
       case "rejected":
         return <Badge variant="outline" className="flex items-center gap-1 font-normal text-red-600 border-red-300 bg-red-50"><XCircle className="h-3 w-3" /> Rejected</Badge>;
       case "review":
@@ -489,8 +488,8 @@ export default function VendorsPage() {
       // Update counts
       if (businessToDelete.verificationStatus === 'pending') {
         setPendingCount(prev => prev - 1);
-      } else if (businessToDelete.verificationStatus === 'approved' || businessToDelete.verificationStatus === 'verified') {
-        setApprovedCount(prev => prev - 1);
+      } else if (businessToDelete.verificationStatus === 'verified' || businessToDelete.verificationStatus === 'verified') {
+        setVerifiedCount(prev => prev - 1);
       } else if (businessToDelete.verificationStatus === 'rejected') {
         setRejectedCount(prev => prev - 1);
       }
@@ -547,7 +546,7 @@ export default function VendorsPage() {
         </Card>
         <Card>
           <CardHeader className="py-4">
-            <CardTitle className="text-base text-muted-foreground">Approved</CardTitle>
+            <CardTitle className="text-base text-muted-foreground">Verified</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -557,8 +556,8 @@ export default function VendorsPage() {
               </div>
             ) : (
               <>
-                <div className="text-2xl font-bold">{approvedCount || 'N/A'}</div>
-                <p className="text-xs text-muted-foreground mt-1">Active vendors (approved & verified)</p>
+                <div className="text-2xl font-bold">{verifiedCount || 'N/A'}</div>
+                <p className="text-xs text-muted-foreground mt-1">Active vendors (verified)</p>
               </>
             )}
           </CardContent>
@@ -601,12 +600,12 @@ export default function VendorsPage() {
             <Clock className="mr-2 h-3 w-3" /> Pending
           </Button>
           <Button 
-            variant={statusFilter === "approved" ? "default" : "outline"} 
+            variant={statusFilter === "verified" ? "default" : "outline"} 
             size="sm"
-            onClick={() => setStatusFilter("approved")}
-            className={statusFilter === "approved" ? "" : "text-green-600 border-green-300 hover:bg-green-50"}
+            onClick={() => setStatusFilter("verified")}
+            className={statusFilter === "verified" ? "" : "text-green-600 border-green-300 hover:bg-green-50"}
           >
-            <CheckCircle className="mr-2 h-3 w-3" /> Approved
+            <CheckCircle className="mr-2 h-3 w-3" /> Verified
           </Button>
           <Button 
             variant={statusFilter === "rejected" ? "default" : "outline"} 

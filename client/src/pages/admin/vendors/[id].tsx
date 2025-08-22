@@ -62,7 +62,7 @@ interface Business {
   businessName: string;
   businessCategory: string;
   appliedDate: string;
-  status: "new" | "in_review" | "approved" | "rejected";
+  status: "new" | "in_review" | "verified" | "rejected";
   verificationStatus: string;
   verificationFeedback?: string;
   email: string;
@@ -94,9 +94,9 @@ export default function VendorDetailPage() {
   const [, navigate] = useLocation();
   const [business, setBusiness] = useState<Business | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [approvalStatus, setApprovalStatus] = useState<string>("pending");
+  const [verificationStatus, setVerificationStatus] = useState<string>("pending");
   const [feedbackText, setFeedbackText] = useState<string>("");
-  const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);
+  const [isVerificationDialogOpen, setIsVerificationDialogOpen] = useState(false);
   const [isRejectionDialogOpen, setIsRejectionDialogOpen] = useState(false);
   const [selectedDocumentId, setSelectedDocumentId] = useState<number | null>(null);
   const { toast } = useToast();
@@ -161,7 +161,7 @@ export default function VendorDetailPage() {
         };
         
         setBusiness(businessData);
-        setApprovalStatus(businessData.verificationStatus || "pending");
+        setVerificationStatus(businessData.verificationStatus || "pending");
       } else {
         // Fall back to mock data if API fails
         const mockBusiness: Business = {
@@ -208,7 +208,7 @@ export default function VendorDetailPage() {
         };
         
         setBusiness(mockBusiness);
-        setApprovalStatus(mockBusiness.verificationStatus);
+        setVerificationStatus(mockBusiness.verificationStatus);
       }
     } catch (error) {
       console.error("Error fetching business data:", error);
@@ -236,7 +236,7 @@ export default function VendorDetailPage() {
       
       toast({
         title: "Success",
-        description: `Vendor ${status === "approved" ? "approved" : "rejected"} successfully`
+        description: `Vendor ${status === "verified" ? "verified" : "rejected"} successfully`
       });
 
       // Update local state
@@ -245,10 +245,10 @@ export default function VendorDetailPage() {
         verificationStatus: status,
         verificationFeedback: feedbackText
       });
-      setApprovalStatus(status);
+      setVerificationStatus(status);
       
       // Close dialogs
-      setIsApprovalDialogOpen(false);
+      setIsVerificationDialogOpen(false);
       setIsRejectionDialogOpen(false);
       
       // Clear feedback text
@@ -267,7 +267,7 @@ export default function VendorDetailPage() {
     switch (status) {
       case "pending":
         return "text-yellow-600 bg-yellow-50 border-yellow-200";
-      case "approved":
+      case "verified":
         return "text-green-600 bg-green-50 border-green-200";
       case "verified":
         return "text-green-600 bg-green-50 border-green-200";
@@ -282,7 +282,7 @@ export default function VendorDetailPage() {
     switch (status) {
       case "pending":
         return <Clock className="h-4 w-4 mr-1" />;
-      case "approved":
+      case "verified":
         return <CheckCircle className="h-4 w-4 mr-1" />;
       case "verified":
         return <ShieldCheck className="h-4 w-4 mr-1" />;
@@ -344,12 +344,12 @@ export default function VendorDetailPage() {
           {business.verificationStatus === "pending" || business.verificationStatus === "rejected" ? (
             <Button 
               className="bg-green-600 hover:bg-green-700"
-              onClick={() => setIsApprovalDialogOpen(true)}
+              onClick={() => setIsVerificationDialogOpen(true)}
             >
-              <CheckCircle className="mr-2 h-4 w-4" /> Approve
+              <CheckCircle className="mr-2 h-4 w-4" /> Verify
             </Button>
           ) : null}
-          {business.verificationStatus === "pending" || business.verificationStatus === "approved" ? (
+          {business.verificationStatus === "pending" || business.verificationStatus === "verified" ? (
             <Button 
               variant="destructive"
               onClick={() => setIsRejectionDialogOpen(true)}
@@ -437,11 +437,11 @@ export default function VendorDetailPage() {
         <Card>
           <CardHeader>
             <CardTitle>Verification Status</CardTitle>
-            <CardDescription>Current approval status</CardDescription>
+            <CardDescription>Current verification status</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col items-center justify-center py-4">
-              {business.verificationStatus === "approved" ? (
+              {business.verificationStatus === "verified" ? (
                 <div className="p-4 bg-green-50 rounded-full mb-4">
                   <CheckCircle className="h-10 w-10 text-green-600" />
                 </div>
@@ -455,14 +455,14 @@ export default function VendorDetailPage() {
                 </div>
               )}
               <h3 className="text-lg font-semibold mb-1">
-                {business.verificationStatus === "approved" 
-                  ? "Approved" 
+                {business.verificationStatus === "verified" 
+                  ? "Verified" 
                   : business.verificationStatus === "rejected"
                   ? "Rejected"
-                  : "Pending Approval"}
+                  : "Pending Verification"}
               </h3>
               <p className="text-sm text-muted-foreground text-center">
-                {business.verificationStatus === "approved"
+                {business.verificationStatus === "verified"
                   ? "This vendor has been verified and can create deals."
                   : business.verificationStatus === "rejected"
                   ? "This vendor has been rejected and cannot create deals."
@@ -487,12 +487,12 @@ export default function VendorDetailPage() {
                   <Button 
                     variant="outline" 
                     className="w-full justify-start text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200"
-                    onClick={() => setIsApprovalDialogOpen(true)}
+                    onClick={() => setIsVerificationDialogOpen(true)}
                   >
-                    <CheckCircle className="h-4 w-4 mr-2" /> Approve Vendor
+                    <CheckCircle className="h-4 w-4 mr-2" /> Verify Vendor
                   </Button>
                 ) : null}
-                {business.verificationStatus === "pending" || business.verificationStatus === "approved" ? (
+                {business.verificationStatus === "pending" || business.verificationStatus === "verified" ? (
                   <Button 
                     variant="outline" 
                     className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
@@ -587,13 +587,13 @@ export default function VendorDetailPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Approve Dialog */}
-      <Dialog open={isApprovalDialogOpen} onOpenChange={setIsApprovalDialogOpen}>
+      {/* Verify Dialog */}
+      <Dialog open={isVerificationDialogOpen} onOpenChange={setIsVerificationDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Approve Vendor</DialogTitle>
+            <DialogTitle>Verify Vendor</DialogTitle>
             <DialogDescription>
-              Are you sure you want to approve this vendor? They will be able to create and publish deals.
+              Are you sure you want to verify this vendor? They will be able to create and publish deals.
             </DialogDescription>
           </DialogHeader>
           <div className="flex items-center justify-center py-6">
@@ -603,7 +603,7 @@ export default function VendorDetailPage() {
           </div>
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Approval Feedback (Optional)</label>
+              <label className="text-sm font-medium">Verification Feedback (Optional)</label>
               <Textarea 
                 placeholder="Enter any feedback for the vendor..."
                 value={feedbackText}
@@ -612,12 +612,12 @@ export default function VendorDetailPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsApprovalDialogOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setIsVerificationDialogOpen(false)}>Cancel</Button>
             <Button 
               className="bg-green-600 hover:bg-green-700" 
-              onClick={() => handleUpdateVerificationStatus("approved")}
+              onClick={() => handleUpdateVerificationStatus("verified")}
             >
-              Approve Vendor
+              Verify Vendor
             </Button>
           </DialogFooter>
         </DialogContent>

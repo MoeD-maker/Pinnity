@@ -123,7 +123,7 @@ export default function EditDealPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [dealData, setDealData] = useState<any>(null);
-  const [showApprovalWarning, setShowApprovalWarning] = useState(false);
+  const [showVerificationWarning, setShowVerificationWarning] = useState(false);
   
   // Initialize form
   const form = useForm<z.infer<typeof dealFormSchema>>({
@@ -193,9 +193,9 @@ export default function EditDealPage() {
             status: data.status || 'draft',
           });
           
-          // Show approval warning for deals in approval process
-          if (['pending', 'approved', 'active'].includes(data.status)) {
-            setShowApprovalWarning(true);
+          // Show verification warning for deals in verification process
+          if (['pending', 'verified'].includes(data.status)) {
+            setShowVerificationWarning(true);
           }
         } else {
           toast({
@@ -400,8 +400,7 @@ export default function EditDealPage() {
     const statusMap: Record<string, string> = {
       'draft': 'bg-gray-100 text-gray-700 border-gray-200',
       'pending': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      'active': 'bg-green-100 text-green-800 border-green-200',
-      'approved': 'bg-green-100 text-green-800 border-green-200',
+      'verified': 'bg-green-100 text-green-800 border-green-200',
       'rejected': 'bg-red-100 text-red-800 border-red-200',
       'pending_revision': 'bg-orange-100 text-orange-800 border-orange-200',
       'expired': 'bg-gray-100 text-gray-700 border-gray-200'
@@ -414,9 +413,8 @@ export default function EditDealPage() {
   const getStatusText = () => {
     const statusTextMap: Record<string, string> = {
       'draft': 'Draft',
-      'pending': 'Pending Approval',
-      'active': 'Active',
-      'approved': 'Approved',
+      'pending': 'Pending Verification',
+      'verified': 'Verified',
       'rejected': 'Rejected',
       'pending_revision': 'Revision Requested',
       'expired': 'Expired'
@@ -482,7 +480,7 @@ export default function EditDealPage() {
         <Alert className="mb-6 border-yellow-200 bg-yellow-50">
           <Info className="h-4 w-4 text-yellow-700" />
           <AlertDescription className="text-yellow-700">
-            <p>This deal is currently under review by our team. Any changes you make will reset the approval process.</p>
+            <p>This deal is currently under review by our team. Any changes you make will reset the verification process.</p>
           </AlertDescription>
         </Alert>
       )}
@@ -504,25 +502,25 @@ export default function EditDealPage() {
           <AlertDescription className="text-orange-700">
             <p className="font-medium">Our team has requested the following revisions:</p>
             <p className="mt-1">{dealData.revisionNotes}</p>
-            <p className="mt-2">Please update your deal and resubmit for approval.</p>
+            <p className="mt-2">Please update your deal and resubmit for verification.</p>
           </AlertDescription>
         </Alert>
       )}
       
-      {dealStatus === 'approved' && dealData && (
+      {dealStatus === 'verified' && dealData && (
         <Alert className="mb-6 border-green-200 bg-green-50">
           <Info className="h-4 w-4 text-green-700" />
           <AlertDescription className="text-green-700">
-            <p>This deal has been approved. Any significant changes will require re-approval.</p>
+            <p>This deal has been verified. Any significant changes will require re-verification.</p>
           </AlertDescription>
         </Alert>
       )}
       
-      {showApprovalWarning && (
+      {showVerificationWarning && (
         <Alert className="mb-6 border-blue-200 bg-blue-50">
           <Info className="h-4 w-4 text-blue-700" />
           <AlertDescription className="text-blue-700">
-            <p>Making changes to this deal will require it to go through the approval process again. Your changes will be saved as a draft until approved.</p>
+            <p>Making changes to this deal will require it to go through the verification process again. Your changes will be saved as a draft until verified.</p>
           </AlertDescription>
         </Alert>
       )}

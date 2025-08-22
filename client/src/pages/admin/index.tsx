@@ -39,7 +39,7 @@ type StatValue = string | number;
 
 interface DashboardStats {
   pendingVendors: StatValue;
-  approvedVendors: StatValue;
+  verifiedVendors: StatValue;
   rejectedVendors: StatValue;
   pendingDeals: StatValue;
   activeDeals: StatValue;
@@ -110,7 +110,7 @@ const StatCard = ({
 interface ActivityItem {
   id: number;
   type: "vendor_application" | "deal_submission" | "user_registration" | "deal_redemption";
-  status: "pending" | "approved" | "rejected" | "completed";
+  status: "pending" | "verified" | "rejected" | "completed";
   title: string;
   description: string;
   timestamp: string;
@@ -121,7 +121,7 @@ const ActivityCard = ({ activity }: { activity: ActivityItem }) => {
     switch (activity.status) {
       case "pending":
         return <Clock className="h-4 w-4 text-yellow-500" />;
-      case "approved":
+      case "verified":
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case "rejected":
         return <XCircle className="h-4 w-4 text-red-500" />;
@@ -309,7 +309,7 @@ const AdminDashboardPage = () => {
     recentActivity?: Array<{
       id: number;
       type: "vendor_application" | "deal_submission" | "user_registration" | "deal_redemption";
-      status: "pending" | "approved" | "rejected" | "completed";
+      status: "pending" | "verified" | "rejected" | "completed";
       title: string;
       description: string;
       timestamp: string;
@@ -353,7 +353,7 @@ const AdminDashboardPage = () => {
     // Initialize with default values and error states
     const defaultStats: DashboardStats = {
       pendingVendors: 'N/A',
-      approvedVendors: 'N/A', 
+      verifiedVendors: 'N/A', 
       rejectedVendors: 'N/A',
       pendingDeals: 'N/A',
       activeDeals: 'N/A',
@@ -373,7 +373,7 @@ const AdminDashboardPage = () => {
     // Initialize with numeric values
     const numericStats: DashboardStats = {
       pendingVendors: 0,
-      approvedVendors: 0, 
+      verifiedVendors: 0, 
       rejectedVendors: 0,
       pendingDeals: 0,
       activeDeals: 0,
@@ -400,7 +400,7 @@ const AdminDashboardPage = () => {
         } else {
           console.error("Vendors data is not an array or object:", vendorsData);
           numericStats.pendingVendors = 'Error';
-          numericStats.approvedVendors = 'Error';
+          numericStats.verifiedVendors = 'Error';
           numericStats.rejectedVendors = 'Error';
           return numericStats;
         }
@@ -411,8 +411,7 @@ const AdminDashboardPage = () => {
           vendor.verificationStatus === 'pending'
         );
         
-        const approvedVendors = vendorsArray.filter((vendor: any) => 
-          vendor.verificationStatus === 'approved' || 
+        const verifiedVendors = vendorsArray.filter((vendor: any) => 
           vendor.verificationStatus === 'verified'
         );
         
@@ -422,19 +421,19 @@ const AdminDashboardPage = () => {
         
         // Update all vendor-related stats
         numericStats.pendingVendors = pendingVendors.length;
-        numericStats.approvedVendors = approvedVendors.length;
+        numericStats.verifiedVendors = verifiedVendors.length;
         numericStats.rejectedVendors = rejectedVendors.length;
         
         // Log vendor counts for debugging
         console.log(`Dashboard: Found ${pendingVendors.length} pending vendors`);
-        console.log(`Dashboard: Found ${approvedVendors.length} approved vendors (including ${
-          approvedVendors.filter(v => v.verificationStatus === 'verified').length
+        console.log(`Dashboard: Found ${verifiedVendors.length} verified vendors (including ${
+          verifiedVendors.filter(v => v.verificationStatus === 'verified').length
         } verified vendors)`);
         console.log(`Dashboard: Found ${rejectedVendors.length} rejected vendors`);
       } catch (error) {
         console.error("Error processing vendors data:", error);
         numericStats.pendingVendors = 'Error';
-        numericStats.approvedVendors = 'Error';
+        numericStats.verifiedVendors = 'Error';
         numericStats.rejectedVendors = 'Error';
       }
     }
@@ -466,7 +465,7 @@ const AdminDashboardPage = () => {
         ).length;
         
         numericStats.activeDeals = dealsArray.filter((deal: any) => 
-          deal.status === 'approved' && new Date(deal.endDate) > new Date()
+          deal.status === 'verified' && new Date(deal.endDate) > new Date()
         ).length;
         
         numericStats.rejectedDeals = dealsArray.filter((deal: any) => 
@@ -474,7 +473,7 @@ const AdminDashboardPage = () => {
         ).length;
         
         numericStats.expiredDeals = dealsArray.filter((deal: any) => 
-          deal.status === 'approved' && new Date(deal.endDate) <= new Date()
+          deal.status === 'verified' && new Date(deal.endDate) <= new Date()
         ).length;
         
         // Log deal counts for debugging
@@ -605,8 +604,8 @@ const AdminDashboardPage = () => {
     if (isPositiveNumber(stats.pendingDeals)) {
       newAlerts.push({
         id: 2,
-        title: "Deal Approval Backlog",
-        description: `${stats.pendingDeals} deals are pending approval`,
+        title: "Deal Verification Backlog",
+        description: `${stats.pendingDeals} deals are pending verification`,
         priority: isGreaterThan(stats.pendingDeals, 5) ? "high" : "medium"
       });
     }
@@ -682,7 +681,7 @@ const AdminDashboardPage = () => {
           title="Pending Vendors"
           value={stats.pendingVendors}
           icon={<Store className="h-4 w-4" />}
-          description="Vendors awaiting approval"
+          description="Vendors awaiting verification"
           isLoading={isLoadingVendors}
           action={{
             label: "View All",
@@ -690,14 +689,14 @@ const AdminDashboardPage = () => {
           }}
         />
         <StatCard
-          title="Approved Vendors"
-          value={stats.approvedVendors}
+          title="Verified Vendors"
+          value={stats.verifiedVendors}
           icon={<CheckCircle className="h-4 w-4" />}
           description="Active vendors"
           isLoading={isLoadingVendors}
           action={{
             label: "View All",
-            onClick: () => window.location.href = "/admin/vendors?status=approved"
+            onClick: () => window.location.href = "/admin/vendors?status=verified"
           }}
         />
         <StatCard
