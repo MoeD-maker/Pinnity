@@ -28,11 +28,10 @@ import { setupVite, serveStatic, log } from "./vite.js";
 import { initializeSupabaseStorage } from "./supabaseStorage.js";
 import { startSyncWorker } from "./sync/SyncWorker.js";
 // Simplified imports for minimal server startup
-import { gatedRegister, gatedLogin } from "./routes/auth.routes.gated.js";
 import { pool } from "./db.js";
 // Skip complex imports that are causing issues
-// import { router as adminRouter } from "./routes/admin.routes.supabase.js";
-// import { router as authRouter } from "./routes/auth.routes.supabase.js";
+// import { router as adminRouter } from "./routes/admin.routes.js";
+// import { router as authRouter } from "./routes/auth.routes.js";
 // import { router as legacyRoutes } from "./routes/index.js";
 import { sendSMSVerification, verifySMSCode } from "./smsService.js";
 import adminReconcileRouter from "./routes/admin.reconcile.js";
@@ -208,26 +207,14 @@ app.post('/api/v1/sms/verify', async (req, res) => {
   }
 });
 
-// Gated authentication routes (minimal implementation)
-console.log('🔥 Registering gated authentication routes');
-app.post('/api/auth/gated/register', gatedRegister);
-
-// Only mount one login endpoint
-app.post('/api/v1/auth/login', gatedLogin);
-
-// Guard the older path - only enable in development compatibility mode
-if (process.env.AUTH_DEV_COMPAT === "1") {
-  app.post("/api/auth/gated/login", gatedLogin);
-}
-
-// Import and register the full auth routes for business registration
-console.log('🔥 Importing business registration routes...');
+// Import and register authentication routes
+console.log('🔥 Importing authentication routes...');
 try {
-  const { authRoutes } = await import('./routes/auth.routes.fixed.ts');
+  const { authRoutes } = await import('./routes/auth.routes.ts');
   authRoutes(app);
-  console.log('✅ Business registration routes registered');
+  console.log('✅ Authentication routes registered');
 } catch (error) {
-  console.error('❌ Failed to import business registration routes:', error);
+  console.error('❌ Failed to import authentication routes:', error);
 }
 
 // Import and register verify routes

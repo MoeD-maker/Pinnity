@@ -4,40 +4,153 @@ import { authenticate, checkOwnership } from "../middleware";
 import { validate } from "../middleware/validationMiddleware";
 import { userSchemas, authSchemas, ratingSchemas } from "../schemas";
 import { accountSecurityRateLimiter, apiRateLimiter } from "../middleware/rateLimit";
+import { 
+  createVersionedRoutes, 
+  versionHeadersMiddleware,
+  deprecationMiddleware
+} from "../../src/utils/routeVersioning";
 
 /**
  * User routes for profile, favorites, redemptions, and preferences
  */
 export function userRoutes(app: Express): void {
   // Get user profile
+  const [vUserPath, lUserPath] = createVersionedRoutes('/user/:id');
+  
   app.get(
-    "/api/user/:id",
+    vUserPath,
+    versionHeadersMiddleware(),
     authenticate,
     checkOwnership('id'),
     validate(userSchemas.getUserById),
     async (req: Request, res: Response) => {
+      const userIdParam = req.params.id;
       try {
-        const userId = parseInt(req.params.id);
+        console.log(`USER PROFILE: Getting user data for ID: ${userIdParam}`);
         
-        const user = await storage.getUser(userId);
+        // Handle both numeric and UUID user IDs
+        let user;
+        if (userIdParam.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+          // UUID format - this is likely a profile UUID
+          console.log(`USER PROFILE: Searching for user by UUID: ${userIdParam}`);
+          
+          // First try to get user by profile ID directly using our new Supabase query
+          const { getUserById } = await import('../supabaseQueries');
+          user = await getUserById(userIdParam);
+          
+          if (!user) {
+            // Fallback: try with legacy storage method
+            console.log(`USER PROFILE: UUID not found in new system, trying legacy storage`);
+            user = await storage.getUserBySupabaseId(userIdParam);
+          }
+          
+          if (!user) {
+            // Fallback: check if this is a legacy admin user by email lookup
+            console.log(`USER PROFILE: UUID not found in Supabase users, checking all users`);
+            const allUsers = await storage.getAllUsers();
+            user = allUsers.find((u: any) => u.id === userIdParam || u.supabaseId === userIdParam);
+          }
+        } else {
+          // Numeric format - traditional user ID
+          const userId = parseInt(userIdParam);
+          if (isNaN(userId)) {
+            return res.status(400).json({ message: "Invalid user ID format" });
+          }
+          console.log(`USER PROFILE: Searching for user by numeric ID: ${userId}`);
+          user = await storage.getUser(userId);
+        }
+        
         if (!user) {
+          console.log(`USER PROFILE: User not found for ID: ${userIdParam}`);
           return res.status(404).json({ message: "User not found" });
         }
+        
+        console.log(`USER PROFILE: Found user: ${user.email} (${user.user_type || user.userType})`);
+        
+        // Handle different user object formats (legacy vs new)
+        const userData = {
+          id: user.id,
+          email: user.email,
+          firstName: user.first_name || user.firstName,
+          lastName: user.last_name || user.lastName,
+          userType: user.user_type || user.userType,
+          phoneVerified: user.phone_verified || user.phoneVerified,
+          phone: user.phone,
+          address: user.address,
+          avatarUrl: user.avatar_url || user.avatarUrl,
+          supabaseUserId: user.supabase_user_id || user.supabaseId,
+          createdAt: user.created_at || user.createdAt,
+          updatedAt: user.updated_at || user.updatedAt,
+          business: user.business
+        };
+        
+        return res.status(200).json(userData);
+      } catch (error) {
+        console.error("Get user error for UUID", userIdParam, ":", error);
+        console.error("Error stack:", error.stack);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+  
+  app.get(
+    lUserPath,
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate,
+    checkOwnership('id'),
+    validate(userSchemas.getUserById),
+    async (req: Request, res: Response) => {
+      const userIdParam = req.params.id;
+      try {
+        console.log(`USER PROFILE (LEGACY): Getting user data for ID: ${userIdParam}`);
+        
+        // Handle both numeric and UUID user IDs
+        let user;
+        if (userIdParam.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+          // UUID format - this is likely a Supabase user ID or legacy admin user
+          console.log(`USER PROFILE (LEGACY): Searching for user by UUID: ${userIdParam}`);
+          user = await storage.getUserBySupabaseId(userIdParam);
+          
+          if (!user) {
+            // Fallback: check if this is a legacy admin user by email lookup
+            console.log(`USER PROFILE (LEGACY): UUID not found in Supabase users, checking legacy admin users`);
+            const allUsers = await storage.getAllUsers();
+            user = allUsers.find((u: any) => u.id === userIdParam || u.supabaseId === userIdParam);
+          }
+        } else {
+          // Numeric format - traditional user ID
+          const userId = parseInt(userIdParam);
+          if (isNaN(userId)) {
+            return res.status(400).json({ message: "Invalid user ID format" });
+          }
+          console.log(`USER PROFILE (LEGACY): Searching for user by numeric ID: ${userId}`);
+          user = await storage.getUser(userId);
+        }
+        
+        if (!user) {
+          console.log(`USER PROFILE (LEGACY): User not found for ID: ${userIdParam}`);
+          return res.status(404).json({ message: "User not found" });
+        }
+        
+        console.log(`USER PROFILE (LEGACY): Found user: ${user.email} (${user.userType})`);
         
         // Don't return the password
         const { password, ...userData } = user;
         
         return res.status(200).json(userData);
       } catch (error) {
-        console.error("Get user error:", error);
+        console.error("Get user error (legacy):", error);
         return res.status(500).json({ message: "Internal server error" });
       }
     }
   );
 
   // Update user profile
+  const [vUpdateUserPath, lUpdateUserPath] = createVersionedRoutes('/user/:id');
+  
   app.put(
-    "/api/user/:id", 
+    vUpdateUserPath, 
+    versionHeadersMiddleware(),
     authenticate, 
     checkOwnership('id'),
     validate(userSchemas.updateUser),
@@ -62,9 +175,39 @@ export function userRoutes(app: Express): void {
     }
   );
   
+  app.put(
+    lUpdateUserPath, 
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate, 
+    checkOwnership('id'),
+    validate(userSchemas.updateUser),
+    async (req: Request, res: Response) => {
+      try {
+        const userId = parseInt(req.params.id);
+        const userData = req.body;
+        
+        const updatedUser = await storage.updateUser(userId, userData);
+        
+        // Don't return the password
+        const { password, ...sanitizedUser } = updatedUser;
+        
+        return res.status(200).json(sanitizedUser);
+      } catch (error) {
+        console.error("Update user error (legacy):", error);
+        if (error instanceof Error) {
+          return res.status(400).json({ message: error.message });
+        }
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+  
   // Change password endpoint
+  const [vChangePasswordPath, lChangePasswordPath] = createVersionedRoutes('/user/:id/change-password');
+  
   app.post(
-    "/api/user/:id/change-password", 
+    vChangePasswordPath, 
+    versionHeadersMiddleware(),
     authenticate, 
     checkOwnership('id'),
     accountSecurityRateLimiter, // Apply account security rate limiting for password change
@@ -90,16 +233,48 @@ export function userRoutes(app: Express): void {
       }
     }
   );
+  
+  app.post(
+    lChangePasswordPath, 
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate, 
+    checkOwnership('id'),
+    accountSecurityRateLimiter, // Apply account security rate limiting for password change
+    validate(authSchemas.passwordChange),
+    async (req: Request, res: Response) => {
+      try {
+        const userId = parseInt(req.params.id);
+        const { currentPassword, newPassword } = req.body;
+        
+        const success = await storage.changePassword(userId, currentPassword, newPassword);
+        
+        if (!success) {
+          return res.status(400).json({ message: "Current password is incorrect" });
+        }
+        
+        return res.status(200).json({ message: "Password changed successfully" });
+      } catch (error) {
+        if (error instanceof Error) {
+          return res.status(400).json({ message: error.message });
+        }
+        console.error("Change password error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
 
   // User favorites routes
+  const [vUserFavoritesPath, lUserFavoritesPath] = createVersionedRoutes('/user/:userId/favorites');
+  
   app.get(
-    "/api/user/:userId/favorites", 
+    vUserFavoritesPath, 
+    versionHeadersMiddleware(),
     authenticate, 
     checkOwnership('userId'),
     validate(userSchemas.getUserFavorites),
     async (req: Request, res: Response) => {
       try {
-        const userId = parseInt(req.params.userId);
+        const userId = req.params.userId; // Keep as string (UUID)
         
         const favorites = await storage.getUserFavorites(userId);
         return res.status(200).json(favorites);
@@ -110,14 +285,34 @@ export function userRoutes(app: Express): void {
     }
   );
   
+  app.get(
+    lUserFavoritesPath, 
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate, 
+    checkOwnership('userId'),
+    validate(userSchemas.getUserFavorites),
+    async (req: Request, res: Response) => {
+      try {
+        const userId = req.params.userId; // Keep as string (UUID)
+        
+        const favorites = await storage.getUserFavorites(userId);
+        return res.status(200).json(favorites);
+      } catch (error) {
+        console.error("Get user favorites error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+  
   app.post(
-    "/api/user/:userId/favorites", 
+    vUserFavoritesPath, 
+    versionHeadersMiddleware(),
     authenticate, 
     checkOwnership('userId'),
     validate(userSchemas.addUserFavorite),
     async (req: Request, res: Response) => {
       try {
-        const userId = parseInt(req.params.userId);
+        const userId = req.params.userId; // Keep as string (UUID)
         const { dealId } = req.body;
         
         const favorite = await storage.addUserFavorite(userId, dealId);
@@ -133,14 +328,41 @@ export function userRoutes(app: Express): void {
     }
   );
   
+  app.post(
+    lUserFavoritesPath, 
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate, 
+    checkOwnership('userId'),
+    validate(userSchemas.addUserFavorite),
+    async (req: Request, res: Response) => {
+      try {
+        const userId = req.params.userId; // Keep as string (UUID)
+        const { dealId } = req.body;
+        
+        const favorite = await storage.addUserFavorite(userId, dealId);
+        
+        // Increment deal saves count
+        await storage.incrementDealSaves(dealId);
+        
+        return res.status(201).json(favorite);
+      } catch (error) {
+        console.error("Add user favorite error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+  
+  const [vRemoveFavoritePath, lRemoveFavoritePath] = createVersionedRoutes('/user/:userId/favorites/:dealId');
+  
   app.delete(
-    "/api/user/:userId/favorites/:dealId", 
+    vRemoveFavoritePath, 
+    versionHeadersMiddleware(),
     authenticate, 
     checkOwnership('userId'),
     validate(userSchemas.removeUserFavorite),
     async (req: Request, res: Response) => {
       try {
-        const userId = parseInt(req.params.userId);
+        const userId = req.params.userId; // Keep as string (UUID)
         const dealId = parseInt(req.params.dealId);
         
         await storage.removeUserFavorite(userId, dealId);
@@ -151,10 +373,132 @@ export function userRoutes(app: Express): void {
       }
     }
   );
+  
+  app.delete(
+    lRemoveFavoritePath, 
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate, 
+    checkOwnership('userId'),
+    validate(userSchemas.removeUserFavorite),
+    async (req: Request, res: Response) => {
+      try {
+        const userId = req.params.userId; // Keep as string (UUID)
+        const dealId = parseInt(req.params.dealId);
+        
+        await storage.removeUserFavorite(userId, dealId);
+        return res.status(200).json({ message: "Favorite removed successfully" });
+      } catch (error) {
+        console.error("Remove user favorite error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
 
   // User redemptions routes
+  const [vUserRedemptionsPath, lUserRedemptionsPath] = createVersionedRoutes('/user/:userId/redemptions');
+  
+  // Check if user has redeemed a specific deal
+  const [vUserRedemptionCheckPath, lUserRedemptionCheckPath] = createVersionedRoutes('/user/:userId/redemptions/:dealId');
+  
   app.get(
-    "/api/user/:userId/redemptions", 
+    vUserRedemptionCheckPath,
+    versionHeadersMiddleware(),
+    authenticate,
+    checkOwnership('userId'),
+    async (req: Request, res: Response) => {
+      try {
+        const userId = parseInt(req.params.userId);
+        const dealId = parseInt(req.params.dealId);
+        
+        if (isNaN(userId)) {
+          return res.status(400).json({ message: "Invalid user ID" });
+        }
+        if (isNaN(dealId)) {
+          return res.status(400).json({ message: "Invalid deal ID" });
+        }
+        
+        const redemptions = await storage.getUserRedemptions(userId);
+        const hasRedeemed = redemptions.some(r => r.dealId === dealId);
+        
+        // Get the deal details to check max redemptions per user
+        const deal = await storage.getDeal(dealId);
+        
+        if (!deal) {
+          return res.status(404).json({ message: "Deal not found" });
+        }
+        
+        const maxRedemptionsPerUser = deal.maxRedemptionsPerUser || null;
+        const totalRedemptions = redemptions.filter(r => r.dealId === dealId).length;
+        
+        // Calculate remaining redemptions if there's a limit per user
+        const remainingRedemptions = maxRedemptionsPerUser !== null 
+          ? Math.max(0, maxRedemptionsPerUser - totalRedemptions) 
+          : null;
+          
+        return res.status(200).json({ 
+          hasRedeemed, 
+          remainingRedemptions,
+          totalRedemptions,
+          maxRedemptionsPerUser  // Add this field to the response
+        });
+      } catch (error) {
+        console.error("Check user redemption error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+  
+  app.get(
+    lUserRedemptionCheckPath,
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate,
+    checkOwnership('userId'),
+    async (req: Request, res: Response) => {
+      try {
+        const userId = parseInt(req.params.userId);
+        const dealId = parseInt(req.params.dealId);
+        
+        if (isNaN(userId)) {
+          return res.status(400).json({ message: "Invalid user ID" });
+        }
+        if (isNaN(dealId)) {
+          return res.status(400).json({ message: "Invalid deal ID" });
+        }
+        
+        const redemptions = await storage.getUserRedemptions(userId);
+        const hasRedeemed = redemptions.some(r => r.dealId === dealId);
+        
+        // Get the deal details to check max redemptions per user
+        const deal = await storage.getDeal(dealId);
+        
+        if (!deal) {
+          return res.status(404).json({ message: "Deal not found" });
+        }
+        
+        const maxRedemptionsPerUser = deal.maxRedemptionsPerUser || null;
+        const totalRedemptions = redemptions.filter(r => r.dealId === dealId).length;
+        
+        // Calculate remaining redemptions if there's a limit per user
+        const remainingRedemptions = maxRedemptionsPerUser !== null 
+          ? Math.max(0, maxRedemptionsPerUser - totalRedemptions) 
+          : null;
+          
+        return res.status(200).json({ 
+          hasRedeemed, 
+          remainingRedemptions,
+          totalRedemptions,
+          maxRedemptionsPerUser  // Add this field to the response
+        });
+      } catch (error) {
+        console.error("Check user redemption error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+  
+  app.get(
+    vUserRedemptionsPath, 
+    versionHeadersMiddleware(),
     authenticate, 
     checkOwnership('userId'),
     validate(userSchemas.getUserRedemptions),
@@ -171,44 +515,28 @@ export function userRoutes(app: Express): void {
     }
   );
   
-  // Check if a user has redeemed a specific deal
   app.get(
-    "/api/user/:userId/redemptions/check/:dealId", 
+    lUserRedemptionsPath, 
+    [versionHeadersMiddleware(), deprecationMiddleware],
     authenticate, 
     checkOwnership('userId'),
+    validate(userSchemas.getUserRedemptions),
     async (req: Request, res: Response) => {
       try {
         const userId = parseInt(req.params.userId);
-        const dealId = parseInt(req.params.dealId);
         
-        if (isNaN(userId) || isNaN(dealId)) {
-          return res.status(400).json({ message: "Invalid user ID or deal ID" });
-        }
-        
-        // Get the deal to check redemption limits
-        const deal = await storage.getDeal(dealId);
-        if (!deal) {
-          return res.status(404).json({ message: "Deal not found" });
-        }
-        
-        const hasRedeemed = await storage.hasUserRedeemedDeal(userId, dealId);
-        const redemptionCount = await storage.getUserRedemptionCountForDeal(userId, dealId);
-        
-        return res.status(200).json({ 
-          hasRedeemed,
-          redemptionCount,
-          maxRedemptionsPerUser: deal.maxRedemptionsPerUser || null,
-          canRedeem: !deal.maxRedemptionsPerUser || redemptionCount < deal.maxRedemptionsPerUser
-        });
+        const redemptions = await storage.getUserRedemptions(userId);
+        return res.status(200).json(redemptions);
       } catch (error) {
-        console.error("Check user redemption error:", error);
+        console.error("Get user redemptions error (legacy):", error);
         return res.status(500).json({ message: "Internal server error" });
       }
     }
   );
   
   app.post(
-    "/api/user/:userId/redemptions", 
+    vUserRedemptionsPath, 
+    versionHeadersMiddleware(),
     authenticate, 
     checkOwnership('userId'),
     validate(userSchemas.createRedemption),
@@ -229,10 +557,37 @@ export function userRoutes(app: Express): void {
       }
     }
   );
+  
+  app.post(
+    lUserRedemptionsPath, 
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate, 
+    checkOwnership('userId'),
+    validate(userSchemas.createRedemption),
+    async (req: Request, res: Response) => {
+      try {
+        const userId = parseInt(req.params.userId);
+        const { dealId } = req.body;
+        
+        const redemption = await storage.createRedemption(userId, dealId);
+        
+        // Increment deal redemptions count
+        await storage.incrementDealRedemptions(dealId);
+        
+        return res.status(201).json(redemption);
+      } catch (error) {
+        console.error("Add user redemption error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
 
   // User notification preferences routes
+  const [vUserPrefsPath, lUserPrefsPath] = createVersionedRoutes('/user/:userId/notification-preferences');
+  
   app.get(
-    "/api/user/:userId/notification-preferences", 
+    vUserPrefsPath, 
+    versionHeadersMiddleware(),
     authenticate, 
     checkOwnership('userId'),
     validate(userSchemas.getNotificationPreferences),
@@ -240,11 +595,7 @@ export function userRoutes(app: Express): void {
       try {
         const userId = parseInt(req.params.userId);
         
-        const preferences = await storage.getUserNotificationPreferences(userId);
-        if (!preferences) {
-          return res.status(404).json({ message: "Notification preferences not found" });
-        }
-        
+        const preferences = await storage.getNotificationPreferences(userId);
         return res.status(200).json(preferences);
       } catch (error) {
         console.error("Get notification preferences error:", error);
@@ -253,8 +604,28 @@ export function userRoutes(app: Express): void {
     }
   );
   
+  app.get(
+    lUserPrefsPath, 
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate, 
+    checkOwnership('userId'),
+    validate(userSchemas.getNotificationPreferences),
+    async (req: Request, res: Response) => {
+      try {
+        const userId = parseInt(req.params.userId);
+        
+        const preferences = await storage.getNotificationPreferences(userId);
+        return res.status(200).json(preferences);
+      } catch (error) {
+        console.error("Get notification preferences error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+  
   app.put(
-    "/api/user/:userId/notification-preferences", 
+    vUserPrefsPath, 
+    versionHeadersMiddleware(),
     authenticate, 
     checkOwnership('userId'),
     validate(userSchemas.updateNotificationPreferences),
@@ -263,8 +634,7 @@ export function userRoutes(app: Express): void {
         const userId = parseInt(req.params.userId);
         const preferencesData = req.body;
         
-        const preferences = await storage.updateUserNotificationPreferences(userId, preferencesData);
-        
+        const preferences = await storage.updateNotificationPreferences(userId, preferencesData);
         return res.status(200).json(preferences);
       } catch (error) {
         console.error("Update notification preferences error:", error);
@@ -272,13 +642,37 @@ export function userRoutes(app: Express): void {
       }
     }
   );
-
-  // User ratings routes
-  app.get(
-    "/api/user/:userId/ratings", 
+  
+  app.put(
+    lUserPrefsPath, 
+    [versionHeadersMiddleware(), deprecationMiddleware],
     authenticate, 
     checkOwnership('userId'),
-    validate(ratingSchemas.getUserRatings),
+    validate(userSchemas.updateNotificationPreferences),
+    async (req: Request, res: Response) => {
+      try {
+        const userId = parseInt(req.params.userId);
+        const preferencesData = req.body;
+        
+        const preferences = await storage.updateNotificationPreferences(userId, preferencesData);
+        return res.status(200).json(preferences);
+      } catch (error) {
+        console.error("Update notification preferences error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+  
+  // User ratings routes
+  // Get all ratings posted by a user
+  const [vUserRatingsPath, lUserRatingsPath] = createVersionedRoutes('/user/:userId/ratings');
+  
+  app.get(
+    vUserRatingsPath,
+    versionHeadersMiddleware(),
+    authenticate,
+    checkOwnership('userId'),
+    validate(userSchemas.getUserRatings),
     async (req: Request, res: Response) => {
       try {
         const userId = parseInt(req.params.userId);
@@ -292,55 +686,20 @@ export function userRoutes(app: Express): void {
     }
   );
   
-  // Rating for a redemption
-  app.post(
-    "/api/redemptions/:redemptionId/ratings", 
+  app.get(
+    lUserRatingsPath,
+    [versionHeadersMiddleware(), deprecationMiddleware],
     authenticate,
-    validate(ratingSchemas.createRating),
+    checkOwnership('userId'),
+    validate(userSchemas.getUserRatings),
     async (req: Request, res: Response) => {
       try {
-        const redemptionId = parseInt(req.params.redemptionId);
+        const userId = parseInt(req.params.userId);
         
-        // Verify the redemption exists
-        const redemptions = await storage.getDealRedemptions(0); // We'll filter it below
-        const redemption = redemptions.find(r => r.id === redemptionId);
-        
-        if (!redemption) {
-          return res.status(404).json({ message: "Redemption not found" });
-        }
-        
-        // Verify the authenticated user is the one who made the redemption
-        if (redemption.userId !== req.user?.userId) {
-          return res.status(403).json({ message: "You can only rate your own redemptions" });
-        }
-        
-        // Verify the rating doesn't already exist
-        const existingRating = await storage.getRedemptionRating(redemptionId);
-        if (existingRating) {
-          return res.status(400).json({ message: "Redemption already rated" });
-        }
-        
-        // Rating data is already validated by Zod schema
-        const { rating, comment, anonymous = false } = req.body;
-        
-        // Create the rating
-        const ratingData = { 
-          rating, 
-          comment: comment || null,
-          anonymous
-        };
-        
-        const createdRating = await storage.createRedemptionRating(
-          redemptionId,
-          redemption.userId,
-          redemption.dealId,
-          req.body.businessId, // This should come from the request or be looked up
-          ratingData
-        );
-        
-        return res.status(201).json(createdRating);
+        const ratings = await storage.getUserRatings(userId);
+        return res.status(200).json(ratings);
       } catch (error) {
-        console.error("Create rating error:", error);
+        console.error("Get user ratings error (legacy):", error);
         return res.status(500).json({ message: "Internal server error" });
       }
     }

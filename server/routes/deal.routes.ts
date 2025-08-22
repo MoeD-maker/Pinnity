@@ -1,44 +1,292 @@
 import type { Express, Request, Response } from "express";
 import { storage } from "../storage";
-import { authenticate, authorize, verifyCsrf } from "../middleware";
-import { insertDealSchema } from "@shared/schema";
-import { z } from "zod";
-import { createVersionedRoutes, versionHeadersMiddleware, deprecationMiddleware } from "../../src/utils/routeVersioning";
-import { ensureArray, sanitizeDeals, forceDealArray } from "../utils";
+import { authenticate, authorize, checkOwnership } from "../middleware";
+import { validate } from "../middleware/validationMiddleware";
+import { dealSchemas } from "../schemas";
+import { apiRateLimiter } from "../middleware/rateLimit";
+import { 
+  createVersionedRoutes, 
+  versionHeadersMiddleware,
+  deprecationMiddleware
+} from "../../src/utils/routeVersioning";
+
+/**
+ * Ensure dates from request body are properly converted to Date objects
+ * This prevents "value.toISOString is not a function" errors
+ */
+function ensureDatesAreConverted(body: any) {
+  // Extract date fields and rest of body
+  const { startDate, endDate, ...restBody } = body;
+  
+  // Convert ISO strings to Date objects if they aren't already
+  const convertedStartDate = startDate && typeof startDate === 'string' 
+    ? new Date(startDate) 
+    : startDate;
+  
+  const convertedEndDate = endDate && typeof endDate === 'string' 
+    ? new Date(endDate) 
+    : endDate;
+  
+  // Return body with fixed dates
+  return {
+    ...restBody,
+    startDate: convertedStartDate,
+    endDate: convertedEndDate
+  };
+}
 
 /**
  * Deal routes for listing, creating, and managing deals
  */
 export function dealRoutes(app: Express): void {
   // Get all deals
-  app.get("/api/deals", async (req: Request, res: Response) => {
+  const [vDealsPath, lDealsPath] = createVersionedRoutes('/deals');
+  
+  app.get(vDealsPath, versionHeadersMiddleware(), async (req: Request, res: Response) => {
     try {
+      // Get query params for filtering
+      const category = req.query.category as string | undefined;
+      const discountType = req.query.discountType as string | undefined;
+      const searchTerm = req.query.search as string | undefined;
+      const availableToday = req.query.availableToday === 'true';
+      const dayOfWeek = req.query.dayOfWeek ? parseInt(req.query.dayOfWeek as string) : undefined;
+      
+      // Get all deals from storage
       const deals = await storage.getDeals();
-      // Ensure we're returning an array of deals
-      if (!Array.isArray(deals)) {
-        console.error("Warning: Deals is not an array");
-        return res.status(200).json([]);
+      
+      // Apply filters if provided
+      let filteredDeals = deals;
+      
+      // Get current day of week (0 = Sunday, 1 = Monday, etc.)
+      const currentDayOfWeek = new Date().getDay();
+      
+      // Filter by recurring day availability
+      if (availableToday) {
+        filteredDeals = filteredDeals.filter(deal => {
+          // Regular deals are always available within their date range
+          if (!deal.isRecurring) return true;
+          
+          // For recurring deals, check if today is in the recurringDays array
+          const recurringDays = Array.isArray(deal.recurringDays) ? deal.recurringDays : [];
+          return recurringDays.includes(currentDayOfWeek);
+        });
       }
-      return res.status(200).json(deals);
+      
+      // Filter by specific day of week if provided
+      if (dayOfWeek !== undefined) {
+        filteredDeals = filteredDeals.filter(deal => {
+          // Regular deals are available any day within their date range
+          if (!deal.isRecurring) return true;
+          
+          // For recurring deals, check if requested day is in the recurringDays array
+          const recurringDays = Array.isArray(deal.recurringDays) ? deal.recurringDays : [];
+          return recurringDays.includes(dayOfWeek);
+        });
+      }
+      
+      if (category) {
+        filteredDeals = filteredDeals.filter(deal => 
+          deal.category.toLowerCase() === category.toLowerCase()
+        );
+      }
+      
+      if (discountType) {
+        filteredDeals = filteredDeals.filter(deal => 
+          deal.dealType === discountType
+        );
+      }
+      
+      if (searchTerm) {
+        const search = searchTerm.toLowerCase();
+        filteredDeals = filteredDeals.filter(deal => 
+          deal.title.toLowerCase().includes(search) || 
+          deal.description.toLowerCase().includes(search)
+        );
+      }
+      
+      // Add additional availability data to each deal for frontend
+      const dealsWithAvailability = filteredDeals.map(deal => {
+        // Skip if not a recurring deal
+        if (!deal.isRecurring) return deal;
+        
+        const recurringDays = Array.isArray(deal.recurringDays) ? deal.recurringDays : [];
+        const isAvailableToday = recurringDays.includes(currentDayOfWeek);
+        
+        // Find next available day
+        let nextAvailableDay = null;
+        if (!isAvailableToday && recurringDays.length > 0) {
+          // Sort days to find next upcoming day
+          const sortedDays = [...recurringDays].sort((a, b) => {
+            // If day is less than current day, it will be in the next week
+            // So we add 7 to it for sorting purposes
+            const adjustedA = a < currentDayOfWeek ? a + 7 : a;
+            const adjustedB = b < currentDayOfWeek ? b + 7 : b;
+            return adjustedA - adjustedB;
+          });
+          
+          // First day after adjusting is the next available
+          const nextDay = sortedDays[0];
+          nextAvailableDay = nextDay >= 7 ? nextDay - 7 : nextDay;
+        }
+        
+        // Using type assertion to add availability property
+        return {
+          ...deal,
+          availability: {
+            isAvailableToday,
+            nextAvailableDay
+          }
+        } as any;
+      });
+      
+      return res.status(200).json(dealsWithAvailability);
     } catch (error) {
       console.error("Get deals error:", error);
       return res.status(500).json({ message: "Internal server error" });
     }
   });
+  
+  app.get(lDealsPath, [versionHeadersMiddleware(), deprecationMiddleware], async (req: Request, res: Response) => {
+    try {
+      // Get query params for filtering
+      const category = req.query.category as string | undefined;
+      const discountType = req.query.discountType as string | undefined;
+      const searchTerm = req.query.search as string | undefined;
+      
+      // Get all deals from storage
+      const deals = await storage.getDeals();
+      
+      // Apply filters if provided
+      let filteredDeals = deals;
+      
+      if (category) {
+        filteredDeals = filteredDeals.filter(deal => 
+          deal.category.toLowerCase() === category.toLowerCase()
+        );
+      }
+      
+      if (discountType) {
+        filteredDeals = filteredDeals.filter(deal => 
+          deal.dealType === discountType
+        );
+      }
+      
+      if (searchTerm) {
+        const search = searchTerm.toLowerCase();
+        filteredDeals = filteredDeals.filter(deal => 
+          deal.title.toLowerCase().includes(search) || 
+          deal.description.toLowerCase().includes(search)
+        );
+      }
+      
+      return res.status(200).json(filteredDeals);
+    } catch (error) {
+      console.error("Get deals error (legacy):", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Debug endpoint to check all deals (TEMPORARY)
+  app.get('/api/debug/deals', async (req: Request, res: Response) => {
+    try {
+      const allDeals = await storage.getDeals();
+      return res.status(200).json({
+        count: allDeals.length,
+        deals: allDeals.map(deal => ({
+          id: deal.id,
+          title: deal.title,
+          businessId: deal.businessId,
+          businessName: deal.business.businessName,
+          status: deal.status,
+          createdAt: deal.createdAt
+        }))
+      });
+    } catch (error) {
+      console.error("Debug deals error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
 
   // Get featured deals
-  app.get("/api/deals/featured", async (req: Request, res: Response) => {
+  const [vFeaturedDealsPath, lFeaturedDealsPath] = createVersionedRoutes('/deals/featured');
+  console.log(`DEAL ROUTES: Registering featured deals routes: ${vFeaturedDealsPath} and ${lFeaturedDealsPath}`);
+  
+  app.get(vFeaturedDealsPath, versionHeadersMiddleware(), async (req: Request, res: Response) => {
     try {
+      console.log(`FEATURED DEALS API: GET ${req.path} called with limit: ${req.query.limit}`);
+      // Get limit from query params or use default
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      
+      // Get featured deals from storage
       const featuredDeals = await storage.getFeaturedDeals(limit);
-      return res.status(200).json(featuredDeals);
+      console.log(`FEATURED DEALS API: Found ${featuredDeals.length} featured deals`);
+      
+      // Add availability information for recurring deals
+      const currentDayOfWeek = new Date().getDay();
+      const dealsWithAvailability = featuredDeals.map(deal => {
+        // Skip if not a recurring deal
+        if (!deal.isRecurring) return deal;
+        
+        const recurringDays = Array.isArray(deal.recurringDays) ? deal.recurringDays : [];
+        const isAvailableToday = recurringDays.includes(currentDayOfWeek);
+        
+        // Find next available day
+        let nextAvailableDay = null;
+        if (!isAvailableToday && recurringDays.length > 0) {
+          // Sort days to find next upcoming day
+          const sortedDays = [...recurringDays].sort((a, b) => {
+            // If day is less than current day, it will be in the next week
+            // So we add 7 to it for sorting purposes
+            const adjustedA = a < currentDayOfWeek ? a + 7 : a;
+            const adjustedB = b < currentDayOfWeek ? b + 7 : b;
+            return adjustedA - adjustedB;
+          });
+          
+          // First day after adjusting is the next available
+          const nextDay = sortedDays[0];
+          nextAvailableDay = nextDay >= 7 ? nextDay - 7 : nextDay;
+        }
+        
+        // Get day names
+        const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        const availableDayNames = recurringDays.map(day => dayNames[day]);
+        
+        // Using type assertion to add availability property
+        return {
+          ...deal,
+          availability: {
+            isAvailableToday,
+            nextAvailableDay,
+            nextAvailableDayName: nextAvailableDay !== null ? dayNames[nextAvailableDay] : null,
+            availableDays: recurringDays,
+            availableDayNames: availableDayNames
+          }
+        } as any;
+      });
+      
+      return res.status(200).json(dealsWithAvailability);
     } catch (error) {
       console.error("Get featured deals error:", error);
       return res.status(500).json({ message: "Internal server error" });
     }
   });
   
-  // Get deals by status (versioned and legacy routes)
+  app.get(lFeaturedDealsPath, [versionHeadersMiddleware(), deprecationMiddleware], async (req: Request, res: Response) => {
+    try {
+      // Get limit from query params or use default
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      
+      // Get featured deals from storage
+      const featuredDeals = await storage.getFeaturedDeals(limit);
+      
+      return res.status(200).json(featuredDeals);
+    } catch (error) {
+      console.error("Get featured deals error (legacy):", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Filter deals by status (versioned and legacy routes)
   const [vDealsByStatusPath, lDealsByStatusPath] = createVersionedRoutes('/deals/status/:status');
   
   // Versioned deals by status route
@@ -47,31 +295,15 @@ export function dealRoutes(app: Express): void {
     authenticate,
     async (req: Request, res: Response) => {
     try {
-      console.log(`DEBUG: Getting deals with status "${req.params.status}" (versioned route)`);
+      console.log(`Fetching deals with status: ${req.params.status}`);
       const status = req.params.status;
       
-      // Get user role for logging
-      const userRole = req.user?.userType || "unauthenticated";
-      const userId = req.user?.userId;
-      console.log(`STORAGE: Getting deals for user role: ${userRole}, userId: ${userId || "none"}`);
-      
       // Get deals with requested status
-      const rawDeals = await storage.getDealsByStatus(status);
+      const deals = await storage.getDealsByStatus(status);
       
-      // Use our robust array conversion function
-      const dealsArray = forceDealArray(rawDeals);
-      console.log(`DEBUG: Query returned ${dealsArray.length} deals with status "${status}"`);
+      console.log(`Found ${deals.length} deals with status '${status}'`);
       
-      // Apply sanitization to ensure clean data
-      const sanitizedDeals = sanitizeDeals(dealsArray);
-      console.log(`DEBUG: Returning ${sanitizedDeals.length} deals with status "${status}"`);
-      
-      // Force JSON to use array format by manually converting
-      const jsonStr = JSON.stringify(sanitizedDeals);
-      
-      // Send direct array as JSON.stringify enforcement
-      return res.setHeader('Content-Type', 'application/json')
-        .send(jsonStr);
+      return res.status(200).json(deals);
     } catch (error) {
       console.error(`Error fetching deals by status ${req.params.status}:`, error);
       return res.status(500).json({ message: "Error fetching deals by status" });
@@ -80,51 +312,71 @@ export function dealRoutes(app: Express): void {
   
   // Legacy deals by status route
   app.get(lDealsByStatusPath, 
+    [versionHeadersMiddleware(), deprecationMiddleware],
     authenticate,
     async (req: Request, res: Response) => {
     try {
-      console.log(`DEBUG: Getting deals with status "${req.params.status}" (legacy route)`);
       const status = req.params.status;
       
-      // Get user role for logging
-      const userRole = req.user?.userType || "unauthenticated";
-      const userId = req.user?.userId;
-      console.log(`STORAGE: Getting deals for user role: ${userRole}, userId: ${userId || "none"}`);
-      
       // Get deals with requested status
-      const rawDeals = await storage.getDealsByStatus(status);
+      const deals = await storage.getDealsByStatus(status);
       
-      // Use our robust array conversion function
-      const dealsArray = forceDealArray(rawDeals);
-      console.log(`DEBUG: Query returned ${dealsArray.length} deals with status "${status}"`);
-      
-      // Apply sanitization to ensure clean data
-      const sanitizedDeals = sanitizeDeals(dealsArray);
-      console.log(`DEBUG: Returning ${sanitizedDeals.length} deals with status "${status}"`);
-      
-      // Force JSON to use array format by manually converting
-      const jsonStr = JSON.stringify(sanitizedDeals);
-      
-      // Send direct array as JSON.stringify enforcement
-      return res.setHeader('Content-Type', 'application/json')
-        .send(jsonStr);
+      return res.status(200).json(deals);
     } catch (error) {
       console.error(`Error fetching deals by status ${req.params.status}:`, error);
       return res.status(500).json({ message: "Error fetching deals by status" });
     }
   });
 
-  // Get a single deal
-  app.get("/api/deals/:id", async (req: Request, res: Response) => {
+  // Get specific deal
+  const [vDealPath, lDealPath] = createVersionedRoutes('/deals/:id');
+  
+  app.get(vDealPath, versionHeadersMiddleware(), async (req: Request, res: Response) => {
     try {
       const dealId = parseInt(req.params.id);
-      if (isNaN(dealId)) {
-        return res.status(400).json({ message: "Invalid deal ID" });
-      }
       
+      // Get deal from storage
       const deal = await storage.getDeal(dealId);
+      
       if (!deal) {
         return res.status(404).json({ message: "Deal not found" });
+      }
+      
+      // Add availability information for recurring deals
+      if (deal.isRecurring) {
+        const currentDayOfWeek = new Date().getDay();
+        const recurringDays = Array.isArray(deal.recurringDays) ? deal.recurringDays : [];
+        const isAvailableToday = recurringDays.includes(currentDayOfWeek);
+        
+        // Find next available day
+        let nextAvailableDay = null;
+        if (!isAvailableToday && recurringDays.length > 0) {
+          // Sort days to find next upcoming day
+          const sortedDays = [...recurringDays].sort((a, b) => {
+            // If day is less than current day, it will be in the next week
+            // So we add 7 to it for sorting purposes
+            const adjustedA = a < currentDayOfWeek ? a + 7 : a;
+            const adjustedB = b < currentDayOfWeek ? b + 7 : b;
+            return adjustedA - adjustedB;
+          });
+          
+          // First day after adjusting is the next available
+          const nextDay = sortedDays[0];
+          nextAvailableDay = nextDay >= 7 ? nextDay - 7 : nextDay;
+        }
+        
+        // Get day names
+        const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        const availableDayNames = recurringDays.map(day => dayNames[day]);
+        
+        // Add availability info to the deal
+        (deal as any).availability = {
+          isAvailableToday,
+          nextAvailableDay,
+          nextAvailableDayName: nextAvailableDay !== null ? dayNames[nextAvailableDay] : null,
+          availableDays: recurringDays,
+          availableDayNames: availableDayNames
+        };
       }
       
       return res.status(200).json(deal);
@@ -133,463 +385,334 @@ export function dealRoutes(app: Express): void {
       return res.status(500).json({ message: "Internal server error" });
     }
   });
-
-  // Special workaround endpoint with query param to bypass Vite processing
-  app.post("/api/v1/admin/deals", 
-    authenticate, 
-    authorize(["admin"]), 
-    verifyCsrf, 
-    async (req: Request, res: Response) => {
-    // Force direct content type check using HTTP method
-    if (req.method === 'POST') {
-      // Ensure we're sending JSON - use direct HTTP header
-      res.setHeader('Content-Type', 'application/json');
-      // Add cache prevention headers
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-      // Add API response headers to identify our response type
-      res.setHeader('X-API-Response', 'true');
-      
-      // Check if we have the bypass flag for Vite
-      if (req.query._bypass_vite || req.headers['x-bypass-vite']) {
-        console.log("Using direct bypass for Vite middleware");
-        // Additional headers that help bypass Vite
-        res.setHeader('X-Direct-API', 'true');
-      }
-    }
-    
-    console.log("=========== ADMIN DEAL CREATION REQUEST START ===========");
-    console.log("Request query:", req.query);
-    console.log("Request headers:", req.headers);
-    console.log("Request method:", req.method);
-    console.log("Request URL:", req.url);
-    console.log("Request cookies:", req.cookies);
-    console.log("Request signed cookies:", req.signedCookies);
-    
-    try {
-      console.log("Admin deal creation endpoint called");
-      // Authentication and CSRF protection are now handled by middleware
-      if (!req.user) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-      
-      console.log("Admin user authenticated:", req.user.userId);
-      const dealData = req.body;
-      console.log("Received deal data:", JSON.stringify(dealData, null, 2));
-      
-      // Handle manual business creation if businessId is -1 (special indicator for manual entry)
-      if (dealData.businessId === -1 && dealData.otherBusinessName) {
-        console.log(`Admin creating deal with manual business: ${dealData.otherBusinessName}`);
-        
-        try {
-          // Create a temporary business entry
-          const tempBusiness = await storage.createTempBusiness(dealData.otherBusinessName);
-          if (!tempBusiness) {
-            console.error("Failed to create temporary business");
-            return res.status(500).json({ message: "Failed to create temporary business" });
-          }
-          
-          // Update the businessId with the newly created temp business
-          dealData.businessId = tempBusiness.id;
-          console.log(`Created temporary business with ID: ${tempBusiness.id}`);
-        } catch (error) {
-          console.error("Error creating temporary business:", error);
-          return res.status(500).json({ message: "Failed to create temporary business" });
-        }
-      } else {
-        console.log(`Using existing business with ID: ${dealData.businessId}`);
-      }
-      
-      // Admin can set status directly or default to pending
-      dealData.status = dealData.status || 'pending';
-      console.log(`Deal status set to: ${dealData.status}`);
-      
-      // Validate the deal data
-      try {
-        console.log("Validating deal data...");
-        // Create a modified schema without the required ID field
-        const createDealSchema = insertDealSchema.omit({ id: true } as const);
-        createDealSchema.parse(dealData);
-        console.log("Deal data validation successful");
-      } catch (validationError) {
-        if (validationError instanceof z.ZodError) {
-          console.error("Validation failed:", validationError.errors);
-          return res.status(400).json({ message: "Validation error", errors: validationError.errors });
-        }
-        console.error("Unknown validation error:", validationError);
-        throw validationError;
-      }
-      
-      // Create the deal
-      console.log("Attempting to create deal in storage...");
-      const deal = await storage.createDeal(dealData);
-      console.log(`Admin created deal: ${deal.id}`, JSON.stringify(deal, null, 2));
-      
-      // ALWAYS create an approval record for ANY deal
-      // This ensures deals show up correctly in admin and vendor dashboards
-      console.log(`Creating approval record for deal ${deal.id} with status ${dealData.status}`);
-      await storage.createDealApproval({
-        dealId: deal.id,
-        submitterId: req.user.userId // req.user is already verified above
-      });
-      console.log("Deal approval record created successfully");
-      
-      // Ensure we send a properly formatted JSON response
-      return res.status(201).json({
-        success: true,
-        deal,
-        message: "Deal created successfully"
-      });
-    } catch (error) {
-      console.error("Error in admin deal creation:", error);
-      return res.status(500).json({ message: "Failed to create deal" });
-    }
-  });
-
-  // Create a deal (vendor route)
-  app.post("/api/deals", authenticate, verifyCsrf, async (req: Request, res: Response) => {
-    try {
-      // Verify that the authenticated user is a business owner
-      if (!req.user || req.user.userType !== 'business') {
-        return res.status(403).json({ message: "Only business accounts can create deals" });
-      }
-      
-      const dealData = req.body;
-      
-      // Ensure the business exists
-      const business = await storage.getBusinessByUserId(req.user.userId);
-      if (!business) {
-        return res.status(404).json({ message: "Business not found" });
-      }
-      
-      // Set the business ID from the verified user's business
-      dealData.businessId = business.id;
-      
-      // Set initial status to pending
-      dealData.status = 'pending';
-      
-      // Validate the deal data
-      try {
-        // Create a modified schema without the required ID field
-        const createDealSchema = insertDealSchema.omit({ id: true } as const);
-        createDealSchema.parse(dealData);
-      } catch (validationError) {
-        if (validationError instanceof z.ZodError) {
-          return res.status(400).json({ message: "Validation error", errors: validationError.errors });
-        }
-        throw validationError;
-      }
-      
-      // Create the deal
-      const deal = await storage.createDeal(dealData);
-      
-      // Create initial approval record
-      await storage.createDealApproval({
-        dealId: deal.id,
-        submitterId: req.user.userId
-      });
-      
-      return res.status(201).json(deal);
-    } catch (error) {
-      console.error("Create deal error:", error);
-      if (error instanceof Error) {
-        return res.status(400).json({ message: error.message });
-      }
-      return res.status(500).json({ message: "Internal server error" });
-    }
-  });
-
-  // Update a deal
-  app.put("/api/deals/:id", authenticate, verifyCsrf, async (req: Request, res: Response) => {
+  
+  app.get(lDealPath, [versionHeadersMiddleware(), deprecationMiddleware], async (req: Request, res: Response) => {
     try {
       const dealId = parseInt(req.params.id);
-      if (isNaN(dealId)) {
-        return res.status(400).json({ message: "Invalid deal ID" });
-      }
       
-      // Get the deal to check ownership
+      // Get deal from storage
       const deal = await storage.getDeal(dealId);
+      
       if (!deal) {
         return res.status(404).json({ message: "Deal not found" });
       }
       
-      // Check if the authenticated user owns the business that created the deal
-      if (req.user?.userType === 'business') {
-        const business = await storage.getBusinessByUserId(req.user.userId);
-        if (!business || business.id !== deal.business.id) {
-          return res.status(403).json({ message: "You can only update deals for your own business" });
+      return res.status(200).json(deal);
+    } catch (error) {
+      console.error("Get deal error (legacy):", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Create deal
+  app.post(vDealsPath, 
+    versionHeadersMiddleware(),
+    authenticate, 
+    apiRateLimiter,
+    validate(dealSchemas.createDeal), 
+    async (req: Request, res: Response) => {
+      try {
+        // Ensure the user is a business user
+        if (req.user!.userType !== "business") {
+          return res.status(403).json({ message: "Only business users can create deals" });
         }
-      } else if (req.user?.userType !== 'admin') {
-        return res.status(403).json({ message: "Only business owners or admins can update deals" });
+        
+        // Get the user's business
+        const business = await storage.getBusinessByUserId(req.user!.userId);
+        
+        if (!business) {
+          return res.status(404).json({ message: "Business not found for this user" });
+        }
+        
+        // Ensure the business is verified
+        if (business.verificationStatus !== "verified" && business.verificationStatus !== "approved") {
+          return res.status(403).json({ 
+            message: "Your business must be verified before creating deals",
+            verificationStatus: business.verificationStatus 
+          });
+        }
+        
+        // Process body to ensure dates are properly converted to Date objects
+        const processedBody = ensureDatesAreConverted(req.body);
+        
+        // Create the deal with properly formatted dates
+        const dealData = {
+          ...processedBody,
+          businessId: business.id,
+          status: "pending" // All deals start as pending until approved
+        };
+        
+        const deal = await storage.createDeal(dealData);
+        
+        return res.status(201).json(deal);
+      } catch (error) {
+        console.error("Create deal error:", error);
+        return res.status(500).json({ message: "Internal server error" });
       }
-      
-      const dealData = req.body;
-      
-      // Prevent changing the business ID
-      delete dealData.businessId;
-      
-      // If status is being changed, check permissions
-      if (dealData.status && req.user?.userType !== 'admin') {
-        return res.status(403).json({ message: "Only admins can change deal status" });
+    }
+  );
+  
+  app.post(lDealsPath, 
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate, 
+    apiRateLimiter,
+    validate(dealSchemas.createDeal), 
+    async (req: Request, res: Response) => {
+      try {
+        // Ensure the user is a business user
+        if (req.user!.userType !== "business") {
+          return res.status(403).json({ message: "Only business users can create deals" });
+        }
+        
+        // Get the user's business
+        const business = await storage.getBusinessByUserId(req.user!.userId);
+        
+        if (!business) {
+          return res.status(404).json({ message: "Business not found for this user" });
+        }
+        
+        // Ensure the business is verified (accept both "verified" and "approved" status)
+        if (business.verificationStatus !== "verified" && business.verificationStatus !== "approved") {
+          return res.status(403).json({ 
+            message: "Your business must be verified before creating deals",
+            verificationStatus: business.verificationStatus 
+          });
+        }
+        
+        // Process body to ensure dates are properly converted to Date objects
+        const processedBody = ensureDatesAreConverted(req.body);
+        
+        // Create the deal with properly formatted dates
+        const dealData = {
+          ...processedBody,
+          businessId: business.id,
+          status: "pending" // All deals start as pending until approved
+        };
+        
+        const deal = await storage.createDeal(dealData);
+        
+        return res.status(201).json(deal);
+      } catch (error) {
+        console.error("Create deal error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
       }
-      
-      // Update the deal
-      const updatedDeal = await storage.updateDeal(dealId, dealData);
-      
-      // If this is a revision, create a new approval record
-      if (deal.status === 'pending_revision' && req.user?.userType === 'business') {
-        await storage.createDealApproval({
-          dealId: dealId,
-          submitterId: req.user.userId
+    }
+  );
+
+  // Update deal
+  app.put(vDealPath, 
+    versionHeadersMiddleware(),
+    authenticate, 
+    apiRateLimiter,
+    validate(dealSchemas.updateDeal), 
+    async (req: Request, res: Response) => {
+      try {
+        const dealId = parseInt(req.params.id);
+        
+        // Get the deal
+        const deal = await storage.getDeal(dealId);
+        
+        if (!deal) {
+          return res.status(404).json({ message: "Deal not found" });
+        }
+        
+        // Get the user's business
+        const business = await storage.getBusinessByUserId(req.user!.userId);
+        
+        if (!business) {
+          return res.status(404).json({ message: "Business not found for this user" });
+        }
+        
+        // Ensure the user owns this deal through their business
+        if (deal.businessId !== business.id) {
+          return res.status(403).json({ message: "You do not have permission to update this deal" });
+        }
+        
+        // Process body to ensure dates are properly converted to Date objects
+        const processedBody = ensureDatesAreConverted(req.body);
+        
+        // Update the deal
+        const updatedDeal = await storage.updateDeal(dealId, processedBody);
+        
+        return res.status(200).json(updatedDeal);
+      } catch (error) {
+        console.error("Update deal error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+  
+  app.put(lDealPath, 
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate, 
+    apiRateLimiter,
+    validate(dealSchemas.updateDeal), 
+    async (req: Request, res: Response) => {
+      try {
+        const dealId = parseInt(req.params.id);
+        
+        // Get the deal
+        const deal = await storage.getDeal(dealId);
+        
+        if (!deal) {
+          return res.status(404).json({ message: "Deal not found" });
+        }
+        
+        // Get the user's business
+        const business = await storage.getBusinessByUserId(req.user!.userId);
+        
+        if (!business) {
+          return res.status(404).json({ message: "Business not found for this user" });
+        }
+        
+        // Ensure the user owns this deal through their business
+        if (deal.businessId !== business.id) {
+          return res.status(403).json({ message: "You do not have permission to update this deal" });
+        }
+        
+        // Process body to ensure dates are properly converted to Date objects
+        const processedBody = ensureDatesAreConverted(req.body);
+        
+        // Update the deal
+        const updatedDeal = await storage.updateDeal(dealId, processedBody);
+        
+        return res.status(200).json(updatedDeal);
+      } catch (error) {
+        console.error("Update deal error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
+  // Delete deal
+  app.delete(vDealPath, 
+    versionHeadersMiddleware(),
+    authenticate, 
+    apiRateLimiter,
+    async (req: Request, res: Response) => {
+      try {
+        const dealId = parseInt(req.params.id);
+        
+        // Get the deal
+        const deal = await storage.getDeal(dealId);
+        
+        if (!deal) {
+          return res.status(404).json({ message: "Deal not found" });
+        }
+        
+        // Get the user's business
+        const business = await storage.getBusinessByUserId(req.user!.userId);
+        
+        if (!business) {
+          return res.status(404).json({ message: "Business not found for this user" });
+        }
+        
+        // Ensure the user owns this deal through their business
+        if (deal.businessId !== business.id) {
+          return res.status(403).json({ message: "You do not have permission to delete this deal" });
+        }
+        
+        // Delete the deal
+        await storage.deleteDeal(dealId);
+        
+        return res.status(204).send(); // 204 No Content
+      } catch (error) {
+        console.error("Delete deal error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+  
+  app.delete(lDealPath, 
+    [versionHeadersMiddleware(), deprecationMiddleware],
+    authenticate, 
+    apiRateLimiter,
+    async (req: Request, res: Response) => {
+      try {
+        const dealId = parseInt(req.params.id);
+        
+        // Get the deal
+        const deal = await storage.getDeal(dealId);
+        
+        if (!deal) {
+          return res.status(404).json({ message: "Deal not found" });
+        }
+        
+        // Get the user's business
+        const business = await storage.getBusinessByUserId(req.user!.userId);
+        
+        if (!business) {
+          return res.status(404).json({ message: "Business not found for this user" });
+        }
+        
+        // Ensure the user owns this deal through their business
+        if (deal.businessId !== business.id) {
+          return res.status(403).json({ message: "You do not have permission to delete this deal" });
+        }
+        
+        // Delete the deal
+        await storage.deleteDeal(dealId);
+        
+        return res.status(204).send(); // 204 No Content
+      } catch (error) {
+        console.error("Delete deal error (legacy):", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
+  // Admin routes for approving/rejecting deals
+  app.patch('/api/v1/admin/deals/:id/approve', 
+    authenticate, 
+    authorize(["admin"]),
+    async (req: Request, res: Response) => {
+      try {
+        const dealId = parseInt(req.params.id);
+        
+        // Get the deal
+        const deal = await storage.getDeal(dealId);
+        
+        if (!deal) {
+          return res.status(404).json({ message: "Deal not found" });
+        }
+        
+        // Update the deal status to approved
+        const updatedDeal = await storage.updateDeal(dealId, { status: "approved" });
+        
+        return res.status(200).json(updatedDeal);
+      } catch (error) {
+        console.error("Approve deal error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+  
+  app.patch('/api/v1/admin/deals/:id/reject', 
+    authenticate, 
+    authorize(["admin"]),
+    async (req: Request, res: Response) => {
+      try {
+        const dealId = parseInt(req.params.id);
+        const { reason } = req.body;
+        
+        // Get the deal
+        const deal = await storage.getDeal(dealId);
+        
+        if (!deal) {
+          return res.status(404).json({ message: "Deal not found" });
+        }
+        
+        // Update the deal status to rejected and add rejection reason
+        const updatedDeal = await storage.updateDeal(dealId, { 
+          status: "rejected",
+          rejectionReason: reason || "Did not meet platform guidelines"
         });
         
-        // Update the deal status to pending
-        await storage.updateDealStatus(dealId, 'pending');
+        return res.status(200).json(updatedDeal);
+      } catch (error) {
+        console.error("Reject deal error:", error);
+        return res.status(500).json({ message: "Internal server error" });
       }
-      
-      return res.status(200).json(updatedDeal);
-    } catch (error) {
-      console.error("Update deal error:", error);
-      if (error instanceof Error) {
-        return res.status(400).json({ message: error.message });
-      }
-      return res.status(500).json({ message: "Internal server error" });
     }
-  });
-
-  // Create deal approval
-  app.post("/api/deals/:dealId/approval", authenticate, verifyCsrf, async (req: Request, res: Response) => {
-    try {
-      const dealId = parseInt(req.params.dealId);
-      if (isNaN(dealId)) {
-        return res.status(400).json({ message: "Invalid deal ID" });
-      }
-      
-      // Check if the deal exists
-      const deal = await storage.getDeal(dealId);
-      if (!deal) {
-        return res.status(404).json({ message: "Deal not found" });
-      }
-      
-      // Only the business that owns the deal or an admin can submit an approval request
-      if (req.user?.userType === 'business') {
-        const business = await storage.getBusinessByUserId(req.user.userId);
-        if (!business || business.id !== deal.business.id) {
-          return res.status(403).json({ message: "You can only submit approval requests for your own deals" });
-        }
-      } else if (req.user?.userType !== 'admin') {
-        return res.status(403).json({ message: "Only business owners or admins can submit approval requests" });
-      }
-      
-      // Create the approval record
-      const approval = await storage.createDealApproval({
-        dealId,
-        submitterId: req.user!.userId
-      });
-      
-      return res.status(201).json(approval);
-    } catch (error) {
-      console.error("Create approval error:", error);
-      return res.status(500).json({ message: "Internal server error" });
-    }
-  });
-
-  // Get deal approval
-  app.get("/api/deals/:dealId/approval", authenticate, async (req: Request, res: Response) => {
-    try {
-      const dealId = parseInt(req.params.dealId);
-      if (isNaN(dealId)) {
-        return res.status(400).json({ message: "Invalid deal ID" });
-      }
-      
-      // Check if the deal exists
-      const deal = await storage.getDeal(dealId);
-      if (!deal) {
-        return res.status(404).json({ message: "Deal not found" });
-      }
-      
-      // Check permissions
-      if (req.user?.userType === 'business') {
-        const business = await storage.getBusinessByUserId(req.user.userId);
-        if (!business || business.id !== deal.business.id) {
-          return res.status(403).json({ message: "You can only view approval status for your own deals" });
-        }
-      } else if (req.user?.userType !== 'admin') {
-        return res.status(403).json({ message: "Only business owners or admins can view approval status" });
-      }
-      
-      const approval = await storage.getDealApproval(dealId);
-      if (!approval) {
-        return res.status(404).json({ message: "Approval record not found" });
-      }
-      
-      return res.status(200).json(approval);
-    } catch (error) {
-      console.error("Get approval error:", error);
-      return res.status(500).json({ message: "Internal server error" });
-    }
-  });
-
-  // Get deal approval history
-  app.get("/api/deals/:dealId/approval/history", authenticate, async (req: Request, res: Response) => {
-    try {
-      const dealId = parseInt(req.params.dealId);
-      if (isNaN(dealId)) {
-        return res.status(400).json({ message: "Invalid deal ID" });
-      }
-      
-      // Check if the deal exists
-      const deal = await storage.getDeal(dealId);
-      if (!deal) {
-        return res.status(404).json({ message: "Deal not found" });
-      }
-      
-      // Check permissions
-      if (req.user?.userType === 'business') {
-        const business = await storage.getBusinessByUserId(req.user.userId);
-        if (!business || business.id !== deal.business.id) {
-          return res.status(403).json({ message: "You can only view approval history for your own deals" });
-        }
-      } else if (req.user?.userType !== 'admin') {
-        return res.status(403).json({ message: "Only business owners or admins can view approval history" });
-      }
-      
-      const approvals = await storage.getDealApprovalHistory(dealId);
-      return res.status(200).json(approvals);
-    } catch (error) {
-      console.error("Get approval history error:", error);
-      return res.status(500).json({ message: "Internal server error" });
-    }
-  });
-
-  // Duplicate a deal
-  app.post("/api/deals/:id/duplicate", authenticate, verifyCsrf, async (req: Request, res: Response) => {
-    try {
-      const dealId = parseInt(req.params.id);
-      if (isNaN(dealId)) {
-        return res.status(400).json({ message: "Invalid deal ID" });
-      }
-      
-      // Get the original deal
-      const originalDeal = await storage.getDeal(dealId);
-      if (!originalDeal) {
-        return res.status(404).json({ message: "Deal not found" });
-      }
-      
-      // Check permissions
-      if (req.user?.userType === 'business') {
-        const business = await storage.getBusinessByUserId(req.user.userId);
-        if (!business || business.id !== originalDeal.business.id) {
-          return res.status(403).json({ message: "You can only duplicate your own deals" });
-        }
-      } else if (req.user?.userType !== 'admin') {
-        return res.status(403).json({ message: "Only business owners or admins can duplicate deals" });
-      }
-      
-      // Duplicate the deal
-      const newDeal = await storage.duplicateDeal(dealId);
-      
-      // Create initial approval record for the new deal
-      await storage.createDealApproval({
-        dealId: newDeal.id,
-        submitterId: req.user!.userId
-      });
-      
-      return res.status(201).json(newDeal);
-    } catch (error) {
-      console.error("Duplicate deal error:", error);
-      return res.status(500).json({ message: "Internal server error" });
-    }
-  });
-
-  // Increment deal views
-  app.post("/api/deals/:id/views", async (req: Request, res: Response) => {
-    try {
-      const dealId = parseInt(req.params.id);
-      if (isNaN(dealId)) {
-        return res.status(400).json({ message: "Invalid deal ID" });
-      }
-      
-      // Increment view count
-      const deal = await storage.incrementDealViews(dealId);
-      return res.status(200).json({ message: "View count incremented", views: deal.viewCount });
-    } catch (error) {
-      console.error("Increment views error:", error);
-      return res.status(500).json({ message: "Internal server error" });
-    }
-  });
-
-  // Get deal redemptions
-  app.get("/api/deals/:dealId/redemptions", authenticate, async (req: Request, res: Response) => {
-    try {
-      const dealId = parseInt(req.params.dealId);
-      if (isNaN(dealId)) {
-        return res.status(400).json({ message: "Invalid deal ID" });
-      }
-      
-      // Check permissions
-      const deal = await storage.getDeal(dealId);
-      if (!deal) {
-        return res.status(404).json({ message: "Deal not found" });
-      }
-      
-      if (req.user?.userType === 'business') {
-        const business = await storage.getBusinessByUserId(req.user.userId);
-        if (!business || business.id !== deal.business.id) {
-          return res.status(403).json({ message: "You can only view redemptions for your own deals" });
-        }
-      } else if (req.user?.userType !== 'admin') {
-        return res.status(403).json({ message: "Only business owners or admins can view deal redemptions" });
-      }
-      
-      const redemptions = await storage.getDealRedemptions(dealId);
-      return res.status(200).json(redemptions);
-    } catch (error) {
-      console.error("Get deal redemptions error:", error);
-      return res.status(500).json({ message: "Internal server error" });
-    }
-  });
-
-  // Verify redemption code
-  app.post("/api/deals/:dealId/verify-code", authenticate, verifyCsrf, async (req: Request, res: Response) => {
-    try {
-      const dealId = parseInt(req.params.dealId);
-      if (isNaN(dealId)) {
-        return res.status(400).json({ message: "Invalid deal ID" });
-      }
-      
-      const { code } = req.body;
-      if (!code) {
-        return res.status(400).json({ message: "Redemption code is required" });
-      }
-      
-      // Check permissions
-      if (req.user?.userType !== 'individual') {
-        return res.status(403).json({ message: "Only individual users can verify redemption codes" });
-      }
-      
-      // Verify the code
-      const isValid = await storage.verifyRedemptionCode(dealId, code);
-      
-      if (!isValid) {
-        return res.status(200).json({ valid: false, message: "Invalid redemption code" });
-      }
-      
-      // Create a redemption record
-      const redemption = await storage.createRedemption(req.user.userId, dealId);
-      
-      // Increment deal redemptions count
-      await storage.incrementDealRedemptions(dealId);
-      
-      return res.status(200).json({ 
-        valid: true,
-        message: "Redemption code verified successfully",
-        redemption 
-      });
-    } catch (error) {
-      console.error("Verify redemption code error:", error);
-      return res.status(500).json({ message: "Internal server error" });
-    }
-  });
+  );
 }
