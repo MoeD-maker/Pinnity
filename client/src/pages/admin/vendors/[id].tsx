@@ -20,7 +20,6 @@ import {
   Edit,
   AlertTriangle,
   FileImage,
-  ShieldCheck,
   ShieldAlert
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -266,8 +265,6 @@ export default function VendorDetailPage() {
         return "text-yellow-600 bg-yellow-50 border-yellow-200";
       case "verified":
         return "text-green-600 bg-green-50 border-green-200";
-      case "verified":
-        return "text-green-600 bg-green-50 border-green-200";
       case "rejected":
         return "text-red-600 bg-red-50 border-red-200";
       default:
@@ -281,8 +278,6 @@ export default function VendorDetailPage() {
         return <Clock className="h-4 w-4 mr-1" />;
       case "verified":
         return <CheckCircle className="h-4 w-4 mr-1" />;
-      case "verified":
-        return <ShieldCheck className="h-4 w-4 mr-1" />;
       case "rejected":
         return <XCircle className="h-4 w-4 mr-1" />;
       default:
