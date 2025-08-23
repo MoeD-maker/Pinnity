@@ -1,5 +1,4 @@
 import express from "express";
-import session from "express-session";
 import cookieParser from "cookie-parser";
 import csurf from "csurf";
 import cors from "cors";
@@ -8,7 +7,6 @@ import { createServer } from "http";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import path from "path";
-import fs from "fs";
 import dotenv from "dotenv";
 
 // Load environment variables first
