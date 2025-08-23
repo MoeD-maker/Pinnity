@@ -16,7 +16,6 @@
  */
 
 import { CookieOptions } from 'express';
-import { getRequiredEnv, getOptionalEnv } from './environmentValidator';
 
 /**
  * Base cookie configuration with secure defaults

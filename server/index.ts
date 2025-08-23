@@ -8,21 +8,18 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import path from "path";
 import dotenv from "dotenv";
+import { initializeConfig, getConfig } from "../src/config/index.js";
 
 // Load environment variables first
 dotenv.config();
 
-// Ensure required environment variables are present
-const COOKIE_SECRET = process.env.COOKIE_SECRET;
-if (!COOKIE_SECRET) {
-  console.error("Missing COOKIE_SECRET environment variable");
-  process.exit(1);
-}
+// Initialize and load application configuration
+initializeConfig();
+const appConfig = getConfig();
+const { security, infrastructure, isProduction, isDevelopment, env } = appConfig;
 
 // Import custom modules
 import { setupVite, serveStatic, log } from "./vite.js";
-// Skip environment validator for now
-// import { EnvironmentValidator } from "./utils/environmentValidator.js";
 import { initializeSupabaseStorage } from "./supabaseStorage.js";
 import { startSyncWorker } from "./sync/SyncWorker.js";
 // Simplified imports for minimal server startup
@@ -42,8 +39,6 @@ const __dirname = dirname(__filename);
 // Initialize Twilio for real SMS verification
 console.log("Initializing Twilio for real SMS verification");
 
-// Skip environment validation for now
-// EnvironmentValidator.validateAll();
 
 const app = express();
 const server = createServer(app);
@@ -51,11 +46,11 @@ const server = createServer(app);
 // Express configuration
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use(cookieParser(COOKIE_SECRET));
+app.use(cookieParser(security.cookieSecret));
 
 // CORS setup
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
+  origin: isProduction
     ? [] // Configure production domains
     : [
         /^https:\/\/.*\.replit\.dev$/,
@@ -73,8 +68,8 @@ app.use(cors(corsOptions));
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // limit each IP to 1000 requests per windowMs
+  windowMs: security.rateLimitWindow,
+  max: security.rateLimitMax,
   message: 'Too many requests from this IP, please try again later.'
 });
 app.use(limiter);
@@ -83,7 +78,7 @@ app.use(limiter);
 const csrfProtection = csurf({
   cookie: {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isProduction,
     sameSite: 'strict'
   }
 });
@@ -103,10 +98,10 @@ initializeSupabaseStorage().then(() => {
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     timestamp: new Date().toISOString(),
-    env: process.env.NODE_ENV 
+    env
   });
 });
 
@@ -951,7 +946,7 @@ console.log('✅ Admin reconcile routes registered');
 // app.use('/api/terms', testTermsRouter);
 
 // Static file serving and dev setup
-if (process.env.NODE_ENV === "production") {
+if (isProduction) {
   serveStatic(app);
 } else {
   // Serve static files from public directory in development
@@ -959,10 +954,10 @@ if (process.env.NODE_ENV === "production") {
   await setupVite(app, server);
 }
 
-const PORT = parseInt(process.env.PORT || '5000', 10);
-server.listen(PORT, "0.0.0.0", () => {
+const PORT = infrastructure.port;
+server.listen(PORT, infrastructure.host, () => {
   log(`serving on port ${PORT}`);
-  if (process.env.NODE_ENV === "development") {
+  if (isDevelopment) {
     const REPLIT_DEV_DOMAIN = process.env.REPLIT_DEV_DOMAIN;
     if (REPLIT_DEV_DOMAIN) {
       log(`Dev server running! Access via:`);

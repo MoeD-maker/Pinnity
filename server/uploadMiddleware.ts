@@ -7,9 +7,7 @@ import path from 'path';
 import { fileTypeFromBuffer } from 'file-type';
 import sanitizeFilename from 'sanitize-filename';
 
-import { getRequiredEnv, getOptionalEnv } from './utils/environmentValidator';
-
-// Configure cloudinary with environment validator
+// Configure Cloudinary using environment variables
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
