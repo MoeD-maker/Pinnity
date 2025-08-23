@@ -208,7 +208,7 @@ app.post('/api/v1/sms/verify', async (req, res) => {
 // Import and register authentication routes
 console.log('🔥 Importing authentication routes...');
 try {
-  const { authRoutes } = await import('./routes/auth.routes.ts');
+  const { authRoutes } = await import('./routes/auth.routes.js');
   authRoutes(app);
   console.log('✅ Authentication routes registered');
 } catch (error) {
