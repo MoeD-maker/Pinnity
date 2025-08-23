@@ -19,7 +19,6 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { getRedactedConfigValue } from '../config';
 
 /**
  * Supported API versions
@@ -219,7 +218,7 @@ export function deprecationMiddleware(req: Request, res: Response, next: NextFun
 export function getVersionAndEnvInfo() {
   const versionInfo = getVersionInfo();
   
-  // Get environment information (with redaction)
+  // Get environment information
   const envInfo = {
     nodeEnv: process.env.NODE_ENV || 'development',
     appName: 'Pinnity API Server',
