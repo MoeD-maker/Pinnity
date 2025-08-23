@@ -2,9 +2,9 @@ import jsonwebtoken from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { User } from '../shared/schema';
 import crypto from 'crypto';
-import { getRequiredEnv, getOptionalEnv } from './utils/environmentValidator';
+import { getRequiredEnv, getOptionalEnv } from '../src/config/index.js';
 
-// Use the environment validator to get required values
+// Use the configuration system to get required values
 // These will throw errors if not available in production
 // In development, they can use defaults but will log warnings
 const JWT_SECRET = getRequiredEnv('JWT_SECRET');
